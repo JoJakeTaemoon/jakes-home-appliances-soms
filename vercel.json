@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "deploy": true,
+      "master": false,
+      "main": false
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/concrete-tests",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/weather-sync",
+      "schedule": "0 20 * * *"
+    }
+  ]
+}

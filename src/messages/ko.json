@@ -1,0 +1,268 @@
+{
+  "common": {
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "수정",
+    "create": "생성",
+    "search": "검색",
+    "filter": "필터",
+    "loading": "로딩 중...",
+    "error": "오류가 발생했습니다",
+    "success": "성공적으로 처리되었습니다",
+    "confirm": "확인",
+    "back": "뒤로",
+    "next": "다음",
+    "actions": "작업",
+    "noData": "데이터가 없습니다",
+    "retry": "재시도",
+    "refresh": "새로고침"
+  },
+  "forms": {
+    "selectOrManual": {
+      "noneOption": "해당없음",
+      "manualOption": "직접 입력하기",
+      "inputPlaceholder": "직접 입력",
+      "backToList": "목록에서 선택"
+    }
+  },
+  "auth": {
+    "login": "로그인",
+    "logout": "로그아웃",
+    "register": "회원가입",
+    "email": "이메일",
+    "password": "비밀번호",
+    "confirmPassword": "비밀번호 확인",
+    "forgotPassword": "비밀번호 찾기",
+    "rememberMe": "로그인 상태 유지",
+    "loading": "로그인 중...",
+    "loginSuccess": "로그인에 성공했습니다",
+    "loginError": "로그인에 실패했습니다",
+    "serviceUnavailable": "서버에 일시적으로 접속이 많아 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "registerSuccess": "회원가입이 완료되었습니다"
+  },
+  "nav": {
+    "dashboard": "대시보드",
+    "projects": "프로젝트",
+    "work": "작업 관리",
+    "documents": "문서 관리",
+    "equipment": "장비 관리",
+    "materials": "자재 관리",
+    "admin": "관리자",
+    "users": "사용자 관리",
+    "roles": "역할 관리",
+    "settings": "설정",
+    "photoUpload": "사진 첨부 설정",
+    "integrations": "외부 연동",
+    "scheduledJobs": "예약 작업",
+    "profile": "프로필",
+    "logout": "로그아웃",
+    "main": "메인",
+    "master": "마스터 데이터",
+    "actionLog": "활동 로그",
+    "vendors": "협력사",
+    "notifications": "알림"
+  },
+  "profile": {
+    "title": "프로필",
+    "editProfile": "프로필 수정",
+    "name": "이름",
+    "email": "이메일",
+    "phone": "전화번호",
+    "language": "언어",
+    "role": "역할",
+    "save": "저장",
+    "saving": "저장 중...",
+    "saved": "프로필이 업데이트되었습니다",
+    "phonePlaceholder": "0912345678",
+    "phoneInvalid": "유효하지 않은 전화번호 (예: 0912345678 또는 +84912345678)",
+    "changePassword": "비밀번호 변경",
+    "currentPassword": "현재 비밀번호",
+    "newPassword": "새 비밀번호",
+    "confirmNewPassword": "새 비밀번호 확인",
+    "passwordChanged": "비밀번호가 변경되었습니다",
+    "wrongPassword": "현재 비밀번호가 올바르지 않습니다",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다",
+    "passwordMinLength": "비밀번호는 8자 이상이어야 합니다"
+  },
+  "actionLog": {
+    "title": "활동 로그",
+    "user": "사용자",
+    "action": "행동",
+    "resource": "대상",
+    "resourceId": "대상 ID",
+    "detail": "상세",
+    "ipAddress": "IP 주소",
+    "date": "날짜",
+    "time": "시간",
+    "allUsers": "전체 사용자",
+    "allActions": "전체 행동",
+    "allResources": "전체 대상",
+    "from": "시작일",
+    "to": "종료일",
+    "noLogs": "로그가 없습니다",
+    "endpoint": "엔드포인트",
+    "clickToExpand": "클릭하여 전체 보기",
+    "detailModal": {
+      "title": "상세 내용",
+      "attribute": "항목",
+      "from": "기존 값",
+      "to": "변경 값",
+      "deletedRecord": "삭제된 항목",
+      "noChanges": "변경된 항목이 없습니다.",
+      "close": "닫기"
+    },
+    "actions": {
+      "LOGIN": "로그인",
+      "LOGIN_FAILED": "로그인 실패",
+      "CREATE": "생성",
+      "UPDATE": "수정",
+      "DELETE": "삭제"
+    }
+  },
+  "validation": {
+    "required": "필수 입력 항목입니다",
+    "invalidEmail": "올바른 이메일 형식이 아닙니다",
+    "minLength": "최소 {min}자 이상 입력해주세요",
+    "maxLength": "최대 {max}자까지 입력 가능합니다",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다"
+  },
+  "notifications": {
+    "title": "알림",
+    "empty": "알림이 없습니다",
+    "seeAll": "전체 보기",
+    "markAll": "모두 읽음",
+    "unread": "읽지 않음",
+    "all": "전체",
+    "PURCHASE_ORDER_SUBMITTED": {
+      "title": "구매요청 제출됨 — {projectName}",
+      "body": "{requesterName}님이 {requestNumber}을(를) 제출했습니다. 현장 승인 대기 중."
+    },
+    "PURCHASE_ORDER_SITE_APPROVED": {
+      "title": "현장 승인 완료 — {projectName}",
+      "body": "{requestNumber}이(가) 현장 소장 승인을 받았습니다. 본사 승인 대기 중."
+    },
+    "PURCHASE_ORDER_HQ_APPROVED": {
+      "title": "본사 승인 완료 — {projectName}",
+      "body": "{requestNumber}이(가) 최종 승인되었습니다."
+    },
+    "PURCHASE_ORDER_REJECTED": {
+      "title": "구매요청 반려됨 — {projectName}",
+      "body": "{requestNumber}이(가) 반려되었습니다. 사유: {reason}"
+    },
+    "PURCHASE_ORDER_PAID": {
+      "title": "구매요청 지급 완료 — {projectName}",
+      "body": "{requestNumber}의 지급이 완료되었습니다."
+    },
+    "PAYMENT_REQUESTED": {
+      "title": "지급 요청 등록됨 — {projectName}",
+      "body": "{requesterName}님이 {amount} 지급을 요청했습니다."
+    },
+    "PAYMENT_APPROVED": {
+      "title": "지급 요청 승인됨 — {projectName}",
+      "body": "{amount} 지급 요청이 승인되었습니다."
+    },
+    "PAYMENT_REJECTED": {
+      "title": "지급 요청 반려됨 — {projectName}",
+      "body": "{amount} 지급 요청이 반려되었습니다. 사유: {reason}"
+    },
+    "PAYMENT_PAID": {
+      "title": "지급 완료 — {projectName}",
+      "body": "{amount} 지급이 완료되었습니다."
+    }
+  },
+  "settings": {
+    "photo": {
+      "title": "사진 첨부 설정",
+      "subtitle": "사진 업로드 시 자동 리사이즈 기준을 설정합니다. 시스템 관리자만 변경할 수 있습니다.",
+      "maxWidth": "최대 너비",
+      "maxHeight": "최대 높이",
+      "widthRatio": "너비 비율",
+      "heightRatio": "높이 비율",
+      "pixelsHint": "픽셀",
+      "liveAdjustHint": "현재 비율 {ratio} → 최대 {dims} 픽셀로 조정됨",
+      "saved": "저장되었습니다",
+      "forbidden": "시스템 관리자만 변경할 수 있습니다."
+    },
+    "scheduledJobs": {
+      "title": "예약 작업",
+      "intro": "주기적으로 실행되는 백그라운드 작업을 관리하고 실행 이력을 확인합니다. 시스템 관리자만 접근할 수 있습니다."
+    },
+    "integrations": {
+      "title": "외부 연동",
+      "intro": "외부 서비스(지도, 날씨 등)에 사용할 API 키를 등록·관리합니다. 저장 즉시 적용되며, 테스트 버튼으로 정상 동작을 확인할 수 있습니다.",
+      "apiKey": "API 키",
+      "apiKeyPlaceholderEmpty": "키를 입력하세요",
+      "apiKeyPlaceholderSet": "현재 키 사용 중 (수정하려면 새 키 입력)",
+      "apiKeyHint": "비워두면 기존 키가 유지됩니다. 키를 삭제하려면 '키 삭제' 버튼을 사용하세요.",
+      "enabled": "활성화",
+      "howToGetKey": "키 발급 방법 ↗",
+      "save": "저장",
+      "saving": "저장 중…",
+      "saveFailed": "저장에 실패했습니다",
+      "test": "테스트",
+      "testRunning": "테스트 중…",
+      "testSucceeded": "정상 동작 확인",
+      "testFailed": "테스트에 실패했습니다",
+      "clearKey": "키 삭제",
+      "confirmClear": "이 통합의 API 키를 삭제하시겠습니까? 이 서비스를 사용하는 기능은 즉시 동작하지 않습니다.",
+      "lastUpdated": "마지막 변경: {date} {time} ({name})",
+      "statusActive": "사용 중",
+      "statusDisabled": "비활성화",
+      "statusNoKey": "키 없음",
+      "google": {
+        "title": "Google Maps Geocoding",
+        "description": "프로젝트 주소를 위도·경도로 변환할 때 사용합니다. Google Cloud Console에서 Geocoding API를 활성화한 키가 필요합니다."
+      },
+      "openweather": {
+        "title": "OpenWeather One Call 3.0",
+        "description": "일일보고 제출 시 자동으로 날씨 데이터를 첨부할 때 사용합니다. One Call by Call 구독이 활성화된 키가 필요합니다."
+      }
+    },
+    "weatherSync": {
+      "title": "날씨 정보 수집 (예약 작업)",
+      "intro": "좌표가 등록된 프로젝트의 과거 일일보고 중 날씨가 동기화되지 않은(또는 실패한) 보고서를 매일 정해진 시간에 일괄로 다시 수집합니다.",
+      "openWeatherNotReadyTitle": "먼저 OpenWeather 키를 등록해 주세요",
+      "openWeatherNotReadyBody": "이 예약 작업은 OpenWeather API를 호출하므로 위의 OpenWeather 카드에서 키를 등록하고 [테스트] 버튼으로 정상 동작이 확인된 뒤에 활성화할 수 있습니다.",
+      "enabled": "활성화",
+      "runHourVst": "실행 시각 (VST)",
+      "runHourVstHint": "매일 선택한 시각에 1회 실행됩니다.",
+      "lookbackDays": "수집 기간",
+      "lookbackDaysSuffix": "일",
+      "lookbackDaysHint": "오늘을 제외한 과거 며칠치 보고서를 검색합니다.",
+      "save": "저장",
+      "saving": "저장 중…",
+      "saved": "저장되었습니다",
+      "runNow": "지금 실행",
+      "runNowRunning": "실행 중…",
+      "runNowSucceeded": "수집 완료",
+      "runNowFailed": "수집에 실패했습니다",
+      "lastRunNever": "아직 실행된 적이 없습니다.",
+      "lastRunSummary": "마지막 실행: {date} {time} · 검색 {scanned}건, 동기화 {synced}건, 실패 {failed}건, 좌표 없음 {skipped}건",
+      "outcomeErrorsTitle": "오류 일부",
+      "hourLabel": "{hour}시 00분"
+    },
+    "scheduledJobHistory": {
+      "title": "예약 작업 실행 이력",
+      "intro": "최근 실행된 예약 작업의 시각·트리거·결과를 보여줍니다.",
+      "empty": "아직 실행된 예약 작업이 없습니다.",
+      "colTime": "실행 시각",
+      "colJob": "작업",
+      "colTrigger": "트리거",
+      "colStatus": "상태",
+      "colDuration": "소요 시간",
+      "colSummary": "요약",
+      "triggerCron": "예약",
+      "triggerManual": "수동 ({name})",
+      "triggerManualAnon": "수동",
+      "statusOk": "성공",
+      "statusSkipped": "스킵",
+      "statusFailed": "실패",
+      "durationSec": "{seconds}초",
+      "summaryBackfill": "검색 {scanned} · 동기화 {synced} · 실패 {failed} · 스킵 {skipped}",
+      "summaryReason": "사유: {reason}",
+      "summaryError": "오류: {error}",
+      "jobWeatherSync": "날씨 정보 수집"
+    }
+  }
+}

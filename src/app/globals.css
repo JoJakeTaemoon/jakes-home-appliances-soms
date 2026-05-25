@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Pretendard Variable — locally hosted at /public/fonts/PretendardVariable.woff2.
+ * Declared via plain @font-face because Turbopack's next/font/local metric
+ * extractor errors on this woff2 with "unexpected data version". */
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/PretendardVariable.woff2") format("woff2-variations"),
+       url("/fonts/PretendardVariable.woff2") format("woff2");
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-pretendard), ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* DESIGN.md: Pure grayscale, zero shadows */
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #e5e5e5;
+  --secondary-foreground: #262626;
+  --muted: #fafafa;
+  --muted-foreground: #737373;
+  --accent: #fafafa;
+  --accent-foreground: #000000;
+  --destructive: #000000;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #3b82f680;
+  --chart-1: #e5e5e5;
+  --chart-2: #a3a3a3;
+  --chart-3: #737373;
+  --chart-4: #525252;
+  --chart-5: #262626;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e5e5e5;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #3b82f680;
+  --font-pretendard: "Pretendard Variable";
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Print styles for daily report review screen — best-effort match
+ * to docs/sample/Daily Report Sample {1,2}.pdf layout. Hides app
+ * chrome (sidebar, top bar, action bar, dialogs) and renders the
+ * report content full-bleed, A4-friendly. */
+@media print {
+  body {
+    background: white !important;
+  }
+  /* Hide app shell — sidebar, topbar, sticky action bars, etc. */
+  [role="banner"],
+  aside,
+  nav,
+  .no-print,
+  dialog,
+  button,
+  [role="dialog"] {
+    display: none !important;
+  }
+  /* Full bleed content */
+  main, .print-area, [data-page-content] {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  /* Tables: avoid awkward breaks */
+  table { break-inside: auto; page-break-inside: auto; }
+  tr    { page-break-inside: avoid; break-inside: avoid; }
+  thead { display: table-header-group; }
+  /* Photos / drawings: keep aspect, allow page breaks between */
+  img   { max-width: 100%; height: auto; page-break-inside: avoid; }
+}

@@ -1,0 +1,268 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Successfully processed",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "actions": "Actions",
+    "noData": "No data available",
+    "retry": "Retry",
+    "refresh": "Refresh"
+  },
+  "forms": {
+    "selectOrManual": {
+      "noneOption": "N/A",
+      "manualOption": "Enter manually",
+      "inputPlaceholder": "Type your own value",
+      "backToList": "Pick from list"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password",
+    "rememberMe": "Remember me",
+    "loading": "Logging in...",
+    "loginSuccess": "Login successful",
+    "loginError": "Login failed",
+    "serviceUnavailable": "The server is temporarily overloaded. Please try again in a moment.",
+    "registerSuccess": "Registration complete"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "projects": "Projects",
+    "work": "Works",
+    "documents": "Documents",
+    "equipment": "Equipments",
+    "materials": "Materials",
+    "admin": "Admin",
+    "users": "Users",
+    "roles": "Roles",
+    "settings": "Settings",
+    "photoUpload": "Photo upload",
+    "integrations": "Integrations",
+    "scheduledJobs": "Scheduled jobs",
+    "profile": "Profile",
+    "logout": "Logout",
+    "main": "Main",
+    "master": "Master Data",
+    "actionLog": "Action Log",
+    "vendors": "Vendors",
+    "notifications": "Notifications"
+  },
+  "profile": {
+    "title": "Profile",
+    "editProfile": "Edit Profile",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "language": "Language",
+    "role": "Role",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Profile updated",
+    "phonePlaceholder": "0912345678",
+    "phoneInvalid": "Invalid phone (e.g. 0912345678 or +84912345678)",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordChanged": "Password changed successfully",
+    "wrongPassword": "Current password is incorrect",
+    "passwordMismatch": "Passwords do not match",
+    "passwordMinLength": "Password must be at least 8 characters"
+  },
+  "actionLog": {
+    "title": "Action Log",
+    "user": "User",
+    "action": "Action",
+    "resource": "Resource",
+    "resourceId": "Resource ID",
+    "detail": "Detail",
+    "ipAddress": "IP Address",
+    "date": "Date",
+    "time": "Time",
+    "allUsers": "All Users",
+    "allActions": "All Actions",
+    "allResources": "All Resources",
+    "from": "From",
+    "to": "To",
+    "noLogs": "No logs found",
+    "endpoint": "Endpoint",
+    "clickToExpand": "Click to view full content",
+    "detailModal": {
+      "title": "Detail",
+      "attribute": "Attribute",
+      "from": "Previous value",
+      "to": "New value",
+      "deletedRecord": "Deleted record",
+      "noChanges": "No fields changed.",
+      "close": "Close"
+    },
+    "actions": {
+      "LOGIN": "Login",
+      "LOGIN_FAILED": "Login Failed",
+      "CREATE": "Create",
+      "UPDATE": "Update",
+      "DELETE": "Delete"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email format",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be at most {max} characters",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "seeAll": "See all",
+    "markAll": "Mark all as read",
+    "unread": "Unread",
+    "all": "All",
+    "PURCHASE_ORDER_SUBMITTED": {
+      "title": "Purchase order submitted — {projectName}",
+      "body": "{requesterName} submitted {requestNumber}. Awaiting site approval."
+    },
+    "PURCHASE_ORDER_SITE_APPROVED": {
+      "title": "Site approval complete — {projectName}",
+      "body": "{requestNumber} was approved by the site manager. Awaiting HQ approval."
+    },
+    "PURCHASE_ORDER_HQ_APPROVED": {
+      "title": "HQ approval complete — {projectName}",
+      "body": "{requestNumber} has been fully approved."
+    },
+    "PURCHASE_ORDER_REJECTED": {
+      "title": "Purchase order rejected — {projectName}",
+      "body": "{requestNumber} was rejected. Reason: {reason}"
+    },
+    "PURCHASE_ORDER_PAID": {
+      "title": "Purchase order paid — {projectName}",
+      "body": "Payment has been completed for {requestNumber}."
+    },
+    "PAYMENT_REQUESTED": {
+      "title": "Payment request submitted — {projectName}",
+      "body": "{requesterName} requested a payment of {amount}."
+    },
+    "PAYMENT_APPROVED": {
+      "title": "Payment request approved — {projectName}",
+      "body": "Payment request for {amount} has been approved."
+    },
+    "PAYMENT_REJECTED": {
+      "title": "Payment request rejected — {projectName}",
+      "body": "Payment request for {amount} was rejected. Reason: {reason}"
+    },
+    "PAYMENT_PAID": {
+      "title": "Payment completed — {projectName}",
+      "body": "Payment of {amount} has been completed."
+    }
+  },
+  "settings": {
+    "photo": {
+      "title": "Photo upload settings",
+      "subtitle": "Configure auto-resize limits for uploaded site photos. SYSTEM_ADMIN only.",
+      "maxWidth": "Max width",
+      "maxHeight": "Max height",
+      "widthRatio": "Width ratio",
+      "heightRatio": "Height ratio",
+      "pixelsHint": "pixels",
+      "liveAdjustHint": "Current ratio {ratio} → max {dims} px",
+      "saved": "Saved",
+      "forbidden": "Only SYSTEM_ADMIN can change these settings."
+    },
+    "scheduledJobs": {
+      "title": "Scheduled jobs",
+      "intro": "Manage recurring background jobs and review their run history. System administrators only."
+    },
+    "integrations": {
+      "title": "Third-party integrations",
+      "intro": "Manage API keys for external services (maps, weather, etc.). Changes take effect immediately; use the Test button to verify a key works.",
+      "apiKey": "API key",
+      "apiKeyPlaceholderEmpty": "Paste a key",
+      "apiKeyPlaceholderSet": "Key is set — leave blank to keep, paste new to replace",
+      "apiKeyHint": "Leave blank to keep the existing key. Use \"Clear key\" to remove it.",
+      "enabled": "Enabled",
+      "howToGetKey": "How to get a key ↗",
+      "save": "Save",
+      "saving": "Saving…",
+      "saveFailed": "Save failed",
+      "test": "Test",
+      "testRunning": "Testing…",
+      "testSucceeded": "Working",
+      "testFailed": "Test failed",
+      "clearKey": "Clear key",
+      "confirmClear": "Remove the API key for this integration? Features that depend on it will stop working immediately.",
+      "lastUpdated": "Last updated: {date} {time} ({name})",
+      "statusActive": "Active",
+      "statusDisabled": "Disabled",
+      "statusNoKey": "No key",
+      "google": {
+        "title": "Google Maps Geocoding",
+        "description": "Used to convert project addresses to latitude/longitude. Needs a Google Cloud key with the Geocoding API enabled."
+      },
+      "openweather": {
+        "title": "OpenWeather One Call 3.0",
+        "description": "Used to auto-attach quantitative weather to each submitted daily report. Needs a key with the \"One Call by Call\" subscription enabled."
+      }
+    },
+    "weatherSync": {
+      "title": "Collecting weather information (scheduled job)",
+      "intro": "Every day at the configured time, scan recent daily reports of projects with coordinates and re-sync weather for any report whose previous sync was missing or failed.",
+      "openWeatherNotReadyTitle": "Register the OpenWeather key first",
+      "openWeatherNotReadyBody": "This scheduled job calls the OpenWeather API, so the key must be registered on the OpenWeather card above and verified with the [Test] button before this job can be enabled.",
+      "enabled": "Enabled",
+      "runHourVst": "Run time (VST)",
+      "runHourVstHint": "Runs once daily at the selected hour.",
+      "lookbackDays": "Lookback period",
+      "lookbackDaysSuffix": "days",
+      "lookbackDaysHint": "Search this many days of reports backward from yesterday.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "runNow": "Run now",
+      "runNowRunning": "Running…",
+      "runNowSucceeded": "Collection finished",
+      "runNowFailed": "Collection failed",
+      "lastRunNever": "Has never run.",
+      "lastRunSummary": "Last run: {date} {time} · scanned {scanned}, synced {synced}, failed {failed}, skipped {skipped}",
+      "outcomeErrorsTitle": "Error samples",
+      "hourLabel": "{hour}:00"
+    },
+    "scheduledJobHistory": {
+      "title": "Scheduled job history",
+      "intro": "When recent scheduled jobs ran, how they were triggered, and their outcomes.",
+      "empty": "No scheduled jobs have run yet.",
+      "colTime": "Time",
+      "colJob": "Job",
+      "colTrigger": "Trigger",
+      "colStatus": "Status",
+      "colDuration": "Duration",
+      "colSummary": "Summary",
+      "triggerCron": "Scheduled",
+      "triggerManual": "Manual ({name})",
+      "triggerManualAnon": "Manual",
+      "statusOk": "Succeeded",
+      "statusSkipped": "Skipped",
+      "statusFailed": "Failed",
+      "durationSec": "{seconds}s",
+      "summaryBackfill": "scanned {scanned} · synced {synced} · failed {failed} · skipped {skipped}",
+      "summaryReason": "Reason: {reason}",
+      "summaryError": "Error: {error}",
+      "jobWeatherSync": "Collecting weather information"
+    }
+  }
+}

@@ -1,0 +1,268 @@
+{
+  "common": {
+    "save": "Luu",
+    "cancel": "Huy",
+    "delete": "Xoa",
+    "edit": "Sua",
+    "create": "Tao moi",
+    "search": "Tim kiem",
+    "filter": "Loc",
+    "loading": "Dang tai...",
+    "error": "Da xay ra loi",
+    "success": "Xu ly thanh cong",
+    "confirm": "Xac nhan",
+    "back": "Quay lai",
+    "next": "Tiep theo",
+    "actions": "Thao tac",
+    "noData": "Khong co du lieu",
+    "retry": "Thử lại",
+    "refresh": "Làm mới"
+  },
+  "forms": {
+    "selectOrManual": {
+      "noneOption": "Không áp dụng",
+      "manualOption": "Nhập trực tiếp",
+      "inputPlaceholder": "Nhập giá trị",
+      "backToList": "Chọn từ danh sách"
+    }
+  },
+  "auth": {
+    "login": "Dang nhap",
+    "logout": "Dang xuat",
+    "register": "Dang ky",
+    "email": "Email",
+    "password": "Mat khau",
+    "confirmPassword": "Xac nhan mat khau",
+    "forgotPassword": "Quen mat khau",
+    "rememberMe": "Ghi nho dang nhap",
+    "loading": "Dang dang nhap...",
+    "loginSuccess": "Dang nhap thanh cong",
+    "loginError": "Dang nhap that bai",
+    "serviceUnavailable": "May chu tam thoi qua tai. Vui long thu lai sau it phut.",
+    "registerSuccess": "Dang ky thanh cong"
+  },
+  "nav": {
+    "dashboard": "Bang dieu khien",
+    "projects": "Du an",
+    "work": "Quản lý công việc",
+    "documents": "Tai lieu",
+    "equipment": "Thiet bi",
+    "materials": "Vat tu",
+    "admin": "Quan tri",
+    "users": "Nguoi dung",
+    "roles": "Vai tro",
+    "settings": "Cai dat",
+    "photoUpload": "Tải lên ảnh",
+    "integrations": "Tích hợp bên ngoài",
+    "scheduledJobs": "Tác vụ định kỳ",
+    "profile": "Ho so",
+    "logout": "Dang xuat",
+    "main": "Chinh",
+    "master": "Dữ liệu chính",
+    "actionLog": "Nhat ky",
+    "vendors": "Nhà thầu",
+    "notifications": "Thông báo"
+  },
+  "profile": {
+    "title": "Ho so",
+    "editProfile": "Chinh sua ho so",
+    "name": "Ten",
+    "email": "Email",
+    "phone": "So dien thoai",
+    "language": "Ngon ngu",
+    "role": "Vai tro",
+    "save": "Luu",
+    "saving": "Dang luu...",
+    "saved": "Da cap nhat ho so",
+    "phonePlaceholder": "0912345678",
+    "phoneInvalid": "So dien thoai khong hop le (vd: 0912345678 hoac +84912345678)",
+    "changePassword": "Doi mat khau",
+    "currentPassword": "Mat khau hien tai",
+    "newPassword": "Mat khau moi",
+    "confirmNewPassword": "Xac nhan mat khau moi",
+    "passwordChanged": "Doi mat khau thanh cong",
+    "wrongPassword": "Mat khau hien tai khong dung",
+    "passwordMismatch": "Mat khau khong khop",
+    "passwordMinLength": "Mat khau phai co it nhat 8 ky tu"
+  },
+  "actionLog": {
+    "title": "Nhat ky hoat dong",
+    "user": "Nguoi dung",
+    "action": "Hanh dong",
+    "resource": "Doi tuong",
+    "resourceId": "Ma doi tuong",
+    "detail": "Chi tiet",
+    "ipAddress": "Dia chi IP",
+    "date": "Ngay",
+    "time": "Thoi gian",
+    "allUsers": "Tat ca nguoi dung",
+    "allActions": "Tat ca hanh dong",
+    "allResources": "Tat ca doi tuong",
+    "from": "Tu ngay",
+    "to": "Den ngay",
+    "noLogs": "Khong co nhat ky",
+    "endpoint": "Endpoint",
+    "clickToExpand": "Nhap de xem day du",
+    "detailModal": {
+      "title": "Chi tiet",
+      "attribute": "Thuoc tinh",
+      "from": "Gia tri cu",
+      "to": "Gia tri moi",
+      "deletedRecord": "Ban ghi da xoa",
+      "noChanges": "Khong co thay doi.",
+      "close": "Dong"
+    },
+    "actions": {
+      "LOGIN": "Dang nhap",
+      "LOGIN_FAILED": "Dang nhap that bai",
+      "CREATE": "Tao moi",
+      "UPDATE": "Cap nhat",
+      "DELETE": "Xoa"
+    }
+  },
+  "validation": {
+    "required": "Truong nay la bat buoc",
+    "invalidEmail": "Dinh dang email khong hop le",
+    "minLength": "Phai co it nhat {min} ky tu",
+    "maxLength": "Toi da {max} ky tu",
+    "passwordMismatch": "Mat khau khong khop"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "empty": "Không có thông báo",
+    "seeAll": "Xem tất cả",
+    "markAll": "Đánh dấu đã đọc tất cả",
+    "unread": "Chưa đọc",
+    "all": "Tất cả",
+    "PURCHASE_ORDER_SUBMITTED": {
+      "title": "Đã nộp đơn mua hàng — {projectName}",
+      "body": "{requesterName} đã nộp {requestNumber}. Chờ phê duyệt tại công trường."
+    },
+    "PURCHASE_ORDER_SITE_APPROVED": {
+      "title": "Đã duyệt tại công trường — {projectName}",
+      "body": "{requestNumber} đã được Trưởng công trường phê duyệt. Chờ Tổng công ty duyệt."
+    },
+    "PURCHASE_ORDER_HQ_APPROVED": {
+      "title": "Đã duyệt tại Tổng công ty — {projectName}",
+      "body": "{requestNumber} đã được phê duyệt hoàn tất."
+    },
+    "PURCHASE_ORDER_REJECTED": {
+      "title": "Đơn mua hàng bị từ chối — {projectName}",
+      "body": "{requestNumber} đã bị từ chối. Lý do: {reason}"
+    },
+    "PURCHASE_ORDER_PAID": {
+      "title": "Đã thanh toán đơn mua hàng — {projectName}",
+      "body": "Đã hoàn tất thanh toán cho {requestNumber}."
+    },
+    "PAYMENT_REQUESTED": {
+      "title": "Đã nộp yêu cầu thanh toán — {projectName}",
+      "body": "{requesterName} đã yêu cầu thanh toán {amount}."
+    },
+    "PAYMENT_APPROVED": {
+      "title": "Đã duyệt yêu cầu thanh toán — {projectName}",
+      "body": "Yêu cầu thanh toán {amount} đã được duyệt."
+    },
+    "PAYMENT_REJECTED": {
+      "title": "Yêu cầu thanh toán bị từ chối — {projectName}",
+      "body": "Yêu cầu thanh toán {amount} bị từ chối. Lý do: {reason}"
+    },
+    "PAYMENT_PAID": {
+      "title": "Đã hoàn tất thanh toán — {projectName}",
+      "body": "Đã hoàn tất thanh toán {amount}."
+    }
+  },
+  "settings": {
+    "photo": {
+      "title": "Cài đặt tải ảnh",
+      "subtitle": "Cấu hình giới hạn tự động thay đổi kích thước cho ảnh hiện trường. Chỉ SYSTEM_ADMIN.",
+      "maxWidth": "Chiều rộng tối đa",
+      "maxHeight": "Chiều cao tối đa",
+      "widthRatio": "Tỷ lệ chiều rộng",
+      "heightRatio": "Tỷ lệ chiều cao",
+      "pixelsHint": "pixel",
+      "liveAdjustHint": "Tỷ lệ hiện tại {ratio} → tối đa {dims} px",
+      "saved": "Đã lưu",
+      "forbidden": "Chỉ quản trị viên hệ thống mới có thể thay đổi."
+    },
+    "scheduledJobs": {
+      "title": "Tác vụ định kỳ",
+      "intro": "Quản lý các tác vụ nền chạy theo lịch và xem lịch sử thực thi. Chỉ dành cho quản trị hệ thống."
+    },
+    "integrations": {
+      "title": "Tích hợp bên ngoài",
+      "intro": "Quản lý khóa API cho các dịch vụ bên ngoài (bản đồ, thời tiết…). Thay đổi có hiệu lực ngay; dùng nút Kiểm tra để xác nhận khóa hoạt động.",
+      "apiKey": "Khóa API",
+      "apiKeyPlaceholderEmpty": "Dán khóa",
+      "apiKeyPlaceholderSet": "Đã có khóa — để trống để giữ, dán khóa mới để thay",
+      "apiKeyHint": "Để trống nếu giữ nguyên khóa hiện tại. Dùng \"Xóa khóa\" để xóa.",
+      "enabled": "Bật",
+      "howToGetKey": "Cách lấy khóa ↗",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saveFailed": "Lưu thất bại",
+      "test": "Kiểm tra",
+      "testRunning": "Đang kiểm tra…",
+      "testSucceeded": "Hoạt động",
+      "testFailed": "Kiểm tra thất bại",
+      "clearKey": "Xóa khóa",
+      "confirmClear": "Xóa khóa API của tích hợp này? Các tính năng phụ thuộc sẽ ngừng hoạt động ngay.",
+      "lastUpdated": "Cập nhật lần cuối: {date} {time} ({name})",
+      "statusActive": "Đang hoạt động",
+      "statusDisabled": "Đã tắt",
+      "statusNoKey": "Chưa có khóa",
+      "google": {
+        "title": "Google Maps Geocoding",
+        "description": "Dùng để chuyển địa chỉ dự án thành tọa độ. Cần khóa Google Cloud có bật Geocoding API."
+      },
+      "openweather": {
+        "title": "OpenWeather One Call 3.0",
+        "description": "Dùng để tự động đính kèm dữ liệu thời tiết vào báo cáo hằng ngày khi nộp. Cần khóa có gói \"One Call by Call\"."
+      }
+    },
+    "weatherSync": {
+      "title": "Thu thập thông tin thời tiết (tác vụ định kỳ)",
+      "intro": "Vào giờ được cấu hình mỗi ngày, hệ thống quét các báo cáo gần đây của những dự án đã có toạ độ và đồng bộ lại thời tiết cho báo cáo nào trước đó bị thiếu hoặc đồng bộ thất bại.",
+      "openWeatherNotReadyTitle": "Vui lòng đăng ký khóa OpenWeather trước",
+      "openWeatherNotReadyBody": "Tác vụ định kỳ này gọi OpenWeather API, vì vậy bạn phải đăng ký khóa ở thẻ OpenWeather phía trên và xác nhận hoạt động bằng nút [Kiểm tra] trước khi có thể bật.",
+      "enabled": "Kích hoạt",
+      "runHourVst": "Giờ chạy (VST)",
+      "runHourVstHint": "Chạy một lần mỗi ngày vào giờ đã chọn.",
+      "lookbackDays": "Khoảng thời gian thu thập",
+      "lookbackDaysSuffix": "ngày",
+      "lookbackDaysHint": "Tìm trong số ngày báo cáo này tính ngược từ hôm qua.",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu",
+      "runNow": "Chạy ngay",
+      "runNowRunning": "Đang chạy…",
+      "runNowSucceeded": "Thu thập xong",
+      "runNowFailed": "Thu thập thất bại",
+      "lastRunNever": "Chưa từng chạy.",
+      "lastRunSummary": "Lần chạy gần nhất: {date} {time} · quét {scanned}, đồng bộ {synced}, lỗi {failed}, bỏ qua {skipped}",
+      "outcomeErrorsTitle": "Một số lỗi",
+      "hourLabel": "{hour}:00"
+    },
+    "scheduledJobHistory": {
+      "title": "Lịch sử tác vụ định kỳ",
+      "intro": "Thời điểm, nguồn kích hoạt và kết quả của các tác vụ định kỳ gần đây.",
+      "empty": "Chưa có tác vụ định kỳ nào chạy.",
+      "colTime": "Thời gian",
+      "colJob": "Tác vụ",
+      "colTrigger": "Kích hoạt",
+      "colStatus": "Trạng thái",
+      "colDuration": "Thời lượng",
+      "colSummary": "Tóm tắt",
+      "triggerCron": "Định kỳ",
+      "triggerManual": "Thủ công ({name})",
+      "triggerManualAnon": "Thủ công",
+      "statusOk": "Thành công",
+      "statusSkipped": "Bỏ qua",
+      "statusFailed": "Thất bại",
+      "durationSec": "{seconds} giây",
+      "summaryBackfill": "quét {scanned} · đồng bộ {synced} · lỗi {failed} · bỏ qua {skipped}",
+      "summaryReason": "Lý do: {reason}",
+      "summaryError": "Lỗi: {error}",
+      "jobWeatherSync": "Thu thập thông tin thời tiết"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+/test-results
+/playwright-report
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# uploads
+/uploads
+
+# generated daily-report PDFs (filesystem cache; see src/lib/daily-report/pdf-cache.ts)
+/private
+
+.claude/settings.local.json
+.claude/*.local.*
+/src/generated/prisma
+.claude/settings.local.json
+.claude/*.local.*
+
+# Generated manual PDFs (built via `npx tsx scripts/build-manual-pdfs.ts`).
+# Previously caught by a blanket `*.pdf` rule, but that also blocked the
+# user-uploaded drawing PDFs under uploads/ from being shipped with the
+# vercel deploy bundle — causing the daily-report viewer to 404 on every
+# attached drawing. The cache PDFs live under /private (already ignored
+# above), so this narrow set is enough.
+/MegaDnC_PMIS_Manual_*/
+/docs/manuals/**/*.pdf
+/docs/presentations/*.pdf
+.gstack/
+
+# bundled user-manual archive (re-built via `npx tsx scripts/build-manual-pdfs.ts`)
+/MegaDnC_PMIS_Manual.zip
+/MegaDnC_PMIS_manuals_*.zip
+
+# prod QA artifacts (screenshots, playwright reports, lighthouse JSON) —
+# see scripts/qa-prod.ts + e2e-prod/
+/qa-runs
