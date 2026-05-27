@@ -1,28 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { ChevronDown } from "lucide-react";
 
 const locales = [
+  { value: "vi", label: "Tiếng Việt" },
   { value: "ko", label: "한국어" },
   { value: "en", label: "English" },
-  { value: "vi", label: "Tiếng Việt" },
 ] as const;
 
-function useCurrentLocale(): string {
-  try {
-    // Dynamic require to avoid vitest mock errors when useLocale is not mocked
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { useLocale } = require("next-intl");
-    return useLocale();
-  } catch {
-    return "ko";
-  }
-}
-
 export function LocaleSwitcher() {
-  const locale = useCurrentLocale();
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -49,7 +39,7 @@ export function LocaleSwitcher() {
     <div data-testid="locale-switcher" className="relative" ref={menuRef}>
       <button
         type="button"
-        className="flex items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-white px-3 h-8 max-md:h-11 text-sm font-normal text-[#525252] hover:bg-[#fafafa] hover:border-[#e5e5e5] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50"
+        className="flex h-8 max-md:h-11 cursor-pointer items-center gap-1.5 rounded-full border border-[#e5e5e5] bg-white px-3 text-sm font-normal text-[#525252] outline-none hover:bg-[#fafafa] focus-visible:ring-2 focus-visible:ring-[var(--brand-blue-200)]"
         onClick={() => setOpen((prev) => !prev)}
       >
         {currentLocale?.label}
@@ -57,15 +47,15 @@ export function LocaleSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[128px] rounded-xl border border-[#e5e5e5] bg-white p-1 shadow-none">
+        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[128px] rounded-xl border border-[#e5e5e5] bg-white p-1">
           {locales.map((l) => (
             <button
               key={l.value}
               type="button"
               className={
                 l.value === locale
-                  ? "flex w-full items-center rounded-full px-3 py-1.5 text-sm font-normal text-[#000000] bg-[#e5e5e5] cursor-pointer"
-                  : "flex w-full items-center rounded-full px-3 py-1.5 text-sm font-normal text-[#525252] hover:bg-[#fafafa] cursor-pointer"
+                  ? "flex w-full cursor-pointer items-center rounded-md bg-[var(--brand-blue-50)] px-3 py-1.5 text-sm font-medium text-[var(--brand-blue-700)]"
+                  : "flex w-full cursor-pointer items-center rounded-md px-3 py-1.5 text-sm font-normal text-[#525252] hover:bg-[#fafafa]"
               }
               onClick={() => handleLocaleChange(l.value)}
             >

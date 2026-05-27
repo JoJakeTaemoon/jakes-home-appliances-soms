@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 
 /* Pretendard Variable — locally hosted at /public/fonts/PretendardVariable.woff2.
  * Declared via plain @font-face because Turbopack's next/font/local metric
@@ -95,6 +94,25 @@
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #3b82f680;
   --font-pretendard: "Pretendard Variable";
+
+  /* Seoul Aqua brand-blue ramp (.claude/skills/DESIGN.md) */
+  --brand-blue-50: #E6F1F9;
+  --brand-blue-100: #C2DDF0;
+  --brand-blue-200: #94C1E3;
+  --brand-blue-500: #0071BD;
+  --brand-blue-600: #005C9A;
+  --brand-blue-700: #00477A;
+  --brand-blue-900: #002A4D;
+}
+
+@theme inline {
+  --color-brand-blue-50: var(--brand-blue-50);
+  --color-brand-blue-100: var(--brand-blue-100);
+  --color-brand-blue-200: var(--brand-blue-200);
+  --color-brand-blue-500: var(--brand-blue-500);
+  --color-brand-blue-600: var(--brand-blue-600);
+  --color-brand-blue-700: var(--brand-blue-700);
+  --color-brand-blue-900: var(--brand-blue-900);
 }
 
 @layer base {
