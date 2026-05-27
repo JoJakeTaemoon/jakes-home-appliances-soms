@@ -162,6 +162,10 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
 
 - **Future Vietnamese channels (Phase 8+ TODO, F.1 client request 2026-05-26)**: **Zalo OA** (Zalo Official Account messaging — alternative to SMS, cheaper and richer in VN) + **Zalo Mini App** (alternative customer portal UI hosted inside Zalo, very popular in Vietnam). Both deferred; placeholder in `docs/PROJECT_PLAN.md` Phase 8.
 
+<!-- portfolio:add-start
+- **Portfolio safety (mock-only)**: this is a portfolio mirror, NOT the production system. **No real SMS or email is ever sent.** `SMS_PROVIDER=mock` and `EMAIL_PROVIDER=mock` are the only supported values; the real eSMS/Resend adapters are intentionally not wired in this mirror. Mock providers log payloads to `console` + DB `*Log.status='MOCKED'`. Any production credentials would be ignored — see `src/lib/sms/mock-client.ts` / `src/lib/email/mock-provider.ts`.
+portfolio:add-end -->
+
 <!-- portfolio:drop-start -->
 - **Hosting (H.1 confirmed 2026-05-26)**: v0 ships on Vercel + Supabase for fast iteration; **vhost.vn migration before production launch** (data residency requirement). Audit log retention 24 months (H.2); daily backup at VST 03:00 (H.3).
 <!-- portfolio:drop-end -->
