@@ -72,3 +72,6 @@ next-env.d.ts
 # prod QA artifacts (screenshots, playwright reports, lighthouse JSON) —
 # see scripts/qa-prod.ts + e2e-prod/
 /qa-runs
+
+# CodeGraph local tool metadata (db + cache, per-machine)
+/.codegraph

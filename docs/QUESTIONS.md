@@ -4,9 +4,21 @@
 >
 > **For developers:** this is the markdown twin of `QUESTIONS.docx`. Keep both in sync — edit here, regenerate the docx via `scripts/generate-questions-docx.py`.
 
-**Version:** v0.1 (2026-05-25)
-**Total questions:** 37
-**Blockers for Phase 0 → Phase 1:** Q1, Q11, Q14, Q24, Q33 (5 items)
+**Version:** v0.5 (2026-05-26 — client answers received)
+**Total questions:** 50 (all 50 answered by client via `reference/answers.txt`; A.5 filter data delivery pending 2026-05-29)
+**Blockers for Phase 0 → Phase 1:** ✅ ALL RESOLVED (A.1, A.6, C.3, E.1, H.1, I.2)
+**Blockers for Phase 2 → Phase 3.5 dev-start:** ✅ ALL RESOLVED (A.10, A.11, C.6)
+**Production-launch blockers:** ✅ ALL RESOLVED (F.4, F.7, A.14, F.1=Q17)
+**Pending (non-blocking):** A.5 (filter-equipment compatibility data delivery 2026-05-29 evening)
+
+> **2026-05-26 — Client answers received**: All blockers resolved. Notable material changes from default plan:
+> - **A.4 + A.8**: Customer > Site > Equipment 3-level hierarchy (was 2-level) — see `docs/DATA_MODEL_NOTES.md` Site model
+> - **A.10**: Portal at subdomain `portal.seoulaqua.com.vn` (was: root URL) — adds +7 chars per SMS, pushes A.3 VI to 2-seg, +712K VND/mo
+> - **B.2**: Contract code format B2C `HD-YYYYmmDD/SA-KH####`, B2B `HD-YYYYmmDD/SA-{shortcode}` + B2B appendix support
+> - **K.3**: Multi-tech visits — `leadTechnicianId` + `collaboratorTechnicianIds[]`
+> - **C.2**: `preferredTechnicianId` + `preferredRegion` per customer
+> - **F.1**: Zalo OA + Zalo Mini App TODO in Phase 8+
+> - **D.5**: ALL B2B customers need tax invoice (was: some don't); PDF upload warning-only
 
 ---
 
@@ -22,6 +34,8 @@
 **Blocks:** Phase 2 시작 (고객 마스터)
 
 **Default if no answer:** `KH#####`
+
+**Status (2026-05-26):** ✅ RESOLVED — 형식 사용 OK (`KH#####`)
 
 ---
 
@@ -42,6 +56,8 @@
 
 **Default if no answer:** (a) 신규 KH 발급 + `legacyCode` 컬럼 보존
 
+**Status (2026-05-26):** ✅ RESOLVED — (b) 기존 관리번호를 그대로 신규 KH코드로 변환 (예: `8918` → `KH08918`). 마이그레이션 스크립트는 `KH0` + 기존번호(zero-padded to match KH##### width) 방식.
+
 ---
 
 ### A.3 장비 코드 재사용 정책 / Equipment code reuse on retirement
@@ -54,6 +70,8 @@
 **Blocks:** Phase 2
 
 **Default if no answer:** 영구 결번 (이력 추적이 더 중요)
+
+**Status (2026-05-26):** ✅ RESOLVED — 삭제(결번) 처리하지 않고 장비 상태를 "해지/비활성화"로 변경. 코드와 모든 이력 보존. Equipment.status에 `DEACTIVATED` 또는 `TERMINATED` 추가.
 
 ---
 
@@ -74,6 +92,8 @@
 
 **Default if no answer:** (b) — 단순함 + 위치 추적 모두 만족
 
+**Status (2026-05-26):** ✅ RESOLVED — (c) **Customer > Site > Equipment 계층 모델 채택**. 고객에 따라 Site를 만들거나 수정/제거 가능. B2C는 Site 없이도 가능 (optional). B2B는 Site별로 별도 주소 + Ops Contact + 장비. 신규 `Site` Prisma 모델 추가 — A.8과 연계.
+
 ---
 
 ### A.5 필터-장비 호환성 데이터 / Filter-equipment compatibility data
@@ -87,6 +107,187 @@
 
 **Default if no answer:** Phase 5에 빈 호환표로 시작, 직원이 수기 입력
 
+**Status (2026-05-26):** ⏳ PARTIAL — **2026-05-29 저녁 전달 예정**. Phase 5 시작 전에 데이터 도착하면 호환표 사전 입력; 도착 지연 시 default(빈 호환표)로 시작.
+
+---
+
+### A.6 ★ 고객 두-컨택트 모델 확인 / Two-contact model confirmation
+**Question (KO):** 한 고객(B2B 회사 또는 B2C 가정집)에 대해 시스템은 두 개의 컨택트를 분리해서 저장합니다:
+
+| 역할 | 용도 | 받는 문서/알림 |
+|---|---|---|
+| **계약 주체** (서명자) | 계약서 서명, 법적 통보, 세금계산서 수신 | 계약서 PDF, 세금계산서, 법적 통보 |
+| **관리 주체** (운영 담당) | 방문 일정 확정, SMS, 일상 커뮤니케이션 | 방문 SMS, 영수증, 정기점검표 |
+
+각 컨택트는 **독립적인 이름·전화·이메일·사용 언어** 를 가집니다. 같은 사람일 경우 "동일" 체크박스로 표시합니다.
+
+이 모델 적용 OK인가요? 또는 다른 역할(예: "결제 담당" 별도 분리)이 필요하신가요?
+
+**Question (EN):** For each customer (B2B company or B2C household), the system stores two separate contacts with independent name, phone, email, language. Contract documents/legal notice go to the Contract Party; visit SMS/operational notices go to the Ops Contact. OK to adopt? Any additional role needed (e.g., separate billing contact)?
+
+**Why it matters:** 도메인 모델의 핵심. SMS 베트남어로 갈지 한국어로 갈지가 이 분리에 달려 있음.
+
+**Blocks:** Phase 2 (Customer 마스터 스키마)
+
+**Default if no answer:** 두 역할 (Contract Party + Ops Contact)로 진행
+
+**Status (2026-05-26):** ✅ RESOLVED — 두-컨택트 모델 OK. CONTRACT_PARTY + 0..N OPS_CONTACT (이전 결정과 일치).
+
+---
+
+### A.7 컨택트 언어 fallback 규칙 / Contact language fallback
+**Question (KO):** 관리 주체(Ops Contact)의 언어 정보가 누락된 경우 SMS는 어떤 언어로 보낼까요?
+- (a) 계약 주체의 언어 사용
+- (b) 시스템 기본 언어 (베트남어)
+- (c) 고객의 도시(`addressCity`)에서 유추 (HCM/Hanoi → vi, 기타 → vi)
+
+**Question (EN):** If Ops Contact language is missing, which language for SMS?
+- (a) Fall back to Contract Party language
+- (b) System default (Vietnamese)
+- (c) Infer from customer city
+
+**Why it matters:** 마이그레이션 시 ~9000 고객의 언어 데이터가 없으므로 fallback 규칙 필요.
+
+**Blocks:** Phase 2 (import script)
+
+**Default if no answer:** (b) — 베트남어 fallback (가장 많은 고객층)
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **계약 주체의 언어 사용**. Ops Contact 언어 누락 시 Contract Party의 `language` 필드로 fallback.
+
+---
+
+### A.8 B2B 다중 사이트의 컨택트 / Multiple ops contacts per B2B site
+**Question (KO):** 한 B2B 고객사가 여러 사업장(공장 A, 공장 B, 본사)을 가질 때, **사업장별로 다른 관리 주체**가 필요할 수 있습니다. 시스템은 이를 어떻게 처리할까요?
+- (a) v1 — 고객사 단위로 단일 Ops Contact만 (사업장별 분리는 Phase 8+)
+- (b) v1부터 사이트 모델(Customer > Site)에 Ops Contact 분리 — A.4와 연계
+- (c) 한 고객사에 Ops Contact 여러 개 (Site 없이 N:1)
+
+**Question (EN):** A B2B customer with multiple sites may need a different Ops Contact per site. v1 strategy?
+- (a) v1 — single Ops Contact per customer; site-level split is Phase 8+
+- (b) Site model from day 1 (linked to A.4 hierarchical option)
+- (c) Multiple Ops Contacts on one customer
+
+**Blocks:** Phase 2 (스키마 결정 · A.4와 함께)
+
+**Default if no answer:** (a) v1 단일 — 운영 관찰 후 Phase 8+에 확장
+
+**Status (2026-05-26):** ✅ RESOLVED — (b) **v1부터 사이트 모델(Customer > Site)에 Ops Contact 분리**. A.4 결정과 연계. CustomerContact에 `siteId?` 필드 + `scope` enum (CUSTOMER | SITE) 추가.
+
+---
+
+### A.9 마이그레이션 시 두번째 컨택트 데이터 / Secondary contact from legacy CSV
+**Question (KO):** 기존 `고객관리대장`의 `고객정보` 필드에 가끔 "MR.K", "JUNG KI HUN" 같은 두 번째 사람 이름이 있습니다. 마이그레이션 시:
+- (a) 자동으로 Ops Contact로 등록 (전화는 비워두고 사무실이 추후 보강)
+- (b) 임포트 후 사무실이 수동으로 검토하여 분류
+- (c) 무시 (단일 컨택트로 import, 신규 등록 시부터 분리)
+
+**Question (EN):** Legacy `고객정보` field sometimes carries a secondary name. On migration:
+- (a) Auto-create as Ops Contact (phone blank, office fills later)
+- (b) Import unclassified; office reviews
+- (c) Ignore (single-contact import for legacy, two-contact only for new customers)
+
+**Blocks:** Phase 2 (import script)
+
+**Default if no answer:** (b) — 자동 분류는 오류 가능, 사람 검토 후 확정
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **자동으로 Ops Contact로 등록**, 전화는 비워두고 사무실이 추후 보강.
+
+---
+
+### A.10 ★ 고객 포털 URL / 도메인 / Portal URL & domain
+**Question (KO):** 회사 도메인은 `seoulaqua.com.vn` 확정. 고객 포털 URL은 어떻게 잡을까요?
+- (a) **루트 URL `seoulaqua.com.vn`** — SMS 글자수 가장 짧음 (16자), 로그인 안된 사용자는 자동으로 `/portal` 리다이렉트 — **현 SMS 템플릿 가정**
+- (b) 별도 서브도메인 `portal.seoulaqua.com.vn` (23자, 4자 길어짐 → 일부 1-seg 템플릿이 2-seg로 늘어남)
+- (c) 동일 도메인 + 경로 `seoulaqua.com.vn/portal/*` (23자, b와 동일 길이)
+- (d) 짧은 도메인 신규 등록 (예: `sa.com.vn` 9자) — 도메인 등록비 + 1~2주 추가 소요
+
+URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 시 재심사가 필요합니다.
+
+**Question (EN):** Company domain confirmed as `seoulaqua.com.vn`. Portal URL choice? (a) root URL `seoulaqua.com.vn` with auto-redirect to `/portal` (shortest, current SMS template assumption), (b) subdomain `portal.seoulaqua.com.vn`, (c) path `seoulaqua.com.vn/portal/*`, (d) separate short domain (`sa.com.vn` etc., extra registration). URL goes into SMS — keep it short and avoid future changes since Brandname re-approval is required after URL changes.
+
+**Blocks:** Phase 3.5 (SMS template + DNS 설정 + eSMS Brandname 신청서 확정)
+
+**Default if no answer:** (a) `seoulaqua.com.vn` root with redirect — 이미 모든 SMS 본문 + `docs/SMS_BRANDNAME_APPLICATION.md` 에 반영됨
+
+**Status (2026-05-26):** ✅ RESOLVED — **(b) 별도 서브도메인 `portal.seoulaqua.com.vn` 선택**. ⚠️ **비용 영향**: URL이 16자 → 23자 (+7자)로 늘어나 `SMS_VISIT_REMINDER` VI가 70자 → 77자가 되어 1-seg → 2-seg로 증가. 월 ~720 VI 방문 알림 × 989 VND/seg = **+712K VND/월 (≈ ₩38K/월, 8.5M VND/년)** 비용 증가. 모든 SMS 본문 + 비용 추정 재계산 필요. (사용자가 원본 답변에 `portal.seoulaqua.vn`로 표기했으나 회사 도메인 `seoulaqua.com.vn` 기준으로 `portal.seoulaqua.com.vn` 적용.)
+
+---
+
+### A.11 ★ 비밀번호 정책 / Password policy
+**Question (KO):** 고객 포털 비밀번호 정책:
+
+| 항목 | 권장 | 대안 |
+|---|---|---|
+| 최소 길이 | 8자 | 10 / 12 |
+| 영문 + 숫자 의무 | Yes | 영문만 / 숫자만 |
+| 특수문자 의무 | No (모바일 입력 부담) | Yes |
+| 만료 주기 | 없음 | 90일 / 180일 |
+| 과거 N개 재사용 금지 | 없음 | 3 / 5 |
+
+베트남 일반 사용자 대상 — 너무 엄격하면 적응 어려움.
+
+**Question (EN):** Customer portal password policy — recommended: 8 chars min, alphanumeric, no expiry. Confirm or specify.
+
+**Blocks:** Phase 3.5
+
+**Default if no answer:** 권장 표 그대로 — 8자 영문+숫자, 만료 없음
+
+**Status (2026-05-26):** ✅ RESOLVED — **권장 표 그대로** 채택: 8자 최소, 영문+숫자, 특수문자 X, 만료 없음, 재사용 금지 없음.
+
+---
+
+### A.12 OTP-only 로그인 / OTP-only login as alternative
+**Question (KO):** 비밀번호 대신 매번 SMS OTP로 로그인하는 옵션도 제공할까요?
+- (a) 비밀번호만 (v1) — SMS는 가입+초기화 때만 — 추천
+- (b) 비밀번호 OR OTP — 사용자 선택
+- (c) OTP만 — 비밀번호 자체 없음 (베트남 일부 앱이 이렇게 함)
+
+**Question (EN):** Add OTP-only login (SMS code each login) as alternative to password?
+
+**Blocks:** Phase 3.5 (UI + SMS volume 영향)
+
+**Default if no answer:** (a) — 비밀번호만, OTP는 Phase 8+
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **비밀번호만 (v1)** — SMS는 가입+초기화 때만. OTP-only는 Phase 8+ TODO.
+
+---
+
+### A.13 동일 휴대폰 공유 컨택트 / Shared phone contacts
+**Question (KO):** 한 회사가 대표 전화 1개를 여러 직원이 공유 사용하는 경우 (예: 본사 안내데스크 전화). 시스템에서 두 명의 CustomerContact가 같은 `phone1`을 가질 수 있습니다.
+- (a) 한 사람에게만 `portalEnabled=true` 부여 (나머지는 office가 비활성) — 추천
+- (b) 동일 번호 두 명 모두 로그인 가능 (SMS는 한쪽 명의로만, 충돌 가능)
+- (c) 동일 phone1 등록 차단 (저장 시 에러)
+
+**Question (EN):** When two CustomerContacts share the same phone1 (company switchboard), how to handle?
+
+**Blocks:** Phase 3.5 (validation 로직)
+
+**Default if no answer:** (a) — 사무실이 결정
+
+**Status (2026-05-26):** ✅ RESOLVED — **(b) 동일 번호 두 명 모두 로그인 가능** (SMS는 한쪽 명의로만, 충돌 가능). `@@unique([phone1])` 제약 없음. CustomerContact.phone1에 중복 허용. (이전 결정 (a)에서 변경됨.)
+
+---
+
+### A.14 ★ 이메일 발신 도메인 / Email sender domain & DKIM/SPF
+**Question (KO):** 고객 응대 이메일 (영수증, 작업확인서, 미수금 안내 등)을 `seoulaqua.com.vn`에서 직접 발송하려면 DNS 설정이 필요합니다:
+- (a) `noreply@seoulaqua.com.vn` (시스템 발송) + `cs@seoulaqua.com.vn` (Reply-To, CS팀 인박스) — **권장**
+- (b) `info@seoulaqua.com.vn` 단일 (단순화, 하지만 CS 응대 vs 시스템 자동 발송 구분이 안됨)
+- (c) 별도 도메인 (예: `mail.seoulaqua.com.vn`) — 권장 X (브랜드 분산)
+
+**필수 인프라 설정 (1일 작업):**
+- SPF 레코드: `v=spf1 include:_spf.{provider}.com -all`
+- DKIM 키 등록 (provider별 발급 키를 DNS TXT에 추가)
+- DMARC 정책: `v=DMARC1; p=quarantine; rua=mailto:dmarc@seoulaqua.com.vn`
+- (선택) BIMI 로고 표시 — 마케팅 효과, Gmail/Yahoo 지원
+
+**Question (EN):** Email sender domain setup for `seoulaqua.com.vn`? Recommend (a) `noreply@` for system + `cs@` for Reply-To. DKIM/SPF/DMARC required (1-day infra task).
+
+**Blocks:** Production launch only — Phase 3.5 dev proceeds against mock email provider; DKIM/SPF/DMARC setup is a 1-day infra task before flipping `EMAIL_PROVIDER=resend` (2026-05-26 decision)
+
+**Default if no answer:** (a) — `noreply@seoulaqua.com.vn` (system) + `cs@seoulaqua.com.vn` (Reply-To)
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **`noreply@seoulaqua.com.vn` (시스템 발송) + `cs@seoulaqua.com.vn` (Reply-To)** 권장 채택.
+
 ---
 
 ## B. 계약 및 라이프사이클 (Contract & lifecycle)
@@ -99,6 +300,8 @@
 **Blocks:** Phase 3
 
 **Default if no answer:** 판매 후 별도 유지관리 계약만 가능 (장비 소유권은 고객, 서비스만 회사)
+
+**Status (2026-05-26):** ✅ RESOLVED — 판매 후 별도 유지관리 계약 가능. **추가 임대 시**: 신규 장비 코드 발급. **기존 구매 제품에 유지관리 추가 시**: 기존 장비 관리 코드 그대로 재사용 + `Equipment.status`를 "유지관리" 상태로 추가. 즉 한 장비가 SALE → MAINTENANCE로 전이 가능 (이력 보존).
 
 ---
 
@@ -117,6 +320,11 @@
 
 **Default if no answer:** (a) — 정렬과 검색에 유리
 
+**Status (2026-05-26):** ✅ RESOLVED — **신규 계약 코드 형식**:
+- **B2C 고객**: `HD-YYYYmmDD/SA-KH####` (예: `HD-20260526/SA-KH0001`)
+- **B2B 고객**: `HD-YYYYmmDD/SA-{고객사약어}` (예: `HD-20260526/SA-SHV`)
+- **B2B Appendix 지원**: 일부 기업은 신규 설치 시마다 새 계약서 발행, 다른 기업은 기존 계약에 부록서/변경 계약(Appendix)으로 설치 수량만 추가. 시스템에서 `Contract.parentContractId` + `Contract.amendmentRevision` 필드로 양쪽 모두 지원.
+
 ---
 
 ### B.3 36개월 후 소유권 이전 기록 / Post-36-month ownership transfer record
@@ -134,6 +342,8 @@
 
 **Default if no answer:** (a) — 별도 문서 필요시 추후 추가
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) **`Contract.status=COMPLETED` + `Equipment.ownership` 자동 변경**. 별도 PDF 불필요.
+
 ---
 
 ### B.4 ★ 계약 자동 갱신 정책 / Contract auto-renewal
@@ -146,6 +356,8 @@
 **Blocks:** Phase 3 (계약 라이프사이클 로직)
 
 **Default if no answer:** 직원 확인 후 1-click 갱신 (자동 알림 + 수동 액션)
+
+**Status (2026-05-26):** ✅ RESOLVED — **직원 확인 후 1-click 갱신** (자동 알림 + 수동 액션). 초기 임대료와 달리 **월 관리비 (유지관리 비용) 단가 조정 필요** — 갱신 시 새 가격 입력 UI 필요.
 
 ---
 
@@ -163,6 +375,10 @@
 **Blocks:** Phase 3
 
 **Default if no answer:** (b) — 법적 안전성 + 이력 가시성
+
+**Status (2026-05-26):** ✅ RESOLVED — **고객 유형별 분리 정책**:
+- **B2C 고객**: (c) 가격 필드만 업데이트, 이력은 audit log
+- **B2B 고객**: (b) amendment 이력 추가 (revision 1, 2, ...) — `Contract.amendmentRevision` 필드 활용
 
 ---
 
@@ -183,6 +399,8 @@
 
 **Default if no answer:** (b) — phased rollout가능 (먼저 수동, 그 다음 추천)
 
+**Status (2026-05-26):** ✅ RESOLVED — (b) **시스템 자동 추천 + 사무실 확인**.
+
 ---
 
 ### C.2 기사별 담당 지역 / Technician territories
@@ -193,6 +411,8 @@
 **Blocks:** Phase 4 (배정 로직 + UI)
 
 **Default if no answer:** "선호 지역" 필드 (soft preference), 강제는 아님
+
+**Status (2026-05-26):** ✅ RESOLVED — **"선호 지역" 필드 (soft preference) 방식** + **고객별 지정 기사 설정** 추가: 특정 가정집 고객이 선호하는 기사를 직접 지정. `Customer.preferredTechnicianId?` + `Customer.preferredRegion?` 필드 추가. 스케줄링 시 해당 기사가 최우선 추천.
 
 ---
 
@@ -211,6 +431,8 @@
 
 **Default if no answer:** (a) PWA — v1 빠른 출시
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) **PWA** (브라우저 기반, 앱스토어 불필요).
+
 ---
 
 ### C.4 오프라인 데이터 입력 / Offline data entry
@@ -228,6 +450,8 @@
 
 **Default if no answer:** (b) — v1는 온라인 우선, Phase 7에서 오프라인 큐 추가 검토
 
+**Status (2026-05-26):** ✅ RESOLVED — (b) **v1는 온라인 우선, Phase 7에서 오프라인 큐 추가 검토**.
+
 ---
 
 ### C.5 지도 / 동선 최적화 / Maps + route optimization
@@ -240,6 +464,31 @@
 **Blocks:** Phase 4+ (선택 기능)
 
 **Default if no answer:** v1는 지도 없이 지역 기준 정렬, Phase 4+에 Goong Maps 검토
+
+**Status (2026-05-26):** ✅ RESOLVED — **v1는 지도 없이 지역 기준 정렬**, 추후 재검토를 위해 **TODO** 남겨둘 것 (PROJECT_PLAN.md Phase 7+).
+
+---
+
+### C.6 ★ 서비스 요청 유형 / Service request type list
+**Question (KO):** 고객 포털에서 제출 가능한 서비스 요청 유형을 SPEC §6.5에 7개로 정의했습니다 — OK인지 확인하시고, 추가 유형이 있으면 알려주세요. 각 유형별 유료/무료 기본값도 확인 필요:
+
+| 유형 | 기본 |
+|---|---|
+| INSPECTION (점검) | 무료 |
+| CONSULTATION (상담) | 무료 |
+| FAULT_REPORT (고장 신고) | 보증/임대 → 무료 · 그 외 → 유료 |
+| FILTER_REPLACEMENT_AD_HOC (필터 임시 교체) | 임대 → 무료 · 판매 → 유료 |
+| PART_REPLACEMENT (부품 교체) | 유료 |
+| RELOCATION (이전 설치) | 유료 |
+| OTHER (기타) | 수동 분류 |
+
+**Question (EN):** Service request types in SPEC §6.5 (7 types). Confirm the list + paid/free defaults; add missing types.
+
+**Blocks:** Phase 3.5 (서비스 요청 UI + 라우팅 로직)
+
+**Default if no answer:** 위 표 그대로 적용
+
+**Status (2026-05-26):** ✅ RESOLVED — 7개 유형 + 유료/무료 기본값 모두 OK. **단, `PART_REPLACEMENT` (부품 교체)와 `RELOCATION` (이전 설치)는 상황에 따라 무료도 될 수 있음** — 사무실 review 시 case-by-case 결정 가능. `ServiceRequest.isPaid`는 type default + office override.
 
 ---
 
@@ -261,6 +510,8 @@
 
 **Default if no answer:** v1는 PDF 업로드만, Phase 8에서 Viettel SInvoice 통합 검토
 
+**Status (2026-05-26):** ✅ RESOLVED — **Viettel SInvoice** 사용 중. v1은 **PDF 업로드만**, Viettel SInvoice 통합 검토는 Phase 8+ **TODO**.
+
 ---
 
 ### D.2 현금 인수인계 감사 / Cash handover audit trail
@@ -275,6 +526,8 @@
 
 **Default if no answer:** 3단계 (수금 → 사무실 수신 → 정산 매칭), 24시간 미입금 시 알림
 
+**Status (2026-05-26):** ✅ RESOLVED — **3단계 (수금 → 사무실 수신 → 정산 매칭)**, **48시간 미입금 시 알림** (default 24시간에서 변경).
+
 ---
 
 ### D.3 부분 납부 / Partial payment handling
@@ -285,6 +538,8 @@
 **Blocks:** Phase 6 (Payment 스키마)
 
 **Default if no answer:** 부분 납부 허용; 잔액은 다음 회차에 합산
+
+**Status (2026-05-26):** ✅ RESOLVED — **부분 납부 허용, 잔액은 다음 회차에 합산** (default 그대로).
 
 ---
 
@@ -297,6 +552,8 @@
 
 **Default if no answer:** VND 단독 — 환산은 보고서 export에서
 
+**Status (2026-05-26):** ✅ RESOLVED — **VND 단독** (default 그대로).
+
 ---
 
 ### D.5 세금계산서 불필요 B2B 고객 처리 / B2B no-invoice flow
@@ -307,6 +564,8 @@
 **Blocks:** Phase 6
 
 **Default if no answer:** Customer record에 `requiresTaxInvoice: boolean` 필드, 청구 화면에서 분기
+
+**Status (2026-05-26):** ✅ RESOLVED — **정정**: 모든 B2B 고객이 세금계산서 필요. `Customer.requiresTaxInvoice` 필드 불필요 (B2B = 항상 필요). 단, **D.1의 PDF 업로드는 강제하지 않음 (경고 표시만)** — 사무실이 발행 지연/누락 가능성에 대비.
 
 ---
 
@@ -327,6 +586,8 @@
 
 **Default if no answer:** (a) — v1 빠른 출시
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) **사진 촬영** (현재 종이 서명을 기사가 사진 찍어 업로드). 태블릿 터치 서명은 추후 검토 **TODO**.
+
 ---
 
 ### E.2 정기 점검 확인서 — 필터 무료 표시 / B2B periodic check filter free
@@ -337,6 +598,11 @@
 **Blocks:** Phase 3 (문서 템플릿 정확도)
 
 **Default if no answer:** 임대 무료라고 가정
+
+**Status (2026-05-26):** ✅ RESOLVED — **임대의 기본은 무료**이나 **특정 계약에서 예외 존재**:
+- 일부 임대 계약은 필터 교환을 포함하지 않아 유료
+- 몇몇 필터는 무료, 특정 필터는 유료인 경우도 있음
+- `ContractFilterPolicy` 또는 `Contract.includesFilter: Json` 필드로 세부 규칙 정의 필요
 
 ---
 
@@ -349,6 +615,8 @@
 
 **Default if no answer:** PartReplacement 테이블에만 기록, 고객 문서엔 미표시
 
+**Status (2026-05-26):** ✅ RESOLVED — **조정 필요**. B2B 정기 점검 확인서 form fields: **설치 위치, 장비 관리 번호, 장비 모델명, 수량, 작업 내용, 비고(기사 작성)**만 있으면 OK. `PERIODIC_CHECK_B2B` PDF 템플릿 단순화.
+
 ---
 
 ### E.4 문서 보관 기간 / Document retention period
@@ -360,6 +628,8 @@
 
 **Default if no answer:** 7년 (베트남 계약법 시효 + 안전 여유)
 
+**Status (2026-05-26):** ✅ RESOLVED — **계약서 및 세금계산서: 10년, 그 외 기타 서류 (영수증, 정기 점검표 등): 약 5년**. Document.kind에 따라 retention 분기.
+
 ---
 
 ### E.5 종이 원본 폐기 시점 / Paper original disposal
@@ -370,6 +640,8 @@
 **Blocks:** Phase 3 (운영 정책)
 
 **Default if no answer:** 디지털 보관 + 1년 후 폐기 (실제 폐기는 사용자 결정)
+
+**Status (2026-05-26):** ✅ RESOLVED — **디지털 보관 + 1년 후 폐기** (실제 폐기는 사용자 결정).
 
 ---
 
@@ -385,9 +657,11 @@
 
 **Question (EN):** Which Vietnamese SMS gateway are you using or want to use?
 
-**Blocks:** Phase 7
+**Blocks:** Production launch only — Phase 3.5 dev uses mock SMS provider (`SMS_PROVIDER=mock`); this question must be resolved before flipping to `SMS_PROVIDER=esms` for live customer SMS (2026-05-26 mock-first decision)
 
 **Default if no answer:** eSMS.vn — 베트남 시장 가장 보편적
+
+**Status (2026-05-26):** ✅ RESOLVED — **eSMS.vn 확정**. 추가로 **Zalo 메시지 전송 및 Zalo Mini App 인터페이스**도 향후 검토 — Phase 8+ TODO로 기록.
 
 ---
 
@@ -404,6 +678,8 @@
 
 **Default if no answer:** SendGrid — 영문 + 베트남어 모두 안정적
 
+**Status (2026-05-26):** ✅ RESOLVED — **vhost.vn Email Relay**. (F.7 Resend와는 별도 — F.7은 거래성 알림용 Resend, F.2는 세금계산서 첨부/마케팅용 vhost.vn Email Relay. 두 채널 분리.)
+
 ---
 
 ### F.3 알림 거부 / Notification opt-out
@@ -413,11 +689,94 @@
 
 **Blocks:** Phase 7
 
-**Default if no answer:** Yes, 채널별 opt-out (SMS off / email off 독립) + 시스템 알림(예: 결제 영수증)은 항상 전송
+**Default if no answer:** Yes, 채널별 opt-out (SMS off / email off 독립) + 시스템 알림(예: 결제 영수증, 비밀번호 초기화)은 항상 전송
+
+**Status (2026-05-26):** ✅ RESOLVED — **Yes, 채널별 opt-out** (SMS off / email off 독립) + **시스템 알림 (결제 영수증, 비밀번호 초기화)은 항상 전송** (default 그대로). CustomerContact에 `smsOptOut: boolean` + `emailOptOut: boolean` 필드 추가.
 
 ---
 
-## G. 향후 고객 포털 (Customer portal — future)
+### F.4 ★ SMS 발신자 ID / Brand name / SMS Sender ID
+**Question (KO):** 베트남 SMS는 발신자에 brand-name이 등록되어야 합니다 (`Seoul Aqua` 등). 등록 절차:
+- eSMS.vn 계정 + 사업자등록증 + 서류 → 약 **2-3주 소요**
+- 등록 안 되면 임시로 6자리 숫자 발신번호 사용 가능 (스팸 필터 위험 큼)
+
+확정 발신자 brand 이름은? (예: `SeoulAqua`, `SOMS`, `DAI A`)
+**서두르세요** — Phase 3.5 시작 전 등록이 완료되어 있어야 합니다.
+
+**Volume (revised 2026-05-26 with SMS/Email channel split)**: ~1,245 SMS/월 (이전 추정 ~2,695 대비 53% 감소). 비-시급성 알림 (영수증·요약·D+7/D+14 미수금 안내·D-60/D-30 계약갱신)은 이메일로 전환됨. 세부: `docs/DOCUMENT_TEMPLATES.md` §A + §C.
+
+**Question (EN):** Vietnamese SMS requires registered brand-name sender ID (~2-3 weeks at eSMS.vn). Confirm brand name. **Phase 3.5 dev no longer blocks on this** — SMS sending uses mock provider (`SMS_PROVIDER=mock`) during dev/staging. Register before production go-live. Volume revised down to ~1,245 SMS/mo after channel split with email.
+
+**Blocks:** Production launch only — Phase 3.5 dev proceeds with mock SMS provider (2026-05-26 decision)
+
+**Default if no answer:** `SeoulAqua` (영문, 등록은 production launch 일정에 맞춰 진행)
+
+**Status (2026-05-26):** ✅ RESOLVED — **`SeoulAqua` 확정** (영문, 등록 진행 즉시 시작 가능).
+
+---
+
+### F.5 비밀번호 초기화 시 기존 세션 처리 / Session handling on password reset
+**Question (KO):** 본사가 고객 비밀번호를 초기화하면 해당 고객이 이미 로그인한 다른 기기의 세션은:
+- (a) 그대로 유지 — 다음 로그인 시 새 비밀번호 필요 — 추천 (단순)
+- (b) 모두 강제 로그아웃 — 보안 강화
+
+**Question (EN):** When office resets a customer password, existing active sessions:
+- (a) Keep valid; new password only needed on next login — recommended
+- (b) Force logout all sessions immediately
+
+**Blocks:** Phase 3.5
+
+**Default if no answer:** (a) — 단순함
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **그대로 유지 — 다음 로그인 시 새 비밀번호 필요** (default 그대로).
+
+---
+
+### F.6 계정 잠금 정책 / Account lockout policy
+**Question (KO):** 비밀번호 N회 연속 실패 시:
+- (a) 5회 실패 → 15분 잠금 → 자동 해제 — 추천
+- (b) 5회 실패 → 사무실 호출만 해제 가능
+- (c) 잠금 없음 (rate-limit만)
+
+**Question (EN):** Lockout after consecutive failures:
+- (a) 5 fails → 15 min auto-lockout — recommended
+- (b) 5 fails → office must unlock
+- (c) No lockout, rate-limit only
+
+**Blocks:** Phase 3.5
+
+**Default if no answer:** (a) — 균형
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **5회 실패 → 15분 잠금 → 자동 해제** (default 그대로).
+
+---
+
+### F.7 ★ 이메일 제공자 / Email provider
+**Question (KO):** 거래성 이메일 발송 제공자를 선택해주세요 (영수증, 작업확인서, 미수금 1-2차 안내, 계약갱신 안내 등 — 월 ~1,560건):
+- (a) **Resend** — 권장. 100K msgs/월 무료 (Seoul Aqua 충분), 개발자 친화 API, EU/VN reach 양호, DKIM 자동
+- (b) AWS SES — 가장 저렴 ($0.10/1000), 그러나 sandbox 해제 + AWS 계정 필요
+- (c) SendGrid (Twilio) — 100건/일 무료, 그 이상은 유료. SMS 제공사(Twilio)와 동일 vendor 통합 가능
+- (d) Postmark — transactional 전문, $15/월부터. 베트남 도달률 우수
+- (e) Mailgun — 100건/일 무료, 그 이상 $35/월부터
+
+베트남 통신사 SMS와 다르게 이메일은 통신사 승인이 필요 없습니다. DNS 설정 (DKIM/SPF/DMARC, 1일 작업) + provider 가입 (즉시) → 즉시 발송 가능.
+
+**Question (EN):** Email provider for transactional sends (~1,560 msgs/mo)?
+- (a) **Resend** — recommended (100K/mo free tier covers Seoul Aqua, developer-friendly, good VN reach)
+- (b) AWS SES — cheapest but requires sandbox lift
+- (c) SendGrid — Twilio vendor synergy if SMS later switches to Twilio
+- (d) Postmark — transactional specialist
+- (e) Mailgun — alternative
+
+**Blocks:** Production launch only — Phase 3.5 dev proceeds with mock email provider (`EMAIL_PROVIDER=mock`); 1-day setup once chosen, env flip at launch (2026-05-26 decision)
+
+**Default if no answer:** (a) Resend — 가장 적합
+
+**Status (2026-05-26):** ✅ RESOLVED — (a) **Resend** 채택 (transactional). F.2 vhost.vn은 별도 (세금계산서/마케팅).
+
+---
+
+## G. 고객 포털 확장 (Portal v2 — future, Phase 8+)
 
 ### G.1 고객 포털 활성화 시점 / Customer portal activation
 **Question (KO):** B2C / B2B 고객 포털은 언제쯤 활성화 원하시나요?
@@ -434,6 +793,8 @@
 
 **Default if no answer:** (c) — 내부 운영이 잘 돌아가야 외부 공개 의미
 
+**Status (2026-05-26):** ✅ RESOLVED — (c) **미정 — 일단 내부 운영 안정화 우선**. TODO로 기록.
+
 ---
 
 ### G.2 B2C vs B2B 포털 차이 / B2C vs B2B portal differences
@@ -447,6 +808,8 @@
 
 **Default if no answer:** 위와 같은 분리
 
+**Status (2026-05-26):** ✅ RESOLVED — **B2C**: 본인 계약 조회, 방문 예약, 결제 이력, **계약주체 변경**. **B2B**: B2C + 회사 전체 장비 list, **입금확인 요청, 세금계산서 요청, 세금계산서 다운로드**.
+
 ---
 
 ### G.3 포털 결제 / Portal payment
@@ -457,6 +820,8 @@
 **Blocks:** Phase 8+
 
 **Default if no answer:** 미결정; 결정 시 별도 phase
+
+**Status (2026-05-26):** ✅ RESOLVED — **미결정**, 결정 시 별도 phase로 진행.
 
 ---
 
@@ -477,6 +842,8 @@
 
 **Default if no answer:** (b) — 빠른 출시. 후에 (a) 필요시 vhost.vn migration plan 발동
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) **vhost.vn 호스팅 확정**. v0 Vercel+Supabase 출시 후 vhost.vn migration 계획 발동.
+
 ---
 
 ### H.2 감사 로그 보관 / Audit log retention
@@ -488,6 +855,8 @@
 
 **Default if no answer:** 24개월 (베트남 best practice)
 
+**Status (2026-05-26):** ✅ RESOLVED — **24개월** 채택 (default 그대로).
+
 ---
 
 ### H.3 백업 윈도우 / Backup window
@@ -498,6 +867,8 @@
 **Blocks:** Phase 1
 
 **Default if no answer:** VST 03:00 (새벽) — 서비스 트래픽 최소
+
+**Status (2026-05-26):** ✅ RESOLVED — **VST 03:00 (새벽)** (default 그대로).
 
 ---
 
@@ -514,6 +885,10 @@
 
 **Default if no answer:** 현재 .jpg를 1024×283로 트림 + SVG 재구성 (단, 폰트 라이선스 이슈 가능)
 
+**Status (2026-05-26):** ✅ RESOLVED — 파일 전달 완료:
+- 고해상도 PNG (3492 × 817): `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C-01.png`
+- AI 벡터 파일: `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C.ai`
+
 ---
 
 ### I.2 ★ 브랜드 블루 색상 확정 / Brand blue hex confirmation
@@ -526,6 +901,8 @@
 **Blocks:** Phase 1 (design tokens)
 
 **Default if no answer:** `#0071BD` 사용
+
+**Status (2026-05-26):** ✅ RESOLVED — **`#0071BD` 사용 OK** (Pantone 285C, default 그대로).
 
 ---
 
@@ -546,6 +923,8 @@
 
 **Default if no answer:** (c) — 활성 고객만, 비활성은 별도 보관
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) **전체 이력 마이그레이션** (~9000 고객 + 수만 건 이력). default (c)에서 변경됨.
+
 ---
 
 ### J.2 중복 고객 제거 / Customer deduplication
@@ -563,6 +942,8 @@
 
 **Default if no answer:** (a) + (b) — 자동 매칭한 후 사람 검토
 
+**Status (2026-05-26):** ✅ RESOLVED — (a) + (b) **자동 매칭 + 사람 검토** (default 그대로).
+
 ---
 
 ### J.3 마이그레이션 검증 담당 / Migration validation owner
@@ -573,6 +954,8 @@
 **Blocks:** Phase 2
 
 **Default if no answer:** Seoul Aqua 사무실 매니저 1명 + 개발팀 함께 진행
+
+**Status (2026-05-26):** ✅ RESOLVED — **Seoul Aqua 사무실 매니저 1명 + 개발팀** 함께 진행 (default 그대로).
 
 ---
 
@@ -587,6 +970,8 @@
 
 **Default if no answer:** Android 8+ / iOS 14+, 5-6인치 화면 기준 디자인, 카메라 8MP+ 가정
 
+**Status (2026-05-26):** ✅ RESOLVED — **Android 8+ / iOS 14+, 5-6인치 화면 기준, 8MP+ 카메라** (default 그대로).
+
 ---
 
 ### K.2 기사 인증 / Technician authentication
@@ -598,6 +983,8 @@
 
 **Default if no answer:** 사번(또는 전화번호) + 비밀번호 — 이메일이 없을 수 있음
 
+**Status (2026-05-26):** ✅ RESOLVED — **전화번호 + 비밀번호** 채택.
+
 ---
 
 ### K.3 동시 작업 시 누가 책임 / Multi-tech accountability
@@ -608,6 +995,8 @@
 **Blocks:** Phase 4
 
 **Default if no answer:** 한 명을 `leadTechnicianId`로 지정; 나머지는 협업자
+
+**Status (2026-05-26):** ✅ RESOLVED — **한 명을 `leadTechnicianId`로 지정; 나머지는 협업자** (default 그대로). `Visit.leadTechnicianId` (필수) + `Visit.collaboratorTechnicianIds[]` (옵션) 모델. 결제·서명·보고서 = lead tech.
 
 ---
 
@@ -632,4 +1021,20 @@ A.3: 영구 결번
 
 ## Change log
 
+- **2026-05-26 (v0.5 latest)** — **클라이언트 답변 수신** (`reference/answers.txt`). 50개 질문 전부 답변; A.5만 PARTIAL (2026-05-29 데이터 도착 예정). 주요 material 변경:
+  - **A.4 + A.8**: Customer > Site > Equipment 3-level 계층 모델 채택
+  - **A.10**: 포털 URL `portal.seoulaqua.com.vn` 서브도메인 (이전 결정 root URL에서 변경) → SMS 비용 +712K VND/월 영향
+  - **B.2**: 신규 계약 코드 형식 B2C `HD-YYYYmmDD/SA-KH####`, B2B `HD-YYYYmmDD/SA-{shortcode}` + B2B Appendix 지원
+  - **B.5**: B2C 가격 단순 업데이트, B2B amendment revisions
+  - **C.2**: `preferredTechnicianId` + `preferredRegion` per customer
+  - **K.3**: Multi-tech `leadTechnicianId` + `collaboratorTechnicianIds[]`
+  - **F.1**: eSMS.vn + **Zalo OA + Mini App TODO** (Phase 8+)
+  - **F.2 vs F.7**: 이메일 dual-rail — F.7 Resend (transactional) + F.2 vhost.vn (세금계산서 첨부/마케팅)
+  - **D.5**: 모든 B2B 세금계산서 필요 (이전 변경)
+  - **A.13**: 동일 phone1 두 명 모두 로그인 가능 (변경)
+  - **J.1**: 전체 9000+ 고객 이력 마이그레이션
+  - **H.1**: vhost.vn 호스팅 확정
+- **2026-05-26 (v0.4)** — Mock-first 결정. F.4 / F.7 / A.14 / Q17 (=F.1) 4개 항목을 "Phase 3.5 blocker"에서 "Production-launch blocker"로 강등. Phase 3.5 개발은 `SMS_PROVIDER=mock` + `EMAIL_PROVIDER=mock` 환경에서 진행, 실제 발송 자격증명(eSMS ApiKey, Resend API key, DKIM 키)이 확보된 시점에 env-only 전환. Phase 3.5 dev-start blockers는 A.10 / A.11 / C.6 3건으로 축소.
+- **2026-05-26** — v0.3 고객 포털 / SMS / 비밀번호 정책 추가. A.10 (포털 URL, blocker), A.11 (비밀번호 정책, blocker), A.12 (OTP 옵션), A.13 (공유 번호), C.6 (서비스 요청 유형, blocker), F.4 (SMS 발신자 ID, lead-time blocker), F.5 (세션 처리), F.6 (잠금 정책). Q17 (SMS provider) Phase 7→3.5 이전. 총 49건. **Q11 (역할 권한 매트릭스)는 SPEC §2.1에서 인라인 해결 — 3-tier (`ADMIN/MANAGER/STAFF`) + `TECHNICIAN` 모델 채택.**
+- **2026-05-26** — v0.2 두-컨택트 모델 추가. A.6 (모델 확인, blocker), A.7 (언어 fallback), A.8 (B2B 다중 사이트), A.9 (마이그레이션 시 보조 컨택트). 총 41건.
 - **2026-05-25** — v0.1 initial question set. 37 questions across 11 sections.

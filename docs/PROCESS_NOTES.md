@@ -264,6 +264,76 @@ When a customer can't be served today, the system should help **reassign to a di
 
 ---
 
+## 8.6 Two-contact model — Contract Party vs Operations Contact
+
+Real-world observation that drove a domain-model addition: **the person who signs the contract is often NOT the person who confirms visit schedules or receives SMS.**
+
+### Examples
+
+| Customer type | Contract Party (계약 주체) | Operations Contact (관리 주체) |
+|---|---|---|
+| B2B medium factory | Korean director, signs all contracts, uses Korean | Vietnamese HR / admin staffer, fields SMS, books visits, uses Vietnamese |
+| B2B small Vietnamese SME | Vietnamese owner, signs contracts in Vietnamese | Same person (single contact) |
+| B2C — couple where wife handles vendors | Korean husband, name on contract, uses Korean | Vietnamese wife, books visits, uses Vietnamese |
+| B2C — single person | Same person on both sides | Same person |
+
+### What it means operationally
+
+| Channel | Who receives | What language |
+|---|---|---|
+| Contract PDF (signing) | Contract Party | Contract Party's language |
+| Tax invoice (B2B) | Contract Party (billing email) | Contract Party's language |
+| Visit reminder SMS | Ops Contact | Ops Contact's language |
+| Visit-reschedule SMS | Ops Contact | Ops Contact's language |
+| Periodic-check receipt PDF | Ops Contact | Ops Contact's language |
+| Mobile "call customer" button (default) | Ops Contact | (voice call) |
+| Overdue dunning notice | Both (CC) | Each in their own language |
+
+The system enforces this routing automatically. Without this split, Korean-language SMS reminders would land on a Vietnamese-only staffer's phone and be ignored — the #1 driver of "customer no-show" in the current spreadsheet workflow.
+
+→ Stored as one `CONTRACT_PARTY` + 0..N `OPS_CONTACT` rows per Customer. If the same person plays both roles, the OPS row is omitted (CONTRACT_PARTY carries both roles' channels until office adds OPS later). See `docs/DATA_MODEL_NOTES.md` §1 and mockup screen 12 for the full schema and form.
+
+## 8.7 Multi-site customers — Customer > Site > Equipment (NEW 2026-05-26, A.4 + A.8)
+
+For larger B2B customers (factory complexes, multi-building enterprises), the **Customer > Site > Equipment** 3-level hierarchy supports per-site addresses, equipment lists, and Ops contacts.
+
+**B2C**: typically no Sites. Equipment and contacts attach directly to Customer; `Customer.addressFull` is the install address. A B2C customer can opt-in to multiple Sites (rare — e.g., a household with summer/winter homes).
+
+**B2B**: typically 1+ Sites. The B2B factory example with 64 devices spread across HQ + 4 plants + R&D building becomes:
+
+```
+Customer "Shinhan Vina" (shortcode: SHV)
+  ├── Site "HQ"           (addressFull, region, Ops contact: corporate facilities mgr)
+  ├── Site "Plant 2A"     (addressFull, region, Ops contact: 2A floor manager)
+  ├── Site "Plant 2B"     (addressFull, region, Ops contact: 2B floor manager)
+  ├── Site "R&D Building" (...)
+  ├── Site "Lectra"       (...)
+  └── Site "Kitchen"      (...)
+```
+
+Each Site has its own `addressFull` (overrides Customer.addressFull when set), `region` (for scheduling region match), and Ops contacts (`scope='SITE'`). CONTRACT_PARTY is always organization-level (`scope='CUSTOMER'`).
+
+**Operational implications:**
+- Visit scheduling: Visits attach to a Site (when one exists). Visit reminder SMS goes to that Site's Ops contact first, then falls back to Customer-level Ops, then to CONTRACT_PARTY.
+- Equipment list: customer detail page groups equipment by Site for B2B (vs flat list for B2C).
+- Periodic check reports: include the Site name + address rather than just the customer name.
+
+## 8.8 Technician scheduling rules (C.1 + C.2 + C.5, 2026-05-26)
+
+When a new visit needs a technician, the system **auto-recommends** a candidate; office confirms with one click (per client answer C.1 (b)).
+
+Ranking signals, in priority order:
+
+1. **Per-customer preferred technician** (`Customer.preferredTechnicianId`, C.2 client answer 2026-05-26) — if set AND available that day, top of the candidate list. Especially valuable for B2C customers who built rapport with a specific tech.
+2. **Region match** — technician's `preferredRegion` overlaps with `Customer.preferredRegion` or `Site.region`. Soft preference, not enforced.
+3. **Daily load balance** — fewer visits already scheduled that day = higher priority.
+
+Office can always override with any active technician. Preferred fields are soft hints, never hard constraints.
+
+**Map view**: deferred per C.5 client answer. v1 uses region-grouped sort in the daily roster only. Map provider decision (Goong Maps vs Google Maps) is a Phase 7+ TODO.
+
+---
+
 ## 9. B2C vs B2B differences (PDF §6.5)
 
 ### 9.1 B2C / 가정집
@@ -471,13 +541,129 @@ The B2B `정기 점검 확인서 (고객사용)` has **unanswered Q&A items**:
 
 ---
 
-## 17. Things explicitly NOT in the company today (gaps)
+## 17. Customer Portal Workflow (Phase 3.5 — NEW 2026-05-26)
 
-These are the gaps the system can FILL or MUST AVOID assuming:
+The customer portal is a mobile-first PWA where CustomerContacts log in to self-serve. See SPEC §11 for scope and `docs/mockups/index.html` screens 47–58 for the UI. This section captures the operational flows that touch both office and customer sides.
 
-- **No CRM** today
-- **No customer portal**
-- **No SMS / email automation**
+### 17.1 Sign-up flow (automatic)
+
+1. Office staff finalizes a contract or sale.
+2. `Contract.status` transitions to `ACTIVE` (or `DELIVERY_RECEIPT` is finalized).
+3. Trigger fires — for each `CustomerContact` of this customer with `phone1` set and `portalEnabled=false`:
+   - Generate 10-char random password (no ambiguous chars).
+   - Bcrypt-hash → `passwordHash`. Set `mustChangePassword=true`, `portalEnabled=true`, `signupSmsSentAt=now()`.
+   - Queue `SMS_PORTAL_WELCOME` template, rendered in the contact's `language`, to `phone1`.
+4. SMS arrives on customer's phone with portal URL + initial password.
+5. Customer taps URL → portal login page.
+6. Customer logs in with `phone1 + initial password`.
+7. Portal forces password change (mustChangePassword screen) before any other page renders.
+8. Customer sets new password → `mustChangePassword=false`, `lastLoginAt` updated.
+
+> Office staff cannot disable the welcome SMS for a specific contact except by setting `portalEnabled=false` (which then blocks login entirely). Opt-out is granular per channel via `smsOptIn` for non-onboarding SMS; the welcome SMS is treated as transactional and always sent.
+
+### 17.2 Portal use — typical visit cycle
+
+| Day | Customer action | System reaction |
+|---|---|---|
+| Day -3 | Portal home shows "다음 방문: 5/27" | SMS reminder sent at T-24h |
+| Day 0 | Tech visits, completes work | Visit status → COMPLETED; customer sees update in portal next refresh |
+| Day +1 | Portal payments screen shows receipt + next billing | — |
+
+### 17.3 Service request flow
+
+Customer flow (mockup screen 52):
+1. Portal "+ 서비스 요청" button → type selector (6 types from SPEC §6.5)
+2. Customer picks affected equipment, writes description, optionally attaches photos
+3. Submit → `ServiceRequest.status = SUBMITTED`, SMS `SMS_SERVICE_REQUEST_RECEIVED` sent back
+
+Free types (`INSPECTION` / `CONSULTATION` / warranty `FAULT_REPORT`):
+4a. System auto-transitions to `AUTO_APPROVED` → `SCHEDULED` (Visit row created, technician TBD by office)
+5a. SMS `SMS_SERVICE_REQUEST_APPROVED` sent with proposed date
+
+Paid types (`RELOCATION` / `PART_REPLACEMENT` / out-of-warranty `FAULT_REPORT`):
+4b. Office (any STAFF+) sees it in `/admin/service-requests` inbox (mockup screen 57)
+5b. Staff reviews, sets `quotedAmount`, transitions to `APPROVED` (or `REJECTED` with reason)
+6b. Approved → Visit auto-created → SMS `SMS_SERVICE_REQUEST_APPROVED` with date + price
+6c. Rejected → SMS to customer with reason
+
+### 17.4 Multi-OPS_CONTACT management
+
+A `CONTRACT_PARTY` logs into the portal and can:
+- Add a new OPS_CONTACT (name, title, phone, language). System sends `SMS_PORTAL_WELCOME` to the new contact's phone immediately.
+- Edit an existing OPS_CONTACT (only their profile fields — not the auth state).
+- Delete an OPS_CONTACT (which sets `portalEnabled=false` and revokes their sessions). If the deleted contact was `isPrimary`, CONTRACT_PARTY must designate a new primary OR the system auto-promotes the most recently-active OPS.
+- Toggle `isPrimary` on one of the OPS_CONTACTs.
+
+Office (MANAGER+) can do the same from the office app. CONTRACT_PARTY identity itself is editable only by MANAGER+.
+
+### 17.5 Password reset (office-driven)
+
+Trigger: customer calls office "I lost my password" OR office detects suspicious lockout.
+
+1. MANAGER+ opens the customer detail → contact card → "비밀번호 초기화" button (mockup screen 58)
+2. Confirmation modal: "정말 초기화? 새 SMS가 발송됩니다."
+3. On confirm — system generates new 10-char password, bcrypt-hashes, sets `mustChangePassword=true`, queues `SMS_PASSWORD_RESET` template, writes audit log.
+4. (Optional, per Q F.5) Revoke existing CustomerSession rows — default v1 behavior is **keep existing sessions valid** since the user can simply log out from active session.
+5. Customer receives SMS; logs in with new password; portal forces another password change.
+
+### 17.6 Lockout (default policy until Q F.6 confirms)
+
+- 5 consecutive failed logins → `lockedUntil = now() + 15 min`
+- After lock expires, counter resets on first success
+- Office can manually clear lock from customer detail (sets `lockedUntil=null` + `failedLoginCount=0`)
+
+### 17.7 Notification channel selection — SMS vs Email (2026-05-26)
+
+전송 채널은 **메시지 유형 + 긴급도 + 고객 컨택트 정보 가용성**에 따라 자동 선택됩니다. 설계 의도: 비-시급성 알림은 이메일로 보내고 SMS는 시급성·보안성 알림에만 사용 → SMS 비용 ~60% 절감 + 고객 SMS 피로도 감소.
+
+**채널 분류 (10개 알림 유형):**
+
+| 알림 유형 | 채널 | 이유 |
+|---|---|---|
+| 포털 가입 안내 (credentials) | **SMS + Email** (hybrid) | 보안 (SMS) + 장문 안내 (Email) |
+| 비밀번호 초기화 | **SMS only** | 보안 (전화번호 = 로그인 ID) |
+| 방문 D-1 알림 | **SMS only** | 즉시 행동 필요 |
+| 필터 교체 D-14 안내 | **Email only** | 14일 여유, 정보성 |
+| 서비스 요청 접수 확인 | **Email only** | 단순 확인 |
+| 서비스 요청 승인 (유료) | **SMS + Email** | SMS = 비용+일정 / Email = 상세 견적 |
+| 서비스 요청 승인 (무상) | **Email only** | 비용 약속 없음 |
+| 서비스 요청 반려 | **SMS only** | 고객 대기 중 — 즉시 전달 |
+| 방문 완료 + 작업확인서 | **Email only** | PDF 첨부, 사후 영수증 |
+| 미수금 D+7 / D+14 | **Email only** | 1-2차 정중한 안내 |
+| 미수금 D+30 | **SMS only** | 최종 escalation |
+| 계약 만료 D-60 / D-30 | **Email only** | 사전 안내, 옵션 비교 |
+| 계약 만료 D-7 | **SMS only** | 최종 알림 |
+
+**Fallback 규칙:**
+- `CustomerContact.email`이 비어있으면 → email-only 알림은 SMS (압축형 본문)로 fallback
+- `CustomerContact.phone1`이 비어있으면 → SMS-only 알림은 email로 fallback (덜 시급한 형태)
+- 둘 다 비어있으면 → admin 대시보드에 오류 로그 (사무실이 컨택트 정보 보완 필요)
+
+구현: `src/lib/notifications/router.ts` — 각 템플릿이 `smsAllowed`/`emailAllowed` 플래그 선언, 라우터가 컨택트의 가용 채널과 매칭. 자세한 매트릭스 + 본문은 `docs/DOCUMENT_TEMPLATES.md` §A/§B/§C 참조.
+
+**포털 URL (A.10 client answer 2026-05-26)**: 포털은 서브도메인 **`portal.seoulaqua.com.vn`** 에서 운영. 회사 메인 도메인 `seoulaqua.com.vn`은 마케팅 사이트 + 사무실 앱 + 이메일 발신자용으로 유지. 이 결정으로 SMS URL이 16자 → 23자로 증가하여 `SMS_VISIT_REMINDER` VI가 1-seg에서 2-seg로 늘어남 (+712K VND/월 비용 증가).
+
+**Mock-first 개발 환경 (2026-05-26 결정)**: Dev/staging에서는 SMS/Email 모두 **mock provider**가 기본값. `SMS_PROVIDER=mock` + `EMAIL_PROVIDER=mock` 환경에서는:
+- 실제 외부 발송 없음 — 콘솔에 로그 + `SmsLog`/`EmailLog` 테이블에 `status='MOCKED'`로 기록
+- 변수 치환·언어 선택·채널 라우팅 등 모든 파이프라인은 production과 동일
+- 어드민 "Notifications sent" 대시보드에서 `MOCKED` 배지로 구분 표시
+- 전체 알림 flow를 외부 서비스 의존 없이 end-to-end 테스트 가능
+
+**Production 전환**: eSMS Brandname 승인 (F.4) + Resend 가입 (F.7) + DKIM/SPF (A.14)가 모두 준비되면 production 환경에서만 env 변경:
+- `SMS_PROVIDER=esms` + `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=SeoulAqua`
+- `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` / `EMAIL_FROM=noreply@seoulaqua.com.vn`
+
+코드 재배포만 하면 자동으로 실제 발송 모드로 전환 — 코드 수정 불필요.
+
+---
+
+## 18. Things explicitly NOT in the company today (gaps)
+
+These are the gaps the system can FILL or MUST AVOID assuming. Updated 2026-05-26 — items struck through are no longer gaps thanks to Phase 3.5.
+
+- **No CRM** today — partially filled (customer portal + service requests are the first CRM-shaped surface)
+- ~~**No customer portal**~~ — **Phase 3.5 ships v1**
+- ~~**No SMS / email automation**~~ — **Phase 3.5 ships two-channel notification: SMS (eSMS.vn) for urgent + Email (Resend) for non-urgent**. Dev/staging uses mock providers (logged to console + DB) — production swaps via env var when credentials land. See §17.7 for channel selection rule + mock-first dev workflow.
 - **No e-invoice integration** (tax invoices issued from a separate external program)
 - **No mobile technician app** — they use printed daily lists today
 - **No real inventory system** — filter master exists but stock count "현재 관리를 안 해 맞지 않음" (per the CSV note)
@@ -485,7 +671,7 @@ These are the gaps the system can FILL or MUST AVOID assuming:
 
 ---
 
-## 18. Vocabulary (KR ↔ VI ↔ EN)
+## 19. Vocabulary (KR ↔ VI ↔ EN)
 
 See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical table — that's the source-of-truth for naming inside the codebase, UI strings, and i18n keys.
 
@@ -493,4 +679,6 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical table — that'
 
 ## Change log
 
+- **2026-05-26** — v0.3. §17 (Customer Portal Workflow) added — sign-up flow, service request flow, multi-OPS management, password reset, lockout. §18 (gaps) updated — portal + SMS no longer gaps. §19 was §18 (Vocabulary).
+- **2026-05-26** — v0.2. §8.6 (two-contact model) added.
 - **2026-05-25** — v0.1 distillation. Source: `reference/process/*.pdf` (both files). All quotations marked with `> ` come verbatim from the PDFs (in original Korean). Cross-references to `SPEC.md` and `QUESTIONS.docx` noted inline.

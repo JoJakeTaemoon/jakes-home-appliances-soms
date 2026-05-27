@@ -61,6 +61,19 @@
 | `isActive` | Default `true`; deactivate replaces deletion |
 | `createdBy` / `updatedBy` | User.id |
 
+### Two-contact model — `CustomerContact` (NEW, not in legacy CSV)
+
+The legacy CSV jams everything into the `Customer` row (one phone1, one phone2). In the new system, **every Customer has two named contacts** (which may be the same person — flagged at UI level, but stored as two rows for fidelity):
+
+| Role | When used |
+|---|---|
+| `CONTRACT_PARTY` (계약 주체) | Legal signatory — contract, tax invoice, CCCD/passport, legal notice |
+| `OPS_CONTACT` (관리 주체) | Day-to-day comms — visit scheduling, SMS, receipt, periodic-check report |
+
+Each contact carries its **own language** (`ko` / `vi` / `en`), and outbound channels route accordingly (see `docs/SPEC.md` §3.3.1 for the full matrix).
+
+**Import policy for legacy data**: the CSV's `고객명` + `휴대폰#1` becomes `CONTRACT_PARTY` (legacy default). If `고객정보` field contains a secondary name (e.g. "MR.K", "JUNG KI HUN"), that becomes a candidate `OPS_CONTACT` and is flagged for office review post-import. Otherwise `OPS_CONTACT` is created as a copy of `CONTRACT_PARTY` with `isSameAsContractParty=true` until the office updates it.
+
 ### Discriminator inference rules (for import)
 
 - If `고객분류 == "회사"` → `type = B2B`
@@ -368,29 +381,41 @@ The 21-row sample shows the **same customer (4-1T model)** paid 21 monthly insta
 
 ## 8. Schema sketch (high-level)
 
-Here's the v0 Prisma schema sketch. Phase 1 should build only the `User / Role / Session` triad; Phase 2 adds `Customer / EquipmentModel / Equipment / Part`; Phase 3 adds `Contract / Document`; Phase 4 adds `Visit`; Phase 5 adds `PartReplacement`; Phase 6 adds `Payment / Movement`.
+Here's the v0 Prisma schema sketch. Phase 1 builds only the `User / Role / Session` triad with the 4-role seed (`ADMIN / MANAGER / STAFF / TECHNICIAN`); Phase 2 adds `Customer / CustomerContact / EquipmentModel / Equipment / Part`; Phase 3 adds `Contract / Document`; **Phase 3.5 adds `CustomerSession / ServiceRequest` + portal-auth fields on CustomerContact**; Phase 4 adds `Visit`; Phase 5 adds `PartReplacement`; Phase 6 adds `Payment / Movement`.
 
 ```prisma
 // === Phase 1 (Foundation) ===
+/// Technician login (K.2 2026-05-26): phone + password. Office staff login: email + password.
+/// `phone` is unique among TECHNICIAN-role users (enforced via partial unique index in Phase 1 migration).
 model User {
   id            String   @id @default(uuid())
-  email         String   @unique
+  email         String?  @unique  // optional for TECHNICIAN role (K.2)
+  phone         String?  // login ID for TECHNICIAN role; optional for HQ staff
   passwordHash  String
   name          String
-  phone         String?
   role          Role     @relation(fields: [roleId], references: [id])
   roleId        String
+  preferredRegion String? // (C.2) soft preference used in scheduling
   language      String   @default("ko")
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   sessions      Session[]
   auditLogs     AuditLog[]
+  preferredByCustomers Customer[] @relation("CustomerPreferredTechnician")  // (C.2) customers that prefer this tech
+  ledVisits     Visit[]    @relation("VisitLeadTechnician")  // (K.3) visits where this user is lead
+  @@index([phone])
 }
+
+/// 3-tier HQ hierarchy (ADMIN > MANAGER > STAFF) + TECHNICIAN parallel.
+/// CUSTOMER is NOT on this enum — customers log in via CustomerContact +
+/// CustomerSession (Phase 3.5). See SPEC §2.1 for the full capability matrix.
+enum StaffRole { ADMIN MANAGER STAFF TECHNICIAN }
 
 model Role {
   id            String   @id @default(uuid())
-  name          String   @unique  // ADMIN / OFFICE_MANAGER / SALES / TECHNICIAN / ACCOUNTANT / CUSTOMER
+  name          StaffRole @unique
+  rank          Int       // 30=ADMIN, 20=MANAGER, 10=STAFF, 0=TECHNICIAN (parallel)
   permissions   Json
   users         User[]
 }
@@ -424,20 +449,20 @@ enum CustomerType { B2C B2B }
 model Customer {
   id            String   @id @default(uuid())
   code          String   @unique  // KH00001
-  legacyCode    String?  @unique  // 8918
+  legacyCode    String?  @unique  // 8918 (migration: KH0 + legacyCode zero-padded — see A.2)
   legacyUuid    String?  // YYMMDD-HHMMSS-XXXXXX
   type          CustomerType
-  name          String
+  name          String   // organization name (B2B) or household label (B2C)
   displayName   String?
-  taxCode       String?  // B2B only
+  shortcode     String?  // B2B 2-5 letter abbreviation used in contract code HD-YYYYmmDD/SA-{shortcode} (B.2)
+  taxCode       String?  // B2B only — all B2B require tax invoice (D.5 confirmed)
   nationality   String?  // KHAC / VN / HQ / etc.
-  phoneOffice1  String?
-  phoneMobile1  String?
-  phoneMobile2  String?
-  email         String?
+  billingEmail  String?  // tax invoice / billing recipient (org-level)
   addressCity   String?
   addressDistrict String?
   addressFull   String
+  preferredTechnicianId String?  // (C.2) per-customer preferred tech — soft hint, FK to User where role=TECHNICIAN
+  preferredRegion       String?  // (C.2) free text or enum — soft region preference for scheduling
   salesRepName  String?  // pre-normalization; replace with FK in Phase 1.5
   referredBy    String?
   notes         String?
@@ -446,13 +471,108 @@ model Customer {
   updatedAt     DateTime @updatedAt
   createdById   String?
   updatedById   String?
+  contacts      CustomerContact[]
+  sites         Site[]                                                          // (A.4 + A.8) Customer > Site > Equipment hierarchy
   equipments    Equipment[]
   contracts     Contract[]
   visits        Visit[]
   payments      Payment[]
+  preferredTechnician User?     @relation("CustomerPreferredTechnician", fields: [preferredTechnicianId], references: [id])
   @@index([name])
   @@index([type, isActive])
+  @@index([shortcode])
 }
+
+/// Site model (NEW 2026-05-26 per client answer A.4 + A.8) —
+/// Customer > Site > Equipment 3-level hierarchy. B2C usually has zero
+/// Sites (equipment + contacts attached directly to Customer); B2B
+/// usually has one or more Sites for multi-building deployments.
+model Site {
+  id          String   @id @default(uuid())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String
+  name        String   // "본사", "공장 A", "R&D Building", etc.
+  addressFull String   // overrides Customer.addressFull when set
+  addressDistrict String?
+  region      String?  // matches Customer.preferredRegion / Technician.preferredRegion scheduling
+  phone       String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  equipments  Equipment[]
+  contacts    CustomerContact[]
+  @@index([customerId, isActive])
+}
+
+/// Two-contact model (1 + N as of 2026-05-26) — each Customer has exactly one
+/// CONTRACT_PARTY and 0..N OPS_CONTACTs. Each row also carries portal-auth
+/// fields (Phase 3.5) so it can become a logged-in account.
+/// Site-scoped contacts (NEW 2026-05-26, A.8) — OPS_CONTACT can be scoped
+/// to a specific Site or stay organization-level. CONTRACT_PARTY is always
+/// CUSTOMER-scoped (signs at the organization level).
+/// A.13 (2026-05-26): two CustomerContact rows can share phone1 — both can
+/// log in independently; SMS routing picks one. (NO global unique on phone1.)
+/// Outbound channels route by role + isPrimary flag (see SPEC §3.3.1).
+enum ContactRole { CONTRACT_PARTY OPS_CONTACT }
+enum ContactScope { CUSTOMER SITE }
+enum ContactLanguage { ko vi en }
+
+model CustomerContact {
+  id            String   @id @default(uuid())
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId    String
+  site          Site?    @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  siteId        String?  // null when scope = CUSTOMER; FK when scope = SITE (A.8)
+  scope         ContactScope @default(CUSTOMER)
+  role          ContactRole
+  isPrimary     Boolean  @default(false)  // exactly one OPS_CONTACT per (customer, site or null) scope must be primary
+  name          String
+  title         String?  // 대표이사 / Giám đốc / HR Manager / 배우자
+  relationship  String?  // free text — 배우자, 비서, 자녀, HR 담당
+  phone1        String   // not globally unique (A.13 — shared phone allowed)
+  phone2        String?
+  email         String?
+  language      ContactLanguage?  // null fallback to Customer's CONTRACT_PARTY language (A.7)
+  cccdOrPassport String?  // B2C rental signatory — Vietnamese CCCD or passport
+  cccdIssuedAt  DateTime?
+  cccdIssuedPlace String?
+  smsOptOut     Boolean  @default(false)  // (F.3) per-channel opt-out
+  emailOptOut   Boolean  @default(false)  // (F.3) — but system messages (password reset, payment receipt) ignore this
+
+  // --- Portal authentication (Phase 3.5) ---
+  portalEnabled         Boolean  @default(false)
+  passwordHash          String?  // bcrypt; null until portalEnabled goes true
+  mustChangePassword    Boolean  @default(true)
+  lastLoginAt           DateTime?
+  failedLoginCount      Int      @default(0)
+  lockedUntil           DateTime?
+  signupSmsSentAt       DateTime?  // for SMS_PORTAL_WELCOME; null if not yet sent
+
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sessions      CustomerSession[]
+  serviceRequests ServiceRequest[]  @relation("ServiceRequestSubmittedBy")
+
+  // Phone-based login lookup must be fast. Phone may not be globally unique
+  // (A.13 — two contacts on same household phone share login; both can sign in
+  // and SMS picks one of them).
+  @@index([phone1])
+  @@index([customerId, role])
+  @@index([siteId, role])
+}
+
+/// Application-layer invariants (NOT enforced by Prisma — enforced in
+/// server actions + a partial-unique SQL index in the Phase 2 migration):
+///   - Exactly one CONTRACT_PARTY per customer
+///       CREATE UNIQUE INDEX cc_one_contract_party
+///         ON "CustomerContact" ("customerId")
+///         WHERE role = 'CONTRACT_PARTY';
+///   - Exactly one OPS_CONTACT.isPrimary = true per customer (when any OPS exists)
+///       CREATE UNIQUE INDEX cc_one_primary_ops
+///         ON "CustomerContact" ("customerId")
+///         WHERE role = 'OPS_CONTACT' AND "isPrimary" = true;
 
 enum EquipmentCategory {
   WATER_PURIFIER BIDET AIR_PURIFIER DEHUMIDIFIER
@@ -482,6 +602,8 @@ model Equipment {
   code            String   @unique  // KH00001-1
   customer        Customer @relation(fields: [customerId], references: [id])
   customerId      String
+  site            Site?    @relation(fields: [siteId], references: [id], onDelete: SetNull)  // (A.4) — null for B2C without Sites
+  siteId          String?
   model           EquipmentModel @relation(fields: [modelId], references: [id])
   modelId         String
   serialNumber    String?
@@ -490,12 +612,23 @@ model Equipment {
   installedByUserId String?
   contractId      String?  // FK to Contract (added in Phase 3)
   status          EquipmentStatus @default(ACTIVE)
+  ownership       EquipmentOwnership @default(COMPANY)  // (B.3) auto-flipped to CUSTOMER on rental COMPLETE
   notes           String?
   partReplacements PartReplacement[]
   @@index([customerId])
+  @@index([siteId])
 }
 
-enum EquipmentStatus { ACTIVE RELOCATED RETIRED RETURNED }
+/// (A.3 2026-05-26): no equipment code is ever deleted. Lifecycle states:
+/// ACTIVE (in service) · RELOCATED (moved to another customer) · DEACTIVATED
+/// (returned/decommissioned but record + history preserved) · TERMINATED
+/// (contract ended, equipment retired). RETURNED kept as alias for legacy CSV.
+enum EquipmentStatus { ACTIVE RELOCATED DEACTIVATED TERMINATED RETIRED RETURNED }
+
+/// (B.3) Ownership flips from COMPANY → CUSTOMER when a 36-month rental
+/// Contract.status transitions to COMPLETED. Used in customer ownership-
+/// transfer reporting + tax invoice gating.
+enum EquipmentOwnership { COMPANY CUSTOMER }
 
 enum PartCategory { FILTER CONSUMABLE ACCESSORY }
 
@@ -524,14 +657,153 @@ model EquipmentPart {
   @@id([equipmentModelId, partId])
 }
 
+// === Phase 3.5 (Customer Portal + Service Requests + SMS) ===
+
+/// Separate session table from staff `Session` — customer auth lives in
+/// its own row + cookie path (`/portal/*`). JWT `aud` claim distinguishes
+/// staff vs customer. See SPEC §3.3.2.
+model CustomerSession {
+  id            String   @id @default(uuid())
+  contact       CustomerContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId     String
+  refreshToken  String   @unique
+  userAgent     String?
+  ipAddress     String?
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  revokedAt     DateTime?
+  @@index([contactId, expiresAt])
+}
+
+enum ServiceRequestType {
+  INSPECTION                // 점검 — usually free
+  CONSULTATION              // 상담 — usually free
+  FAULT_REPORT              // 고장 신고 — free under warranty/rental
+  FILTER_REPLACEMENT_AD_HOC // 필터 임시 교체 — varies
+  PART_REPLACEMENT          // 부품(필터 외) 교체 — paid
+  RELOCATION                // 이전 설치 — paid
+  OTHER                     // 기타 — manual classification
+}
+
+enum ServiceRequestStatus {
+  SUBMITTED       // initial state
+  AUTO_APPROVED   // free types — auto-skipped to SCHEDULED
+  APPROVED        // paid types — office reviewed and approved
+  REJECTED        // paid types — office rejected with reason
+  SCHEDULED       // Visit row created
+  COMPLETED       // Visit COMPLETED
+  CANCELLED       // customer or office cancelled before SCHEDULED
+}
+
+enum ServiceRequestSource {
+  PORTAL          // submitted by customer via /portal/requests/new
+  OFFICE_PHONE    // staff entered after a phone call from customer
+  OFFICE_WEB      // staff entered manually
+}
+
+model ServiceRequest {
+  id              String   @id @default(uuid())
+  customer        Customer @relation(fields: [customerId], references: [id])
+  customerId      String
+  submittedBy     CustomerContact? @relation("ServiceRequestSubmittedBy", fields: [submittedByContactId], references: [id])
+  submittedByContactId String?  // null when staff submits via OFFICE_*
+  submittedFrom   ServiceRequestSource
+  type            ServiceRequestType
+  status          ServiceRequestStatus @default(SUBMITTED)
+  description     String   // free text from customer
+  attachedPhotoPaths String[]  // S3 keys
+  equipmentIds    String[]  // which devices this concerns
+  isPaid          Boolean   // computed from type defaults + office override at review
+  quotedAmount    Int?     // VND, set during APPROVED transition for paid types
+  rejectedReason  String?
+  reviewedBy      User?    @relation("ServiceRequestReviewedBy", fields: [reviewedByUserId], references: [id])
+  reviewedByUserId String?
+  reviewedAt      DateTime?
+  linkedVisit     Visit?   @relation(fields: [linkedVisitId], references: [id])
+  linkedVisitId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([customerId, status])
+  @@index([status, createdAt])
+}
+
+/// Outbound notification audit log — same shape for mock + production sends.
+/// Mock provider (`SMS_PROVIDER=mock`) writes rows with `provider='mock'` and
+/// `status='MOCKED'` so the full pipeline (router + template + DB + admin UI)
+/// is testable without external network. Production flip is env-only.
+enum SmsProvider { mock esms }
+enum EmailProvider { mock resend ses postmark }
+
+enum NotificationStatus {
+  QUEUED          // in outbox, not yet sent
+  MOCKED          // mock provider: logged + skipped network call
+  SENT            // provider accepted the send
+  DELIVERED       // (SMS only) network delivery confirmation
+  BOUNCED         // (Email only) permanent failure
+  COMPLAINED      // (Email only) marked as spam by recipient
+  FAILED          // provider rejected or unknown error
+}
+
+model SmsLog {
+  id                  String   @id @default(uuid())
+  template            String   // e.g. 'SMS_VISIT_REMINDER'
+  recipientContact    CustomerContact @relation(fields: [recipientContactId], references: [id])
+  recipientContactId  String
+  recipientPhone      String   // resolved at send time, frozen here
+  language            String   // 'ko' | 'vi' | 'en'
+  body                String   // rendered body (post-interpolation)
+  segments            Int      // 1, 2, 3...
+  provider            SmsProvider @default(mock)
+  providerMessageId   String?  // 'mock-{nanoid}' for mock; real ID from eSMS for production
+  status              NotificationStatus @default(QUEUED)
+  errorMessage        String?
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  createdAt           DateTime @default(now())
+  @@index([recipientContactId, createdAt])
+  @@index([status, createdAt])
+  @@index([template, createdAt])
+}
+
+model EmailLog {
+  id                  String   @id @default(uuid())
+  template            String   // e.g. 'EMAIL_VISIT_COMPLETED'
+  recipientContact    CustomerContact @relation(fields: [recipientContactId], references: [id])
+  recipientContactId  String
+  recipientEmail      String   // resolved at send time, frozen here
+  language            String
+  subject             String
+  body                String   // rendered plain-text body
+  attachmentPaths     String[] // S3 keys for PDFs (e.g. work-confirmation)
+  provider            EmailProvider @default(mock)
+  providerMessageId   String?  // 'mock-{nanoid}' for mock; real ID from Resend for production
+  status              NotificationStatus @default(QUEUED)
+  errorMessage        String?
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  bouncedAt           DateTime?
+  complainedAt        DateTime?
+  createdAt           DateTime @default(now())
+  @@index([recipientContactId, createdAt])
+  @@index([status, createdAt])
+  @@index([template, createdAt])
+}
+
 // === Phase 3 (Contracts + Documents) ===
 enum ContractType { SALE RENTAL MAINTENANCE }
 enum ContractStatus { DRAFT ACTIVE OVERDUE COMPLETED TERMINATED_EARLY }
 enum InspectionFrequency { MONTHLY BIMONTHLY }
 
+/// Contract code format (B.2 client answer 2026-05-26):
+///   - B2C: HD-YYYYmmDD/SA-KH####           e.g. HD-20260526/SA-KH0001
+///   - B2B: HD-YYYYmmDD/SA-{shortcode}      e.g. HD-20260526/SA-SHV
+/// B2B Appendix workflow: some B2B customers issue a fresh contract per
+/// new install; others use addendums on the original contract. The data
+/// model supports both via parentContractId + amendmentRevision.
 model Contract {
   id              String   @id @default(uuid())
-  code            String   @unique  // HD-2026-00001
+  code            String   @unique  // HD-20260526/SA-KH0001 (B2C) or HD-20260526/SA-SHV (B2B)
+  legacyContractNumber String?  // pre-migration sample format like `2026/030325/DA-SHV`
   customer        Customer @relation(fields: [customerId], references: [id])
   customerId      String
   type            ContractType
@@ -542,6 +814,7 @@ model Contract {
   mandatoryMonths Int?       // 24 for rental
   inspectionFrequency InspectionFrequency?
   monthlyFee      Int?
+  monthlyMaintenanceFee Int?  // (B.4) post-rental maintenance fee — set on 1-click renewal
   totalSalePrice  Int?
   depositAmount   Int        @default(0)
   signedAt        DateTime?
@@ -549,6 +822,13 @@ model Contract {
   paidInstallments Int       @default(0)
   terminationReason String?
   documentPdfPath String?
+  // --- B2B Appendix amendment support (B.2 + B.5) ---
+  parentContractId String?   // set when this row is an Appendix to an existing contract
+  amendmentRevision Int      @default(0)  // 0 = original; 1+ = revisions (B2B only)
+  parentContract   Contract? @relation("ContractAmendments", fields: [parentContractId], references: [id])
+  amendments       Contract[] @relation("ContractAmendments")
+  // --- Filter inclusion policy (E.2) — rental defaults to free, but some contracts have exceptions ---
+  filterPolicy    Json?      // { defaultFree: true, exceptions: [{ partCode, isPaid }] }
   notes           String?
   equipments      Equipment[]
   payments        Payment[]
@@ -556,6 +836,7 @@ model Contract {
   documents       Document[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  @@index([parentContractId])
 }
 
 enum DocumentKind {
@@ -569,6 +850,11 @@ enum DocumentKind {
   TAX_INVOICE_RECEIPT
 }
 
+/// Retention (E.4 client answer 2026-05-26):
+///   - Contracts + Tax invoices: 10 years
+///   - All other documents (receipts, periodic check, work confirmation): 5 years
+/// Server-side cron deletes documents past their retention horizon. Paper
+/// originals (E.5): destroyed 1 year after digital archive, user decides.
 model Document {
   id              String   @id @default(uuid())
   kind            DocumentKind
@@ -579,8 +865,10 @@ model Document {
   customer        Customer? @relation(fields: [customerId], references: [id])
   customerId      String?
   generatedPdfPath String
-  signedImagePath String?  // photo-of-paper OR tablet e-sig
+  signedImagePath String?  // photo-of-paper OR tablet e-sig (E.1 v1 photo; tablet TODO)
   physicalReceivedAt DateTime?  // when paper original arrives at office
+  paperDestroyedAt DateTime?    // (E.5) when physical paper was shredded (1y+ after digital archive)
+  retentionExpiresAt DateTime?  // computed: createdAt + 10y (contract/tax) or 5y (other)
   createdAt       DateTime @default(now())
 }
 
@@ -597,28 +885,42 @@ model Visit {
   id              String   @id @default(uuid())
   customer        Customer @relation(fields: [customerId], references: [id])
   customerId      String
+  site            Site?    @relation(fields: [siteId], references: [id])  // (A.4) site-scoped visits when Customer has Sites
+  siteId          String?
   contract        Contract? @relation(fields: [contractId], references: [id])
   contractId      String?
   type            VisitType
   scheduledDate   DateTime
   scheduledTimeWindow String?  // "09:00-11:00" or "오전"
   status          VisitStatus @default(SCHEDULED)
+  // --- Multi-technician model (K.3, 2026-05-26) ---
+  // leadTechnicianId = primary owner (payment + signature + report)
+  // collaboratorTechnicianIds = helpers (read+contribute, cannot complete)
+  leadTechnicianId        String
+  collaboratorTechnicianIds String[]   // optional helpers
+  leadTechnician  User     @relation("VisitLeadTechnician", fields: [leadTechnicianId], references: [id])
   completedAt     DateTime?
   notes           String?
   rescheduledFromVisitId String?
   rescheduleReason String?
   parentJobId     String?  // for multi-day big-site work
   signatureCustomerPath String?
-  signatureTechnicianPath String?
+  signatureTechnicianPath String?  // lead tech's signature only
   attachedPhotoPaths String[]  // S3 keys
-  assignedTechnicians VisitTechnician[]
   equipmentItems  VisitEquipment[]
   partReplacements PartReplacement[]
   payments        Payment[]
   documents       Document[]
   @@index([scheduledDate, status])
   @@index([customerId, scheduledDate])
+  @@index([siteId, scheduledDate])
+  @@index([leadTechnicianId, scheduledDate])
 }
+
+/// VisitTechnician model deprecated as of 2026-05-26 (K.3 decision) —
+/// replaced by Visit.leadTechnicianId + Visit.collaboratorTechnicianIds[].
+/// Migration: legacy VisitTechnician rows fold into the new fields
+/// (first row → lead; remainder → collaborators).
 
 model VisitTechnician {
   visitId         String
@@ -669,6 +971,13 @@ enum PaymentStatus {
   PENDING RECEIVED RECONCILED BOUNCED WAIVED
 }
 
+/// (D.2 2026-05-26) 3-stage cash audit trail: technician collects → office
+/// receives → office reconciles. **48-hour office-receipt SLA** — if cash is
+/// not marked `officeReceivedAt` within 48h of `collectedAt`, system flags
+/// the row to admin dashboard.
+/// (D.3 2026-05-26) Partial payment supported — `amount` may be less than
+/// the installment due; remainder rolls to next cycle (cron computes
+/// `outstandingBalance` across customer's open Payment rows).
 model Payment {
   id              String   @id @default(uuid())
   customer        Customer @relation(fields: [customerId], references: [id])
@@ -679,23 +988,30 @@ model Payment {
   visitId         String?
   installmentNumber Int?
   coveredMonth    String?  // YYYY-MM
-  amount          Int
+  amount          Int      // VND. May be partial — see Contract for outstanding-balance roll-up
+  expectedAmount  Int?     // (D.3) the full installment expected, when amount is partial
   method          PaymentMethod
   status          PaymentStatus @default(PENDING)
   collectedAt     DateTime?
   collectedByUserId String?
-  officeReceivedAt DateTime?
+  officeReceivedAt DateTime?            // (D.2) +48h SLA from collectedAt
   officeReceivedByUserId String?
   reconciledAt    DateTime?
   reconciledByUserId String?
+  // --- B2B tax invoice (D.1 + D.5) — all B2B require invoice; PDF upload is
+  // optional with warning banner if missing past N days of officeReceivedAt ---
+  invoicePdfPath  String?
+  invoicePdfUploadedAt DateTime?
+  invoiceProvider String?  // 'viettel-sinvoice' (default) — direct integration TODO Phase 8+
+  invoiceProviderRef String?  // external reference from invoice provider
   bankName        String?
   bankAccountNumber String?
   bankAccountHolder String?
-  invoicePdfPath  String?
   transferReference String?
   notes           String?
   createdAt       DateTime @default(now())
   @@index([customerId, collectedAt])
+  @@index([status, collectedAt])  // for the 48h SLA dashboard
 }
 
 enum MovementType {
@@ -734,7 +1050,7 @@ Will live in `scripts/import-from-csv.ts`. Steps:
 1. **Open CSVs with `iconv-lite` decoded as cp949 → utf-8**
 2. **Pass 1 — Parts** (from `필터관리`): insert all 99, generating UUID. Build map `legacyUuid → partId`.
 3. **Pass 2 — Equipment models** (from `정수기등록`): insert all 77. Build map `legacyUuid → modelId`. Categorization heuristic per §2 above.
-4. **Pass 3 — Customers** (from `고객관리대장`): insert all ~9000, generate `KH#####` sequentially. Build map `legacyUuid → customerId` and `legacyCode → customerId`.
+4. **Pass 3 — Customers** (from `고객관리대장`): insert all ~9000 (J.1 — full migration confirmed). **A.2 (2026-05-26)**: KH-code derived from legacy management number (e.g., `8918` → `KH08918`) — pad legacy digits with leading zero to reach KH##### width. Build map `legacyCode → customerId`. For each customer, **also generate one `CustomerContact` row** for `CONTRACT_PARTY` (name + phone1 from CSV, language inferred from name script — `language=null` initially since A.7 fallback rule auto-defaults to Contract Party language when null on Ops). If `고객정보` carries a distinct secondary name like "MR.K", **A.9 (2026-05-26)** → **auto-create as OPS_CONTACT with phone blank** (office fills phone later via UI); not flagged for review. **All contacts start with `portalEnabled=false`** — Phase 3.5 batch-enables them and sends sign-up SMS when each customer's contract gets re-activated, OR on a one-time migration toggle the office runs from the admin panel. **A.4 Site model**: if legacy customer has multiple `사업장` rows (B2B), generate `Site` rows + assign equipment to those Sites; B2C without site info gets no Site rows. **J.2 (2026-05-26)** dedup: (a) automatic match by (`name` + `phone`) → merge candidates; (b) flagged candidates require human review before merge.
 5. **Pass 4 — Equipment** (synthesized from `고객관리대장.정수기모델명` + `제품번호` columns): one Equipment per (customer, model, distinct product number). Generate `KH#####-N` codes per customer.
 6. **Pass 5 — Movements** (from `월별입출고내역`): insert all rows as Movement, mapping `구분` to MovementType. Skip rows whose `구분` is `교환` or `점검` (those become PartReplacement/Visit).
 7. **Pass 6 — Visits** (synthesized from `월별입출고내역` grouping): group by `(customerId, transactionDate)` for 교환+점검 rows; one Visit per group; mark inspectionPerformed=true if any 점검 row present.
@@ -751,6 +1067,9 @@ Idempotency: re-runnable by detecting existing `legacyUuid` and skipping duplica
 | Entity | Year-1 estimate | Source |
 |---|---|---|
 | Customer | ~10K (after import + new acquisitions) | Existing CSV reaches `관리번호 8918` |
+| CustomerContact | ~12K–18K | 1 CONTRACT_PARTY + 0..N OPS per customer (B2C avg 1.2, B2B avg 2.5) |
+| CustomerSession | ~5K active | depends on portal adoption; sessions expire 30d |
+| ServiceRequest | ~6K/year | est. 0.5 requests/customer/year × 10K active customers |
 | EquipmentModel | ~80 | CSV: 77 |
 | Equipment | ~30K | 10K customers × avg 3 devices |
 | Part | ~100 | CSV: 99 |
@@ -767,4 +1086,6 @@ Attachments (photos, signed papers, PDFs): **~150 GB/year** at projected scale.
 
 ## Change log
 
+- **2026-05-26** — v0.3. CustomerContact extended with portal-auth fields (passwordHash, mustChangePassword, lastLoginAt, failedLoginCount, lockedUntil, portalEnabled, signupSmsSentAt) and isPrimary. OPS unique constraint dropped — now 1:N. New `CustomerSession`, `ServiceRequest` (+ enums) models for Phase 3.5. `StaffRole` enum collapsed to 4 values (`ADMIN/MANAGER/STAFF/TECHNICIAN`); `Role` model gained `rank` int for hierarchy resolution. Migration step 4 revised — CustomerContact import now creates 1 CONTRACT_PARTY + optional OPS, all `portalEnabled=false` until Phase 3.5 batch-enable.
+- **2026-05-26** — v0.2. CustomerContact two-contact model added.
 - **2026-05-25** — v0.1 initial data model derived from 7 client CSVs. All field mappings inferred from sample content; field-by-field client validation captured in `QUESTIONS.docx` section J (data migration). Schema sketch is provisional — Phase 1 implementation will refine.
