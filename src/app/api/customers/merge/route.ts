@@ -3,10 +3,9 @@
  * Body: { sourceId, targetId }
  */
 
-import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireRole } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineMutation } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
 import { mergeCustomers } from "@/lib/customers/merge";
 
 const schema = z.object({
@@ -14,17 +13,16 @@ const schema = z.object({
   targetId: z.string().min(1),
 });
 
-export async function POST(request: NextRequest) {
-  try {
-    const caller = await requireRole(request, "ADMIN");
-    const parsed = schema.parse(await request.json());
-    const result = await mergeCustomers({
-      sourceId: parsed.sourceId,
-      targetId: parsed.targetId,
-      actorId: caller.userId,
-    });
-    return successResponse(result);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN") throw new ForbiddenError("ADMIN required");
+  },
+  body: schema,
+  handler: ({ auth, body }) =>
+    mergeCustomers({
+      sourceId: body.sourceId,
+      targetId: body.targetId,
+      actorId: auth.userId,
+    }),
+});

@@ -5,15 +5,20 @@
  * warning), or any other content change that should reflect on a fresh PDF.
  *
  * MANAGER+ only. Returns the Document row.
+ *
+ * SKIPPED full `defineMutation` migration: response body includes the
+ * `Document` row (matching the pre-refactor wire shape exactly) but the
+ * audit row also needs to log `locale`, which is a local computed by query
+ * + DB-lookup before the handler runs. Keeping the manual try/catch keeps
+ * the audit payload byte-identical.
  */
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/guards";
-import { canRegenerateContractPdf } from "@/lib/contracts/access";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
-import { renderContractPdf } from "@/lib/pdf/render";
 import { logAudit } from "@/lib/audit";
 import type { PdfLocale } from "@/lib/pdf/types";
 
@@ -22,7 +27,7 @@ interface Ctx { params: Promise<{ id: string }> }
 export async function POST(request: NextRequest, ctx: Ctx) {
   try {
     const auth = await requireAuth(request);
-    if (!canRegenerateContractPdf(auth.role)) {
+    if (!ContractWorkflow.access.canRegeneratePdf(auth.role)) {
       throw new ForbiddenError("Only managers can regenerate contract PDFs");
     }
     const { id } = await ctx.params;
@@ -55,7 +60,11 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       }
     }
 
-    const result = await renderContractPdf(id, locale, { generatedById: auth.userId });
+    const result = await ContractWorkflow.regeneratePdf({
+      contractId: id,
+      actor: { userId: auth.userId, role: auth.role },
+      locale,
+    });
 
     await logAudit({
       actorType: "USER",

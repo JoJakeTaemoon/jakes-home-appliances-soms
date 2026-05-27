@@ -3,12 +3,17 @@
  * PUT  /api/admin/scheduler-weights  → upsert weights
  *
  * ADMIN only. Writes a SystemSetting row keyed `scheduler.weights`.
+ *
+ * GET migrated to `defineQuery`. PUT keeps the manual shape for the
+ * AuditLog before/after pair.
  */
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireRole } from "@/lib/auth/guards";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { ForbiddenError } from "@/lib/api/error";
 import {
   SCHEDULER_WEIGHTS_DEFAULT,
   getSchedulerWeights,
@@ -23,18 +28,16 @@ const schema = z.object({
   loadPenaltyPerVisit: z.number().int().min(0).max(1000),
 });
 
-export async function GET(request: NextRequest) {
-  try {
-    await requireRole(request, "ADMIN");
-    const current = await getSchedulerWeights();
-    return successResponse({
-      current,
-      defaults: SCHEDULER_WEIGHTS_DEFAULT,
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN") throw new ForbiddenError("Insufficient role");
+  },
+  handler: async () => ({
+    current: await getSchedulerWeights(),
+    defaults: SCHEDULER_WEIGHTS_DEFAULT,
+  }),
+});
 
 export async function PUT(request: NextRequest) {
   try {

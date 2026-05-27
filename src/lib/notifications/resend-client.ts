@@ -19,15 +19,15 @@
 
 import type {
   NotificationProvider,
+  ProviderDispatchResult,
   SendPayload,
-  SendResult,
 } from "@/lib/notifications/types";
 
 export class ResendProvider implements NotificationProvider {
   public readonly name = "resend";
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async send(_payload: SendPayload): Promise<SendResult> {
+  async send(_payload: SendPayload): Promise<ProviderDispatchResult> {
     throw new Error(
       "ResendProvider not implemented yet — credentials pending (Q F.7). " +
         "Set EMAIL_PROVIDER=mock or omit it to use the mock provider.",

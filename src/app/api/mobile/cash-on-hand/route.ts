@@ -3,18 +3,18 @@
  * payments. Mobile dashboard pulls this for the badge + 48h countdown.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");
     }
+  },
+  handler: async ({ auth }) => {
     const rows = await prisma.payment.findMany({
       where: {
         collectedById: auth.userId,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const hoursOldest = oldest
       ? Math.floor((Date.now() - oldest.getTime()) / (60 * 60 * 1000))
       : 0;
-    return successResponse({
+    return {
       total,
       count: rows.length,
       oldestHours: hoursOldest,
@@ -42,8 +42,6 @@ export async function GET(request: NextRequest) {
         actualAmount: p.actualAmount.toString(),
         collectedAt: p.collectedAt,
       })),
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

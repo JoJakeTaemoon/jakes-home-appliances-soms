@@ -1,10 +1,15 @@
 /**
  * GET   /api/customers/[id] — full customer with contacts/sites/equipment/audit.
  * PATCH /api/customers/[id] — update non-contract fields.
+ *
+ * GET migrated to `defineQuery`. PATCH retains the manual try/catch shape
+ * to preserve the AuditLog pre-image (`before:`).
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import {
   canUpdateCustomer,
@@ -20,21 +25,29 @@ import {
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 
+const paramsSchema = z.object({ id: z.string() });
+
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (!canViewCustomer(auth.role)) throw new ForbiddenError("Cannot view customers");
-    const { id } = await ctx.params;
-
+  },
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const customer = await prisma.customer.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
-        contacts: { orderBy: [{ role: "asc" }, { isPrimary: "desc" }, { createdAt: "asc" }] },
-        sites: { orderBy: { createdAt: "asc" }, include: { _count: { select: { equipment: true, contacts: true } } } },
+        contacts: {
+          orderBy: [{ role: "asc" }, { isPrimary: "desc" }, { createdAt: "asc" }],
+        },
+        sites: {
+          orderBy: { createdAt: "asc" },
+          include: { _count: { select: { equipment: true, contacts: true } } },
+        },
         equipment: {
           where: { status: { not: "REPLACED" } },
           include: { model: true, site: true },
@@ -46,17 +59,17 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     if (!customer) throw new NotFoundError("Customer not found");
 
     const recentAudit = await prisma.auditLog.findMany({
-      where: { entityType: "Customer", entityId: id },
+      where: { entityType: "Customer", entityId: params.id },
       orderBy: { at: "desc" },
       take: 20,
-      include: { actorUser: { select: { id: true, username: true, role: true } } },
+      include: {
+        actorUser: { select: { id: true, username: true, role: true } },
+      },
     });
 
-    return successResponse({ ...customer, recentAudit });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { ...customer, recentAudit };
+  },
+});
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
@@ -80,7 +93,6 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const before = await prisma.customer.findUnique({ where: { id } });
     if (!before) throw new NotFoundError("Customer not found");
 
-    // B2B shortcode uniqueness when changed.
     if (data.shortcode && data.shortcode !== before.shortcode) {
       if (before.type !== "B2B") {
         throw new ValidationError("Only B2B customers may have a shortcode");

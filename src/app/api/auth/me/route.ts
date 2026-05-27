@@ -6,24 +6,18 @@
  * accessToken cookie (server components / form submissions).
  */
 
-import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 
-export async function GET(request: NextRequest) {
-  try {
-    const caller = await requireAuth(request);
-    return successResponse({
-      user: {
-        id: caller.userId,
-        username: caller.username,
-        email: caller.email,
-        phone: caller.phone,
-        role: caller.role,
-        mustChangePassword: caller.mustChangePassword,
-      },
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+export const GET = defineQuery({
+  audience: "staff",
+  handler: async ({ auth }) => ({
+    user: {
+      id: auth.userId,
+      username: auth.username,
+      email: auth.email,
+      phone: auth.phone,
+      role: auth.role,
+      mustChangePassword: auth.mustChangePassword,
+    },
+  }),
+});

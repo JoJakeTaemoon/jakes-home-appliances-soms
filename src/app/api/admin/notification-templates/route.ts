@@ -5,10 +5,9 @@
  * Restricted to ADMIN.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireRole } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
 import {
   TEMPLATES,
   TEMPLATE_CODES,
@@ -30,9 +29,12 @@ interface TemplateRow {
   overrideUpdatedAt: string | null;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    await requireRole(request, "ADMIN");
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN") throw new ForbiddenError("Insufficient role");
+  },
+  handler: async () => {
     const overrides = await prisma.notificationTemplate.findMany({
       select: {
         code: true,
@@ -63,8 +65,6 @@ export async function GET(request: NextRequest) {
         });
       }
     }
-    return successResponse({ rows });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows };
+  },
+});

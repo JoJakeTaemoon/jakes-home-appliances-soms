@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { runFilterDueReminder } from "@/lib/cron/filter-due-reminder";
+import { runJob } from "@/lib/cron/job";
+import { filterDueReminderJob } from "@/lib/cron/filter-due-reminder";
 import { requireCronAuth } from "@/lib/cron/guard";
 
 export async function GET(request: NextRequest) {
   try {
     requireCronAuth(request);
-    const start = Date.now();
-    const summary = await runFilterDueReminder();
+    const summary = await runJob(filterDueReminderJob, { request });
     return successResponse({
-      elapsedMs: Date.now() - start,
-      ranAt: new Date().toISOString(),
+      elapsedMs: summary.durationMs,
+      ranAt: summary.finishedAt.toISOString(),
       ...summary,
     });
   } catch (err) {

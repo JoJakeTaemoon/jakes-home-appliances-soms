@@ -3,14 +3,20 @@
  *
  *   GET  /api/portal/service-requests        — list the caller's SRs
  *   POST /api/portal/service-requests        — UC-SR-01 submit a new SR
+ *
+ * SKIPPED full `defineMutation` migration on GET: the response shape uses
+ * `paginatedResponse` with a post-filter step (site-scope row pruning),
+ * which mixes the page-count from the unfiltered query with the rows from
+ * the filtered list — that's a quirky pre-existing behaviour we don't want
+ * the HOF to paper over.
  */
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireCustomerAuth } from "@/lib/auth/customer-guards";
+import { defineMutation } from "@/lib/api/mutation";
 import {
   paginatedResponse,
-  successResponse,
   toErrorResponse,
 } from "@/lib/api/response";
 import { ValidationError } from "@/lib/api/error";
@@ -18,7 +24,7 @@ import {
   createServiceRequestSchema,
   listServiceRequestQuerySchema,
 } from "@/lib/validators/serviceRequest";
-import { createServiceRequest } from "@/lib/service-requests/operations";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 import { canViewEquipmentAtSite } from "@/lib/auth/customer-access";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -73,7 +79,6 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Filter site-scoped OPS: only see SRs on their equipment (or null site).
     const visible = rows.filter((r) => {
       if (!r.equipment) return true;
       return canViewEquipmentAtSite(
@@ -94,38 +99,27 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const caller = await requireCustomerAuth(request);
-    const body = await request.json().catch(() => null);
-    const parsed = createServiceRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid service request payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-    const input = parsed.data;
-
+export const POST = defineMutation({
+  audience: "customer",
+  body: createServiceRequestSchema,
+  successStatus: 201,
+  handler: async ({ auth, body }) => {
     // Site-scope check on equipment if provided.
-    if (input.equipmentId) {
+    if (body.equipmentId) {
       const eq = await prisma.equipment.findUnique({
-        where: { id: input.equipmentId },
+        where: { id: body.equipmentId },
         select: { customerId: true, siteId: true },
       });
-      if (!eq || eq.customerId !== caller.customerId) {
+      if (!eq || eq.customerId !== auth.customerId) {
         throw new ValidationError("Equipment does not belong to your customer");
       }
       const allowed = canViewEquipmentAtSite(
         {
-          contactId: caller.contactId,
-          customerId: caller.customerId,
-          role: caller.role,
-          scope: caller.scope,
-          siteId: caller.siteId,
+          contactId: auth.contactId,
+          customerId: auth.customerId,
+          role: auth.role,
+          scope: auth.scope,
+          siteId: auth.siteId,
         },
         eq.siteId,
       );
@@ -134,18 +128,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const result = await createServiceRequest({
-      customerId: caller.customerId,
-      contactId: caller.contactId,
-      input,
+    return ServiceRequestWorkflow.create({
+      customerId: auth.customerId,
+      contactId: auth.contactId,
+      input: body,
       actor: {
         actorType: "CUSTOMER",
-        actorContactId: caller.contactId,
+        actorContactId: auth.contactId,
       },
     });
-
-    return successResponse(result, 201);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+  },
+});

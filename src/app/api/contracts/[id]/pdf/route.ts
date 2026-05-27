@@ -10,10 +10,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
 import { requireAuth } from "@/lib/auth/guards";
-import { canEmailContract } from "@/lib/contracts/access";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
-import { getLatestContractPdf, renderContractPdf } from "@/lib/pdf/render";
+import { getLatestPdf, renderPdf } from "@/lib/pdf/renderer";
 import prisma from "@/lib/prisma";
 import type { PdfLocale } from "@/lib/pdf/types";
 
@@ -40,17 +40,17 @@ export async function GET(request: NextRequest, ctx: Ctx) {
   try {
     const auth = await requireAuth(request);
     // Office roles (STAFF+) — canEmailContract is also our generic office gate.
-    if (!canEmailContract(auth.role)) throw new ForbiddenError("Cannot download contract PDF");
+    if (!ContractWorkflow.access.canEmail(auth.role)) throw new ForbiddenError("Cannot download contract PDF");
     const { id } = await ctx.params;
 
-    let existing = await getLatestContractPdf(id);
+    let existing = await getLatestPdf("CONTRACT", id);
     let absentOnDisk = !existing || !fs.existsSync(existing.absolutePath);
 
     if (!existing || absentOnDisk) {
       const locale = await resolveLocale(id, new URL(request.url));
       // Will throw NotFoundError if the contract does not exist.
-      await renderContractPdf(id, locale, { generatedById: auth.userId });
-      existing = await getLatestContractPdf(id);
+      await renderPdf({ kind: "CONTRACT", refId: id, locale, generatedById: auth.userId });
+      existing = await getLatestPdf("CONTRACT", id);
       absentOnDisk = !existing || !fs.existsSync(existing.absolutePath);
     }
 

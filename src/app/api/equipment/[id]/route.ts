@@ -1,10 +1,15 @@
 /**
  * GET   /api/equipment/[id]
  * PATCH /api/equipment/[id]
+ *
+ * GET migrated to `defineQuery`. PATCH keeps the manual shape to preserve
+ * the AuditLog `before:` pre-image.
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipment } from "@/lib/customers/access";
 import { updateEquipmentSchema } from "@/lib/validators/equipment";
@@ -12,16 +17,18 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 
+const paramsSchema = z.object({ id: z.string() });
+
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    await requireAuth(request);
-    const { id } = await ctx.params;
+export const GET = defineQuery({
+  audience: "staff",
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const equipment = await prisma.equipment.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         customer: { select: { id: true, code: true, name: true, type: true } },
         site: { select: { id: true, name: true, address: true } },
@@ -30,11 +37,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
       },
     });
     if (!equipment) throw new NotFoundError("Equipment not found");
-    return successResponse(equipment);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return equipment;
+  },
+});
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
@@ -66,7 +71,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         installedByTechnicianId: data.installedByTechnicianId ?? undefined,
         filterPolicyOverride:
           data.filterPolicyOverride === null
-            ? undefined // Prisma type prefers undefined for nullable JSON unset
+            ? undefined
             : (data.filterPolicyOverride as object | undefined),
         notes: data.notes,
       },

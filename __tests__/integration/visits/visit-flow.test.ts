@@ -26,11 +26,14 @@ import { signStaffAccessToken } from "@/lib/auth/jwt";
 // Stub the heavy PDF renderer to keep this integration test fast + isolated
 // from font/file-system requirements. The render result still touches the
 // Document table so we can assert wiring.
-vi.mock("@/lib/pdf/work-confirmation-render", async () => {
+vi.mock("@/lib/pdf/renderer", async () => {
   const path = await import("node:path");
   const fsp = await import("node:fs/promises");
   return {
-    renderWorkConfirmationPdf: async (visitId: string) => {
+    renderPdf: async ({ kind, refId: visitId }: { kind: string; refId: string }) => {
+      if (kind !== "WORK_CONFIRMATION") {
+        throw new Error(`visit-flow.test mock: unexpected kind ${kind}`);
+      }
       const dir = path.join(process.cwd(), "uploads", "visits", visitId);
       await fsp.mkdir(dir, { recursive: true });
       const filename = "work-confirmation.pdf";
@@ -59,7 +62,7 @@ vi.mock("@/lib/pdf/work-confirmation-render", async () => {
         templateCode: "WORK_CONFIRMATION_B2C",
       };
     },
-    getLatestWorkConfirmationPdf: async () => null,
+    getLatestPdf: async () => null,
   };
 });
 

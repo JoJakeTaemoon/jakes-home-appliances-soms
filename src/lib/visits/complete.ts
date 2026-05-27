@@ -18,13 +18,14 @@ import path from "node:path";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
-import { renderWorkConfirmationPdf } from "@/lib/pdf/work-confirmation-render";
+import { renderPdf } from "@/lib/pdf/renderer";
 import { recordCashCollection } from "@/lib/payments/operations";
 import {
   planVisitTransition,
   type VisitState,
 } from "@/lib/visits/state";
 import { completeSrFromVisit } from "@/lib/service-requests/operations";
+import { updateWithStateGuard } from "@/lib/db/state-guard";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CompleteVisitInput } from "@/lib/validators/visit";
 
@@ -114,34 +115,21 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   const photosJson = buildPhotosJson(input);
   const partsJson = buildPartsJson(input);
 
-  // Concurrency guard: include the pre-transition state in WHERE so two
-  // concurrent completion calls don't both succeed. If the state changed
-  // between findUnique and update, Prisma throws P2025 (record not found).
-  let updated;
-  try {
-    updated = await prisma.visit.update({
-      where: { id: visitId, state: current.state },
-      data: {
-        ...plan,
-        findings: input.findings,
-        partsReplaced: partsJson,
-        photos: photosJson,
-        customerSignaturePhotoUrl: input.customerSignaturePhotoStorageKey,
-      },
-    });
-  } catch (err) {
-    if (
-      err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code: string }).code === "P2025"
-    ) {
-      throw new Error(
-        "Visit state changed concurrently — refresh and try again",
-      );
-    }
-    throw err;
-  }
+  // Concurrency guard via the shared helper (Refactor C). Pre-transition
+  // state pinned in WHERE; P2025 → user-friendly race error.
+  type VisitRow = Awaited<ReturnType<typeof prisma.visit.update>>;
+  const updated = (await updateWithStateGuard(prisma.visit, {
+    id: visitId,
+    expectedPriorState: current.state,
+    data: {
+      ...plan,
+      findings: input.findings,
+      partsReplaced: partsJson,
+      photos: photosJson,
+      customerSignaturePhotoUrl: input.customerSignaturePhotoStorageKey,
+    },
+    entityName: "Visit",
+  })) as VisitRow;
 
   // Payment row (optional) — routes through the Payment ops module so the
   // receipt email + audit log live in one place (UC-PY-01).
@@ -164,7 +152,10 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   }
 
   // Render PDF
-  const wc = await renderWorkConfirmationPdf(visitId, locale, {
+  const wc = await renderPdf({
+    kind: "WORK_CONFIRMATION",
+    refId: visitId,
+    locale,
     generatedById: actorUserId,
   });
 

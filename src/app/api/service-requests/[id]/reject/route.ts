@@ -5,44 +5,27 @@
  * queues `SMS_SR_REJECTED` to the submitter.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "@/lib/api/error";
-import { isOfficeRole } from "@/lib/visits/access";
+import { defineMutation } from "@/lib/api/mutation";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 import { rejectServiceRequestSchema } from "@/lib/validators/serviceRequest";
-import { rejectServiceRequest } from "@/lib/service-requests/operations";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireAuth(request);
-    if (!isOfficeRole(auth.role)) {
+const paramsSchema = z.object({ id: z.string() });
+
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ServiceRequestWorkflow.access.isOfficeRole(auth.role)) {
       throw new ForbiddenError("Office role required");
     }
-    const { id } = await params;
-    const body = await request.json().catch(() => null);
-    const parsed = rejectServiceRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid rejection payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-
+  },
+  params: paramsSchema,
+  body: rejectServiceRequestSchema,
+  handler: async ({ auth, body, params }) => {
     const current = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       select: { state: true },
     });
     if (!current) throw new NotFoundError("Service request not found");
@@ -52,13 +35,10 @@ export async function POST(
       );
     }
 
-    const result = await rejectServiceRequest({
-      serviceRequestId: id,
-      input: parsed.data,
+    return ServiceRequestWorkflow.reject({
+      serviceRequestId: params.id,
+      input: body,
       actor: { actorType: "USER", actorUserId: auth.userId },
     });
-    return successResponse(result);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+  },
+});

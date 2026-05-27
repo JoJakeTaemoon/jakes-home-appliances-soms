@@ -8,13 +8,17 @@
  *   - invoiceNumber:  string
  *   - invoiceDate:    ISO date
  *   - notes?:         string
+ *
+ * GET migrated to `defineQuery`. POST stays manual — it parses
+ * `multipart/form-data`, which the HOF (designed around JSON bodies)
+ * doesn't model.
  */
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import {
-  paginatedResponse,
   successResponse,
   toErrorResponse,
 } from "@/lib/api/response";
@@ -33,21 +37,17 @@ import {
 import { uploadTaxInvoice } from "@/lib/tax-invoices/operations";
 import type { Prisma } from "@/generated/prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (!canViewPaymentList(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-
-    const url = new URL(request.url);
-    const parsed = listTaxInvoiceQuerySchema.safeParse(
-      Object.fromEntries(url.searchParams),
-    );
-    if (!parsed.success) {
-      throw new ValidationError("Invalid query");
-    }
-    const { customerId, paymentId, from, to, page, pageSize } = parsed.data;
+  },
+  query: listTaxInvoiceQuerySchema,
+  paginated: true,
+  handler: async ({ query }) => {
+    const { customerId, paymentId, from, to, page, pageSize } = query;
 
     const where: Prisma.TaxInvoiceWhereInput = {};
     if (paymentId) where.paymentId = paymentId;
@@ -89,11 +89,9 @@ export async function GET(request: NextRequest) {
         : null,
     }));
 
-    return paginatedResponse(enriched, { page, limit: pageSize, total });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows: enriched, pagination: { page, limit: pageSize, total } };
+  },
+});
 
 export async function POST(request: NextRequest) {
   try {

@@ -2,34 +2,34 @@
  * GET /api/payments/[id]
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
-import {
-  canViewPaymentList,
-  paymentScopeForActor,
-} from "@/lib/payments/access";
-import { computeDaysOverdue } from "@/lib/payments/operations";
+import { PaymentWorkflow } from "@/lib/payments/workflow";
 
-interface Ctx {
-  params: Promise<{ id: string }>;
-}
+const paramsSchema = z.object({ id: z.string() });
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canViewPaymentList(auth.role)) {
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!PaymentWorkflow.access.canViewList(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-    const { id } = await ctx.params;
-
+  },
+  params: paramsSchema,
+  handler: async ({ auth, params }) => {
     const payment = await prisma.payment.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         customer: {
-          select: { id: true, code: true, name: true, type: true, taxCode: true },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            taxCode: true,
+          },
         },
         contract: { select: { id: true, contractNumber: true, type: true } },
         visit: {
@@ -52,19 +52,20 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     });
     if (!payment) throw new NotFoundError("Payment not found");
 
-    const scope = paymentScopeForActor(auth.role, auth.userId);
-    if ("collectedById" in scope && payment.collectedById !== scope.collectedById) {
+    const scope = PaymentWorkflow.access.scopeForActor(auth.role, auth.userId);
+    if (
+      "collectedById" in scope &&
+      payment.collectedById !== scope.collectedById
+    ) {
       throw new NotFoundError("Payment not found");
     }
 
-    return successResponse({
+    return {
       ...payment,
       expectedAmount: payment.expectedAmount.toString(),
       actualAmount: payment.actualAmount.toString(),
       carryoverAmount: payment.carryoverAmount.toString(),
-      daysOverdue: computeDaysOverdue(payment.dueDate),
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+      daysOverdue: PaymentWorkflow.computeDaysOverdue(payment.dueDate),
+    };
+  },
+});

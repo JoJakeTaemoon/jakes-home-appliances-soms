@@ -11,27 +11,25 @@
  * password in dev for QA convenience.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
+import { defineMutation } from "@/lib/api/mutation";
 import { canEditContractParty } from "@/lib/customers/access";
 import { resetPortalPassword } from "@/lib/auth/portal-enable";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 
-interface Ctx {
-  params: Promise<{ id: string; contactId: string }>;
-}
+const paramsSchema = z.object({ id: z.string(), contactId: z.string() });
 
-export async function POST(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
-    // MANAGER+ only — password reset is a sensitive admin action.
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
     if (!canEditContractParty(auth.role)) {
       throw new ForbiddenError("MANAGER+ required to reset portal passwords");
     }
-    const { id: customerId, contactId } = await ctx.params;
-
+  },
+  params: paramsSchema,
+  handler: async ({ auth, params }) => {
+    const { id: customerId, contactId } = params;
     const exists = await prisma.customerContact.findFirst({
       where: { id: contactId, customerId },
       select: { id: true },
@@ -44,13 +42,9 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       actorType: "USER",
     });
 
-    return successResponse({
+    return {
       contactId: result.contactId,
-      // Avoid returning the plain password in production responses; mock
-      // provider logs it to the server console for dev convenience.
       ok: true,
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

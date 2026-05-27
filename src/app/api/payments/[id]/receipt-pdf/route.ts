@@ -14,11 +14,8 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "@/lib/api/error";
-import {
-  canViewPaymentList,
-  paymentScopeForActor,
-} from "@/lib/payments/access";
-import { renderReceiptPdf } from "@/lib/pdf/payment-render";
+import { PaymentWorkflow } from "@/lib/payments/workflow";
+import { renderPdf } from "@/lib/pdf/renderer";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -29,7 +26,7 @@ async function ensureAccess(
   paymentId: string,
 ): Promise<{ collectedById: string | null }> {
   const auth = await requireAuth(request);
-  if (!canViewPaymentList(auth.role)) {
+  if (!PaymentWorkflow.access.canViewList(auth.role)) {
     throw new ForbiddenError("Insufficient role");
   }
   const payment = await prisma.payment.findUnique({
@@ -37,7 +34,7 @@ async function ensureAccess(
     select: { collectedById: true },
   });
   if (!payment) throw new NotFoundError("Payment not found");
-  const scope = paymentScopeForActor(auth.role, auth.userId);
+  const scope = PaymentWorkflow.access.scopeForActor(auth.role, auth.userId);
   if ("collectedById" in scope && payment.collectedById !== scope.collectedById) {
     throw new NotFoundError("Payment not found");
   }
@@ -57,7 +54,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
       // Generate on first download
       const url = new URL(request.url);
       const locale = (url.searchParams.get("locale") as "ko" | "vi" | "en") ?? "vi";
-      await renderReceiptPdf(id, locale);
+      await renderPdf({ kind: "RECEIPT", refId: id, locale });
       receipt = await prisma.document.findFirst({
         where: { paymentId: id, kind: "RECEIPT" },
         orderBy: { generatedAt: "desc" },
@@ -88,13 +85,16 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   try {
     const { id } = await ctx.params;
     const auth = await requireAuth(request);
-    if (!canViewPaymentList(auth.role)) {
+    if (!PaymentWorkflow.access.canViewList(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
     const url = new URL(request.url);
     const locale =
       (url.searchParams.get("locale") as "ko" | "vi" | "en" | null) ?? "vi";
-    const result = await renderReceiptPdf(id, locale, {
+    const result = await renderPdf({
+      kind: "RECEIPT",
+      refId: id,
+      locale,
       generatedById: auth.userId,
     });
     return successResponse(result);

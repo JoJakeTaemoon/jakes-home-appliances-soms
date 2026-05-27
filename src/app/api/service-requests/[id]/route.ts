@@ -6,26 +6,25 @@
  * this SR).
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
-import { isOfficeRole } from "@/lib/visits/access";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireAuth(request);
-    if (!isOfficeRole(auth.role)) {
+const paramsSchema = z.object({ id: z.string() });
+
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ServiceRequestWorkflow.access.isOfficeRole(auth.role)) {
       throw new ForbiddenError("Office role required");
     }
-    const { id } = await params;
-
+  },
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const sr = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         customer: {
           select: {
@@ -50,7 +49,12 @@ export async function GET(
             contracts: {
               select: {
                 contract: {
-                  select: { id: true, contractNumber: true, type: true, state: true },
+                  select: {
+                    id: true,
+                    contractNumber: true,
+                    type: true,
+                    state: true,
+                  },
                 },
               },
             },
@@ -63,7 +67,9 @@ export async function GET(
             type: true,
             scheduledFor: true,
             scheduledWindow: true,
-            leadTechnician: { select: { id: true, username: true, phone: true } },
+            leadTechnician: {
+              select: { id: true, username: true, phone: true },
+            },
             collaboratorTechnicianIds: true,
           },
         },
@@ -72,7 +78,7 @@ export async function GET(
     if (!sr) throw new NotFoundError("Service request not found");
 
     const activity = await prisma.auditLog.findMany({
-      where: { entityType: "ServiceRequest", entityId: id },
+      where: { entityType: "ServiceRequest", entityId: params.id },
       orderBy: { at: "desc" },
       take: 30,
       select: {
@@ -86,8 +92,6 @@ export async function GET(
       },
     });
 
-    return successResponse({ ...sr, activity });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { ...sr, activity };
+  },
+});

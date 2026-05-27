@@ -66,10 +66,32 @@ export interface SendResult {
   errorMessage?: string;
 }
 
+/**
+ * Result of a pure provider dispatch — narrow contract that does NOT include
+ * a NotificationLog id. The orchestrator (`send.ts`) writes the log row
+ * around this call so every provider gets the same audit treatment.
+ */
+export interface ProviderDispatchResult {
+  /** Provider-side identifier (eSMS RefId, Resend `id`, `mock-{uuid}`, etc.) */
+  providerMessageId: string;
+  /** SMS segment count when the provider can compute it (GSM-7 vs Unicode). */
+  segmentsUsed?: number;
+  /**
+   * When true, the orchestrator records the log row with `status='MOCKED'`
+   * instead of `'SENT'`. Mock providers set this; real adapters leave it
+   * unset (or `false`).
+   */
+  dryRun?: boolean;
+}
+
 /** Provider contract. Implementations live alongside this file. */
 export interface NotificationProvider {
   readonly name: string;
-  send(payload: SendPayload): Promise<SendResult>;
+  /**
+   * Pure dispatch. Returns provider-side identifiers + segment count. Must
+   * NOT write to our DB — the orchestrator handles `NotificationLog`.
+   */
+  send(payload: SendPayload): Promise<ProviderDispatchResult>;
 }
 
 export type ChannelRouting = {

@@ -5,14 +5,18 @@
  * to Phase 8+).
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireRole } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
 
-export async function GET(request: NextRequest) {
-  try {
-    await requireRole(request, ["ADMIN", "MANAGER", "STAFF"]);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN" && auth.role !== "MANAGER" && auth.role !== "STAFF") {
+      throw new ForbiddenError("Insufficient role");
+    }
+  },
+  handler: async () => {
     const now = new Date();
     const horizon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const visits = await prisma.visit.findMany({
@@ -32,7 +36,6 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-    // Fetch site regions for visits that have a siteId
     const siteIds = visits
       .map((v) => v.siteId)
       .filter((id): id is string => !!id);
@@ -57,13 +60,11 @@ export async function GET(request: NextRequest) {
     const rows = [...byRegion.entries()]
       .map(([region, count]) => ({ region, count }))
       .sort((a, b) => b.count - a.count);
-    return successResponse({
+    return {
       total: visits.length,
       windowStart: now.toISOString(),
       windowEnd: horizon.toISOString(),
       regions: rows,
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

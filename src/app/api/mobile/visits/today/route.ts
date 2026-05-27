@@ -5,23 +5,22 @@
  * split into `lead` and `collaborator` buckets. Sorted by scheduledFor asc.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 import { dayBounds } from "@/lib/scheduler/availability";
 
 const ACTIVE_STATES = ["SCHEDULED", "IN_PROGRESS", "RESCHEDULED"] as const;
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");
     }
+  },
+  handler: async ({ auth }) => {
     const { start, end } = dayBounds(new Date());
-
     const visits = await prisma.visit.findMany({
       where: {
         scheduledFor: { gte: start, lt: end },
@@ -62,8 +61,6 @@ export async function GET(request: NextRequest) {
     const collaborator = visits.filter(
       (v) => v.leadTechnicianId !== auth.userId,
     );
-    return successResponse({ lead, collaborator });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { lead, collaborator };
+  },
+});

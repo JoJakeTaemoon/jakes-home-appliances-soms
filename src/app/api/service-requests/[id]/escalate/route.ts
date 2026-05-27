@@ -6,47 +6,36 @@
  * business day) lands in Phase 7.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireRole } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { NotFoundError, ValidationError } from "@/lib/api/error";
+import { defineMutation } from "@/lib/api/mutation";
+import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { escalateServiceRequestSchema } from "@/lib/validators/serviceRequest";
-import { escalateServiceRequest } from "@/lib/service-requests/operations";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireRole(request, ["ADMIN", "MANAGER"]);
-    const { id } = await params;
+const paramsSchema = z.object({ id: z.string() });
 
-    const body = await request.json().catch(() => ({}));
-    const parsed = escalateServiceRequestSchema.safeParse(body ?? {});
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN" && auth.role !== "MANAGER") {
+      throw new ForbiddenError("Insufficient role");
     }
-
+  },
+  params: paramsSchema,
+  body: escalateServiceRequestSchema,
+  handler: async ({ auth, body, params }) => {
     const current = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       select: { state: true },
     });
     if (!current) throw new NotFoundError("Service request not found");
 
-    await escalateServiceRequest({
-      serviceRequestId: id,
-      reason: parsed.data.reason ?? null,
+    await ServiceRequestWorkflow.escalate({
+      serviceRequestId: params.id,
+      reason: body.reason ?? null,
       actor: { actorType: "USER", actorUserId: auth.userId },
     });
-    return successResponse({ serviceRequestId: id, escalated: true });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { serviceRequestId: params.id, escalated: true };
+  },
+});

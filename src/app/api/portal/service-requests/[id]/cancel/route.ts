@@ -10,87 +10,74 @@
  * with a future `scheduledFor`. Cascades to the linked Visit when present.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
+import { defineMutation } from "@/lib/api/mutation";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "@/lib/api/error";
 import { cancelServiceRequestSchema } from "@/lib/validators/serviceRequest";
-import { cancelServiceRequest } from "@/lib/service-requests/operations";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const caller = await requireCustomerAuth(request);
-    const { id } = await params;
+const paramsSchema = z.object({ id: z.string() });
 
-    const body = await request.json().catch(() => ({}));
-    const parsed = cancelServiceRequestSchema.safeParse(body ?? {});
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-
+export const POST = defineMutation({
+  audience: "customer",
+  params: paramsSchema,
+  body: cancelServiceRequestSchema,
+  handler: async ({ auth, body, params }) => {
     const sr = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         visit: { select: { id: true, state: true, scheduledFor: true } },
       },
     });
-    if (!sr || sr.customerId !== caller.customerId) {
+    if (!sr || sr.customerId !== auth.customerId) {
       throw new NotFoundError("Service request not found");
     }
 
-    // Permission: submitter OR contract party OR primary OPS.
-    let allowed = caller.contactId === sr.contactId;
+    let allowed = auth.contactId === sr.contactId;
+    if (!allowed && auth.role === "CONTRACT_PARTY") allowed = true;
     if (!allowed) {
-      if (caller.role === "CONTRACT_PARTY") allowed = true;
-    }
-    if (!allowed) {
-      // primary OPS of customer scope
       const primary = await prisma.customerContact.findFirst({
         where: {
-          customerId: caller.customerId,
+          customerId: auth.customerId,
           role: "OPS_CONTACT",
           scope: "CUSTOMER",
           isPrimary: true,
         },
         select: { id: true },
       });
-      if (primary && primary.id === caller.contactId) allowed = true;
+      if (primary && primary.id === auth.contactId) allowed = true;
     }
     if (!allowed) {
       throw new ForbiddenError("You cannot cancel this service request");
     }
 
-    // State guards
-    if (sr.state === "REJECTED" || sr.state === "CANCELLED" || sr.state === "COMPLETED") {
+    if (
+      sr.state === "REJECTED" ||
+      sr.state === "CANCELLED" ||
+      sr.state === "COMPLETED"
+    ) {
       throw new ConflictError(`Cannot cancel SR in state ${sr.state}`);
     }
     if (sr.state === "SCHEDULED" && sr.visit?.scheduledFor) {
       if (sr.visit.scheduledFor.getTime() <= Date.now()) {
-        throw new ConflictError("Cannot cancel a visit that has already started");
+        throw new ConflictError(
+          "Cannot cancel a visit that has already started",
+        );
       }
     }
 
-    const result = await cancelServiceRequest({
-      serviceRequestId: id,
-      reason: parsed.data.reason ?? null,
+    return ServiceRequestWorkflow.cancel({
+      serviceRequestId: params.id,
+      reason: body.reason ?? null,
       actor: {
         actorType: "CUSTOMER",
-        actorContactId: caller.contactId,
+        actorContactId: auth.contactId,
       },
     });
-
-    return successResponse(result);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+  },
+});

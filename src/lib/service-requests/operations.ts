@@ -29,6 +29,7 @@ import {
   planSrTransition,
   type ServiceRequestState,
 } from "@/lib/service-requests/state";
+import { updateWithStateGuard } from "@/lib/db/state-guard";
 import type {
   CreateServiceRequestInput,
   ApproveServiceRequestInput,
@@ -327,13 +328,15 @@ export async function approveServiceRequest(args: ApproveSrArgs) {
     { actorUserId: actor.actorUserId ?? null },
   );
 
-  await prisma.serviceRequest.update({
-    where: { id: serviceRequestId },
+  await updateWithStateGuard(prisma.serviceRequest, {
+    id: serviceRequestId,
+    expectedPriorState: current.state,
     data: {
       ...plan,
       approvedPrice: input.approvedPrice,
       approvedDate: input.approvedDate,
     },
+    entityName: "ServiceRequest",
   });
 
   // Create Visit linked to the SR.
@@ -475,9 +478,11 @@ export async function rejectServiceRequest(args: RejectSrArgs) {
     },
   );
 
-  await prisma.serviceRequest.update({
-    where: { id: serviceRequestId },
+  await updateWithStateGuard(prisma.serviceRequest, {
+    id: serviceRequestId,
+    expectedPriorState: current.state,
     data: plan,
+    entityName: "ServiceRequest",
   });
 
   const targetContactId =
@@ -546,9 +551,11 @@ export async function cancelServiceRequest(args: CancelSrArgs) {
     },
   );
 
-  await prisma.serviceRequest.update({
-    where: { id: serviceRequestId },
+  await updateWithStateGuard(prisma.serviceRequest, {
+    id: serviceRequestId,
+    expectedPriorState: current.state,
     data: plan,
+    entityName: "ServiceRequest",
   });
 
   let cascadedVisit: string | null = null;

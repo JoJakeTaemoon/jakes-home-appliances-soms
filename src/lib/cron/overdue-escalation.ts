@@ -15,6 +15,7 @@ import { sendNotification } from "@/lib/notifications/send";
 import { markOverdue } from "@/lib/payments/operations";
 import { formatVnd, formatDate } from "@/lib/format";
 import type { PaymentState } from "@/lib/payments/state";
+import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
 
 const STAGES: Array<{
   threshold: number;
@@ -192,6 +193,34 @@ export async function runOverdueEscalation(
 
   return summary;
 }
+
+/**
+ * `ScheduledJob` adapter — the canonical export for `/api/cron/*` routes.
+ * Returns an extended `JobSummary` that retains the legacy domain fields
+ * (`scanned`, `advanced`, `notificationsQueued`, `notificationsDeduped`,
+ * `errors`) so existing dashboards / tests keep working.
+ */
+export const overdueEscalationJob: ScheduledJob = {
+  name: "overdue-escalation",
+  async run({ now }): Promise<JobSummary> {
+    const r = await runOverdueEscalation({ now });
+    return {
+      jobName: "overdue-escalation",
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      durationMs: 0,
+      itemsProcessed: r.advanced,
+      itemsSkipped: r.notificationsDeduped,
+      itemsFailed: r.errors.length,
+      // Legacy domain fields preserved on the wire.
+      scanned: r.scanned,
+      advanced: r.advanced,
+      notificationsQueued: r.notificationsQueued,
+      notificationsDeduped: r.notificationsDeduped,
+      errors: r.errors,
+    };
+  },
+};
 
 // re-export for tests that want the state type
 export type { PaymentState };

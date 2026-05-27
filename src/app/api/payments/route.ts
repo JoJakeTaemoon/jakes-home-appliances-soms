@@ -3,47 +3,26 @@
  * POST /api/payments  — manual create EXPECTED payment (STAFF+)
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import {
-  paginatedResponse,
-  successResponse,
-  toErrorResponse,
-} from "@/lib/api/response";
-import { ForbiddenError, ValidationError } from "@/lib/api/error";
-import {
-  canCreateExpectedPayment,
-  canViewPaymentList,
-  paymentScopeForActor,
-} from "@/lib/payments/access";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
+import { PaymentWorkflow } from "@/lib/payments/workflow";
 import {
   createPaymentSchema,
   listPaymentQuerySchema,
 } from "@/lib/validators/payment";
-import { createExpectedPayment, computeDaysOverdue } from "@/lib/payments/operations";
 import type { Prisma } from "@/generated/prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canViewPaymentList(auth.role)) {
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!PaymentWorkflow.access.canViewList(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-
-    const url = new URL(request.url);
-    const parsed = listPaymentQuerySchema.safeParse(
-      Object.fromEntries(url.searchParams),
-    );
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid query",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
+  },
+  query: listPaymentQuerySchema,
+  paginated: true,
+  handler: async ({ auth, query }) => {
     const {
       state,
       customerId,
@@ -56,7 +35,7 @@ export async function GET(request: NextRequest) {
       to,
       page,
       pageSize,
-    } = parsed.data;
+    } = query;
 
     const where: Prisma.PaymentWhereInput = {};
     if (state) where.state = state;
@@ -77,8 +56,7 @@ export async function GET(request: NextRequest) {
       if (to) (where.createdAt as Prisma.DateTimeFilter).lte = to;
     }
 
-    // Technicians see only their own collected payments.
-    const scope = paymentScopeForActor(auth.role, auth.userId);
+    const scope = PaymentWorkflow.access.scopeForActor(auth.role, auth.userId);
     if ("collectedById" in scope) {
       where.collectedById = scope.collectedById;
     } else if (collectedById) {
@@ -93,7 +71,9 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
-          customer: { select: { id: true, code: true, name: true, type: true } },
+          customer: {
+            select: { id: true, code: true, name: true, type: true },
+          },
           contract: { select: { id: true, contractNumber: true, type: true } },
           visit: { select: { id: true, type: true, scheduledFor: true } },
           collectedBy: { select: { id: true, username: true } },
@@ -107,51 +87,37 @@ export async function GET(request: NextRequest) {
       expectedAmount: p.expectedAmount.toString(),
       actualAmount: p.actualAmount.toString(),
       carryoverAmount: p.carryoverAmount.toString(),
-      daysOverdue: computeDaysOverdue(p.dueDate),
+      daysOverdue: PaymentWorkflow.computeDaysOverdue(p.dueDate),
     }));
 
-    return paginatedResponse(enriched, { page, limit: pageSize, total });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows: enriched, pagination: { page, limit: pageSize, total } };
+  },
+});
 
-export async function POST(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canCreateExpectedPayment(auth.role)) {
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!PaymentWorkflow.access.canCreateExpected(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-    const body = await request.json().catch(() => null);
-    const parsed = createPaymentSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-    const payment = await createExpectedPayment({
-      customerId: parsed.data.customerId,
-      contractId: parsed.data.contractId ?? null,
-      expectedAmount: parsed.data.expectedAmount,
-      dueDate: parsed.data.dueDate,
-      method: parsed.data.method,
-      notes: parsed.data.notes,
+  },
+  body: createPaymentSchema,
+  successStatus: 201,
+  handler: async ({ auth, body }) => {
+    const payment = await PaymentWorkflow.createExpected({
+      customerId: body.customerId,
+      contractId: body.contractId ?? null,
+      expectedAmount: body.expectedAmount,
+      dueDate: body.dueDate,
+      method: body.method,
+      notes: body.notes,
       actorUserId: auth.userId,
     });
-    return successResponse(
-      {
-        ...payment,
-        expectedAmount: payment.expectedAmount.toString(),
-        actualAmount: payment.actualAmount.toString(),
-        carryoverAmount: payment.carryoverAmount.toString(),
-      },
-      201,
-    );
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return {
+      ...payment,
+      expectedAmount: payment.expectedAmount.toString(),
+      actualAmount: payment.actualAmount.toString(),
+      carryoverAmount: payment.carryoverAmount.toString(),
+    };
+  },
+});

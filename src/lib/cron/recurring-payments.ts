@@ -10,6 +10,7 @@ import {
   runMonthlyRecurringPayments,
   type RecurringRunSummary,
 } from "@/lib/payments/recurring";
+import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
 
 export async function runRecurringPaymentsCron(
   opts: { now?: Date } = {},
@@ -18,3 +19,28 @@ export async function runRecurringPaymentsCron(
 }
 
 export type { RecurringRunSummary };
+
+/**
+ * `ScheduledJob` adapter — canonical export for
+ * `/api/cron/recurring-payments/route.ts`. Wraps the payments-module runner
+ * so cron orchestration stays uniform across the suite.
+ */
+export const recurringPaymentsJob: ScheduledJob = {
+  name: "recurring-payments",
+  async run({ now }): Promise<JobSummary> {
+    const r = await runRecurringPaymentsCron({ now });
+    return {
+      jobName: "recurring-payments",
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      durationMs: 0,
+      itemsProcessed: r.paymentsCreated,
+      itemsSkipped: r.skippedExisting + r.skippedNoFee,
+      itemsFailed: 0,
+      contractsScanned: r.contractsScanned,
+      paymentsCreated: r.paymentsCreated,
+      skippedExisting: r.skippedExisting,
+      skippedNoFee: r.skippedNoFee,
+    };
+  },
+};

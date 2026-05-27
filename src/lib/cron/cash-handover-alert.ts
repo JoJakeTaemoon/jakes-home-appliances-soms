@@ -12,6 +12,7 @@
 
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
 
 const SLA_HOURS = 48;
 const DEDUPE_HOURS = 24;
@@ -87,3 +88,26 @@ export async function runCashHandoverAlert(
 
   return summary;
 }
+
+/**
+ * `ScheduledJob` adapter — canonical export for
+ * `/api/cron/cash-handover-alert/route.ts`.
+ */
+export const cashHandoverAlertJob: ScheduledJob = {
+  name: "cash-handover-alert",
+  async run({ now }): Promise<JobSummary> {
+    const r = await runCashHandoverAlert({ now });
+    return {
+      jobName: "cash-handover-alert",
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      durationMs: 0,
+      itemsProcessed: r.flagged,
+      itemsSkipped: r.deduped,
+      itemsFailed: 0,
+      scanned: r.scanned,
+      flagged: r.flagged,
+      deduped: r.deduped,
+    };
+  },
+};

@@ -10,18 +10,15 @@
  * equipment).
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
+import { defineQuery } from "@/lib/api/mutation";
 import { canViewEquipmentAtSite } from "@/lib/auth/customer-access";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
 
-export async function GET(request: NextRequest) {
-  try {
-    const caller = await requireCustomerAuth(request);
-
+export const GET = defineQuery({
+  audience: "customer",
+  handler: async ({ auth }) => {
     const equipment = await prisma.equipment.findMany({
-      where: { customerId: caller.customerId },
+      where: { customerId: auth.customerId },
       include: {
         model: {
           select: {
@@ -37,21 +34,20 @@ export async function GET(request: NextRequest) {
       orderBy: { installedAt: "desc" },
     });
 
-    // Apply site-scope filter for SITE-scoped OPS contacts.
     const visible = equipment.filter((eq) =>
       canViewEquipmentAtSite(
         {
-          contactId: caller.contactId,
-          customerId: caller.customerId,
-          role: caller.role,
-          scope: caller.scope,
-          siteId: caller.siteId,
+          contactId: auth.contactId,
+          customerId: auth.customerId,
+          role: auth.role,
+          scope: auth.scope,
+          siteId: auth.siteId,
         },
         eq.siteId,
       ),
     );
 
-    return successResponse({
+    return {
       equipment: visible.map((eq) => ({
         id: eq.id,
         serialNumber: eq.serialNumber,
@@ -62,8 +58,6 @@ export async function GET(request: NextRequest) {
         site: eq.site,
         filterPolicyOverride: eq.filterPolicyOverride,
       })),
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

@@ -4,6 +4,13 @@
  * Logged-in portal user updates their own profile fields. Phone is locked
  * (it's the login key — change must go through the office). Email, name,
  * language, and opt-out flags are user-controllable.
+ *
+ * SKIPPED full `defineMutation` migration: the audit row's `before:`
+ * snapshot is read *just before* the update inside the same logical
+ * transaction window. The HOF currently exposes the pre-image only via the
+ * `audit.before` hook, which runs *after* the handler — so fetching there
+ * would race against the in-flight write. Keeping the manual try/catch
+ * preserves byte-identical audit semantics.
  */
 
 import { NextRequest } from "next/server";

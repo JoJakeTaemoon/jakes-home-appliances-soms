@@ -5,23 +5,20 @@
  * equipment lives in a different site.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { NotFoundError } from "@/lib/api/error";
 import { canViewEquipmentAtSite } from "@/lib/auth/customer-access";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const caller = await requireCustomerAuth(request);
-    const { id } = await params;
+const paramsSchema = z.object({ id: z.string() });
 
+export const GET = defineQuery({
+  audience: "customer",
+  params: paramsSchema,
+  handler: async ({ auth, params }) => {
     const sr = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         equipment: {
           select: {
@@ -45,25 +42,22 @@ export async function GET(
         contact: { select: { id: true, name: true } },
       },
     });
-    if (!sr || sr.customerId !== caller.customerId) {
+    if (!sr || sr.customerId !== auth.customerId) {
       throw new NotFoundError("Service request not found");
     }
     if (sr.equipment) {
       const allowed = canViewEquipmentAtSite(
         {
-          contactId: caller.contactId,
-          customerId: caller.customerId,
-          role: caller.role,
-          scope: caller.scope,
-          siteId: caller.siteId,
+          contactId: auth.contactId,
+          customerId: auth.customerId,
+          role: auth.role,
+          scope: auth.scope,
+          siteId: auth.siteId,
         },
         sr.equipment.siteId,
       );
       if (!allowed) throw new NotFoundError("Service request not found");
     }
-
-    return successResponse(sr);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return sr;
+  },
+});

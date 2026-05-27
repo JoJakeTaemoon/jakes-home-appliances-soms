@@ -1,23 +1,30 @@
 /**
  * Mock notification provider — default for dev/staging/test.
  *
- * Behaviour:
- *   - Logs a pretty boxed message to `console.log` so flows are visible
- *     during smoke tests.
- *   - Writes a `NotificationLog` row with `provider='mock'` and
- *     `status='MOCKED'`.
- *   - Returns a synthetic provider message id (`mock-<uuid>`) for traceability.
+ * Pure dispatcher per the `NotificationProvider` contract — the orchestrator
+ * (`src/lib/notifications/send.ts`) owns the `NotificationLog` write. This
+ * provider only:
  *
- * The real eSMS / Resend providers will return the same `SendResult` shape so
- * the call sites never need to change when production credentials arrive
- * (see CLAUDE.md "Notification providers (mock-first, Phase 3.5)").
+ *   - Pretty-prints a boxed message to `console.log` so flows are visible
+ *     during smoke tests.
+ *   - Approximates an SMS segment count for cost / GSM-7 audit accuracy.
+ *   - Returns a synthetic provider message id (`mock-<uuid>`) + `dryRun: true`
+ *     so the orchestrator records the log row with `status='MOCKED'`.
+ *
+ * The real eSMS / Resend providers will implement the same contract so the
+ * orchestrator never branches on provider type — only on `dryRun`. See
+ * CLAUDE.md "Notification providers (mock-first, Phase 3.5)".
+ *
+ * Production-safety guard kept in this file (not in the orchestrator) because
+ * it is mock-specific behaviour — a misconfigured `SMS_PROVIDER=mock` in prod
+ * must redact credential bodies AND emit a loud warning, but only when the
+ * mock provider is actually invoked.
  */
 
-import prisma from "@/lib/prisma";
 import type {
   NotificationProvider,
+  ProviderDispatchResult,
   SendPayload,
-  SendResult,
 } from "@/lib/notifications/types";
 
 function tag(channel: SendPayload["channel"]): string {
@@ -60,10 +67,12 @@ function shouldRedactBody(templateCode: string): boolean {
 export class MockNotificationProvider implements NotificationProvider {
   public readonly name = "mock";
 
-  async send(payload: SendPayload): Promise<SendResult> {
+  async send(payload: SendPayload): Promise<ProviderDispatchResult> {
     const messageId = `mock-${crypto.randomUUID()}`;
     const segmentsUsed =
-      payload.channel === "SMS" ? approximateSmsSegments(payload.body) : null;
+      payload.channel === "SMS"
+        ? approximateSmsSegments(payload.body)
+        : undefined;
 
     // Production safety: if the mock provider is somehow still active in
     // production (it should never be — `SMS_PROVIDER=mock` is dev-only),
@@ -93,33 +102,10 @@ export class MockNotificationProvider implements NotificationProvider {
 
     console.log(`${tag(payload.channel)}\n${box("Mock dispatch", lines)}`);
 
-    const log = await prisma.notificationLog.create({
-      data: {
-        customerId: payload.customerId ?? null,
-        contactId: payload.contactId ?? null,
-        templateCode: payload.templateCode,
-        channel: payload.channel,
-        locale: payload.locale,
-        provider: "mock",
-        recipient: payload.to,
-        payload: {
-          subject: payload.subject ?? null,
-          body: payload.body,
-          vars: payload.vars ?? {},
-        },
-        status: "MOCKED",
-        providerMessageId: messageId,
-        segmentsUsed: segmentsUsed ?? undefined,
-        sentAt: new Date(),
-      },
-      select: { id: true },
-    });
-
     return {
-      notificationLogId: log.id,
-      status: "MOCKED",
       providerMessageId: messageId,
-      segmentsUsed: segmentsUsed ?? undefined,
+      segmentsUsed,
+      dryRun: true,
     };
   }
 }

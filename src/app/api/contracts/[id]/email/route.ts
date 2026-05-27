@@ -13,7 +13,7 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/guards";
-import { canEmailContract } from "@/lib/contracts/access";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { contractEmailSchema } from "@/lib/validators/contract";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import {
@@ -21,10 +21,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "@/lib/api/error";
-import {
-  getLatestContractPdf,
-  renderContractPdf,
-} from "@/lib/pdf/render";
+import { getLatestPdf, renderPdf } from "@/lib/pdf/renderer";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
 import type { PdfLocale } from "@/lib/pdf/types";
@@ -35,7 +32,7 @@ interface Ctx { params: Promise<{ id: string }> }
 export async function POST(request: NextRequest, ctx: Ctx) {
   try {
     const auth = await requireAuth(request);
-    if (!canEmailContract(auth.role)) {
+    if (!ContractWorkflow.access.canEmail(auth.role)) {
       throw new ForbiddenError("Cannot email contracts");
     }
     const { id } = await ctx.params;
@@ -76,10 +73,10 @@ export async function POST(request: NextRequest, ctx: Ctx) {
         : "vi");
 
     // Ensure a fresh PDF exists.
-    let pdf = await getLatestContractPdf(id);
+    let pdf = await getLatestPdf("CONTRACT", id);
     if (!pdf) {
-      await renderContractPdf(id, locale, { generatedById: auth.userId });
-      pdf = await getLatestContractPdf(id);
+      await renderPdf({ kind: "CONTRACT", refId: id, locale, generatedById: auth.userId });
+      pdf = await getLatestPdf("CONTRACT", id);
     }
     if (!pdf) {
       throw new NotFoundError("Could not generate contract PDF");

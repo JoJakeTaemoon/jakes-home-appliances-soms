@@ -6,36 +6,24 @@
  * submittedAt asc.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { paginatedResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, ValidationError } from "@/lib/api/error";
+import { defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
 import { listServiceRequestQuerySchema } from "@/lib/validators/serviceRequest";
-import { isOfficeRole } from "@/lib/visits/access";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 import type { Prisma } from "@/generated/prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
-    if (!isOfficeRole(auth.role)) {
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ServiceRequestWorkflow.access.isOfficeRole(auth.role)) {
       throw new ForbiddenError("Office role required");
     }
-
-    const url = new URL(request.url);
-    const parsed = listServiceRequestQuerySchema.safeParse(
-      Object.fromEntries(url.searchParams),
-    );
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid query",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-    const { q, state, type, customerId, isPaid, page, pageSize } = parsed.data;
+  },
+  query: listServiceRequestQuerySchema,
+  paginated: true,
+  handler: async ({ query }) => {
+    const { q, state, type, customerId, isPaid, page, pageSize } = query;
 
     const where: Prisma.ServiceRequestWhereInput = {};
     if (state) where.state = state;
@@ -55,18 +43,13 @@ export async function GET(request: NextRequest) {
       prisma.serviceRequest.count({ where }),
       prisma.serviceRequest.findMany({
         where,
-        // PENDING_REVIEW bubbles to the top, then oldest first within each
-        // group. Postgres sorts the state enum alphabetically — we override
-        // by sorting on a CASE expression via two-stage query: just sort by
-        // submittedAt asc which puts the oldest pending at the top.
-        orderBy: [
-          { state: "asc" },
-          { submittedAt: "asc" },
-        ],
+        orderBy: [{ state: "asc" }, { submittedAt: "asc" }],
         skip,
         take: pageSize,
         include: {
-          customer: { select: { id: true, code: true, name: true, type: true } },
+          customer: {
+            select: { id: true, code: true, name: true, type: true },
+          },
           equipment: {
             select: {
               id: true,
@@ -80,8 +63,6 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return paginatedResponse(rows, { page, limit: pageSize, total });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows, pagination: { page, limit: pageSize, total } };
+  },
+});

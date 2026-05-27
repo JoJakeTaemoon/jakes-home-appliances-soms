@@ -10,7 +10,7 @@ import prisma from "@/lib/prisma";
 import { requireCustomerAuth } from "@/lib/auth/customer-guards";
 import { toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
-import { renderTaxInvoicePdf } from "@/lib/pdf/payment-render";
+import { renderPdf } from "@/lib/pdf/renderer";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -32,7 +32,11 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     }
     let storageKey = inv.pdfStorageKey;
     if (!storageKey) {
-      const result = await renderTaxInvoicePdf(id, caller.language);
+      const result = await renderPdf({
+        kind: "TAX_INVOICE",
+        refId: id,
+        locale: caller.language,
+      });
       storageKey = result.storageKey;
     }
     const absolutePath = path.isAbsolute(storageKey)

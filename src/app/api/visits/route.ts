@@ -4,50 +4,23 @@
  * POST /api/visits — create a SUGGESTED visit. Office (STAFF+) only.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import {
-  paginatedResponse,
-  successResponse,
-  toErrorResponse,
-} from "@/lib/api/response";
-import {
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "@/lib/api/error";
-import {
-  canCreateVisit,
-  isOfficeRole,
-  technicianVisitWhere,
-} from "@/lib/visits/access";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError } from "@/lib/api/error";
+import { VisitWorkflow } from "@/lib/visits/workflow";
 import {
   createVisitSchema,
   visitListQuerySchema,
 } from "@/lib/validators/visit";
-import { logAudit } from "@/lib/audit";
 import type { Prisma } from "@/generated/prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
-
-    const url = new URL(request.url);
-    const parsed = visitListQuerySchema.safeParse(
-      Object.fromEntries(url.searchParams),
-    );
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid query",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
+export const GET = defineQuery({
+  audience: "staff",
+  query: visitListQuerySchema,
+  paginated: true,
+  handler: async ({ auth, query }) => {
     const { technicianId, customerId, state, type, from, to, page, pageSize } =
-      parsed.data;
+      query;
 
     const where: Prisma.VisitWhereInput = {};
     if (customerId) where.customerId = customerId;
@@ -59,7 +32,7 @@ export async function GET(request: NextRequest) {
       if (to) (where.scheduledFor as Prisma.DateTimeFilter).lte = to;
     }
 
-    if (isOfficeRole(auth.role)) {
+    if (VisitWorkflow.access.isOfficeRole(auth.role)) {
       if (technicianId) {
         where.OR = [
           { leadTechnicianId: technicianId },
@@ -67,11 +40,11 @@ export async function GET(request: NextRequest) {
         ];
       }
     } else {
-      // TECHNICIAN: scope to own visits
-      where.OR = [
-        { leadTechnicianId: auth.userId },
-        { collaboratorTechnicianIds: { has: auth.userId } },
-      ];
+      const filter = VisitWorkflow.access.technicianVisitWhere({
+        userId: auth.userId,
+        role: auth.role,
+      });
+      where.OR = [...filter.OR];
     }
 
     const skip = (page - 1) * pageSize;
@@ -96,88 +69,31 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return paginatedResponse(rows, { page, limit: pageSize, total });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows, pagination: { page, limit: pageSize, total } };
+  },
+});
 
-export async function POST(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canCreateVisit(auth.role)) {
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!VisitWorkflow.access.canCreate(auth.role)) {
       throw new ForbiddenError("Cannot create visits");
     }
-
-    const body = await request.json().catch(() => null);
-    const parsed = createVisitSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid visit payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-    const data = parsed.data;
-
-    const customer = await prisma.customer.findUnique({
-      where: { id: data.customerId },
-      select: { id: true, type: true },
-    });
-    if (!customer) throw new NotFoundError("Customer not found");
-
-    if (data.siteId) {
-      const site = await prisma.site.findUnique({
-        where: { id: data.siteId },
-        select: { customerId: true },
-      });
-      if (!site || site.customerId !== customer.id) {
-        throw new ValidationError("Site does not belong to this customer");
-      }
-    }
-    if (data.equipmentId) {
-      const eq = await prisma.equipment.findUnique({
-        where: { id: data.equipmentId },
-        select: { customerId: true },
-      });
-      if (!eq || eq.customerId !== customer.id) {
-        throw new ValidationError(
-          "Equipment does not belong to this customer",
-        );
-      }
-    }
-
-    const visit = await prisma.visit.create({
-      data: {
-        customerId: data.customerId,
-        siteId: data.siteId ?? null,
-        equipmentId: data.equipmentId ?? null,
-        type: data.type,
-        state: "SUGGESTED",
-        scheduledFor: data.scheduledFor,
-        scheduledWindow: data.scheduledWindow ?? null,
-        expectedAmount: data.expectedAmount ?? null,
+  },
+  body: createVisitSchema,
+  successStatus: 201,
+  handler: ({ auth, body, request }) =>
+    VisitWorkflow.create(
+      {
+        customerId: body.customerId,
+        siteId: body.siteId ?? null,
+        equipmentId: body.equipmentId ?? null,
+        type: body.type,
+        scheduledFor: body.scheduledFor,
+        scheduledWindow: body.scheduledWindow ?? null,
+        expectedAmount: body.expectedAmount ?? null,
       },
-    });
-
-    await logAudit({
-      actorType: "USER",
-      actorId: auth.userId,
-      action: "VISIT_CREATE",
-      entityType: "Visit",
-      entityId: visit.id,
-      after: {
-        customerId: visit.customerId,
-        type: visit.type,
-        scheduledFor: visit.scheduledFor,
-      },
+      { userId: auth.userId, role: auth.role },
       request,
-    });
-
-    return successResponse(visit, 201);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    ),
+});

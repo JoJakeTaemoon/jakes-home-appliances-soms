@@ -5,22 +5,21 @@
  * today). Grouped by ISO date (YYYY-MM-DD).
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 import { dayBounds } from "@/lib/scheduler/availability";
 
 const ACTIVE_STATES = ["SCHEDULED", "RESCHEDULED"] as const;
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");
     }
-
+  },
+  handler: async ({ auth }) => {
     const { end: todayEnd } = dayBounds(new Date());
     const horizon = new Date(todayEnd.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -51,8 +50,6 @@ export async function GET(request: NextRequest) {
       const key = v.scheduledFor.toISOString().slice(0, 10);
       (grouped[key] ??= []).push(v);
     }
-    return successResponse({ grouped, total: visits.length });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { grouped, total: visits.length };
+  },
+});

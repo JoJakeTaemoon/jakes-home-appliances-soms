@@ -5,59 +5,36 @@
  * /api/contracts/[newId]/state once the customer signs the new contract.
  */
 
-import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/auth/guards";
-import { canRenewContract } from "@/lib/contracts/access";
+import { z } from "zod";
+import { defineMutation } from "@/lib/api/mutation";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { contractRenewSchema } from "@/lib/validators/contract";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, ValidationError } from "@/lib/api/error";
-import { prepareRenewal } from "@/lib/contracts/renewal";
-import { logAudit } from "@/lib/audit";
+import { ForbiddenError } from "@/lib/api/error";
 
-interface Ctx { params: Promise<{ id: string }> }
+const paramsSchema = z.object({ id: z.string() });
 
-export async function POST(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canRenewContract(auth.role)) {
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ContractWorkflow.access.canRenew(auth.role)) {
       throw new ForbiddenError("Only managers can renew contracts");
     }
-    const { id } = await ctx.params;
-
-    const body = await request.json().catch(() => null);
-    const parsed = contractRenewSchema.safeParse(body ?? {});
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid renewal payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-
-    const result = await prepareRenewal(id, {
-      monthlyMaintenanceFee: parsed.data.monthlyMaintenanceFee,
-      termMonths: parsed.data.termMonths,
-      type: parsed.data.type,
-      startDate: parsed.data.startDate,
-    });
-
-    await logAudit({
-      actorType: "USER",
-      actorId: auth.userId,
-      action: "CONTRACT_RENEW_PREPARED",
-      entityType: "Contract",
-      entityId: result.contract.id,
-      after: {
-        newContractNumber: result.contract.contractNumber,
-        parentContractNumber: result.parent.contractNumber,
+  },
+  params: paramsSchema,
+  body: contractRenewSchema,
+  successStatus: 201,
+  handler: async ({ auth, body, params, request }) => {
+    const result = await ContractWorkflow.renew(
+      params.id,
+      {
+        monthlyMaintenanceFee: body.monthlyMaintenanceFee,
+        termMonths: body.termMonths,
+        type: body.type,
+        startDate: body.startDate,
       },
+      { userId: auth.userId, role: auth.role },
       request,
-    });
-
-    return successResponse({ contract: result.contract, parent: result.parent }, 201);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    );
+    return { contract: result.contract, parent: result.parent };
+  },
+});

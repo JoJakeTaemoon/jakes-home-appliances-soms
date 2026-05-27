@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { runRecurringPaymentsCron } from "@/lib/cron/recurring-payments";
+import { runJob } from "@/lib/cron/job";
+import { recurringPaymentsJob } from "@/lib/cron/recurring-payments";
 import { requireCronAuth } from "@/lib/cron/guard";
 
 export async function GET(request: NextRequest) {
   try {
     requireCronAuth(request);
-    const start = Date.now();
-    const summary = await runRecurringPaymentsCron();
+    const summary = await runJob(recurringPaymentsJob, { request });
     return successResponse({
-      elapsedMs: Date.now() - start,
-      ranAt: new Date().toISOString(),
+      elapsedMs: summary.durationMs,
+      ranAt: summary.finishedAt.toISOString(),
       ...summary,
     });
   } catch (err) {

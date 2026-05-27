@@ -1,7 +1,8 @@
 /**
- * High-level notification entry point.
+ * High-level notification entry point — the only orchestrator that writes
+ * `NotificationLog` rows.
  *
- * Call sites use this — never the provider or the router directly. The flow:
+ * Flow:
  *
  *   1. Resolve the recipient(s) from CustomerContact (or accept an inline
  *      override for one-off sends, e.g. portal welcome before the contact's
@@ -9,11 +10,20 @@
  *   2. Compute the locale (override > contact.language > "vi").
  *   3. Route to the channel(s) per template + opt-out flags + fallback chain.
  *   4. Render the body (and subject for email).
- *   5. Dispatch through the provider factory; each provider writes its own
- *      NotificationLog row.
- *   6. When routing yields nothing — write a SKIPPED NotificationLog row so
- *      audit/support can see the dropped delivery, and emit an admin warning.
- *   7. Record one AuditLog row tagged `NOTIFICATION_SENT` (or `_SKIPPED`).
+ *   5. Dispatch through the provider factory — the provider returns
+ *      `ProviderDispatchResult` (id + segments + dryRun) but never touches
+ *      the DB.
+ *   6. The orchestrator writes ONE `NotificationLog` row per attempt with the
+ *      final status (SENT / MOCKED / FAILED), provider id + segments, and
+ *      records an AuditLog row tagged `NOTIFICATION_SENT` /
+ *      `NOTIFICATION_FAILED` / `NOTIFICATION_SKIPPED`.
+ *   7. When routing yields nothing — write a SKIPPED row so audit/support can
+ *      see the dropped delivery, and emit an admin warning.
+ *
+ * Phase 3.5 deepening: previously the mock adapter wrote its own log row,
+ * which meant future eSMS / Resend adapters would have to duplicate the same
+ * code (and diverge). Now the adapter contract narrows to pure dispatch and
+ * audit lives in one place.
  *
  * Returns the array of `SendResult` for each delivery attempt — caller can
  * surface IDs to the UI or assert in tests.
@@ -31,7 +41,9 @@ import {
 } from "@/lib/notifications/templates";
 import { getOverride } from "@/lib/notifications/template-overrides";
 import type {
+  NotificationChannel,
   NotificationLocale,
+  NotificationStatus,
   SendResult,
   TemplateVars,
 } from "@/lib/notifications/types";
@@ -104,6 +116,58 @@ async function resolveContact(
   };
 }
 
+/**
+ * Write a `NotificationLog` row + record an AuditLog entry. Single point
+ * where status/provider metadata land on disk — every dispatch path
+ * (success / failure / skipped) funnels through here.
+ */
+async function recordLog(args: {
+  contact: ResolvedContact;
+  channel: NotificationChannel;
+  recipient: string;
+  templateCode: string;
+  locale: NotificationLocale;
+  providerName: string;
+  status: NotificationStatus;
+  providerMessageId?: string;
+  segmentsUsed?: number;
+  errorMessage?: string;
+  payload: Record<string, unknown>;
+  actorType: "USER" | "CUSTOMER" | "SYSTEM";
+  actorId: string | null;
+  auditAction: "NOTIFICATION_SENT" | "NOTIFICATION_FAILED" | "NOTIFICATION_SKIPPED";
+  auditAfter: Record<string, unknown>;
+}): Promise<string> {
+  const log = await prisma.notificationLog.create({
+    data: {
+      customerId: args.contact.customerId,
+      contactId: args.contact.contactId,
+      templateCode: args.templateCode,
+      channel: args.channel,
+      locale: args.locale,
+      provider: args.providerName,
+      recipient: args.recipient,
+      status: args.status,
+      providerMessageId: args.providerMessageId,
+      segmentsUsed: args.segmentsUsed,
+      errorMessage: args.errorMessage,
+      payload: args.payload as never,
+      sentAt:
+        args.status === "SENT" || args.status === "MOCKED" ? new Date() : null,
+    },
+    select: { id: true },
+  });
+  await logAudit({
+    actorType: args.actorType,
+    actorId: args.actorId,
+    action: args.auditAction,
+    entityType: "NotificationLog",
+    entityId: log.id,
+    after: args.auditAfter,
+  });
+  return log.id;
+}
+
 export async function sendNotification(
   input: SendNotificationInput,
 ): Promise<SendResult[]> {
@@ -119,46 +183,40 @@ export async function sendNotification(
 
   const locale: NotificationLocale = input.locale ?? contact.language;
   const routing = route({ templateCode: input.templateCode, contact });
+  const actorType = input.actorType ?? "SYSTEM";
+  const actorId = input.actorId ?? null;
 
   if (routing.length === 0) {
     // Skipped delivery — record + audit + admin error log.
     console.error(
       `[notifications] No deliverable channel for ${input.templateCode} → contact ${contact.contactId} (smsOptOut=${contact.smsOptOut}, emailOptOut=${contact.emailOptOut}, phone=${!!contact.phone1}, email=${!!contact.email})`,
     );
-    const skipped = await prisma.notificationLog.create({
-      data: {
-        customerId: contact.customerId,
-        contactId: contact.contactId,
+    const logId = await recordLog({
+      contact,
+      channel: tmpl.channels[0],
+      recipient: contact.phone1 ?? contact.email ?? "unknown",
+      templateCode: input.templateCode,
+      locale,
+      providerName: "router",
+      status: "SKIPPED",
+      errorMessage:
+        "No deliverable channel (opted out / missing contact info)",
+      payload: { reason: "no-deliverable-channel", vars: input.vars ?? {} },
+      actorType,
+      actorId,
+      auditAction: "NOTIFICATION_SKIPPED",
+      auditAfter: {
         templateCode: input.templateCode,
-        channel: tmpl.channels[0],
-        locale,
-        provider: "router",
-        recipient: contact.phone1 ?? contact.email ?? "unknown",
-        status: "SKIPPED",
-        errorMessage: "No deliverable channel (opted out / missing contact info)",
-        payload: { reason: "no-deliverable-channel", vars: input.vars ?? {} },
+        contactId: contact.contactId,
       },
-      select: { id: true },
     });
-    await logAudit({
-      actorType: input.actorType ?? "SYSTEM",
-      actorId: input.actorId ?? null,
-      action: "NOTIFICATION_SKIPPED",
-      entityType: "NotificationLog",
-      entityId: skipped.id,
-      after: { templateCode: input.templateCode, contactId: contact.contactId },
-    });
-    return [
-      {
-        notificationLogId: skipped.id,
-        status: "SKIPPED",
-      },
-    ];
+    return [{ notificationLogId: logId, status: "SKIPPED" }];
   }
 
   const results: SendResult[] = [];
   // Allow admin DB overrides (UC-AD-04) to replace the file-based body/subject.
   const override = await getOverride(input.templateCode, locale);
+
   for (const r of routing) {
     const baseBody = override?.body ?? pickLocaleBody(tmpl, locale);
     const body = renderTemplate(baseBody, input.vars ?? {});
@@ -169,7 +227,7 @@ export async function sendNotification(
 
     const provider = getNotificationProvider(r.channel);
     try {
-      const result = await provider.send({
+      const dispatch = await provider.send({
         channel: r.channel,
         to: r.recipient,
         templateCode: input.templateCode,
@@ -180,22 +238,40 @@ export async function sendNotification(
         customerId: contact.customerId,
         vars: input.vars,
       });
-      results.push(result);
-      await logAudit({
-        actorType: input.actorType ?? "SYSTEM",
-        actorId: input.actorId ?? null,
-        action: "NOTIFICATION_SENT",
-        entityType: "NotificationLog",
-        entityId: result.notificationLogId,
-        after: {
+      const status: NotificationStatus = dispatch.dryRun ? "MOCKED" : "SENT";
+      const logId = await recordLog({
+        contact,
+        channel: r.channel,
+        recipient: r.recipient,
+        templateCode: input.templateCode,
+        locale,
+        providerName: provider.name,
+        status,
+        providerMessageId: dispatch.providerMessageId,
+        segmentsUsed: dispatch.segmentsUsed,
+        payload: {
+          subject: subject ?? null,
+          body,
+          vars: input.vars ?? {},
+        },
+        actorType,
+        actorId,
+        auditAction: "NOTIFICATION_SENT",
+        auditAfter: {
           templateCode: input.templateCode,
           channel: r.channel,
           locale,
           recipient: r.recipient,
-          status: result.status,
-          providerMessageId: result.providerMessageId ?? null,
+          status,
+          providerMessageId: dispatch.providerMessageId ?? null,
           fallback: r.fallback ?? false,
         },
+      });
+      results.push({
+        notificationLogId: logId,
+        status,
+        providerMessageId: dispatch.providerMessageId,
+        segmentsUsed: dispatch.segmentsUsed,
       });
     } catch (err) {
       // Provider blew up — record FAILED row so we have a forensic trail.
@@ -203,37 +279,29 @@ export async function sendNotification(
       console.error(
         `[notifications] Provider ${provider.name} failed for ${input.templateCode}: ${errMsg}`,
       );
-      const failed = await prisma.notificationLog.create({
-        data: {
-          customerId: contact.customerId,
-          contactId: contact.contactId,
-          templateCode: input.templateCode,
-          channel: r.channel,
-          locale,
-          provider: provider.name,
-          recipient: r.recipient,
-          status: "FAILED",
-          errorMessage: errMsg,
-          payload: { subject, body, vars: input.vars ?? {} },
-        },
-        select: { id: true },
-      });
-      results.push({
-        notificationLogId: failed.id,
+      const logId = await recordLog({
+        contact,
+        channel: r.channel,
+        recipient: r.recipient,
+        templateCode: input.templateCode,
+        locale,
+        providerName: provider.name,
         status: "FAILED",
         errorMessage: errMsg,
-      });
-      await logAudit({
-        actorType: input.actorType ?? "SYSTEM",
-        actorId: input.actorId ?? null,
-        action: "NOTIFICATION_FAILED",
-        entityType: "NotificationLog",
-        entityId: failed.id,
-        after: {
+        payload: { subject, body, vars: input.vars ?? {} },
+        actorType,
+        actorId,
+        auditAction: "NOTIFICATION_FAILED",
+        auditAfter: {
           templateCode: input.templateCode,
           channel: r.channel,
           error: errMsg,
         },
+      });
+      results.push({
+        notificationLogId: logId,
+        status: "FAILED",
+        errorMessage: errMsg,
       });
     }
   }

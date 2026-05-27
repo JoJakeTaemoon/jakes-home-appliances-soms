@@ -7,61 +7,46 @@
  * then call this endpoint.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
-import { canRecordBankTransfer } from "@/lib/payments/access";
-import { recordBankTransfer } from "@/lib/payments/operations";
+import { defineMutation } from "@/lib/api/mutation";
+import { ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { PaymentWorkflow } from "@/lib/payments/workflow";
 import { recordBankTransferSchema } from "@/lib/validators/payment";
 
-interface Ctx {
-  params: Promise<{ id: string }>;
-}
+const paramsSchema = z.object({ id: z.string() });
 
-export async function POST(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canRecordBankTransfer(auth.role)) {
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!PaymentWorkflow.access.canRecordBankTransfer(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-    const { id } = await ctx.params;
+  },
+  params: paramsSchema,
+  body: recordBankTransferSchema,
+  handler: async ({ auth, body, params }) => {
     const existing = await prisma.payment.findUnique({
-      where: { id },
+      where: { id: params.id },
       select: { customerId: true, contractId: true },
     });
     if (!existing) throw new NotFoundError("Payment not found");
 
-    const body = await request.json().catch(() => null);
-    const parsed = recordBankTransferSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-
-    const updated = await recordBankTransfer({
+    const updated = await PaymentWorkflow.recordTransfer({
       customerId: existing.customerId,
       contractId: existing.contractId,
-      expectedPaymentId: id,
-      actualAmount: parsed.data.actualAmount,
-      reference: parsed.data.reference,
-      transferredAt: parsed.data.transferredAt,
-      notes: parsed.data.notes,
+      expectedPaymentId: params.id,
+      actualAmount: body.actualAmount,
+      reference: body.reference,
+      transferredAt: body.transferredAt,
+      notes: body.notes,
       actorUserId: auth.userId,
     });
-    return successResponse({
+    return {
       ...updated,
       expectedAmount: updated.expectedAmount.toString(),
       actualAmount: updated.actualAmount.toString(),
       carryoverAmount: updated.carryoverAmount.toString(),
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

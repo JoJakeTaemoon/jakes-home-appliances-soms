@@ -1,16 +1,16 @@
 import { NextRequest } from "next/server";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { runRentalCompletionCheck } from "@/lib/contracts/cron-completion";
+import { runJob } from "@/lib/cron/job";
+import { rentalCompletionJob } from "@/lib/cron/rental-completion";
 import { requireCronAuth } from "@/lib/cron/guard";
 
 export async function GET(request: NextRequest) {
   try {
     requireCronAuth(request);
-    const start = Date.now();
-    const summary = await runRentalCompletionCheck();
+    const summary = await runJob(rentalCompletionJob, { request });
     return successResponse({
-      elapsedMs: Date.now() - start,
-      ranAt: new Date().toISOString(),
+      elapsedMs: summary.durationMs,
+      ranAt: summary.finishedAt.toISOString(),
       ...summary,
     });
   } catch (err) {

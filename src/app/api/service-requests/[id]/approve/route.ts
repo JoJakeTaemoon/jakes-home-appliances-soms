@@ -7,35 +7,27 @@
  * `SMS_SR_APPROVED` + `EMAIL_SR_APPROVED_DETAILS`.
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireRole } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ConflictError, NotFoundError, ValidationError } from "@/lib/api/error";
+import { defineMutation } from "@/lib/api/mutation";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { approveServiceRequestSchema } from "@/lib/validators/serviceRequest";
-import { approveServiceRequest } from "@/lib/service-requests/operations";
+import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const auth = await requireRole(request, ["ADMIN", "MANAGER"]);
-    const { id } = await params;
-    const body = await request.json().catch(() => null);
-    const parsed = approveServiceRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid approval payload",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
+const paramsSchema = z.object({ id: z.string() });
+
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (auth.role !== "ADMIN" && auth.role !== "MANAGER") {
+      throw new ForbiddenError("Insufficient role");
     }
-
+  },
+  params: paramsSchema,
+  body: approveServiceRequestSchema,
+  handler: async ({ auth, body, params }) => {
     const current = await prisma.serviceRequest.findUnique({
-      where: { id },
+      where: { id: params.id },
       select: { state: true, visit: { select: { id: true } } },
     });
     if (!current) throw new NotFoundError("Service request not found");
@@ -48,13 +40,10 @@ export async function POST(
       throw new ConflictError("Visit already linked to this service request");
     }
 
-    const result = await approveServiceRequest({
-      serviceRequestId: id,
-      input: parsed.data,
+    return ServiceRequestWorkflow.approve({
+      serviceRequestId: params.id,
+      input: body,
       actor: { actorType: "USER", actorUserId: auth.userId },
     });
-    return successResponse(result);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+  },
+});

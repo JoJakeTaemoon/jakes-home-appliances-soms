@@ -14,6 +14,7 @@ import {
   planPaymentTransition,
   type PaymentState,
 } from "@/lib/payments/state";
+import { updateWithStateGuard } from "@/lib/db/state-guard";
 import type { PaymentMethod } from "@/generated/prisma/client";
 import { formatVnd, formatDate } from "@/lib/format";
 import type { NotificationLocale } from "@/lib/notifications/types";
@@ -23,34 +24,23 @@ import type { NotificationLocale } from "@/lib/notifications/types";
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Wraps `prisma.payment.update` with the prior state pinned in WHERE so two
- * concurrent transitions don't both succeed. If the state changed between
- * findUnique and update, Prisma throws P2025 (record not found) and we
- * surface a user-friendly message.
+ * Payment-specific shim over the shared state-guard helper (Refactor C).
+ * Behaviour unchanged: prior state pinned in WHERE, P2025 surfaced as a
+ * "state changed concurrently" error.
  */
+type PaymentRow = Awaited<ReturnType<typeof prisma.payment.update>>;
+
 async function updatePaymentWithStateGuard(args: {
   paymentId: string;
   expectedPriorState: PaymentState;
   data: Parameters<typeof prisma.payment.update>[0]["data"];
-}) {
-  try {
-    return await prisma.payment.update({
-      where: { id: args.paymentId, state: args.expectedPriorState },
-      data: args.data,
-    });
-  } catch (err) {
-    if (
-      err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code: string }).code === "P2025"
-    ) {
-      throw new Error(
-        "Payment state changed concurrently — refresh and try again",
-      );
-    }
-    throw err;
-  }
+}): Promise<PaymentRow> {
+  return (await updateWithStateGuard(prisma.payment, {
+    id: args.paymentId,
+    expectedPriorState: args.expectedPriorState,
+    data: args.data as Record<string, unknown>,
+    entityName: "Payment",
+  })) as PaymentRow;
 }
 
 // ─────────────────────────────────────────────────────────────────────────

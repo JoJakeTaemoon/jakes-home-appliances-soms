@@ -6,22 +6,17 @@
  * server still re-validates per-row before exposing.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 
-export async function GET(request: NextRequest) {
-  try {
-    const caller = await requireCustomerAuth(request);
-
+export const GET = defineQuery({
+  audience: "customer",
+  handler: async ({ auth }) => {
     // Only CONTRACT_PARTY (or primary-site OPS) sees the contact roster.
-    if (caller.role !== "CONTRACT_PARTY") {
-      // We could allow primary OPS to see same-site contacts; check the
-      // caller's primary flag against the DB.
+    if (auth.role !== "CONTRACT_PARTY") {
       const me = await prisma.customerContact.findUnique({
-        where: { id: caller.contactId },
+        where: { id: auth.contactId },
         select: { isPrimary: true, scope: true, siteId: true },
       });
       if (!me?.isPrimary || me.scope !== "SITE" || !me.siteId) {
@@ -30,14 +25,14 @@ export async function GET(request: NextRequest) {
     }
 
     const contacts = await prisma.customerContact.findMany({
-      where: { customerId: caller.customerId },
+      where: { customerId: auth.customerId },
       include: {
         site: { select: { id: true, name: true } },
       },
       orderBy: [{ role: "asc" }, { name: "asc" }],
     });
 
-    return successResponse({
+    return {
       contacts: contacts.map((c) => ({
         id: c.id,
         name: c.name,
@@ -51,8 +46,6 @@ export async function GET(request: NextRequest) {
         site: c.site,
         portalEnabled: c.portalEnabled,
       })),
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

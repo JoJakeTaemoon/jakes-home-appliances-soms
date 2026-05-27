@@ -16,16 +16,13 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/guards";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
-import {
-  canTechnicianViewVisit,
-} from "@/lib/visits/access";
+import { VisitWorkflow } from "@/lib/visits/workflow";
 import {
   ALLOWED_IMAGE_MIME,
   MAX_UPLOAD_BYTES,
   UploadError,
   storeVisitPhoto,
 } from "@/lib/upload/photo-storage";
-import { getVisitOr404 } from "@/lib/visits/queries";
 
 export const runtime = "nodejs";
 // Disable Next's parser; we read the FormData ourselves.
@@ -45,8 +42,8 @@ export async function POST(request: NextRequest) {
     if (typeof visitId !== "string" || !visitId) {
       throw new ValidationError("visitId is required");
     }
-    const visit = await getVisitOr404(visitId);
-    if (!canTechnicianViewVisit(auth, visit)) {
+    const visit = await VisitWorkflow.getById(visitId);
+    if (!VisitWorkflow.access.canTechnicianView(auth, visit)) {
       throw new NotFoundError("Visit not found");
     }
 

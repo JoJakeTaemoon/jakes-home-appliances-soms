@@ -5,6 +5,7 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import { canCreateCustomer, canViewCustomer } from "@/lib/customers/access";
 import {
@@ -13,7 +14,6 @@ import {
 } from "@/lib/validators/customer";
 import {
   errorResponse,
-  paginatedResponse,
   successResponse,
   toErrorResponse,
 } from "@/lib/api/response";
@@ -22,25 +22,17 @@ import { allocateCustomerCode } from "@/lib/customers/code";
 import { logAudit } from "@/lib/audit";
 import type { Prisma } from "@/generated/prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (!canViewCustomer(auth.role)) {
       throw new ForbiddenError("Cannot view customers");
     }
-
-    const url = new URL(request.url);
-    const parsed = customerListQuerySchema.safeParse(Object.fromEntries(url.searchParams));
-    if (!parsed.success) {
-      throw new ValidationError(
-        "Invalid query",
-        parsed.error.issues.map((i) => ({
-          path: i.path.map((p) => (typeof p === "symbol" ? p.toString() : p)),
-          message: i.message,
-        })),
-      );
-    }
-    const { q, type, status, region, page, pageSize } = parsed.data;
+  },
+  query: customerListQuerySchema,
+  paginated: true,
+  handler: async ({ query }) => {
+    const { q, type, status, region, page, pageSize } = query;
 
     const where: Prisma.CustomerWhereInput = {};
     if (type) where.type = type;
@@ -79,11 +71,9 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return paginatedResponse(rows, { page, limit: pageSize, total });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { rows, pagination: { page, limit: pageSize, total } };
+  },
+});
 
 export async function POST(request: NextRequest) {
   try {

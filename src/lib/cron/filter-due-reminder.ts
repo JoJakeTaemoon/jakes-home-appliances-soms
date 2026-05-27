@@ -14,6 +14,7 @@
 import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import { formatDate } from "@/lib/format";
+import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
 
 interface FilterPolicyEntry {
   type: string;
@@ -218,3 +219,28 @@ export async function runFilterDueReminder(
 
   return summary;
 }
+
+/**
+ * `ScheduledJob` adapter — the canonical export for `/api/cron/*` routes.
+ * Retains legacy domain fields (`equipmentScanned`, `notificationsQueued`,
+ * `notificationsDeduped`, `errors`) on the wire.
+ */
+export const filterDueReminderJob: ScheduledJob = {
+  name: "filter-due-reminder",
+  async run({ now }): Promise<JobSummary> {
+    const r = await runFilterDueReminder({ now });
+    return {
+      jobName: "filter-due-reminder",
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      durationMs: 0,
+      itemsProcessed: r.notificationsQueued,
+      itemsSkipped: r.notificationsDeduped,
+      itemsFailed: r.errors.length,
+      equipmentScanned: r.equipmentScanned,
+      notificationsQueued: r.notificationsQueued,
+      notificationsDeduped: r.notificationsDeduped,
+      errors: r.errors,
+    };
+  },
+};

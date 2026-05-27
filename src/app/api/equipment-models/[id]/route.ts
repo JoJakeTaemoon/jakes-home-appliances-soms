@@ -1,10 +1,15 @@
 /**
  * GET   /api/equipment-models/[id]
  * PATCH /api/equipment-models/[id]
+ *
+ * GET migrated to `defineQuery`. PATCH preserves manual flow for AuditLog
+ * before/after pair.
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { updateEquipmentModelSchema } from "@/lib/validators/equipmentModel";
@@ -12,24 +17,24 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 
+const paramsSchema = z.object({ id: z.string() });
+
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    await requireAuth(request);
-    const { id } = await ctx.params;
+export const GET = defineQuery({
+  audience: "staff",
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const model = await prisma.equipmentModel.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: { _count: { select: { equipment: true } } },
     });
     if (!model) throw new NotFoundError("Model not found");
-    return successResponse(model);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return model;
+  },
+});
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {

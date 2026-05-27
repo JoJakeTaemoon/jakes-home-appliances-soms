@@ -1,17 +1,23 @@
 /**
- * Portal-account lockout policy.
+ * Customer lockout — thin facade over `core/lockout` bound to `customerRealm`.
  *
- * Same numerics as the staff lockout (5 fails / 15 min → 15-min lockout) but
- * the counters live on `CustomerContact` instead of `User`. There is no
- * `LoginAttempt`-equivalent table for customer accounts yet — failed-login
- * forensics are recorded via AuditLog only (action=PORTAL_LOGIN_FAILED).
+ * Preserves the historical surface (`isContactLockedOut`,
+ * `recordCustomerFailedLogin`, `recordCustomerLoginSuccess`, `CUSTOMER_LOCKOUT_*`
+ * constants). The counter mechanics live in `realms/customer-realm.ts`:
+ * naive increment on `CustomerContact.failedLoginCount` (5 fails → 15-min
+ * lockout). Failed-login forensics for portal accounts go to AuditLog at
+ * the route level — there is no `CustomerLoginAttempt` table.
  */
 
-import prisma from "@/lib/prisma";
+import { customerRealm } from "@/lib/auth/realms/customer-realm";
+import { isLockedOut as coreIsLockedOut } from "@/lib/auth/core/lockout";
 
-export const CUSTOMER_LOCKOUT_THRESHOLD = 5;
-export const CUSTOMER_LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
-export const CUSTOMER_LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+// Customer-side constant aliases (historical names — same numerics as staff).
+export {
+  LOCKOUT_THRESHOLD as CUSTOMER_LOCKOUT_THRESHOLD,
+  LOCKOUT_WINDOW_MS as CUSTOMER_LOCKOUT_WINDOW_MS,
+  LOCKOUT_DURATION_MS as CUSTOMER_LOCKOUT_DURATION_MS,
+} from "@/lib/auth/core/lockout";
 
 export interface AttemptedContact {
   id: string;
@@ -23,44 +29,24 @@ export function isContactLockedOut(
   contact: Pick<AttemptedContact, "lockedUntil"> | null | undefined,
   now: Date = new Date(),
 ): boolean {
-  if (!contact || !contact.lockedUntil) return false;
-  return contact.lockedUntil.getTime() > now.getTime();
+  return coreIsLockedOut(contact, now);
 }
 
 /**
- * Increment failure counter; lock account if threshold reached.
- *
- * Unlike the staff lockout (which counts attempts in a sliding window via
- * `LoginAttempt`), this version uses the simple counter stored on the
- * CustomerContact row. Counter is reset on successful login or successful
- * password change.
+ * Increment failure counter; lock account if threshold reached. Naive
+ * counter (no sliding window) — counter resets on success or password
+ * change. Forensics for portal logins go to AuditLog at the route level.
  */
 export async function recordCustomerFailedLogin(contactId: string): Promise<void> {
-  const c = await prisma.customerContact.findUnique({
-    where: { id: contactId },
-    select: { failedLoginCount: true },
-  });
-  if (!c) return;
-  const nextCount = c.failedLoginCount + 1;
-  const updates: { failedLoginCount: number; lockedUntil?: Date } = {
-    failedLoginCount: nextCount,
-  };
-  if (nextCount >= CUSTOMER_LOCKOUT_THRESHOLD) {
-    updates.lockedUntil = new Date(Date.now() + CUSTOMER_LOCKOUT_DURATION_MS);
-  }
-  await prisma.customerContact.update({
-    where: { id: contactId },
-    data: updates,
+  await customerRealm.lockout.recordFailure({
+    identifier: contactId,
+    actorId: contactId,
   });
 }
 
 export async function recordCustomerLoginSuccess(contactId: string): Promise<void> {
-  await prisma.customerContact.update({
-    where: { id: contactId },
-    data: {
-      failedLoginCount: 0,
-      lockedUntil: null,
-      lastLoginAt: new Date(),
-    },
+  await customerRealm.lockout.recordSuccess({
+    identifier: contactId,
+    actorId: contactId,
   });
 }

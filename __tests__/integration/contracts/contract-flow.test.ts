@@ -25,7 +25,7 @@ import { GET as contractsGet, POST as contractsPost } from "@/app/api/contracts/
 import { POST as stateRoute } from "@/app/api/contracts/[id]/state/route";
 import { POST as amendRoute } from "@/app/api/contracts/[id]/amend/route";
 import { POST as renewRoute } from "@/app/api/contracts/[id]/renew/route";
-import { runRentalCompletionCheck } from "@/lib/contracts/cron-completion";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 
 const ADMIN_USERNAME = "test_phase3_admin";
 const MANAGER_USERNAME = "test_phase3_manager";
@@ -340,7 +340,7 @@ describe("runRentalCompletionCheck", () => {
       },
     });
 
-    const summary = await runRentalCompletionCheck();
+    const summary = await ContractWorkflow.completeRentals();
     expect(summary.contractsCompleted).toBeGreaterThanOrEqual(1);
 
     const finalContract = await prisma.contract.findUnique({ where: { id: rental.id } });

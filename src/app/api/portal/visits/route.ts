@@ -2,32 +2,31 @@
  * GET /api/portal/visits — UC-PT-03. Visit history for the logged-in customer.
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 
-export async function GET(request: NextRequest) {
-  try {
-    const caller = await requireCustomerAuth(request);
-    const where: Record<string, unknown> = { customerId: caller.customerId };
+export const GET = defineQuery({
+  audience: "customer",
+  handler: async ({ auth }) => {
+    const where: Record<string, unknown> = { customerId: auth.customerId };
     // SITE-scoped OPS contacts only see their own site
-    if (caller.scope === "SITE" && caller.siteId) {
-      where.siteId = caller.siteId;
+    if (auth.scope === "SITE" && auth.siteId) {
+      where.siteId = auth.siteId;
     }
-    const rows = await prisma.visit.findMany({
+    return prisma.visit.findMany({
       where,
       orderBy: [{ scheduledFor: "desc" }],
       take: 100,
       include: {
         equipment: {
-          select: { id: true, serialNumber: true, model: { select: { name: true, modelCode: true } } },
+          select: {
+            id: true,
+            serialNumber: true,
+            model: { select: { name: true, modelCode: true } },
+          },
         },
         leadTechnician: { select: { id: true, username: true } },
       },
     });
-    return successResponse(rows);
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+  },
+});

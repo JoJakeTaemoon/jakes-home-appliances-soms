@@ -2,36 +2,43 @@
  * GET /api/tax-invoices/[id]
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { canViewPaymentList } from "@/lib/payments/access";
 
-interface Ctx {
-  params: Promise<{ id: string }>;
-}
+const paramsSchema = z.object({ id: z.string() });
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (!canViewPaymentList(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-    const { id } = await ctx.params;
+  },
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const inv = await prisma.taxInvoice.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         payment: {
           include: {
-            customer: { select: { id: true, code: true, name: true, type: true, taxCode: true } },
+            customer: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                type: true,
+                taxCode: true,
+              },
+            },
           },
         },
       },
     });
     if (!inv) throw new NotFoundError("TaxInvoice not found");
-    return successResponse({
+    return {
       ...inv,
       payment: inv.payment
         ? {
@@ -41,8 +48,6 @@ export async function GET(request: NextRequest, ctx: Ctx) {
             carryoverAmount: inv.payment.carryoverAmount.toString(),
           }
         : null,
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

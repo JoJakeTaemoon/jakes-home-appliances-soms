@@ -7,22 +7,21 @@
  *   - Renewals due in next 60 days (rental contracts)
  */
 
-import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/guards";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { defineQuery } from "@/lib/api/mutation";
 import { isOfficeRole } from "@/lib/payments/access";
 import { ForbiddenError } from "@/lib/api/error";
 
 const HOUR_MS = 60 * 60 * 1000;
 
-export async function GET(request: NextRequest) {
-  try {
-    const auth = await requireAuth(request);
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
     if (!isOfficeRole(auth.role)) {
       throw new ForbiddenError("Insufficient role");
     }
-
+  },
+  handler: async () => {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
     );
     const endOfDay = new Date(startOfDay.getTime() + 24 * HOUR_MS);
     const weekStart = new Date(startOfDay);
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
     const weekEnd = new Date(weekStart.getTime() + 7 * 24 * HOUR_MS);
     const horizon60 = new Date(startOfDay.getTime() + 60 * 24 * HOUR_MS);
 
@@ -84,7 +83,7 @@ export async function GET(request: NextRequest) {
       todayVisits.map((g) => [g.state, g._count._all]),
     );
 
-    return successResponse({
+    return {
       today: {
         total: todayVisits.reduce((acc, g) => acc + g._count._all, 0),
         byState: visitsByState,
@@ -102,8 +101,6 @@ export async function GET(request: NextRequest) {
       },
       renewals60d: renewalsDue,
       overduePayments: overdueCount,
-    });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    };
+  },
+});

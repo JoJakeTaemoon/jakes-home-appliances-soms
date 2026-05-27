@@ -1,16 +1,17 @@
 /**
  * GET   /api/contracts/[id] — full contract detail.
  * PATCH /api/contracts/[id] — update DRAFT (basic fields) or ACTIVE notes.
+ *
+ * GET migrated to `defineQuery`. PATCH retains the manual shape so the
+ * AuditLog `before:` pre-image stays intact.
  */
 
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
-import {
-  canViewContract,
-  canEditDraftContract,
-  canEditActiveContractNotes,
-} from "@/lib/contracts/access";
+import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { updateContractSchema } from "@/lib/validators/contract";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import {
@@ -20,32 +21,54 @@ import {
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 
+const paramsSchema = z.object({ id: z.string() });
+
 interface Ctx { params: Promise<{ id: string }> }
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    const auth = await requireAuth(request);
-    if (!canViewContract(auth.role)) throw new ForbiddenError("Cannot view contracts");
-    const { id } = await ctx.params;
-
+export const GET = defineQuery({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ContractWorkflow.access.canView(auth.role))
+      throw new ForbiddenError("Cannot view contracts");
+  },
+  params: paramsSchema,
+  handler: async ({ params }) => {
     const contract = await prisma.contract.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         customer: {
-          select: { id: true, code: true, name: true, type: true, shortcode: true },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            shortcode: true,
+          },
         },
         equipment: {
           include: {
             equipment: {
               include: {
-                model: { select: { id: true, modelCode: true, name: true, category: true } },
+                model: {
+                  select: {
+                    id: true,
+                    modelCode: true,
+                    name: true,
+                    category: true,
+                  },
+                },
                 site: { select: { id: true, name: true } },
               },
             },
           },
         },
         parentContract: {
-          select: { id: true, contractNumber: true, amendmentRevision: true, state: true },
+          select: {
+            id: true,
+            contractNumber: true,
+            amendmentRevision: true,
+            state: true,
+          },
         },
         amendments: {
           orderBy: { amendmentRevision: "asc" },
@@ -61,24 +84,30 @@ export async function GET(request: NextRequest, ctx: Ctx) {
         documents: {
           where: { kind: "CONTRACT" },
           orderBy: { generatedAt: "desc" },
-          select: { id: true, locale: true, filename: true, generatedAt: true, sizeBytes: true },
+          select: {
+            id: true,
+            locale: true,
+            filename: true,
+            generatedAt: true,
+            sizeBytes: true,
+          },
         },
       },
     });
     if (!contract) throw new NotFoundError("Contract not found");
 
     const recentAudit = await prisma.auditLog.findMany({
-      where: { entityType: "Contract", entityId: id },
+      where: { entityType: "Contract", entityId: params.id },
       orderBy: { at: "desc" },
       take: 20,
-      include: { actorUser: { select: { id: true, username: true, role: true } } },
+      include: {
+        actorUser: { select: { id: true, username: true, role: true } },
+      },
     });
 
-    return successResponse({ ...contract, recentAudit });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { ...contract, recentAudit };
+  },
+});
 
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
@@ -90,9 +119,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 
     const isDraft = before.state === "DRAFT";
     if (isDraft) {
-      if (!canEditDraftContract(auth.role)) throw new ForbiddenError("Cannot edit drafts");
+      if (!ContractWorkflow.access.canEditDraft(auth.role))
+        throw new ForbiddenError("Cannot edit drafts");
     } else if (before.state === "ACTIVE") {
-      if (!canEditActiveContractNotes(auth.role)) {
+      if (!ContractWorkflow.access.canEditActiveNotes(auth.role)) {
         throw new ForbiddenError("Cannot edit active contracts");
       }
     } else {
@@ -113,9 +143,11 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const data = parsed.data;
 
     if (!isDraft) {
-      // ACTIVE contracts only allow notes (any other field change requires amendment).
       const allowedKeys = new Set(["notes"]);
-      const bad = Object.keys(data).filter((k) => !allowedKeys.has(k) && data[k as keyof typeof data] !== undefined);
+      const bad = Object.keys(data).filter(
+        (k) =>
+          !allowedKeys.has(k) && data[k as keyof typeof data] !== undefined,
+      );
       if (bad.length > 0) {
         throw new ValidationError(
           `Field(s) cannot be edited on ACTIVE contract: ${bad.join(", ")} — use Amend instead`,
@@ -127,12 +159,18 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       where: { id },
       data: {
         startDate: data.startDate === undefined ? undefined : data.startDate,
-        signedByCustomerAt: data.signedAt === undefined ? undefined : data.signedAt,
-        termMonths: data.termMonths === undefined ? undefined : data.termMonths,
+        signedByCustomerAt:
+          data.signedAt === undefined ? undefined : data.signedAt,
+        termMonths:
+          data.termMonths === undefined ? undefined : data.termMonths,
         monthlyMaintenanceFee:
-          data.monthlyMaintenanceFee === undefined ? undefined : data.monthlyMaintenanceFee,
+          data.monthlyMaintenanceFee === undefined
+            ? undefined
+            : data.monthlyMaintenanceFee,
         totalContractValue:
-          data.totalContractValue === undefined ? undefined : data.totalContractValue,
+          data.totalContractValue === undefined
+            ? undefined
+            : data.totalContractValue,
       },
     });
 

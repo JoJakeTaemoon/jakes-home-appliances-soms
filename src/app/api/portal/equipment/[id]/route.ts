@@ -6,22 +6,20 @@
  * these are placeholders).
  */
 
-import { NextRequest } from "next/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireCustomerAuth } from "@/lib/auth/customer-guards";
+import { defineQuery } from "@/lib/api/mutation";
 import { canViewEquipmentAtSite } from "@/lib/auth/customer-access";
-import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 
-interface Ctx { params: Promise<{ id: string }> }
+const paramsSchema = z.object({ id: z.string() });
 
-export async function GET(request: NextRequest, ctx: Ctx) {
-  try {
-    const caller = await requireCustomerAuth(request);
-    const { id } = await ctx.params;
-
+export const GET = defineQuery({
+  audience: "customer",
+  params: paramsSchema,
+  handler: async ({ auth, params }) => {
     const eq = await prisma.equipment.findFirst({
-      where: { id, customerId: caller.customerId },
+      where: { id: params.id, customerId: auth.customerId },
       include: {
         model: true,
         site: { select: { id: true, name: true, address: true } },
@@ -32,11 +30,11 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     if (
       !canViewEquipmentAtSite(
         {
-          contactId: caller.contactId,
-          customerId: caller.customerId,
-          role: caller.role,
-          scope: caller.scope,
-          siteId: caller.siteId,
+          contactId: auth.contactId,
+          customerId: auth.customerId,
+          role: auth.role,
+          scope: auth.scope,
+          siteId: auth.siteId,
         },
         eq.siteId,
       )
@@ -44,8 +42,6 @@ export async function GET(request: NextRequest, ctx: Ctx) {
       throw new ForbiddenError("Out of your site scope");
     }
 
-    return successResponse({ equipment: eq });
-  } catch (err) {
-    return toErrorResponse(err);
-  }
-}
+    return { equipment: eq };
+  },
+});

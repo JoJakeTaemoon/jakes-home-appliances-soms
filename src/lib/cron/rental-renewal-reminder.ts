@@ -12,6 +12,7 @@
 import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import { formatDate, formatVnd } from "@/lib/format";
+import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
 
 const STAGES: Array<{
   daysOut: number;
@@ -157,3 +158,27 @@ export async function runRentalRenewalReminder(
 
   return summary;
 }
+
+/**
+ * `ScheduledJob` adapter — canonical export for `/api/cron/rental-renewal/route.ts`.
+ */
+export const rentalRenewalReminderJob: ScheduledJob = {
+  name: "rental-renewal-reminder",
+  async run({ now }): Promise<JobSummary> {
+    const r = await runRentalRenewalReminder({ now });
+    return {
+      jobName: "rental-renewal-reminder",
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      durationMs: 0,
+      itemsProcessed: r.notificationsQueued,
+      itemsSkipped: r.notificationsDeduped,
+      itemsFailed: r.errors.length,
+      scanned: r.scanned,
+      notificationsQueued: r.notificationsQueued,
+      notificationsDeduped: r.notificationsDeduped,
+      errors: r.errors,
+    };
+  },
+};
+
