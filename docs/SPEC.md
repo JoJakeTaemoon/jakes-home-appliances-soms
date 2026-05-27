@@ -478,7 +478,12 @@ The system can answer "have we received the signed original for contract HD-2026
 - **In-app** — bell notification for office staff (new visit, customer call, payment received, etc.). Carry forward PMIS notification shell.
 - **SMS** (eSMS.vn Brandname `SeoulAqua`, F.1 + F.4 + Q17 confirmed) — urgent/security/dunning-final/D-1 messages. 7 templates in `docs/DOCUMENT_TEMPLATES.md` §A. Phase 3.5 dev uses mock (`SMS_PROVIDER=mock`).
 - **Transactional Email** (Resend, F.7 confirmed) — receipts, acknowledgments, early-stage reminders, summaries with PDF attachments. 9 templates in `docs/DOCUMENT_TEMPLATES.md` §B. Phase 3.5 dev uses mock (`EMAIL_PROVIDER=mock`). Sender `noreply@seoulaqua.com.vn` + Reply-To `cs@seoulaqua.com.vn` (A.14).
+<!-- portfolio:drop-start -->
 - **Operational Email** (vhost.vn Email Relay, F.2 confirmed) — tax invoice attachment delivery (Phase 6+) and future marketing campaigns. Same sender domain, different provider, different audit log.
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+- **Operational Email** (Resend, single ESP) — tax invoice attachment delivery (Phase 6+) and future marketing campaigns. Same sender domain, same provider as transactional, separate audit log tag.
+portfolio:add-end -->
 
 **Per-channel opt-out (F.3 confirmed)**: `CustomerContact.smsOptOut` + `CustomerContact.emailOptOut` flags independent. **System messages (password reset, payment receipt) ignore opt-out** — always delivered.
 
@@ -562,8 +567,18 @@ Automatic; not user-initiated. See §3.3.2 for the trigger + SMS sequence. There
 | **Concurrent users (steady)** | ~10 office staff + ~30 technicians simultaneously typing into visits at end-of-day. Spikes to ~50 unique concurrent. |
 | **Database size (year 1)** | Customers ~10K, Equipment ~30K, Visits ~150K (assuming 80 techs × 5 visits/day × 365), Payments ~150K. Conservatively < 5 GB. |
 | **Storage (uploads, year 1)** | Photos (visits): 80 techs × 5 visits/day × 2 photos × 200 KB × 365 = ~117 GB/year. Signed-paper photos: similar. Use lifecycle: hot 3 months → archive 12 months → backup. |
+<!-- portfolio:drop-start -->
 | **Hosting** | Vercel (Next.js) + Supabase (Postgres) for v0; **vhost.vn migration confirmed (H.1, 2026-05-26)** before production launch. |
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+| **Hosting** | Vercel (Next.js) + Supabase (Postgres) for production. |
+portfolio:add-end -->
+<!-- portfolio:drop-start -->
 | **Region** | HCMC primary. Vietnamese Personal Data Protection law applies — vhost.vn satisfies data residency. |
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+| **Region** | HCMC primary. Vietnamese Personal Data Protection law applies — Supabase regional placement covers residency in v1. |
+portfolio:add-end -->
 | **Backup** | Supabase auto-backup (daily, 7-day retention). Plus weekly `pg_dump` archived to object storage. **Daily backup window VST 03:00 (H.3, 2026-05-26)**. |
 | **Uptime target** | 99 % during business hours (Mon–Sat 08:00–18:00 VST). Acceptable downtime: <2 h scheduled maintenance per month, off-hours. |
 | **PII handling** | Customer phone + address encrypted at rest (Postgres TDE / column-level encryption to be evaluated in Phase 1) |
@@ -612,9 +627,19 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical KR / VI / EN te
   - §4 Equipment: `siteId` + new status enum values (A.3: DEACTIVATED/TERMINATED preserve history); `ownership` field (B.3); §B.1 sale → maintenance transition note
   - §5.2 Contract code format B2C/B2B (B.2); Appendix `parentContractId` + `amendmentRevision` (B2B only, B.5); `monthlyMaintenanceFee` (B.4); `filterPolicy` JSON (E.2)
   - §6 Visit: `siteId`, `leadTechnicianId` + `collaboratorTechnicianIds[]` (K.3 multi-tech); §6.4.1 scheduler ranking with preferred tech + region (C.1, C.2); §6.4 map deferred (C.5)
+<!-- portfolio:drop-start -->
   - §9 Notifications: SMS = eSMS.vn confirmed; transactional Email = Resend (F.7); operational Email = vhost.vn (F.2); opt-out per channel (F.3); Zalo TODO (F.1)
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+  - §9 Notifications: SMS = eSMS.vn confirmed; Email = Resend (transactional + operational); opt-out per channel; Zalo TODO
+portfolio:add-end -->
   - §11 portal URL update
+<!-- portfolio:drop-start -->
   - §12 NFR: vhost.vn hosting (H.1), 24-month audit retention (H.2), 03:00 backup (H.3), 10y/5y document retention (E.4), 1y paper disposal (E.5), online-first PWA + Phase 7 offline (C.4), device targets (K.1)
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+  - §12 NFR: Vercel + Supabase hosting, 24-month audit retention, Supabase backups, 10y/5y document retention (E.4), 1y paper disposal (E.5), online-first PWA + Phase 7 offline (C.4), device targets (K.1)
+portfolio:add-end -->
 - **2026-05-26 (v0.3)** — Customer portal moves IN-scope (§11 new, Phase 3.5). CustomerContact now 1:N for OPS (§3.3.1). Portal auth model §3.3.2 added (phone login + bcrypt + SMS-driven signup). ServiceRequest lifecycle §6.5 added. **Role model collapsed** to 3-tier (`ADMIN > MANAGER > STAFF`) + `TECHNICIAN` parallel + `CUSTOMER` external (§2.1). Q11 (role matrix) resolved inline. Sections renumbered: NFR §12, Open Questions §13, Glossary §14.
 - **2026-05-26** — v0.2. Two-contact customer model added (§3.3.1).
 - **2026-05-25** — v0.1 initial draft. Based on `reference/process/회사 운영 프로세스 종합 정리.pdf` + `프로세스 질의와 응답.pdf` + the 7 CSV samples + 10 form templates. All sections marked `[TBC]` await client answers to the corresponding `QUESTIONS.docx` items.

@@ -51,7 +51,12 @@
 
 - ✅ Client has read SPEC.md and answered all 50 questions in `docs/QUESTIONS.md` (`reference/answers.txt` 2026-05-26)
 - ✅ Logo blue (`#0071BD`) confirmed (I.2); high-res PNG + AI files received (I.1: `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C-01.png` + `.ai`)
+<!-- portfolio:drop-start -->
 - ✅ Hosting target confirmed: **v0 Vercel + Supabase** for fast iteration → **vhost.vn migration before production launch** (H.1)
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+- ✅ Hosting target confirmed: **Vercel + Supabase** for production
+portfolio:add-end -->
 - ⏳ A.5 filter-equipment compatibility data delivery pending 2026-05-29 evening — non-blocking for Phase 1, needed before Phase 5
 
 ---
@@ -353,7 +358,12 @@
 5. Receivable aging report (overdue by 0-30 / 30-60 / 60-90 / 90+ days)
 6. **Cash-handover audit (D.2 client answer)**: 3-step trail `collectedByUserId` (technician) → `officeReceivedByUserId` (office) → `reconciledByUserId` (accountant); each step timestamped. **48-hour SLA alert**: if cash is not marked `officeReceivedAt` within 48h of `collectedAt`, admin dashboard surfaces the row.
 7. **Partial payment support (D.3)**: a customer may pay less than the full installment; system records the partial amount, computes outstanding balance, and rolls remainder into next cycle.
+<!-- portfolio:drop-start -->
 8. **Operational email (F.2)**: invoice PDFs auto-emailed via vhost.vn Email Relay to `Customer.billingEmail`. Separate from transactional Resend channel.
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+8. **Operational email**: invoice PDFs auto-emailed via Resend to `Customer.billingEmail` (single ESP).
+portfolio:add-end -->
 9. Contract end-date recompute on each installment received (per SPEC §7.3)
 10. **VND-only display (D.4 confirmed)**: all currency UI in VND; exports may include conversion column.
 11. Export to accounting CSV (monthly close)
@@ -373,7 +383,12 @@
 - D.3 (partial payment) — ✅ RESOLVED (allow + carryover)
 - D.4 (currency) — ✅ RESOLVED (VND only)
 - D.5 (no-invoice B2B) — ✅ RESOLVED (**all B2B require invoice**; PDF upload optional warning)
+<!-- portfolio:drop-start -->
 - F.2 (email provider for invoice) — ✅ RESOLVED (vhost.vn Email Relay)
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+- F.2 (email provider for invoice) — ✅ RESOLVED (Resend, single ESP)
+portfolio:add-end -->
 
 ---
 
@@ -469,9 +484,19 @@ Everything else can be deferred to the relevant later phase's pre-start gate.
   - **Phase 3**: contract code format `HD-YYYYmmDD/SA-...` with B2B Appendix support (B.2 + B.5); Equipment.ownership auto-flip (B.3); 1-click renewal (B.4); filter policy JSON (E.2); document retention (E.4: 10y/5y); paper destruction policy (E.5).
   - **Phase 3.5**: portal URL = **`portal.seoulaqua.com.vn`** subdomain (A.10) — adds +712K VND/mo SMS cost as A.3 VI bumps to 2-seg.
   - **Phase 4**: multi-tech `leadTechnicianId` + `collaboratorTechnicianIds[]` (K.3); auto-scheduler with preferred tech (C.1, C.2); region sort only (C.5); device targets (K.1: Android 8+ / iOS 14+ / 5-6" / 8MP+); phone+password auth (K.2); online-first PWA (C.3 + C.4).
+<!-- portfolio:drop-start -->
   - **Phase 6**: 48h cash audit SLA (D.2); partial payment + carryover (D.3); VND only (D.4); **all B2B require tax invoice** (D.5) with PDF upload warning-only; vhost.vn Email Relay for invoice delivery (F.2).
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+  - **Phase 6**: 48h cash audit SLA (D.2); partial payment + carryover (D.3); VND only (D.4); **all B2B require tax invoice** (D.5) with PDF upload warning-only; Resend for invoice delivery.
+portfolio:add-end -->
   - **Phase 8+**: **Zalo OA + Mini App TODO** (F.1); Viettel SInvoice direct integration TODO (D.1); tablet e-sig TODO (E.1); map view TODO (C.5); offline queue TODO (C.4); G.1/G.2/G.3 portal v2 expansions.
+<!-- portfolio:drop-start -->
   - **Infra**: vhost.vn hosting confirmed (H.1); 24-month audit retention (H.2); 03:00 VST backup (H.3).
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+  - **Infra**: Vercel + Supabase production; 24-month audit retention (H.2); Supabase managed backups.
+portfolio:add-end -->
   - Phase 0 exit criteria **all met** — ready to start Phase 1.
 - **2026-05-26 (v0.6)** — **Mock-first notification provider** introduced to Phase 3.5. SMS + Email both ship against a mock provider that logs to console + writes `SmsLog`/`EmailLog` rows with `provider='mock'`, `status='MOCKED'`. Real providers (eSMS, Resend) become stubs swapped via env (`SMS_PROVIDER`, `EMAIL_PROVIDER`) when credentials arrive. F.4 / F.7 / A.14 / Q17 reclassified from Phase 3.5 blockers → production-launch blockers — Phase 3.5 dev no longer waits on the 2-3 week eSMS Brandname approval. Same template content, same DB schema, same UI throughout.
 - **2026-05-26 (v0.5)** — Phase 3.5 expanded to **two-channel notification system**: SMS for urgent (security/credentials/dunning-final/D-1) + Email for non-urgent (receipts/acknowledgments/early reminders/summaries with PDF). 10 logical events → 7 SMS templates + 9 email templates (incl. multi-stage variants). Added `src/lib/email/provider.ts` + `src/lib/email/templates.ts` + `EmailLog` model + `src/lib/notifications/router.ts` to Phase 3.5 scope. Verified eSMS pricing applied (830 VND/seg + 50K/mo per network). Monthly cost projection revised: ~1.51M VND/mo (down from ~3.98M, -62%). New blockers F.7 (email provider) + A.14 (email domain DKIM/SPF).

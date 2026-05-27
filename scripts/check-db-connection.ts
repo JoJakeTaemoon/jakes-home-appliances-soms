@@ -14,6 +14,12 @@ import pg from "pg";
 import { config as loadDotenv } from "dotenv";
 
 async function main() {
+  // Skip in environments without a real DB (portfolio-sync CI, isolated build checks).
+  if (process.env.SKIP_DB_CHECK === "1") {
+    console.log("[DB Check] SKIP_DB_CHECK=1 — bypassing connectivity check");
+    return;
+  }
+
   // On Vercel env vars are platform-injected; locally they live in .env.
   // Load .env silently — no-op on Vercel where the file doesn't exist.
   if (!process.env.DIRECT_URL && !process.env.DATABASE_URL) {

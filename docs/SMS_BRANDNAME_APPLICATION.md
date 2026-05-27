@@ -395,7 +395,12 @@ Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5
 - Each template will be sent in the customer's chosen language (VI / KO / EN) based on `CustomerContact.language`. **eSMS only reviews the VI versions** for Brandname approval; KO/EN are stored in our system and rendered through the same Brandname.
 - Verified character counts use the URL `portal.seoulaqua.com.vn` (23 chars, subdomain confirmed by client A.10 2026-05-26). The earlier 16-char root URL assumption is superseded — `SMS_VISIT_REMINDER` VI is now 2-seg. If eSMS requires URL link-tracking (e.g., shortened URLs through their tracking domain), additional segment growth is possible — please confirm eSMS's URL tracking policy before resubmitting.
 - The Brandname `SeoulAqua` is locked once approved; changes require a new submission and another 2-3 week review.
+<!-- portfolio:drop-start -->
 - This application covers **7 SMS templates only**. An additional 9 email templates (receipts, acknowledgments, early-stage reminders) are sent directly from `seoulaqua.com.vn` root domain via Resend (transactional) + vhost.vn (operational), and do not require eSMS Brandname registration. See `docs/DOCUMENT_TEMPLATES.md` §B for the full email template catalog and §C for the channel selection rule.
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+- This application covers **7 SMS templates only**. An additional 9 email templates (receipts, acknowledgments, early-stage reminders) are sent directly from `seoulaqua.com.vn` root domain via Resend (single ESP), and do not require eSMS Brandname registration. See `docs/DOCUMENT_TEMPLATES.md` §B for the full email template catalog and §C for the channel selection rule.
+portfolio:add-end -->
 - **Mock-first dev (2026-05-26 decision)**: Phase 3.5 implementation does not wait on this approval. The codebase ships with `SMS_PROVIDER=mock` that logs sends to console + `SmsLog` table with `status='MOCKED'`. When eSMS approval lands and credentials arrive, production env flips to `SMS_PROVIDER=esms` with no code rewrite. Submit this form when you know your production launch date.
 
 ---

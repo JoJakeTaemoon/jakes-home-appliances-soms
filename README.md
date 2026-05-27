@@ -19,7 +19,12 @@ Customer-centric ops platform for ~10 office staff + up to 80 field technicians.
 | State | TanStack React Query + React Context |
 | Validation | Zod + react-hook-form |
 | Testing | Vitest + React Testing Library + Playwright |
+<!-- portfolio:drop-start -->
 | Hosting | Vercel + Supabase (initial); vhost.vn migration deferred |
+<!-- portfolio:drop-end -->
+<!-- portfolio:add-start
+| Hosting | Vercel + Supabase (production) |
+portfolio:add-end -->
 
 The framework, agent team, build pipeline, and conventions are **inherited from MegaDnC PMIS** (`/Users/jake/Works/MegaDnC/mega_dnc_pmis`). Domain code is rebuilt from scratch for Seoul Aqua.
 
