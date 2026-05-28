@@ -15,13 +15,20 @@ import { toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { getLatestPdf, renderPdf } from "@/lib/pdf/renderer";
 import prisma from "@/lib/prisma";
-import type { PdfLocale } from "@/lib/pdf/types";
+import { langPairForLocale, type PdfLangPair } from "@/lib/pdf/types";
 
 interface Ctx { params: Promise<{ id: string }> }
 
-async function resolveLocale(contractId: string, url: URL): Promise<PdfLocale> {
+/**
+ * Documents are bilingual (Vietnamese primary + secondary). Resolve the
+ * secondary language: explicit `?langPair=` wins, then `?locale=` (en → vi-en),
+ * else the Contract Party's preferred language.
+ */
+async function resolveLangPair(contractId: string, url: URL): Promise<PdfLangPair> {
+  const qPair = url.searchParams.get("langPair");
+  if (qPair === "vi-ko" || qPair === "vi-en") return qPair;
   const qLocale = url.searchParams.get("locale");
-  if (qLocale === "ko" || qLocale === "vi" || qLocale === "en") return qLocale;
+  if (qLocale) return langPairForLocale(qLocale);
   const contract = await prisma.contract.findUnique({
     where: { id: contractId },
     select: {
@@ -32,8 +39,7 @@ async function resolveLocale(contractId: string, url: URL): Promise<PdfLocale> {
       },
     },
   });
-  const lang = contract?.customer.contacts[0]?.language;
-  return (lang === "ko" || lang === "vi" || lang === "en") ? lang : "vi";
+  return langPairForLocale(contract?.customer.contacts[0]?.language);
 }
 
 export async function GET(request: NextRequest, ctx: Ctx) {
@@ -47,9 +53,9 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     let absentOnDisk = !existing || !fs.existsSync(existing.absolutePath);
 
     if (!existing || absentOnDisk) {
-      const locale = await resolveLocale(id, new URL(request.url));
+      const langPair = await resolveLangPair(id, new URL(request.url));
       // Will throw NotFoundError if the contract does not exist.
-      await renderPdf({ kind: "CONTRACT", refId: id, locale, generatedById: auth.userId });
+      await renderPdf({ kind: "CONTRACT", refId: id, langPair, generatedById: auth.userId });
       existing = await getLatestPdf("CONTRACT", id);
       absentOnDisk = !existing || !fs.existsSync(existing.absolutePath);
     }

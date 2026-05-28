@@ -504,6 +504,60 @@ async function addNotes(
   return updated;
 }
 
+/** One technician → HQ relay message stored in `Visit.officeNotes`. */
+export interface OfficeNoteEntry {
+  at: string; // ISO timestamp
+  authorId: string;
+  authorName: string;
+  text: string;
+}
+
+function parseOfficeNotes(raw: unknown): OfficeNoteEntry[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (e): e is OfficeNoteEntry =>
+      !!e &&
+      typeof e === "object" &&
+      typeof (e as OfficeNoteEntry).text === "string" &&
+      typeof (e as OfficeNoteEntry).at === "string",
+  );
+}
+
+/**
+ * Append a technician → HQ relay message (방문 전달사항) to a visit. Stored on
+ * the dedicated `officeNotes` thread, separate from `findings`, so it never
+ * leaks onto the customer-facing work-confirmation PDF.
+ */
+async function addOfficeNote(
+  visitId: string,
+  input: { text: string; author: { id: string; name: string } },
+  actor: VisitActor,
+  request?: NextRequest | null,
+) {
+  const current = await getVisitOr404(visitId);
+  const entry: OfficeNoteEntry = {
+    at: new Date().toISOString(),
+    authorId: input.author.id,
+    authorName: input.author.name,
+    text: input.text,
+  };
+  const thread = [...parseOfficeNotes(current.officeNotes), entry];
+  const updated = await prisma.visit.update({
+    where: { id: visitId },
+    data: { officeNotes: thread as unknown as Prisma.InputJsonValue },
+  });
+  await logAudit({
+    actorType: "USER",
+    actorId: actor.userId,
+    action: "VISIT_OFFICE_NOTE_ADD",
+    entityType: "Visit",
+    entityId: visitId,
+    after: { count: thread.length, text: input.text },
+    request: request ?? null,
+  });
+  return updated;
+}
+
 // ── Queries ────────────────────────────────────────────────────────────────
 
 async function getById(visitId: string) {
@@ -556,6 +610,7 @@ export const VisitWorkflow = {
   complete,
   fail,
   addNotes,
+  addOfficeNote,
   // queries
   getById,
   list,

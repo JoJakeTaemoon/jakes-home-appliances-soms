@@ -5,18 +5,16 @@
  */
 
 import { ContractDocument } from "./shared";
-import { pickPdfMessages } from "@/lib/pdf/messages";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function B2cRentalContract({ contract, customer, equipment, locale, generatedAt }: PdfRenderProps) {
-  const msg = pickPdfMessages(locale);
+export function B2cRentalContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
   return (
     <ContractDocument
-      title={msg.documentTitle.RENTAL_B2C}
+      titleKey="RENTAL_B2C"
       contract={contract}
       customer={customer}
       equipment={equipment}
-      locale={locale}
+      langPair={langPair}
       generatedAt={generatedAt}
       clauseKeys={["rentalTerm", "rentalAutoConvert", "maintenance", "paymentTerms"] as const}
     />

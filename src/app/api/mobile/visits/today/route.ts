@@ -41,9 +41,10 @@ export const GET = defineQuery({
             address: true,
             district: true,
             city: true,
+            // Phone intentionally omitted — technicians call HQ, not customers.
             contacts: {
               where: { role: "OPS_CONTACT", isPrimary: true },
-              select: { name: true, phone1: true },
+              select: { name: true },
             },
           },
         },

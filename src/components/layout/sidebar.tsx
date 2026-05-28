@@ -15,6 +15,7 @@ import {
   Receipt,
   BarChart3,
   Settings,
+  Phone,
 } from "lucide-react";
 
 type LabelKey =
@@ -29,7 +30,8 @@ type LabelKey =
   | "taxInvoices"
   | "reports"
   | "userManagement"
-  | "admin";
+  | "admin"
+  | "companyContact";
 
 interface NavItem {
   href: string;
@@ -56,6 +58,11 @@ const adminNavItems: NavItem[] = [
     href: "/admin/notification-templates",
     labelKey: "admin",
     Icon: Settings,
+  },
+  {
+    href: "/admin/company-contact",
+    labelKey: "companyContact",
+    Icon: Phone,
   },
 ];
 
@@ -185,8 +192,7 @@ export function Sidebar() {
                 const Icon = item.Icon;
                 const active =
                   pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`) ||
-                  pathname.startsWith("/admin/");
+                  pathname.startsWith(`${item.href}/`);
                 return (
                   <li key={item.href}>
                     <Link

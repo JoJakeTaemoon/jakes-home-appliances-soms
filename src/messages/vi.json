@@ -108,6 +108,7 @@
     "main": "Chính",
     "catalog": "Danh mục",
     "admin": "Quản trị",
+    "companyContact": "Liên hệ tổng đài",
     "userManagement": "Quản lý người dùng",
     "reports": "Báo cáo"
   },
@@ -637,6 +638,7 @@
     "site": "Cơ sở",
     "expectedAmount": "Số tiền dự kiến",
     "findings": "Nội dung",
+    "officeNotes": "Lời nhắn từ kỹ thuật viên",
     "partsReplaced": "Phụ tùng thay",
     "photos": "Hình ảnh",
     "signature": "Chữ ký KH",
@@ -809,7 +811,14 @@
     "noVisitsUpcoming": "Không có lượt thăm 7 ngày tới.",
     "lead": "Chính",
     "shared": "Phụ",
-    "callCustomer": "Gọi KH",
+    "callHq": "Gọi tổng đài",
+    "contactLabel": "Người liên hệ",
+    "officeNote": {
+      "title": "Nhắn về văn phòng",
+      "hint": "Không liên hệ trực tiếp khách hàng. Hãy gửi thông tin/lời nhắn về văn phòng.",
+      "placeholder": "Nhập nội dung gửi văn phòng…",
+      "submit": "Gửi văn phòng"
+    },
     "openMaps": "Mở bản đồ",
     "actions": {
       "start": "Bắt đầu",

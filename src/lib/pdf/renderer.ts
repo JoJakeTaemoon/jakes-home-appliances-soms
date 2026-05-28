@@ -33,13 +33,15 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import prisma from "@/lib/prisma";
 import { NotFoundError } from "@/lib/api/error";
 import { registerFonts } from "@/lib/pdf/fonts";
+import { getHqPhone } from "@/lib/settings";
 import type {
   PdfContractView,
   PdfCustomerSummary,
   PdfEquipmentLine,
-  PdfLocale,
+  PdfLangPair,
   PdfRenderProps,
 } from "@/lib/pdf/types";
+import { splitLangPair } from "@/lib/pdf/types";
 import { B2cSaleContract } from "@/lib/pdf/templates/b2c-sale-contract";
 import { B2cRentalContract } from "@/lib/pdf/templates/b2c-rental-contract";
 import { B2bContract } from "@/lib/pdf/templates/b2b-contract";
@@ -73,7 +75,11 @@ export interface RenderRequest {
   kind: PdfKind;
   /** contractId / paymentId / taxInvoiceId / visitId */
   refId: string;
-  locale: PdfLocale;
+  /**
+   * Bilingual language pair. Vietnamese is always the primary; the secondary is
+   * Korean by default or English on request. Defaults to "vi-ko".
+   */
+  langPair?: PdfLangPair;
   /** Tag the Document row with the staff user who triggered the render. */
   generatedById?: string | null;
 }
@@ -205,7 +211,7 @@ interface LoadedContract {
 
 async function loadContract(
   contractId: string,
-  locale: PdfLocale,
+  langPair: PdfLangPair,
 ): Promise<LoadedContract> {
   const row = await prisma.contract.findUnique({
     where: { id: contractId },
@@ -294,7 +300,7 @@ async function loadContract(
     contract,
     customer,
     equipment,
-    locale,
+    langPair,
     generatedAt: new Date(),
   };
 
@@ -339,7 +345,7 @@ interface LoadedReceipt {
 
 async function loadReceipt(
   paymentId: string,
-  locale: PdfLocale,
+  langPair: PdfLangPair,
 ): Promise<LoadedReceipt> {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
@@ -383,7 +389,8 @@ async function loadReceipt(
     carryoverAmount: decimalToNumberOrZero(payment.carryoverAmount),
     reference: payment.reference ?? null,
     notes: payment.notes ?? null,
-    locale,
+    hqPhone: await getHqPhone(),
+    langPair,
     generatedAt: new Date(),
   };
 
@@ -412,8 +419,11 @@ interface LoadedTaxInvoice {
 
 async function loadTaxInvoice(
   taxInvoiceId: string,
-  locale: PdfLocale,
+  langPair: PdfLangPair,
 ): Promise<LoadedTaxInvoice> {
+  // The Vietnamese e-tax invoice (Hóa đơn GTGT) is a statutory single-language
+  // form — render it in the primary (Vietnamese) language only, not bilingual.
+  const { primary } = splitLangPair(langPair);
   const inv = await prisma.taxInvoice.findUnique({
     where: { id: taxInvoiceId },
     include: {
@@ -450,7 +460,7 @@ async function loadTaxInvoice(
     description:
       inv.notes ??
       `Payment ${inv.paymentId.slice(-12).toUpperCase()} — ${inv.payment.method}`,
-    locale,
+    locale: primary,
     generatedAt: new Date(),
   };
 
@@ -501,7 +511,7 @@ interface LoadedWorkConfirmation {
 
 async function loadWorkConfirmation(
   visitId: string,
-  locale: PdfLocale,
+  langPair: PdfLangPair,
 ): Promise<LoadedWorkConfirmation> {
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
@@ -581,7 +591,7 @@ async function loadWorkConfirmation(
       }
     : null;
 
-  const basePayload: Omit<WorkConfPayload, "locale" | "generatedAt"> = {
+  const basePayload: Omit<WorkConfPayload, "langPair" | "generatedAt"> = {
     visitNumber: visit.id.slice(-12).toUpperCase(),
     visitType: visit.type,
     customerName: customer.name,
@@ -626,7 +636,7 @@ async function loadWorkConfirmation(
 
   return {
     element: React.createElement(WorkConfirmation, {
-      payload: { ...basePayload, locale, generatedAt: new Date() },
+      payload: { ...basePayload, langPair, generatedAt: new Date() },
     }),
     templateCode,
     customerId: customer.id,
@@ -654,7 +664,7 @@ interface DocumentWriteInput {
     | "WORK_CONFIRMATION"
     | "PERIODIC_INSPECTION";
   templateCode: string;
-  locale: PdfLocale;
+  langPair: PdfLangPair;
   storageKey: string;
   filename: string;
   sizeBytes: number;
@@ -663,6 +673,7 @@ interface DocumentWriteInput {
 
 async function writeDocumentRow(input: DocumentWriteInput): Promise<string> {
   const documentKind = input.documentKindOverride ?? input.kind;
+  const { primary, secondary } = splitLangPair(input.langPair);
   const doc = await prisma.document.create({
     data: {
       kind: documentKind,
@@ -671,7 +682,8 @@ async function writeDocumentRow(input: DocumentWriteInput): Promise<string> {
       paymentId: input.paymentId ?? null,
       visitId: input.visitId ?? null,
       templateCode: input.templateCode,
-      locale: input.locale,
+      locale: primary,
+      secondaryLocale: secondary,
       storageKey: input.storageKey,
       filename: input.filename,
       mimeType: "application/pdf",
@@ -697,10 +709,11 @@ async function writeDocumentRow(input: DocumentWriteInput): Promise<string> {
 export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
   registerFonts();
   const now = new Date();
+  const langPair: PdfLangPair = req.langPair ?? "vi-ko";
 
   switch (req.kind) {
     case "CONTRACT": {
-      const loaded = await loadContract(req.refId, req.locale);
+      const loaded = await loadContract(req.refId, langPair);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("CONTRACT", {
@@ -713,7 +726,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
         customerId: loaded.customerId,
         contractId: req.refId,
         templateCode: loaded.templateCode,
-        locale: req.locale,
+        langPair,
         storageKey,
         filename,
         sizeBytes: buffer.byteLength,
@@ -728,7 +741,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
     }
 
     case "RECEIPT": {
-      const loaded = await loadReceipt(req.refId, req.locale);
+      const loaded = await loadReceipt(req.refId, langPair);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("RECEIPT", { refId: req.refId });
@@ -738,7 +751,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
         customerId: loaded.customerId,
         paymentId: loaded.paymentId,
         templateCode: loaded.templateCode,
-        locale: req.locale,
+        langPair,
         storageKey,
         filename,
         sizeBytes: buffer.byteLength,
@@ -753,7 +766,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
     }
 
     case "TAX_INVOICE": {
-      const loaded = await loadTaxInvoice(req.refId, req.locale);
+      const loaded = await loadTaxInvoice(req.refId, langPair);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("TAX_INVOICE", {
@@ -766,7 +779,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
         customerId: loaded.customerId,
         paymentId: loaded.paymentId,
         templateCode: loaded.templateCode,
-        locale: req.locale,
+        langPair,
         storageKey,
         filename,
         sizeBytes: buffer.byteLength,
@@ -787,7 +800,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
     }
 
     case "WORK_CONFIRMATION": {
-      const loaded = await loadWorkConfirmation(req.refId, req.locale);
+      const loaded = await loadWorkConfirmation(req.refId, langPair);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("WORK_CONFIRMATION", {
@@ -802,7 +815,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
           ? "PERIODIC_INSPECTION"
           : "WORK_CONFIRMATION",
         templateCode: loaded.templateCode,
-        locale: req.locale,
+        langPair,
         storageKey,
         filename,
         sizeBytes: buffer.byteLength,

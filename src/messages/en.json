@@ -108,6 +108,7 @@
     "main": "Main",
     "catalog": "Catalog",
     "admin": "Admin",
+    "companyContact": "Company contact",
     "userManagement": "User Management",
     "reports": "Reports"
   },
@@ -637,6 +638,7 @@
     "site": "Site",
     "expectedAmount": "Expected amount",
     "findings": "Findings",
+    "officeNotes": "Handoff notes from technician",
     "partsReplaced": "Parts replaced",
     "photos": "Photos",
     "signature": "Customer signature",
@@ -809,7 +811,14 @@
     "noVisitsUpcoming": "No upcoming visits in the next 7 days.",
     "lead": "Lead",
     "shared": "Shared",
-    "callCustomer": "Call customer",
+    "callHq": "Call HQ",
+    "contactLabel": "Contact",
+    "officeNote": {
+      "title": "Handoff to HQ",
+      "hint": "Relay information or messages to the office. Customers are not contacted directly.",
+      "placeholder": "Write a message for the office…",
+      "submit": "Send to HQ"
+    },
     "openMaps": "Open in Maps",
     "actions": {
       "start": "Start visit",

@@ -14,6 +14,8 @@ import {
   Image,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { Bi } from "./shared";
+import { splitLangPair, type PdfLangPair } from "@/lib/pdf/types";
 
 export type WorkConfLocale = "ko" | "vi" | "en";
 
@@ -50,7 +52,7 @@ export interface WorkConfPayload {
   signaturePhoto: WorkConfPhoto | null;
   collectedAmount: number | null;
   paymentMethod: string | null;
-  locale: WorkConfLocale;
+  langPair: PdfLangPair;
   generatedAt: Date;
 }
 
@@ -71,6 +73,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 4,
+    textAlign: "center",
+  },
+  docTitleSecondary: {
+    fontSize: 11,
+    fontWeight: "normal",
+    color: "#555",
     marginBottom: 14,
     textAlign: "center",
   },
@@ -79,10 +87,15 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#0C6BA8",
     marginTop: 10,
-    marginBottom: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e5e5",
     paddingBottom: 2,
+  },
+  sectionTitleSecondary: {
+    fontSize: 8.5,
+    fontWeight: "normal",
+    color: "#6AA4C8",
+    marginBottom: 6,
   },
   card: {
     borderWidth: 1,
@@ -92,7 +105,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   row: { flexDirection: "row", marginBottom: 3 },
-  label: { width: 110, color: "#666" },
+  label: { width: 120, color: "#666" },
+  labelSecondary: { fontSize: 8, color: "#999" },
   value: { flex: 1, color: "#111" },
   findings: { lineHeight: 1.5, marginTop: 4 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 4 },
@@ -258,7 +272,7 @@ const LABELS: Record<WorkConfLocale, LabelDict> = {
   },
 };
 
-function formatDate(d: Date | null | undefined, locale: WorkConfLocale): string {
+function formatDate(d: Date | null | undefined): string {
   if (!d) return "—";
   const date = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(date.getTime())) return "—";
@@ -267,8 +281,8 @@ function formatDate(d: Date | null | undefined, locale: WorkConfLocale): string 
   const day = String(date.getDate()).padStart(2, "0");
   const hh = String(date.getHours()).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
-  if (locale === "vi") return `${day}/${m}/${y} ${hh}:${mm}`;
-  return `${y}-${m}-${day} ${hh}:${mm}`;
+  // Primary language is always Vietnamese → DD/MM/YYYY.
+  return `${day}/${m}/${y} ${hh}:${mm}`;
 }
 
 function formatVnd(value: number | null | undefined): string {
@@ -280,9 +294,20 @@ function formatVnd(value: number | null | undefined): string {
   return `${n < 0 ? "-" : ""}${withDots} VND`;
 }
 
-export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
-  const t = LABELS[payload.locale];
+export function WorkConfirmation({ payload }: Readonly<{ payload: WorkConfPayload }>) {
+  const { primary, secondary } = splitLangPair(payload.langPair);
+  const P = LABELS[primary];
+  const S = LABELS[secondary];
   const showSite = payload.customerType === "B2B";
+  const biLabel = (key: keyof LabelDict) => (
+    <Bi primary={P[key]} secondary={S[key]} style={styles.label} subStyle={styles.labelSecondary} />
+  );
+  const section = (k: keyof LabelDict) => (
+    <>
+      <Text style={styles.sectionTitle}>{P[k]}</Text>
+      <Text style={styles.sectionTitleSecondary}>{S[k]}</Text>
+    </>
+  );
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
@@ -294,46 +319,41 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
             </Text>
           </View>
           <View style={{ textAlign: "right" }}>
-            <Text style={{ fontSize: 9, color: "#666" }}>{t.visitNo}</Text>
+            <Text style={{ fontSize: 9, color: "#666" }}>{P.visitNo} / {S.visitNo}</Text>
             <Text style={{ fontSize: 11, fontWeight: "bold" }}>
               {payload.visitNumber}
             </Text>
           </View>
         </View>
 
-        <Text style={styles.docTitle}>{t.title}</Text>
+        <Text style={styles.docTitle}>{P.title}</Text>
+        <Text style={styles.docTitleSecondary}>{S.title}</Text>
 
-        <Text style={styles.sectionTitle}>{t.visit}</Text>
+        {section("visit")}
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.visitType}</Text>
+            {biLabel("visitType")}
             <Text style={styles.value}>{payload.visitType}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.scheduledFor}</Text>
-            <Text style={styles.value}>
-              {formatDate(payload.scheduledFor, payload.locale)}
-            </Text>
+            {biLabel("scheduledFor")}
+            <Text style={styles.value}>{formatDate(payload.scheduledFor)}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.startedAt}</Text>
-            <Text style={styles.value}>
-              {formatDate(payload.startedAt, payload.locale)}
-            </Text>
+            {biLabel("startedAt")}
+            <Text style={styles.value}>{formatDate(payload.startedAt)}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.completedAt}</Text>
-            <Text style={styles.value}>
-              {formatDate(payload.completedAt, payload.locale)}
-            </Text>
+            {biLabel("completedAt")}
+            <Text style={styles.value}>{formatDate(payload.completedAt)}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.technician}</Text>
+            {biLabel("technician")}
             <Text style={styles.value}>{payload.technicianName}</Text>
           </View>
           {payload.collaboratorNames.length > 0 && (
             <View style={styles.row}>
-              <Text style={styles.label}>{t.collaborators}</Text>
+              {biLabel("collaborators")}
               <Text style={styles.value}>
                 {payload.collaboratorNames.join(", ")}
               </Text>
@@ -341,35 +361,35 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>{t.customer}</Text>
+        {section("customer")}
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.customer}</Text>
+            {biLabel("customer")}
             <Text style={styles.value}>{payload.customerName}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{t.customerCode}</Text>
+            {biLabel("customerCode")}
             <Text style={styles.value}>{payload.customerCode}</Text>
           </View>
           {payload.customerType === "B2B" && payload.taxCode && (
             <View style={styles.row}>
-              <Text style={styles.label}>{t.taxCode}</Text>
+              {biLabel("taxCode")}
               <Text style={styles.value}>{payload.taxCode}</Text>
             </View>
           )}
           {showSite && payload.siteName && (
             <View style={styles.row}>
-              <Text style={styles.label}>{t.site}</Text>
+              {biLabel("site")}
               <Text style={styles.value}>{payload.siteName}</Text>
             </View>
           )}
           <View style={styles.row}>
-            <Text style={styles.label}>{t.address}</Text>
+            {biLabel("address")}
             <Text style={styles.value}>{payload.address || "—"}</Text>
           </View>
           {payload.contactName && (
             <View style={styles.row}>
-              <Text style={styles.label}>{t.contact}</Text>
+              {biLabel("contact")}
               <Text style={styles.value}>
                 {payload.contactName}
                 {payload.contactPhone ? ` · ${payload.contactPhone}` : ""}
@@ -380,16 +400,16 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
 
         {payload.equipment && (
           <>
-            <Text style={styles.sectionTitle}>{t.equipment}</Text>
+            {section("equipment")}
             <View style={styles.card}>
               <View style={styles.row}>
-                <Text style={styles.label}>{t.model}</Text>
+                {biLabel("model")}
                 <Text style={styles.value}>
                   {payload.equipment.modelCode} — {payload.equipment.modelName}
                 </Text>
               </View>
               <View style={styles.row}>
-                <Text style={styles.label}>{t.serial}</Text>
+                {biLabel("serial")}
                 <Text style={styles.value}>
                   {payload.equipment.serialNumber ?? "—"}
                 </Text>
@@ -398,15 +418,15 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
           </>
         )}
 
-        <Text style={styles.sectionTitle}>{t.findings}</Text>
+        {section("findings")}
         <View style={styles.card}>
-          <Text style={styles.findings}>{payload.findings || t.none}</Text>
+          <Text style={styles.findings}>{payload.findings || `${P.none} / ${S.none}`}</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>{t.partsReplaced}</Text>
+        {section("partsReplaced")}
         <View style={styles.card}>
           {payload.partsReplaced.length === 0 ? (
-            <Text style={styles.value}>{t.none}</Text>
+            <Text style={styles.value}>{P.none} / {S.none}</Text>
           ) : (
             <View style={styles.chipRow}>
               {payload.partsReplaced.map((p, i) => (
@@ -420,7 +440,7 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
 
         {payload.photos.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>{t.photos}</Text>
+            {section("photos")}
             <View style={styles.photoGrid}>
               {payload.photos.slice(0, 12).map((p, i) => (
                 <View key={`${p.storageKey}-${i}`} style={styles.photoBox}>
@@ -434,17 +454,17 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
         {payload.collectedAmount !== null &&
           payload.collectedAmount !== undefined && (
             <>
-              <Text style={styles.sectionTitle}>{t.payment}</Text>
+              {section("payment")}
               <View style={styles.card}>
                 <View style={styles.row}>
-                  <Text style={styles.label}>{t.payment}</Text>
+                  {biLabel("payment")}
                   <Text style={styles.value}>
                     {formatVnd(payload.collectedAmount)}
                   </Text>
                 </View>
                 {payload.paymentMethod && (
                   <View style={styles.row}>
-                    <Text style={styles.label}>{t.paymentMethod}</Text>
+                    {biLabel("paymentMethod")}
                     <Text style={styles.value}>{payload.paymentMethod}</Text>
                   </View>
                 )}
@@ -452,7 +472,7 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
             </>
           )}
 
-        <Text style={styles.sectionTitle}>{t.signature}</Text>
+        {section("signature")}
         {payload.signaturePhoto ? (
           <View style={styles.signatureBox}>
             <Image
@@ -461,16 +481,16 @@ export function WorkConfirmation({ payload }: { payload: WorkConfPayload }) {
             />
           </View>
         ) : (
-          <Text style={styles.value}>{t.none}</Text>
+          <Text style={styles.value}>{P.none} / {S.none}</Text>
         )}
 
         <View style={styles.footer} fixed>
           <Text>
-            {t.generated}: {formatDate(payload.generatedAt, payload.locale)}
+            {P.generated}: {formatDate(payload.generatedAt)}
           </Text>
           <Text
             render={({ pageNumber, totalPages }) =>
-              t.pageOf
+              P.pageOf
                 .replace("{page}", String(pageNumber))
                 .replace("{total}", String(totalPages))
             }

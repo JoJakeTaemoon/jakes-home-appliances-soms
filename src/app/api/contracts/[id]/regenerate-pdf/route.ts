@@ -20,7 +20,7 @@ import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
-import type { PdfLocale } from "@/lib/pdf/types";
+import { langPairForLocale, type PdfLangPair, type PdfLocale } from "@/lib/pdf/types";
 
 interface Ctx { params: Promise<{ id: string }> }
 
@@ -60,10 +60,16 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       }
     }
 
+    // PDF is bilingual: Vietnamese primary + secondary. Honour an explicit
+    // ?langPair= override, otherwise derive the secondary from `locale`.
+    const qPair = url.searchParams.get("langPair");
+    const langPair: PdfLangPair =
+      qPair === "vi-ko" || qPair === "vi-en" ? qPair : langPairForLocale(locale);
+
     const result = await ContractWorkflow.regeneratePdf({
       contractId: id,
       actor: { userId: auth.userId, role: auth.role },
-      locale,
+      langPair,
     });
 
     await logAudit({

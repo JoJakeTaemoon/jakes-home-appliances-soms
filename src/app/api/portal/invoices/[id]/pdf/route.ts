@@ -11,6 +11,7 @@ import { requireCustomerAuth } from "@/lib/auth/customer-guards";
 import { toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { renderPdf } from "@/lib/pdf/renderer";
+import { langPairForLocale } from "@/lib/pdf/types";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
       const result = await renderPdf({
         kind: "TAX_INVOICE",
         refId: id,
-        locale: caller.language,
+        langPair: langPairForLocale(caller.language),
       });
       storageKey = result.storageKey;
     }

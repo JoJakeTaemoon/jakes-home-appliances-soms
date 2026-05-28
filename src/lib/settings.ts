@@ -7,6 +7,7 @@
  */
 
 import prisma from "@/lib/prisma";
+import { HQ_PHONE } from "@/lib/config/company";
 
 const CACHE_TTL_MS = 60_000;
 const cache = new Map<string, { value: unknown; expiresAt: number }>();
@@ -96,4 +97,32 @@ export async function setSchedulerWeights(
   updatedById?: string | null,
 ): Promise<void> {
   await setSetting(SCHEDULER_WEIGHTS_KEY, weights, updatedById);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Company HQ phone — admin-editable, single source of truth for the
+// "Call HQ" action and every {hq_phone} notification placeholder.
+// Falls back to the HQ_PHONE constant when no row exists yet.
+// ─────────────────────────────────────────────────────────────────────────
+
+export const COMPANY_HQ_PHONE_KEY = "company.hqPhone";
+export const COMPANY_HQ_PHONE_DEFAULT = HQ_PHONE;
+
+export async function getHqPhone(): Promise<string> {
+  const raw = await getSetting<string>(COMPANY_HQ_PHONE_KEY, COMPANY_HQ_PHONE_DEFAULT);
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : COMPANY_HQ_PHONE_DEFAULT;
+}
+
+export async function setHqPhone(
+  phone: string,
+  updatedById?: string | null,
+): Promise<void> {
+  await setSetting(COMPANY_HQ_PHONE_KEY, phone.trim(), updatedById);
+}
+
+/** Bare digits suitable for a `tel:` href, derived from any display format. */
+export function hqPhoneTel(displayPhone: string): string {
+  return displayPhone.replace(/[^\d+]/g, "");
 }

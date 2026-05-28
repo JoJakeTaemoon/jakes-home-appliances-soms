@@ -20,6 +20,11 @@ import {
   getSchedulerWeights,
   setSchedulerWeights,
   SCHEDULER_WEIGHTS_DEFAULT,
+  getHqPhone,
+  setHqPhone,
+  hqPhoneTel,
+  COMPANY_HQ_PHONE_DEFAULT,
+  COMPANY_HQ_PHONE_KEY,
 } from "@/lib/settings";
 
 beforeEach(() => {
@@ -92,5 +97,40 @@ describe("setSetting / scheduler weights", () => {
       "u1",
     );
     expect(prisma.systemSetting.upsert).toHaveBeenCalled();
+  });
+});
+
+describe("HQ phone setting", () => {
+  it("returns the HQ_PHONE constant default when nothing stored", async () => {
+    (prisma.systemSetting.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    expect(await getHqPhone()).toBe(COMPANY_HQ_PHONE_DEFAULT);
+  });
+
+  it("returns the stored override when present", async () => {
+    (prisma.systemSetting.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      value: "+84-90-000-1111",
+    });
+    expect(await getHqPhone()).toBe("+84-90-000-1111");
+  });
+
+  it("falls back to default for a blank/whitespace stored value", async () => {
+    (prisma.systemSetting.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      value: "   ",
+    });
+    expect(await getHqPhone()).toBe(COMPANY_HQ_PHONE_DEFAULT);
+  });
+
+  it("setHqPhone trims and upserts under the company.hqPhone key", async () => {
+    await setHqPhone("  028-9999-0000  ", "admin1");
+    expect(prisma.systemSetting.upsert).toHaveBeenCalledWith({
+      where: { key: COMPANY_HQ_PHONE_KEY },
+      create: { key: COMPANY_HQ_PHONE_KEY, value: "028-9999-0000", updatedById: "admin1" },
+      update: { value: "028-9999-0000", updatedById: "admin1" },
+    });
+  });
+
+  it("hqPhoneTel strips display formatting to dialable digits", () => {
+    expect(hqPhoneTel("028-1234-5678")).toBe("02812345678");
+    expect(hqPhoneTel("+84 (28) 1234-5678")).toBe("+842812345678");
   });
 });

@@ -22,6 +22,7 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { updateWithStateGuard } from "@/lib/db/state-guard";
 import { renderPdf } from "@/lib/pdf/renderer";
+import type { PdfLangPair } from "@/lib/pdf/types";
 import {
   IllegalStateTransitionError,
   planTransition,
@@ -320,16 +321,16 @@ async function renew(
   return result;
 }
 
-/** Render a fresh contract PDF (UC-CT-10 regenerate). */
+/** Render a fresh contract PDF (UC-CT-10 regenerate). Bilingual (vi + secondary). */
 async function regeneratePdf(args: {
   contractId: string;
   actor: ContractActor;
-  locale: "ko" | "vi" | "en";
+  langPair: PdfLangPair;
 }) {
   return renderPdf({
     kind: "CONTRACT",
     refId: args.contractId,
-    locale: args.locale,
+    langPair: args.langPair,
     generatedById: args.actor.userId,
   });
 }

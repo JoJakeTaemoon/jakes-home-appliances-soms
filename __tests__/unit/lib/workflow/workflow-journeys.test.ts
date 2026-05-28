@@ -281,3 +281,67 @@ describe("VisitWorkflow: SCHEDULED → IN_PROGRESS via start()", () => {
     expect(mockedPrisma.visit.update).not.toHaveBeenCalled();
   });
 });
+
+describe("VisitWorkflow: addOfficeNote() technician → HQ relay", () => {
+  it("appends a new entry to the officeNotes thread + audits", async () => {
+    mockedPrisma.visit.findUnique.mockResolvedValueOnce({
+      id: "v-3",
+      state: "IN_PROGRESS",
+      officeNotes: [
+        { at: "2026-05-28T00:00:00.000Z", authorId: "t-0", authorName: "tech0", text: "earlier" },
+      ],
+      customer: { id: "c-1", contacts: [] },
+      equipment: null,
+      leadTechnician: null,
+      payments: [],
+      documents: [],
+      serviceRequest: null,
+    } as never);
+    mockedPrisma.visit.update.mockResolvedValueOnce({ id: "v-3" } as never);
+
+    await VisitWorkflow.addOfficeNote(
+      "v-3",
+      { text: "Customer asked to reschedule", author: { id: "t-1", name: "tech1" } },
+      { userId: "t-1", role: "TECHNICIAN" },
+    );
+
+    const call = mockedPrisma.visit.update.mock.calls[0][0] as unknown as {
+      data: { officeNotes: Array<{ authorName: string; text: string }> };
+    };
+    // Existing entry preserved, new one appended.
+    expect(call.data.officeNotes).toHaveLength(2);
+    expect(call.data.officeNotes[1]).toMatchObject({
+      authorId: "t-1",
+      authorName: "tech1",
+      text: "Customer asked to reschedule",
+    });
+    expect(mockedAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "VISIT_OFFICE_NOTE_ADD" }),
+    );
+  });
+
+  it("starts a fresh thread when officeNotes is null", async () => {
+    mockedPrisma.visit.findUnique.mockResolvedValueOnce({
+      id: "v-4",
+      state: "SCHEDULED",
+      officeNotes: null,
+      customer: { id: "c-1", contacts: [] },
+      equipment: null,
+      leadTechnician: null,
+      payments: [],
+      documents: [],
+      serviceRequest: null,
+    } as never);
+    mockedPrisma.visit.update.mockResolvedValueOnce({ id: "v-4" } as never);
+
+    await VisitWorkflow.addOfficeNote(
+      "v-4",
+      { text: "first note", author: { id: "t-1", name: "tech1" } },
+      { userId: "t-1", role: "TECHNICIAN" },
+    );
+    const call = mockedPrisma.visit.update.mock.calls[0][0] as unknown as {
+      data: { officeNotes: unknown[] };
+    };
+    expect(call.data.officeNotes).toHaveLength(1);
+  });
+});
