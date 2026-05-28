@@ -6,10 +6,10 @@
 import { z } from "zod";
 
 /**
- * Login accepts either a username (office staff) or a phone (technicians).
- * The legacy `username` field is preserved as the canonical key — the API
- * accepts both forms (`{ username }` and `{ phone, password }`) and the
- * route handler resolves them to a User.
+ * Login by phone (the canonical staff key id since 2026-05-28).
+ *
+ * The legacy `username` field is still accepted by the API for back-compat
+ * with older integration tests / dev scripts, but new UI submits `phone`.
  */
 export const loginSchema = z
   .object({
@@ -18,7 +18,26 @@ export const loginSchema = z
     password: z.string().min(1, "Password is required").max(256),
   })
   .refine((d) => !!d.username || !!d.phone, {
-    message: "username or phone is required",
-    path: ["username"],
+    message: "phone is required",
+    path: ["phone"],
   });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+/** POST /api/auth/password-reset/request — { phone, locale }. */
+export const passwordResetRequestSchema = z.object({
+  phone: z.string().trim().min(4).max(40),
+  /** UI locale of the requester — drives the SMS body's language. */
+  locale: z.enum(["vi", "ko", "en"]).optional(),
+});
+export type PasswordResetRequestInput = z.infer<
+  typeof passwordResetRequestSchema
+>;
+
+/** POST /api/auth/password-reset/verify — { phone, code }. */
+export const passwordResetVerifySchema = z.object({
+  phone: z.string().trim().min(4).max(40),
+  code: z.string().trim().regex(/^\d{6}$/, "Code must be 6 digits"),
+});
+export type PasswordResetVerifyInput = z.infer<
+  typeof passwordResetVerifySchema
+>;

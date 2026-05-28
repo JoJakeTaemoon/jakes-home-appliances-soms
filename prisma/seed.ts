@@ -22,59 +22,60 @@ async function main() {
   console.log("Seeding...");
 
   // ─── Staff users ────────────────────────────────────────────────────
-  const adminPw = await hash("admin1234");
-  const managerPw = await hash("manager1234");
-  const staffPw = await hash("staff1234");
-  const techPw = await hash("tech1234");
+  // Uniform dev password — phone is the login key (changed 2026-05-28).
+  const devPw = await hash("12341234");
 
   const admin = await prisma.user.upsert({
-    where: { username: "admin" },
-    update: {},
+    where: { phone: "012345678" },
+    update: { username: "admin", passwordHash: devPw, role: "ADMIN" },
     create: {
       username: "admin",
+      phone: "012345678",
       email: "admin@seoulaqua.com.vn",
-      passwordHash: adminPw,
+      passwordHash: devPw,
       role: "ADMIN",
     },
   });
   const manager = await prisma.user.upsert({
-    where: { username: "manager" },
-    update: {},
+    where: { phone: "0123456781" },
+    update: { username: "manager", passwordHash: devPw, role: "MANAGER" },
     create: {
       username: "manager",
+      phone: "0123456781",
       email: "manager@seoulaqua.com.vn",
-      passwordHash: managerPw,
+      passwordHash: devPw,
       role: "MANAGER",
     },
   });
   const staff = await prisma.user.upsert({
-    where: { username: "staff" },
-    update: {},
+    where: { phone: "0123456782" },
+    update: { username: "staff", passwordHash: devPw, role: "STAFF" },
     create: {
       username: "staff",
+      phone: "0123456782",
       email: "staff@seoulaqua.com.vn",
-      passwordHash: staffPw,
+      passwordHash: devPw,
       role: "STAFF",
     },
   });
   const tech1 = await prisma.user.upsert({
-    where: { username: "tech1" },
-    update: {},
+    where: { phone: "0123456783" },
+    update: { username: "tech1", passwordHash: devPw, role: "TECHNICIAN" },
     create: {
       username: "tech1",
-      phone: "0900000001",
-      passwordHash: techPw,
+      phone: "0123456783",
+      passwordHash: devPw,
       role: "TECHNICIAN",
       preferredRegion: "HCMC-D1",
     },
   });
   const tech2 = await prisma.user.upsert({
-    where: { username: "tech2" },
-    update: {},
+    where: { phone: "0123456784" },
+    update: { username: "tech2", passwordHash: devPw, role: "TECHNICIAN" },
     create: {
       username: "tech2",
-      phone: "0900000002",
-      passwordHash: techPw,
+      phone: "0123456784",
+      passwordHash: devPw,
       role: "TECHNICIAN",
       preferredRegion: "HCMC-D7",
     },
@@ -373,12 +374,12 @@ async function main() {
   console.log(`  ✓ B2C customer ${b2c2.code} (Korean speaker)`);
 
   console.log("\nDone seeding.");
-  console.log("\nLogin credentials (dev only):");
-  console.log("  admin   / admin1234");
-  console.log("  manager / manager1234");
-  console.log("  staff   / staff1234");
-  console.log("  tech1   / tech1234   (phone 0900000001)");
-  console.log("  tech2   / tech1234   (phone 0900000002)");
+  console.log("\nLogin credentials (dev only) — phone is the login key:");
+  console.log("  admin    phone 012345678   / pw 12341234");
+  console.log("  manager  phone 0123456781  / pw 12341234");
+  console.log("  staff    phone 0123456782  / pw 12341234");
+  console.log("  tech1    phone 0123456783  / pw 12341234");
+  console.log("  tech2    phone 0123456784  / pw 12341234");
   console.log("\nPortal credentials (KH00001 CONTRACT_PARTY):");
   console.log("  phone 0901234567 / pw portal1234 (mustChangePassword=true)");
 }

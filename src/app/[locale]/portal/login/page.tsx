@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 import { PortalLoginForm } from "./login-form";
 
 interface Props {
@@ -13,7 +14,7 @@ export default async function PortalLoginPage({ params }: Readonly<Props>) {
   const t = await getTranslations({ locale, namespace: "portal.login" });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#FAF6EF] px-4 py-12">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAF6EF] px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center">
           <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
@@ -31,6 +32,10 @@ export default async function PortalLoginPage({ params }: Readonly<Props>) {
         <Suspense fallback={<div className="h-[360px] rounded-2xl border border-[#e5e5e5] bg-white" />}>
           <PortalLoginForm />
         </Suspense>
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <LocaleSwitcher />
       </div>
     </div>
   );

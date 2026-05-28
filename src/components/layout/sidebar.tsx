@@ -28,6 +28,7 @@ type LabelKey =
   | "payments"
   | "taxInvoices"
   | "reports"
+  | "userManagement"
   | "admin";
 
 interface NavItem {
@@ -55,6 +56,14 @@ const adminNavItems: NavItem[] = [
     href: "/admin/notification-templates",
     labelKey: "admin",
     Icon: Settings,
+  },
+];
+
+const userMgmtNavItems: NavItem[] = [
+  {
+    href: "/admin/users",
+    labelKey: "userManagement",
+    Icon: Users,
   },
 ];
 
@@ -134,6 +143,37 @@ export function Sidebar() {
             );
           })}
         </ul>
+
+        {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
+          <>
+            <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
+              {t("userManagement")}
+            </p>
+            <ul className="space-y-0.5">
+              {userMgmtNavItems.map((item) => {
+                const Icon = item.Icon;
+                const active =
+                  pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] px-3 py-2 text-sm font-medium text-[var(--brand-blue-700)]"
+                          : "flex max-md:min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                      }
+                    >
+                      <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
 
         {user?.role === "ADMIN" && (
           <>

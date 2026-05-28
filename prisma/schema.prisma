@@ -29,8 +29,10 @@ enum UserStatus {
 
 model User {
   id                String      @id @default(cuid())
-  username          String      @unique
-  phone             String?     // technicians use phone-login (K.2)
+  // Phone is the login key for every staff role (admin/manager/staff/technician).
+  // username is a free-form display label (e.g. "admin", "Nguyễn Văn A") — not unique.
+  username          String
+  phone             String      @unique
   email             String?
   passwordHash      String
   role              StaffRole
@@ -40,6 +42,11 @@ model User {
   lastLoginAt       DateTime?
   failedLoginCount  Int         @default(0)
   lockedUntil       DateTime?
+  // Self-service password recovery (SMS verification → temp password).
+  passwordResetCodeHash       String?
+  passwordResetCodeExpiresAt  DateTime?
+  passwordResetAttempts       Int       @default(0)
+  passwordResetLastRequestAt  DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
@@ -50,7 +57,6 @@ model User {
   loginAttempts          LoginAttempt[]
   preferredByCustomers   Customer[]  @relation("PreferredTech")
 
-  @@index([phone])
   @@index([role, status])
 }
 

@@ -30,6 +30,9 @@ import { ContractWorkflow } from "@/lib/contracts/workflow";
 const ADMIN_USERNAME = "test_phase3_admin";
 const MANAGER_USERNAME = "test_phase3_manager";
 const STAFF_USERNAME = "test_phase3_staff";
+const ADMIN_PHONE = "9322200001";
+const MANAGER_PHONE = "9322200002";
+const STAFF_PHONE = "9322200003";
 
 let adminToken = "";
 let managerToken = "";
@@ -83,8 +86,8 @@ async function cleanup() {
     await prisma.customer.delete({ where: { id: c.id } });
   }
   await prisma.equipmentModel.deleteMany({ where: { modelCode: "TEST-PHASE3-MODEL" } });
-  for (const username of [ADMIN_USERNAME, MANAGER_USERNAME, STAFF_USERNAME]) {
-    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+  for (const phone of [ADMIN_PHONE, MANAGER_PHONE, STAFF_PHONE]) {
+    const user = await prisma.user.findUnique({ where: { phone }, select: { id: true } });
     if (user) {
       await prisma.session.deleteMany({ where: { userId: user.id } });
       await prisma.auditLog.deleteMany({ where: { actorId: user.id } });
@@ -100,9 +103,9 @@ beforeAll(async () => {
   await cleanup();
 
   const pw = await hashPassword("Phase3-Test-123!");
-  const admin = await prisma.user.create({ data: { username: ADMIN_USERNAME, email: `${ADMIN_USERNAME}@t.local`, passwordHash: pw, role: "ADMIN" } });
-  const manager = await prisma.user.create({ data: { username: MANAGER_USERNAME, email: `${MANAGER_USERNAME}@t.local`, passwordHash: pw, role: "MANAGER" } });
-  const staff = await prisma.user.create({ data: { username: STAFF_USERNAME, email: `${STAFF_USERNAME}@t.local`, passwordHash: pw, role: "STAFF" } });
+  const admin = await prisma.user.create({ data: { username: ADMIN_USERNAME, phone: ADMIN_PHONE, email: `${ADMIN_USERNAME}@t.local`, passwordHash: pw, role: "ADMIN" } });
+  const manager = await prisma.user.create({ data: { username: MANAGER_USERNAME, phone: MANAGER_PHONE, email: `${MANAGER_USERNAME}@t.local`, passwordHash: pw, role: "MANAGER" } });
+  const staff = await prisma.user.create({ data: { username: STAFF_USERNAME, phone: STAFF_PHONE, email: `${STAFF_USERNAME}@t.local`, passwordHash: pw, role: "STAFF" } });
   adminToken = await signStaffAccessToken({ userId: admin.id, username: admin.username, role: admin.role });
   managerToken = await signStaffAccessToken({ userId: manager.id, username: manager.username, role: manager.role });
   staffToken = await signStaffAccessToken({ userId: staff.id, username: staff.username, role: staff.role });

@@ -5,8 +5,8 @@ import type { ReactNode } from "react";
 import { routing, type Locale } from "@/i18n/routing";
 import { AuthProvider } from "@/providers/auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
-import { ThemeProvider } from "@/providers/theme-provider";
 import { LangSyncer } from "@/components/layout/lang-syncer";
+import { MockSmsLogger } from "@/components/dev/mock-sms-logger";
 
 interface LayoutProps {
   children: ReactNode;
@@ -27,14 +27,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <ThemeProvider>
-        <QueryProvider>
-          <AuthProvider>
-            <LangSyncer />
-            {children}
-          </AuthProvider>
-        </QueryProvider>
-      </ThemeProvider>
+      <QueryProvider>
+        <AuthProvider>
+          <LangSyncer />
+          {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
+          {children}
+        </AuthProvider>
+      </QueryProvider>
     </NextIntlClientProvider>
   );
 }

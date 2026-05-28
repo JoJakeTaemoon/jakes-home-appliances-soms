@@ -52,16 +52,42 @@
     "login": {
       "title": "Sign in",
       "subtitle": "Seoul Aqua Service Operation Management System",
-      "username": "Username",
-      "usernamePlaceholder": "Enter your username",
+      "phone": "Phone number",
+      "phonePlaceholder": "Enter your phone number",
       "password": "Password",
       "passwordPlaceholder": "Enter your password",
       "submit": "Sign in",
       "submitting": "Signing in...",
-      "errorInvalidCredentials": "Username or password is incorrect",
+      "forgotPassword": "Forgot your password?",
+      "errorInvalidCredentials": "Phone or password is incorrect",
       "errorLocked": "Account is temporarily locked. Please try again later.",
       "errorGeneric": "Sign-in failed. Please try again.",
       "errorInactive": "This account is inactive. Contact your administrator."
+    },
+    "recovery": {
+      "title": "Forgot password",
+      "subtitle": "Verify by SMS, then receive a one-time temporary password",
+      "step1Hint": "Enter the phone number on file. We'll send a 6-digit verification code by SMS.",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "e.g. 0123456789",
+      "step1Submit": "Send code",
+      "noticeCodeSent": "We've sent a verification code by SMS. Enter it within 10 minutes.",
+      "noticeThrottled": "Please wait {seconds}s and try again.",
+      "step2Hint": "Enter the 6-digit code we sent to {phone}.",
+      "codeLabel": "Verification code (6 digits)",
+      "step2Submit": "Verify code",
+      "step2Restart": "Try a different number",
+      "step3Hint": "{username} — sign in with this temp password, the system will prompt you to set a new one right away.",
+      "tempPasswordLabel": "Temporary password",
+      "step3Warning": "This password is shown only ONCE. Copy or use it right now.",
+      "step3Continue": "I've saved it — back to sign in",
+      "submitting": "Working...",
+      "backToLogin": "Back to sign in",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorWrongCode": "Incorrect code. Please check and try again.",
+      "errorExpired": "Code has expired. Please request a new one.",
+      "errorExhausted": "Too many wrong attempts. Please request a new code.",
+      "errorNoCode": "No active code. Please request a new one."
     },
     "logout": "Sign out"
   },
@@ -82,13 +108,23 @@
     "main": "Main",
     "catalog": "Catalog",
     "admin": "Admin",
+    "userManagement": "User Management",
     "reports": "Reports"
   },
   "dashboard": {
     "greeting": "Hello, {name}",
     "todaySummary": "Today's summary",
     "noUpcomingVisits": "No upcoming visits",
-    "phasePlaceholder": "Phase 1 — Auth foundation is complete. More features will arrive in later phases."
+    "phasePlaceholder": "Phase 1 — Auth foundation is complete. More features will arrive in later phases.",
+    "todayVisits": "Today's visits",
+    "todayVisitsAll": "All states",
+    "pendingHandover": "Pending cash handover",
+    "pendingHandoverHint": "{stale} over 48h",
+    "revenueThisWeek": "Revenue this week",
+    "renewalsNext60": "Renewals (next 60d)",
+    "overduePayments": "Overdue payments",
+    "activityLogTitle": "Activity log",
+    "activityLogLink": "Open log"
   },
   "roles": {
     "ADMIN": "Administrator",
@@ -754,12 +790,13 @@
   "mobile": {
     "appName": "Seoul Aqua Field",
     "loginTitle": "Technician sign-in",
-    "loginSubtitle": "Sign in with your phone or username",
-    "loginPhone": "Phone or username",
+    "loginSubtitle": "Sign in with your phone",
+    "loginPhone": "Phone number",
     "loginPassword": "Password",
     "loginSubmit": "Sign in",
     "loginSubmitting": "Signing in...",
     "loginError": "Invalid sign-in",
+    "forgotPassword": "Forgot password?",
     "logout": "Sign out",
     "tabs": {
       "today": "Today",
@@ -933,17 +970,6 @@
       "reissue": "Reissue",
       "reissueReason": "Reason"
     }
-  },
-  "dashboard": {
-    "todayVisits": "Today's visits",
-    "todayVisitsAll": "All states",
-    "pendingHandover": "Pending cash handover",
-    "pendingHandoverHint": "{stale} over 48h",
-    "revenueThisWeek": "Revenue this week",
-    "renewalsNext60": "Renewals (next 60d)",
-    "overduePayments": "Overdue payments",
-    "activityLogTitle": "Activity log",
-    "activityLogLink": "Open log"
   },
   "portalExtra": {
     "visits": {
@@ -1129,7 +1155,24 @@
   "admin": {
     "navTitle": "Admin",
     "notificationTemplates": "Notification templates",
-    "schedulerWeights": "Scheduler weights"
+    "schedulerWeights": "Scheduler weights",
+    "users": {
+      "title": "User Management",
+      "subtitle": "Change a staff member's login phone. Saving revokes that user's active sessions.",
+      "colName": "Name",
+      "colRole": "Role",
+      "colPhone": "Phone (login ID)",
+      "colActions": "Actions",
+      "editPhone": "Change phone",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "loading": "Loading...",
+      "updateSuccess": "Updated phone for {name}.",
+      "errorConflict": "Phone is already in use by another user.",
+      "errorGeneric": "Could not update.",
+      "notAllowed": "This page is only available to ADMIN or MANAGER."
+    }
   },
   "merge": {
     "title": "Merge customers",

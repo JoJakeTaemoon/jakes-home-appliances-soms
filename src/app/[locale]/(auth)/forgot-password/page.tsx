@@ -1,17 +1,16 @@
-import { Suspense } from "react";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
-import { LoginForm } from "./login-form";
+import { ForgotPasswordFlow } from "./flow";
 
 interface Props {
   params: Promise<{ locale: string }>;
 }
 
-export default async function LoginPage({ params }: Readonly<Props>) {
+export default async function ForgotPasswordPage({ params }: Readonly<Props>) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "auth.login" });
+  const t = await getTranslations({ locale, namespace: "auth.recovery" });
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#FAF6EF] px-4 py-12">
@@ -30,9 +29,7 @@ export default async function LoginPage({ params }: Readonly<Props>) {
           <p className="mt-1 text-sm text-[#525252]">{t("subtitle")}</p>
         </div>
 
-        <Suspense fallback={<div className="h-[320px] rounded-2xl border border-[#e5e5e5] bg-white" />}>
-          <LoginForm />
-        </Suspense>
+        <ForgotPasswordFlow />
       </div>
 
       <div className="mt-8 flex justify-center">

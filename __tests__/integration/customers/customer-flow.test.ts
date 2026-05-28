@@ -29,6 +29,9 @@ import { POST as equipmentMoveSite } from "@/app/api/equipment/[id]/move-site/ro
 const ADMIN_USERNAME = "test_phase2_admin";
 const STAFF_USERNAME = "test_phase2_staff";
 const MANAGER_USERNAME = "test_phase2_manager";
+const ADMIN_PHONE = "9333300001";
+const STAFF_PHONE = "9333300002";
+const MANAGER_PHONE = "9333300003";
 
 let adminToken = "";
 let staffToken = "";
@@ -63,8 +66,8 @@ async function cleanupTestData() {
     },
   });
   await prisma.equipmentModel.deleteMany({ where: { modelCode: "TEST-PHASE2-MODEL" } });
-  for (const username of [ADMIN_USERNAME, STAFF_USERNAME, MANAGER_USERNAME]) {
-    const user = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+  for (const phone of [ADMIN_PHONE, STAFF_PHONE, MANAGER_PHONE]) {
+    const user = await prisma.user.findUnique({ where: { phone }, select: { id: true } });
     if (user) {
       await prisma.session.deleteMany({ where: { userId: user.id } });
       await prisma.auditLog.deleteMany({ where: { actorId: user.id } });
@@ -84,13 +87,13 @@ beforeAll(async () => {
 
   const pw = await hashPassword("Phase2-Test-123!");
   const admin = await prisma.user.create({
-    data: { username: ADMIN_USERNAME, email: `${ADMIN_USERNAME}@t.local`, passwordHash: pw, role: "ADMIN" },
+    data: { username: ADMIN_USERNAME, phone: ADMIN_PHONE, email: `${ADMIN_USERNAME}@t.local`, passwordHash: pw, role: "ADMIN" },
   });
   const staff = await prisma.user.create({
-    data: { username: STAFF_USERNAME, email: `${STAFF_USERNAME}@t.local`, passwordHash: pw, role: "STAFF" },
+    data: { username: STAFF_USERNAME, phone: STAFF_PHONE, email: `${STAFF_USERNAME}@t.local`, passwordHash: pw, role: "STAFF" },
   });
   const manager = await prisma.user.create({
-    data: { username: MANAGER_USERNAME, email: `${MANAGER_USERNAME}@t.local`, passwordHash: pw, role: "MANAGER" },
+    data: { username: MANAGER_USERNAME, phone: MANAGER_PHONE, email: `${MANAGER_USERNAME}@t.local`, passwordHash: pw, role: "MANAGER" },
   });
   adminToken = await signStaffAccessToken({ userId: admin.id, username: admin.username, role: admin.role });
   staffToken = await signStaffAccessToken({ userId: staff.id, username: staff.username, role: staff.role });

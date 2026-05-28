@@ -15,6 +15,7 @@ import { POST as loginRoute } from "@/app/api/auth/login/route";
 import { LOCKOUT_THRESHOLD } from "@/lib/auth/lockout";
 
 const TEST_USERNAME = "test_login_user";
+const TEST_PHONE = "9111111111";
 const TEST_PASSWORD = "Correct-Horse-1!";
 const WRONG_PASSWORD = "Wrong-Pony-2!";
 
@@ -39,8 +40,9 @@ async function callLogin(body: unknown) {
 
 async function cleanupTestUser() {
   await prisma.loginAttempt.deleteMany({ where: { username: TEST_USERNAME } });
+  await prisma.loginAttempt.deleteMany({ where: { username: TEST_PHONE } });
   const user = await prisma.user.findUnique({
-    where: { username: TEST_USERNAME },
+    where: { phone: TEST_PHONE },
     select: { id: true },
   });
   if (user) {
@@ -62,6 +64,7 @@ beforeEach(async () => {
   await prisma.user.create({
     data: {
       username: TEST_USERNAME,
+      phone: TEST_PHONE,
       email: `${TEST_USERNAME}@test.local`,
       passwordHash: await hashPassword(TEST_PASSWORD),
       role: "STAFF",
@@ -111,7 +114,7 @@ describe("POST /api/auth/login (integration)", () => {
     expect(json.error?.code).toBe("INVALID_CREDENTIALS");
 
     const user = await prisma.user.findUnique({
-      where: { username: TEST_USERNAME },
+      where: { phone: TEST_PHONE },
       select: { failedLoginCount: true, lockedUntil: true },
     });
     expect(user?.failedLoginCount).toBe(1);
@@ -140,7 +143,7 @@ describe("POST /api/auth/login (integration)", () => {
     // The Nth wrong-password attempt should itself return ACCOUNT_LOCKED
     // because the lockout is applied inside that same request.
     const user = await prisma.user.findUnique({
-      where: { username: TEST_USERNAME },
+      where: { phone: TEST_PHONE },
       select: { lockedUntil: true, failedLoginCount: true },
     });
     expect(user?.failedLoginCount).toBe(LOCKOUT_THRESHOLD);
@@ -159,7 +162,7 @@ describe("POST /api/auth/login (integration)", () => {
 
   it("returns 403 ACCOUNT_INACTIVE for disabled users", async () => {
     await prisma.user.update({
-      where: { username: TEST_USERNAME },
+      where: { phone: TEST_PHONE },
       data: { status: "DISABLED" },
     });
     const { status, json } = await callLogin({

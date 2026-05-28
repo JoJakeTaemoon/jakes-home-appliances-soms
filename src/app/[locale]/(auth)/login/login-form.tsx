@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 import { useAuth } from "@/providers/auth-provider";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 
 const AUTH_KEYS = ["soms_user", "soms_access", "soms_auth"];
 
@@ -40,7 +40,7 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { phone: "", password: "" },
   });
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function LoginForm() {
     setServerError(null);
     setSubmitting(true);
     try {
-      await login(values.username ?? "", values.password);
+      await login(values.phone ?? "", values.password);
       const next = searchParams.get("next");
       router.replace(next?.startsWith("/") ? next : "/dashboard");
     } catch (err) {
@@ -85,21 +85,22 @@ export function LoginForm() {
       noValidate
     >
       <div className="mb-4">
-        <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-[#262626]">
-          {t("username")}
+        <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-[#262626]">
+          {t("phone")}
         </label>
         <input
-          id="username"
-          type="text"
+          id="phone"
+          type="tel"
+          inputMode="tel"
           autoComplete="username"
           autoFocus
-          placeholder={t("usernamePlaceholder")}
-          aria-invalid={errors.username ? "true" : undefined}
-          {...register("username")}
+          placeholder={t("phonePlaceholder")}
+          aria-invalid={errors.phone ? "true" : undefined}
+          {...register("phone")}
           className="block w-full rounded-md border border-[#e5e5e5] bg-white px-3 h-10 text-sm text-[#000000] placeholder:text-[#a3a3a3] outline-none transition-colors hover:border-[#a3a3a3] focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
         />
-        {errors.username && (
-          <p className="mt-1 text-xs text-[#dc2626]">{errors.username.message}</p>
+        {errors.phone && (
+          <p className="mt-1 text-xs text-[#dc2626]">{errors.phone.message}</p>
         )}
       </div>
 
@@ -138,6 +139,15 @@ export function LoginForm() {
       >
         {submitting ? t("submitting") : t("submit")}
       </button>
+
+      <div className="mt-4 text-center">
+        <Link
+          href="/forgot-password"
+          className="text-xs font-medium text-[var(--brand-blue-700)] hover:underline"
+        >
+          {t("forgotPassword")}
+        </Link>
+      </div>
 
       <p className="mt-4 text-center text-xs text-[#737373]">
         {tCommon("welcome")} · Seoul Aqua

@@ -26,6 +26,7 @@ import type {
   ProviderDispatchResult,
   SendPayload,
 } from "@/lib/notifications/types";
+import { publishMockDispatch } from "@/lib/notifications/mock-bus";
 
 function tag(channel: SendPayload["channel"]): string {
   return channel === "SMS" ? "[MOCK SMS]" : "[MOCK EMAIL]";
@@ -101,6 +102,26 @@ export class MockNotificationProvider implements NotificationProvider {
     }
 
     console.log(`${tag(payload.channel)}\n${box("Mock dispatch", lines)}`);
+
+    // Fan-out to the dev-only browser bus so the forgotten-password / SMS
+    // test flows surface the rendered body in the developer-tools console.
+    // Production safety: skipped when NODE_ENV === 'production' so a
+    // misconfigured mock provider in prod doesn't leak credential bodies to
+    // any SSE listener.
+    if (process.env.NODE_ENV !== "production") {
+      publishMockDispatch({
+        id: messageId,
+        ts: Date.now(),
+        channel: payload.channel,
+        to: payload.to,
+        templateCode: payload.templateCode,
+        locale: payload.locale,
+        subject: payload.subject,
+        body: redactBody ? "[body redacted]" : payload.body,
+        segmentsUsed,
+        messageId,
+      });
+    }
 
     return {
       providerMessageId: messageId,

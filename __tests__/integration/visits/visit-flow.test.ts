@@ -81,6 +81,10 @@ const STAFF_USERNAME = "test_phase4_staff";
 const TECH_LEAD_USERNAME = "test_phase4_tech_lead";
 const TECH_COLLAB_USERNAME = "test_phase4_tech_collab";
 const TECH_OTHER_USERNAME = "test_phase4_tech_other";
+const STAFF_PHONE = "9555500001";
+const TECH_LEAD_PHONE = "0900900001";
+const TECH_COLLAB_PHONE = "0900900002";
+const TECH_OTHER_PHONE = "0900900003";
 
 let staffToken = "";
 let leadToken = "";
@@ -129,14 +133,14 @@ async function cleanup() {
     await prisma.customerContact.deleteMany({ where: { customerId: c.id } });
     await prisma.customer.delete({ where: { id: c.id } });
   }
-  for (const username of [
-    STAFF_USERNAME,
-    TECH_LEAD_USERNAME,
-    TECH_COLLAB_USERNAME,
-    TECH_OTHER_USERNAME,
+  for (const phone of [
+    STAFF_PHONE,
+    TECH_LEAD_PHONE,
+    TECH_COLLAB_PHONE,
+    TECH_OTHER_PHONE,
   ]) {
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { phone },
       select: { id: true },
     });
     if (user) {
@@ -161,6 +165,7 @@ beforeAll(async () => {
   const staff = await prisma.user.create({
     data: {
       username: STAFF_USERNAME,
+      phone: STAFF_PHONE,
       email: `${STAFF_USERNAME}@t.local`,
       passwordHash: pw,
       role: "STAFF",
@@ -169,7 +174,7 @@ beforeAll(async () => {
   const lead = await prisma.user.create({
     data: {
       username: TECH_LEAD_USERNAME,
-      phone: "0900900001",
+      phone: TECH_LEAD_PHONE,
       passwordHash: pw,
       role: "TECHNICIAN",
       preferredRegion: "HCMC-T4",
@@ -178,7 +183,7 @@ beforeAll(async () => {
   const collab = await prisma.user.create({
     data: {
       username: TECH_COLLAB_USERNAME,
-      phone: "0900900002",
+      phone: TECH_COLLAB_PHONE,
       passwordHash: pw,
       role: "TECHNICIAN",
       preferredRegion: "HCMC-T4",
@@ -187,7 +192,7 @@ beforeAll(async () => {
   const other = await prisma.user.create({
     data: {
       username: TECH_OTHER_USERNAME,
-      phone: "0900900003",
+      phone: TECH_OTHER_PHONE,
       passwordHash: pw,
       role: "TECHNICIAN",
       preferredRegion: "HCMC-T9",

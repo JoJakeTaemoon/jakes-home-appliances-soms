@@ -102,6 +102,23 @@ const SMS_PASSWORD_RESET: TemplateDef = {
   },
 };
 
+/**
+ * Staff self-service recovery — sends a 6-digit verification code. After the
+ * user types the code back into the recovery UI, the server generates a
+ * one-time temp password and shows it on-screen (NOT via SMS). This template
+ * only carries the code itself.
+ */
+const SMS_STAFF_RESET_CODE: TemplateDef = {
+  code: "SMS_STAFF_RESET_CODE",
+  channels: ["SMS"],
+  category: "SYSTEM",
+  bodies: {
+    ko: "[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.",
+    vi: "[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.",
+    en: "[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.",
+  },
+};
+
 const SMS_VISIT_REMINDER: TemplateDef = {
   code: "SMS_VISIT_REMINDER",
   channels: ["SMS"],
@@ -900,6 +917,7 @@ export const TEMPLATES: Record<string, TemplateDef> = {
   // SMS
   SMS_PORTAL_WELCOME,
   SMS_PASSWORD_RESET,
+  SMS_STAFF_RESET_CODE,
   SMS_VISIT_REMINDER,
   SMS_SR_APPROVED,
   SMS_SR_REJECTED,

@@ -132,13 +132,9 @@ async function cleanup() {
     await prisma.customerContact.deleteMany({ where: { customerId: c.id } });
     await prisma.customer.delete({ where: { id: c.id } });
   }
-  for (const username of [
-    "test_phase5_staff",
-    "test_phase5_manager",
-    "test_phase5_tech",
-  ]) {
+  for (const phone of ["9444400001", "9444400002", "9444400003"]) {
     const user = await prisma.user.findUnique({
-      where: { username },
+      where: { phone },
       select: { id: true },
     });
     if (user) {
@@ -162,6 +158,7 @@ beforeAll(async () => {
   const staff = await prisma.user.create({
     data: {
       username: "test_phase5_staff",
+      phone: "9444400001",
       email: "test_phase5_staff@t.local",
       passwordHash: pw,
       role: "STAFF",
@@ -170,6 +167,7 @@ beforeAll(async () => {
   const manager = await prisma.user.create({
     data: {
       username: "test_phase5_manager",
+      phone: "9444400002",
       email: "test_phase5_manager@t.local",
       passwordHash: pw,
       role: "MANAGER",
@@ -178,7 +176,7 @@ beforeAll(async () => {
   const tech = await prisma.user.create({
     data: {
       username: "test_phase5_tech",
-      phone: "0991100001",
+      phone: "9444400003",
       passwordHash: pw,
       role: "TECHNICIAN",
     },

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 export default function MobileLoginPage() {
   const t = useTranslations("mobile");
@@ -32,7 +33,7 @@ export default function MobileLoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-[#f7f8fb] px-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f7f8fb] px-4 py-8">
       <div className="w-full max-w-sm rounded-xl border border-[#e5e5e5] bg-white p-6 shadow-sm">
         <header className="mb-5 text-center">
           <h1 className="text-xl font-semibold text-[#002A4D]">
@@ -65,7 +66,19 @@ export default function MobileLoginPage() {
           <Button type="submit" fullWidth disabled={submitting}>
             {submitting ? t("loginSubmitting") : t("loginSubmit")}
           </Button>
+          <div className="mt-1 text-center">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-[var(--brand-blue-700)] hover:underline"
+            >
+              {t("forgotPassword")}
+            </Link>
+          </div>
         </form>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <LocaleSwitcher />
       </div>
     </div>
   );
