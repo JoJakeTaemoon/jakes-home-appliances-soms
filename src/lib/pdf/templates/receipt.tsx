@@ -1,11 +1,14 @@
 /**
  * Receipt PDF (DOCUMENT_TEMPLATES.md #5).
  *
- * Tri-locale (vi / ko / en). Shows customer info, date, amount, method,
- * collector, expected vs collected with carryover note when partial.
+ * Bilingual (병기): Vietnamese primary + Korean/English secondary stacked under
+ * each label. Shows customer info, date, amount, method, collector, expected vs
+ * collected with carryover note when partial.
  */
 
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { Bi } from "./shared";
+import { splitLangPair, type PdfLangPair } from "@/lib/pdf/types";
 
 export type ReceiptLocale = "ko" | "vi" | "en";
 
@@ -27,7 +30,7 @@ export interface ReceiptPayload {
   carryoverAmount: number;
   reference: string | null;
   notes: string | null;
-  locale: ReceiptLocale;
+  langPair: PdfLangPair;
   generatedAt: Date;
 }
 
@@ -48,6 +51,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 6,
+    textAlign: "center",
+  },
+  docTitleSecondary: {
+    fontSize: 11,
+    fontWeight: "normal",
+    color: "#555",
     marginBottom: 16,
     textAlign: "center",
   },
@@ -59,7 +68,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   row: { flexDirection: "row", marginBottom: 4 },
-  label: { width: 130, color: "#666" },
+  label: { width: 150, color: "#666" },
+  labelSecondary: { fontSize: 8, color: "#999" },
   value: { flex: 1, color: "#111" },
   amountBox: {
     marginTop: 14,
@@ -70,6 +80,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F8FE",
   },
   amountLabel: { fontSize: 10, color: "#525252" },
+  amountLabelSecondary: { fontSize: 8, color: "#8A8A8A" },
   amountValue: { fontSize: 22, fontWeight: "bold", color: "#0C6BA8", marginTop: 2 },
   carryover: {
     marginTop: 6,
@@ -85,6 +96,7 @@ const styles = StyleSheet.create({
   },
   signBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111", paddingTop: 4 },
   signLabel: { fontSize: 8, color: "#666", textAlign: "center" },
+  signLabelSecondary: { fontSize: 7, color: "#999", textAlign: "center" },
   footer: {
     position: "absolute",
     bottom: 18,
@@ -190,15 +202,15 @@ function formatVnd(n: number): string {
   return `${Math.round(n).toLocaleString("vi-VN")} ₫`;
 }
 
-function formatDateTime(d: Date, locale: ReceiptLocale): string {
+function formatDateTime(d: Date): string {
   const pad = (x: number) => (x < 10 ? `0${x}` : String(x));
   const yyyy = d.getFullYear();
   const mm = pad(d.getMonth() + 1);
   const dd = pad(d.getDate());
   const hh = pad(d.getHours());
   const mi = pad(d.getMinutes());
-  if (locale === "vi") return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  // Primary language is always Vietnamese → DD/MM/YYYY.
+  return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 }
 
 interface ReceiptProps {
@@ -206,7 +218,12 @@ interface ReceiptProps {
 }
 
 export function Receipt({ payload }: Readonly<ReceiptProps>) {
-  const L = LABELS[payload.locale];
+  const { primary, secondary } = splitLangPair(payload.langPair);
+  const P = LABELS[primary];
+  const S = LABELS[secondary];
+  const biLabel = (key: keyof LabelDict) => (
+    <Bi primary={`${P[key]}:`} secondary={S[key]} style={styles.label} subStyle={styles.labelSecondary} />
+  );
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -223,45 +240,44 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
           </View>
         </View>
 
-        <Text style={styles.docTitle}>{L.title}</Text>
+        <Text style={styles.docTitle}>{P.title}</Text>
+        <Text style={styles.docTitleSecondary}>{S.title}</Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.receiptNo}:</Text>
+            {biLabel("receiptNo")}
             <Text style={styles.value}>{payload.receiptNumber}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.date}:</Text>
-            <Text style={styles.value}>
-              {formatDateTime(payload.collectedAt, payload.locale)}
-            </Text>
+            {biLabel("date")}
+            <Text style={styles.value}>{formatDateTime(payload.collectedAt)}</Text>
           </View>
         </View>
 
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.customer}:</Text>
+            {biLabel("customer")}
             <Text style={styles.value}>{payload.customerName}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.customerCode}:</Text>
+            {biLabel("customerCode")}
             <Text style={styles.value}>{payload.customerCode}</Text>
           </View>
           {payload.customerType === "B2B" && payload.taxCode && (
             <View style={styles.row}>
-              <Text style={styles.label}>{L.taxCode}:</Text>
+              {biLabel("taxCode")}
               <Text style={styles.value}>{payload.taxCode}</Text>
             </View>
           )}
           {payload.address && (
             <View style={styles.row}>
-              <Text style={styles.label}>{L.address}:</Text>
+              {biLabel("address")}
               <Text style={styles.value}>{payload.address}</Text>
             </View>
           )}
           {payload.contactName && (
             <View style={styles.row}>
-              <Text style={styles.label}>{L.contact}:</Text>
+              {biLabel("contact")}
               <Text style={styles.value}>
                 {payload.contactName}
                 {payload.contactPhone ? ` · ${payload.contactPhone}` : ""}
@@ -272,59 +288,61 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
 
         <View style={styles.card}>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.method}:</Text>
+            {biLabel("method")}
             <Text style={styles.value}>{payload.method}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.collector}:</Text>
+            {biLabel("collector")}
             <Text style={styles.value}>{payload.collectorName}</Text>
           </View>
           {payload.reference && (
             <View style={styles.row}>
-              <Text style={styles.label}>{L.reference}:</Text>
+              {biLabel("reference")}
               <Text style={styles.value}>{payload.reference}</Text>
             </View>
           )}
           <View style={styles.row}>
-            <Text style={styles.label}>{L.expected}:</Text>
+            {biLabel("expected")}
             <Text style={styles.value}>{formatVnd(payload.expectedAmount)}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>{L.actual}:</Text>
+            {biLabel("actual")}
             <Text style={styles.value}>{formatVnd(payload.actualAmount)}</Text>
           </View>
         </View>
 
         <View style={styles.amountBox}>
-          <Text style={styles.amountLabel}>{L.amountReceived}</Text>
+          <Bi primary={P.amountReceived} secondary={S.amountReceived} style={styles.amountLabel} subStyle={styles.amountLabelSecondary} />
           <Text style={styles.amountValue}>
             {formatVnd(payload.actualAmount)}
           </Text>
           {payload.carryoverAmount > 0 && (
             <Text style={styles.carryover}>
-              {L.carryover}: {formatVnd(payload.carryoverAmount)}
+              {P.carryover} / {S.carryover}: {formatVnd(payload.carryoverAmount)}
             </Text>
           )}
         </View>
 
         {payload.notes && (
           <Text style={styles.notes}>
-            {L.notes}: {payload.notes}
+            {P.notes} / {S.notes}: {payload.notes}
           </Text>
         )}
 
         <View style={styles.signRow}>
           <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{L.signedCollector}</Text>
+            <Text style={styles.signLabel}>{P.signedCollector}</Text>
+            <Text style={styles.signLabelSecondary}>{S.signedCollector}</Text>
           </View>
           <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{L.signedCustomer}</Text>
+            <Text style={styles.signLabel}>{P.signedCustomer}</Text>
+            <Text style={styles.signLabelSecondary}>{S.signedCustomer}</Text>
           </View>
         </View>
 
         <View style={styles.footer} fixed>
           <Text>
-            {L.generated}: {formatDateTime(payload.generatedAt, payload.locale)}
+            {P.generated}: {formatDateTime(payload.generatedAt)}
           </Text>
           <Text>{payload.paymentId.slice(-12).toUpperCase()}</Text>
         </View>

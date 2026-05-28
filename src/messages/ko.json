@@ -637,6 +637,7 @@
     "site": "사이트",
     "expectedAmount": "예상 금액",
     "findings": "작업 내용",
+    "officeNotes": "기사 방문 전달사항",
     "partsReplaced": "교체 부품",
     "photos": "사진",
     "signature": "고객 서명",
@@ -809,7 +810,14 @@
     "noVisitsUpcoming": "향후 7일간 일정이 없습니다.",
     "lead": "주관",
     "shared": "협업",
-    "callCustomer": "고객 전화",
+    "callHq": "본사로 전화",
+    "contactLabel": "담당자",
+    "officeNote": {
+      "title": "방문 전달사항",
+      "hint": "고객에게 직접 연락하지 않습니다. 필요한 정보·전달사항을 본사로 남기세요.",
+      "placeholder": "본사에 전달할 내용을 입력하세요…",
+      "submit": "본사에 전달"
+    },
     "openMaps": "지도 열기",
     "actions": {
       "start": "방문 시작",

@@ -12,6 +12,7 @@ import { toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { canViewPaymentList } from "@/lib/payments/access";
 import { renderPdf } from "@/lib/pdf/renderer";
+import { langPairForLocale } from "@/lib/pdf/types";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -30,12 +31,10 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     let storageKey = inv.pdfStorageKey;
     if (!storageKey) {
       const url = new URL(request.url);
-      const locale =
-        (url.searchParams.get("locale") as "ko" | "vi" | "en" | null) ?? "vi";
       const result = await renderPdf({
         kind: "TAX_INVOICE",
         refId: id,
-        locale,
+        langPair: langPairForLocale(url.searchParams.get("locale")),
         generatedById: auth.userId,
       });
       storageKey = result.storageKey;

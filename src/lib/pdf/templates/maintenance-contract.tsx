@@ -6,18 +6,16 @@
  */
 
 import { ContractDocument } from "./shared";
-import { pickPdfMessages } from "@/lib/pdf/messages";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function MaintenanceContract({ contract, customer, equipment, locale, generatedAt }: PdfRenderProps) {
-  const msg = pickPdfMessages(locale);
+export function MaintenanceContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
   return (
     <ContractDocument
-      title={msg.documentTitle.MAINTENANCE}
+      titleKey="MAINTENANCE"
       contract={contract}
       customer={customer}
       equipment={equipment}
-      locale={locale}
+      langPair={langPair}
       generatedAt={generatedAt}
       clauseKeys={["maintenance", "paymentTerms"] as const}
     />

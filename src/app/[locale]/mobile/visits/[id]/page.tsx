@@ -13,7 +13,15 @@ import {
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
 import { formatDate } from "@/lib/format";
-import { Phone, MapPin, CheckCircle2, AlertTriangle, Play } from "lucide-react";
+import { HQ_PHONE, HQ_PHONE_TEL } from "@/lib/config/company";
+import { Phone, MapPin, CheckCircle2, AlertTriangle, Play, Send } from "lucide-react";
+
+interface OfficeNoteEntry {
+  at: string;
+  authorId: string;
+  authorName: string;
+  text: string;
+}
 
 interface VisitDetail {
   id: string;
@@ -23,6 +31,7 @@ interface VisitDetail {
   scheduledWindow: string | null;
   expectedAmount: string | null;
   findings: string | null;
+  officeNotes: OfficeNoteEntry[] | null;
   leadTechnicianId: string | null;
   collaboratorTechnicianIds: string[];
   customer: {
@@ -31,7 +40,7 @@ interface VisitDetail {
     address: string | null;
     district: string | null;
     city: string | null;
-    contacts: { name: string; phone1: string; isPrimary: boolean; scope: string; siteId: string | null }[];
+    contacts: { name: string; isPrimary: boolean; scope: string; siteId: string | null }[];
   };
   equipment: {
     serialNumber: string | null;
@@ -69,6 +78,8 @@ function MobileVisitDetailContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -113,6 +124,24 @@ function MobileVisitDetailContent() {
     }
   };
 
+  const submitOfficeNote = async () => {
+    const text = noteText.trim();
+    if (!text) return;
+    setActionError(null);
+    setNoteSaving(true);
+    try {
+      await api.post(`/api/mobile/visits/${id}/office-note`, { text });
+      setNoteText("");
+      await reload();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const officeNotes = data.officeNotes ?? [];
+
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-2">
@@ -128,17 +157,20 @@ function MobileVisitDetailContent() {
       </header>
 
       <div className="grid grid-cols-1 gap-2">
-        {primaryOps?.phone1 && (
-          <a
-            href={`tel:${primaryOps.phone1}`}
-            className="flex h-16 items-center justify-between rounded-xl border border-[#e5e5e5] bg-white px-4 text-sm font-medium text-[#002A4D] shadow-sm active:scale-[0.99]"
-          >
-            <span className="flex items-center gap-2">
-              <Phone className="size-5 text-[var(--brand-blue-500)]" />
-              {t("callCustomer")}
-            </span>
-            <span className="text-xs text-[#737373]">{primaryOps.phone1}</span>
-          </a>
+        <a
+          href={`tel:${HQ_PHONE_TEL}`}
+          className="flex h-16 items-center justify-between rounded-xl border border-[#e5e5e5] bg-white px-4 text-sm font-medium text-[#002A4D] shadow-sm active:scale-[0.99]"
+        >
+          <span className="flex items-center gap-2">
+            <Phone className="size-5 text-[var(--brand-blue-500)]" />
+            {t("callHq")}
+          </span>
+          <span className="text-xs text-[#737373]">{HQ_PHONE}</span>
+        </a>
+        {primaryOps && (
+          <p className="px-1 text-xs text-[#737373]">
+            {t("contactLabel")}: {primaryOps.name}
+          </p>
         )}
         {mapsUrl && (
           <a
@@ -185,6 +217,44 @@ function MobileVisitDetailContent() {
           <p className="mt-1 text-sm">{addressStr}</p>
         </section>
       )}
+
+      <section className="rounded-xl border border-[#e5e5e5] bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-medium text-[#737373]">{t("officeNote.title")}</h2>
+        <p className="mt-1 text-xs text-[#a3a3a3]">{t("officeNote.hint")}</p>
+        {officeNotes.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {officeNotes.map((n, i) => (
+              <li key={`${n.at}-${i}`} className="rounded-lg bg-[#f5f5f5] p-2 text-sm text-[#262626]">
+                <span className="block whitespace-pre-wrap">{n.text}</span>
+                <span className="mt-1 block text-[10px] text-[#737373]">
+                  {n.authorName} · {formatDate(n.at, locale)} {n.at.slice(11, 16)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          rows={3}
+          maxLength={2000}
+          placeholder={t("officeNote.placeholder")}
+          className="mt-3 w-full resize-none rounded-lg border border-[#e5e5e5] p-2 text-sm focus:border-[var(--brand-blue-500)] focus:outline-none"
+        />
+        <Button
+          onClick={submitOfficeNote}
+          disabled={!noteText.trim()}
+          isLoading={noteSaving}
+          variant="outline"
+          fullWidth
+          className="mt-2"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Send className="size-4" />
+            {t("officeNote.submit")}
+          </span>
+        </Button>
+      </section>
 
       {actionError && (
         <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{actionError}</p>

@@ -23,7 +23,7 @@ interface VisitCard {
     address: string | null;
     district: string | null;
     city: string | null;
-    contacts: { name: string; phone1: string }[];
+    contacts: { name: string }[];
   };
   equipment: {
     serialNumber: string | null;

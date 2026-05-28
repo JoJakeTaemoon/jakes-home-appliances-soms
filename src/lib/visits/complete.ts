@@ -19,6 +19,7 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
 import { renderPdf } from "@/lib/pdf/renderer";
+import { langPairForLocale } from "@/lib/pdf/types";
 import { recordCashCollection } from "@/lib/payments/operations";
 import {
   planVisitTransition,
@@ -151,11 +152,11 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
     paymentId = collection.paymentId;
   }
 
-  // Render PDF
+  // Render PDF — bilingual (Vietnamese primary + secondary derived from locale).
   const wc = await renderPdf({
     kind: "WORK_CONFIRMATION",
     refId: visitId,
-    locale,
+    langPair: langPairForLocale(locale),
     generatedById: actorUserId,
   });
 

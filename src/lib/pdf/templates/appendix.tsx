@@ -6,18 +6,16 @@
  */
 
 import { ContractDocument } from "./shared";
-import { pickPdfMessages } from "@/lib/pdf/messages";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function AppendixContract({ contract, customer, equipment, locale, generatedAt }: PdfRenderProps) {
-  const msg = pickPdfMessages(locale);
+export function AppendixContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
   return (
     <ContractDocument
-      title={msg.documentTitle.APPENDIX}
+      titleKey="APPENDIX"
       contract={contract}
       customer={customer}
       equipment={equipment}
-      locale={locale}
+      langPair={langPair}
       generatedAt={generatedAt}
       clauseKeys={["appendix", "rentalTerm", "paymentTerms"] as const}
     />

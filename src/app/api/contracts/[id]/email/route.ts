@@ -24,8 +24,9 @@ import {
 import { getLatestPdf, renderPdf } from "@/lib/pdf/renderer";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
-import type { PdfLocale } from "@/lib/pdf/types";
+import { langPairForLocale, type PdfLocale } from "@/lib/pdf/types";
 import type { NotificationLocale } from "@/lib/notifications/types";
+import { HQ_PHONE } from "@/lib/config/company";
 
 interface Ctx { params: Promise<{ id: string }> }
 
@@ -72,10 +73,12 @@ export async function POST(request: NextRequest, ctx: Ctx) {
         ? cp.language
         : "vi");
 
-    // Ensure a fresh PDF exists.
+    // Ensure a fresh PDF exists. The PDF is bilingual (Vietnamese primary +
+    // secondary derived from the recipient's locale); the email body itself
+    // stays in the recipient's single preferred locale.
     let pdf = await getLatestPdf("CONTRACT", id);
     if (!pdf) {
-      await renderPdf({ kind: "CONTRACT", refId: id, locale, generatedById: auth.userId });
+      await renderPdf({ kind: "CONTRACT", refId: id, langPair: langPairForLocale(locale), generatedById: auth.userId });
       pdf = await getLatestPdf("CONTRACT", id);
     }
     if (!pdf) {
@@ -102,7 +105,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
         issued_at: (contract.signedByCompanyAt ?? contract.createdAt)
           .toISOString()
           .slice(0, 10),
-        hq_phone: "028-1234-5678",
+        hq_phone: HQ_PHONE,
       },
       locale: locale as NotificationLocale,
       actorId: auth.userId,

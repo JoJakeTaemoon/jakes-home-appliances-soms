@@ -517,6 +517,11 @@ model Visit {
   findings                 String?
   partsReplaced            Json?
   photos                   Json?      // [{ url, takenAt }]
+  // Technician → HQ relay thread. Technicians never contact customers directly,
+  // so customer phone numbers are hidden in the field; instead the technician
+  // leaves handoff messages here for the office. NOT shown on customer-facing
+  // documents (the work-confirmation PDF only renders `findings`).
+  officeNotes              Json?      // [{ at, authorId, authorName, text }]
   customerSignaturePhotoUrl String?
 
   startedAt                DateTime?
@@ -691,7 +696,8 @@ model Document {
   paymentId     String?
   payment       Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   templateCode  String       // e.g. "CONTRACT_B2C_RENTAL"
-  locale        Locale       @default(vi)
+  locale        Locale       @default(vi)  // primary language (always vi for bilingual docs)
+  secondaryLocale Locale?    // bilingual secondary language (ko default / en) — null for legacy single-locale docs
   storageKey    String       // path under uploads/ (or future Supabase Storage)
   filename      String
   mimeType      String       @default("application/pdf")

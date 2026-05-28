@@ -12,6 +12,22 @@ import { VisitWorkflow } from "@/lib/visits/workflow";
 
 const paramsSchema = z.object({ id: z.string() });
 
+type VisitWithCustomer = Awaited<ReturnType<typeof VisitWorkflow.getById>>;
+
+/**
+ * Redact customer contact phone + email before sending to a technician.
+ * Technicians never contact customers directly — they call HQ instead. The
+ * contact name is kept so the technician knows who to ask the office about.
+ */
+function stripContactPhones(
+  customer: VisitWithCustomer["customer"],
+): VisitWithCustomer["customer"] {
+  return {
+    ...customer,
+    contacts: customer.contacts.map((c) => ({ ...c, phone1: "", email: null })),
+  };
+}
+
 export const GET = defineQuery({
   audience: "staff",
   authorize: (auth) => {
@@ -28,6 +44,6 @@ export const GET = defineQuery({
     const collaborators = await VisitWorkflow.loadCollaborators(
       visit.collaboratorTechnicianIds,
     );
-    return { ...visit, collaborators };
+    return { ...visit, customer: stripContactPhones(visit.customer), collaborators };
   },
 });

@@ -5,7 +5,8 @@
  * hand-built props object and assert that:
  *   - `renderToBuffer` returns a Buffer
  *   - The buffer starts with the standard `%PDF-` magic bytes
- *   - All 3 locales work
+ *   - Both bilingual pairs (vi-ko default, vi-en) work
+ *   - The language-pair helpers resolve the right primary/secondary dicts
  */
 
 import { describe, it, expect } from "vitest";
@@ -16,11 +17,13 @@ import { B2cRentalContract } from "@/lib/pdf/templates/b2c-rental-contract";
 import { B2cSaleContract } from "@/lib/pdf/templates/b2c-sale-contract";
 import { AppendixContract } from "@/lib/pdf/templates/appendix";
 import { MaintenanceContract } from "@/lib/pdf/templates/maintenance-contract";
+import { splitLangPair, langPairForLocale } from "@/lib/pdf/types";
+import { pickPdfPair } from "@/lib/pdf/messages";
 import type {
   PdfContractView,
   PdfCustomerSummary,
   PdfEquipmentLine,
-  PdfLocale,
+  PdfLangPair,
 } from "@/lib/pdf/types";
 
 const customerB2C: PdfCustomerSummary = {
@@ -83,9 +86,9 @@ const equipment: PdfEquipmentLine[] = [
   },
 ];
 
-function makeProps(locale: PdfLocale, overrides: Partial<{ contract: PdfContractView; customer: PdfCustomerSummary }> = {}) {
+function makeProps(langPair: PdfLangPair, overrides: Partial<{ contract: PdfContractView; customer: PdfCustomerSummary }> = {}) {
   return {
-    locale,
+    langPair,
     contract: overrides.contract ?? baseContract,
     customer: overrides.customer ?? customerB2C,
     equipment,
@@ -104,35 +107,58 @@ async function assertIsPdfBuffer(element: React.ReactElement) {
   expect(buf.subarray(0, 4).toString("ascii")).toBe("%PDF");
 }
 
-describe("PDF templates → renderToBuffer", () => {
-  it("renders B2C RENTAL in VI", async () => {
-    await assertIsPdfBuffer(React.createElement(B2cRentalContract, makeProps("vi")));
+describe("bilingual language-pair helpers", () => {
+  it("splits vi-ko into Vietnamese primary + Korean secondary", () => {
+    expect(splitLangPair("vi-ko")).toEqual({ primary: "vi", secondary: "ko" });
   });
-  it("renders B2C SALE in KO", async () => {
+  it("splits vi-en into Vietnamese primary + English secondary", () => {
+    expect(splitLangPair("vi-en")).toEqual({ primary: "vi", secondary: "en" });
+  });
+  it("defaults a single locale to vi-ko, but maps en → vi-en", () => {
+    expect(langPairForLocale("ko")).toBe("vi-ko");
+    expect(langPairForLocale("vi")).toBe("vi-ko");
+    expect(langPairForLocale(null)).toBe("vi-ko");
+    expect(langPairForLocale("en")).toBe("vi-en");
+  });
+  it("pickPdfPair resolves two distinct dictionaries", () => {
+    const ko = pickPdfPair("vi-ko");
+    expect(ko.primary.documentTitle.RENTAL_B2C).toBe("Hợp đồng thuê máy lọc nước (Hộ gia đình)");
+    expect(ko.secondary.documentTitle.RENTAL_B2C).toBe("가정집 정수기 임대 계약서");
+    const en = pickPdfPair("vi-en");
+    expect(en.primary).toBe(ko.primary); // same Vietnamese primary
+    expect(en.secondary).not.toBe(ko.secondary); // English secondary differs
+  });
+});
+
+describe("PDF templates → renderToBuffer", () => {
+  it("renders B2C RENTAL in vi-ko (default pair)", async () => {
+    await assertIsPdfBuffer(React.createElement(B2cRentalContract, makeProps("vi-ko")));
+  });
+  it("renders B2C SALE in vi-ko", async () => {
     await assertIsPdfBuffer(
       React.createElement(
         B2cSaleContract,
-        makeProps("ko", {
+        makeProps("vi-ko", {
           contract: { ...baseContract, type: "SALE", monthlyMaintenanceFee: null, totalContractValue: 5_000_000 },
         }),
       ),
     );
   });
-  it("renders B2B contract in EN", async () => {
+  it("renders B2B contract in vi-en", async () => {
     await assertIsPdfBuffer(
-      React.createElement(B2bContract, makeProps("en", { customer: customerB2B })),
+      React.createElement(B2bContract, makeProps("vi-en", { customer: customerB2B })),
     );
   });
-  it("renders MAINTENANCE contract", async () => {
+  it("renders MAINTENANCE contract in vi-ko", async () => {
     await assertIsPdfBuffer(
-      React.createElement(MaintenanceContract, makeProps("vi", {
+      React.createElement(MaintenanceContract, makeProps("vi-ko", {
         contract: { ...baseContract, type: "MAINTENANCE", termMonths: 12 },
       })),
     );
   });
-  it("renders an APPENDIX with revision header", async () => {
+  it("renders an APPENDIX with revision header in vi-en", async () => {
     await assertIsPdfBuffer(
-      React.createElement(AppendixContract, makeProps("vi", {
+      React.createElement(AppendixContract, makeProps("vi-en", {
         customer: customerB2B,
         contract: {
           ...baseContract,

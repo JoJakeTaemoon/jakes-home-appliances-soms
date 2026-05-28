@@ -26,6 +26,7 @@ interface VisitDetail {
   scheduledWindow: string | null;
   expectedAmount: string | null;
   findings: string | null;
+  officeNotes: { at: string; authorId: string; authorName: string; text: string }[] | null;
   partsReplaced: unknown;
   photos: unknown;
   customerSignaturePhotoUrl: string | null;
@@ -156,6 +157,7 @@ export default function VisitDetailPage() {
   const parts = Array.isArray(data.partsReplaced)
     ? (data.partsReplaced as string[])
     : [];
+  const officeNotes = data.officeNotes ?? [];
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -247,6 +249,25 @@ export default function VisitDetailPage() {
             <DetailCard label={t("partsReplaced")}>
               {parts.length > 0 ? parts.join(", ") : "—"}
             </DetailCard>
+          </div>
+          <div className="mt-4 rounded-md border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-3">
+            <p className="text-xs uppercase tracking-wide text-[var(--brand-blue-700)]">
+              {t("officeNotes")}
+            </p>
+            {officeNotes.length === 0 ? (
+              <p className="mt-1 text-sm text-[#737373]">—</p>
+            ) : (
+              <ul className="mt-2 flex flex-col gap-2">
+                {officeNotes.map((n, i) => (
+                  <li key={`${n.at}-${i}`} className="rounded border border-[#e5e5e5] bg-white p-2 text-sm text-[#262626]">
+                    <span className="block whitespace-pre-wrap">{n.text}</span>
+                    <span className="mt-1 block text-[10px] text-[#737373]">
+                      {n.authorName} · {formatDate(n.at, locale)} {n.at.slice(11, 16)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </TabPanel>
         <TabPanel value="photos">

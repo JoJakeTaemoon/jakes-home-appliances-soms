@@ -5,6 +5,29 @@
 
 export type PdfLocale = "ko" | "vi" | "en";
 
+/**
+ * Every generated document is bilingual: a fixed Vietnamese primary line on top
+ * with a secondary line beneath it. The secondary language is the only choice —
+ * Korean by default, English on request.
+ */
+export type PdfLangPair = "vi-ko" | "vi-en";
+
+export interface PdfLangSplit {
+  primary: PdfLocale;
+  secondary: PdfLocale;
+}
+
+export function splitLangPair(pair: PdfLangPair): PdfLangSplit {
+  return pair === "vi-en"
+    ? { primary: "vi", secondary: "en" }
+    : { primary: "vi", secondary: "ko" };
+}
+
+/** Map a single preferred locale to the bilingual pair we render it as. */
+export function langPairForLocale(locale: string | null | undefined): PdfLangPair {
+  return locale === "en" ? "vi-en" : "vi-ko";
+}
+
 export interface PdfCustomerSummary {
   id: string;
   code: string;
@@ -55,7 +78,7 @@ export interface PdfContractView {
 }
 
 export interface PdfRenderProps {
-  locale: PdfLocale;
+  langPair: PdfLangPair;
   contract: PdfContractView;
   customer: PdfCustomerSummary;
   equipment: PdfEquipmentLine[];

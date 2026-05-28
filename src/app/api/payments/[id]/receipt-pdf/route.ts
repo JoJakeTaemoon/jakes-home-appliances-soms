@@ -16,9 +16,17 @@ import {
 } from "@/lib/api/error";
 import { PaymentWorkflow } from "@/lib/payments/workflow";
 import { renderPdf } from "@/lib/pdf/renderer";
+import { langPairForLocale, type PdfLangPair } from "@/lib/pdf/types";
 
 interface Ctx {
   params: Promise<{ id: string }>;
+}
+
+/** Bilingual pair from `?langPair=` or `?locale=` query (defaults to vi-ko). */
+function langPairFromQuery(url: URL): PdfLangPair {
+  const qPair = url.searchParams.get("langPair");
+  if (qPair === "vi-ko" || qPair === "vi-en") return qPair;
+  return langPairForLocale(url.searchParams.get("locale"));
 }
 
 async function ensureAccess(
@@ -53,8 +61,7 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     if (!receipt) {
       // Generate on first download
       const url = new URL(request.url);
-      const locale = (url.searchParams.get("locale") as "ko" | "vi" | "en") ?? "vi";
-      await renderPdf({ kind: "RECEIPT", refId: id, locale });
+      await renderPdf({ kind: "RECEIPT", refId: id, langPair: langPairFromQuery(url) });
       receipt = await prisma.document.findFirst({
         where: { paymentId: id, kind: "RECEIPT" },
         orderBy: { generatedAt: "desc" },
@@ -89,12 +96,10 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       throw new ForbiddenError("Insufficient role");
     }
     const url = new URL(request.url);
-    const locale =
-      (url.searchParams.get("locale") as "ko" | "vi" | "en" | null) ?? "vi";
     const result = await renderPdf({
       kind: "RECEIPT",
       refId: id,
-      locale,
+      langPair: langPairFromQuery(url),
       generatedById: auth.userId,
     });
     return successResponse(result);

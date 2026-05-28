@@ -58,6 +58,7 @@ describe("VisitWorkflow facade", () => {
     expect(fnsOf(VisitWorkflow)).toEqual(
       [
         "addNotes",
+        "addOfficeNote",
         "cancel",
         "complete",
         "create",

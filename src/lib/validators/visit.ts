@@ -151,6 +151,11 @@ export const addNotesSchema = z.object({
   photos: z.array(photoMetaSchema).max(20).optional().default([]),
 });
 
+/** Technician → HQ relay message (방문 전달사항). Plain text, no photos. */
+export const officeNoteSchema = z.object({
+  text: z.string().trim().min(1).max(2000),
+});
+
 export const visitListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   technicianId: z.string().trim().min(1).optional(),
@@ -186,6 +191,7 @@ export type CancelVisitInput = z.infer<typeof cancelVisitSchema>;
 export type CompleteVisitInput = z.infer<typeof completeVisitSchema>;
 export type FailVisitInput = z.infer<typeof failVisitSchema>;
 export type AddNotesInput = z.infer<typeof addNotesSchema>;
+export type OfficeNoteInput = z.infer<typeof officeNoteSchema>;
 export type VisitListQuery = z.infer<typeof visitListQuerySchema>;
 export type RecommendQuery = z.infer<typeof recommendQuerySchema>;
 export type PhotoMeta = z.infer<typeof photoMetaSchema>;
