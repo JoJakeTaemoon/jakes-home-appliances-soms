@@ -30,7 +30,7 @@ export const equipmentModelListQuerySchema = z.object({
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });
 
 export type CreateEquipmentModelInput = z.infer<typeof createEquipmentModelSchema>;

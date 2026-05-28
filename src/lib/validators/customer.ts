@@ -112,7 +112,7 @@ export const customerListQuerySchema = z.object({
   status: z.enum(["ACTIVE", "INACTIVE", "PROSPECT"]).optional(),
   region: z.string().trim().max(60).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  pageSize: z.coerce.number().int().min(1).max(500).default(25),
 });
 
 export const deactivateCustomerSchema = z.object({
