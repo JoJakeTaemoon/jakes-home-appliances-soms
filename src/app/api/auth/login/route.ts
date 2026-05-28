@@ -84,12 +84,14 @@ export async function POST(request: NextRequest) {
     };
     let user: UserRecord | null = null;
     if (username) {
-      user = (await prisma.user.findUnique({
+      // username is no longer @unique (it's a display label). Use findFirst
+      // so the back-compat path still resolves the first matching row.
+      user = (await prisma.user.findFirst({
         where: { username },
         select: userSelect,
       })) as UserRecord | null;
     } else if (normalizedPhone) {
-      user = (await prisma.user.findFirst({
+      user = (await prisma.user.findUnique({
         where: { phone: normalizedPhone },
         select: userSelect,
       })) as UserRecord | null;
