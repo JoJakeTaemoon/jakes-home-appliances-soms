@@ -1,260 +1,227 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
-import { ChevronDown } from "lucide-react";
 import {
-  mainNavItems,
-  masterNavItems,
-  adminNavItems,
-  type NavItem,
-} from "@/config/navigation";
+  LayoutDashboard,
+  Users,
+  Cpu,
+  FileText,
+  CalendarCheck,
+  Wallet,
+  Inbox,
+  Receipt,
+  BarChart3,
+  Settings,
+} from "lucide-react";
 
-const ADMIN_ROLES = new Set(["SYSTEM_ADMIN", "DIRECTOR"]);
-const MASTER_ROLES = new Set(["SYSTEM_ADMIN", "DIRECTOR", "MANAGER"]);
+type LabelKey =
+  | "dashboard"
+  | "customers"
+  | "equipment"
+  | "equipmentModels"
+  | "contracts"
+  | "visits"
+  | "serviceRequests"
+  | "payments"
+  | "taxInvoices"
+  | "reports"
+  | "userManagement"
+  | "admin";
+
+interface NavItem {
+  href: string;
+  labelKey: LabelKey;
+  Icon: typeof LayoutDashboard;
+  disabled?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard },
+  { href: "/customers", labelKey: "customers", Icon: Users },
+  { href: "/equipment", labelKey: "equipment", Icon: Cpu },
+  { href: "/equipment-models", labelKey: "equipmentModels", Icon: Cpu },
+  { href: "/contracts", labelKey: "contracts", Icon: FileText },
+  { href: "/visits", labelKey: "visits", Icon: CalendarCheck },
+  { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox },
+  { href: "/payments", labelKey: "payments", Icon: Wallet },
+  { href: "/tax-invoices", labelKey: "taxInvoices", Icon: Receipt },
+  { href: "/reports", labelKey: "reports", Icon: BarChart3 },
+];
+
+const adminNavItems: NavItem[] = [
+  {
+    href: "/admin/notification-templates",
+    labelKey: "admin",
+    Icon: Settings,
+  },
+];
+
+const userMgmtNavItems: NavItem[] = [
+  {
+    href: "/admin/users",
+    labelKey: "userManagement",
+    Icon: Users,
+  },
+];
 
 function getInitials(name: string): string {
+  if (!name) return "";
   return name
     .split(" ")
-    .map((word) => word[0])
+    .map((word) => word[0] ?? "")
     .join("")
+    .slice(0, 2)
     .toUpperCase();
 }
 
-function NavLink({
-  item,
-  pathname,
-  label,
-  indented = false,
-  activeOverride,
-}: Readonly<{
-  item: NavItem;
-  pathname: string;
-  label: string;
-  indented?: boolean;
-  activeOverride?: boolean;
-}>) {
-  // Children are visually nested under their parent group via a fixed
-  // left indent on the row. We use padding rather than transform so the
-  // hover/active background still spans the full sidebar width.
-  const padLeft = indented ? "pl-9" : "pl-3";
-  // WCAG mobile touch target: min 44px at < md. Desktop stays compact.
-  const touchTarget = "max-md:min-h-[44px]";
-  if (item.disabled) {
-    return (
-      <span
-        className={`flex items-center gap-3 rounded-full ${padLeft} pr-3 py-2 ${touchTarget} text-sm font-normal text-[#a3a3a3] cursor-default`}
-      >
-        <item.icon className="size-5 shrink-0" strokeWidth={1.5} />
-        {label}
-        <span className="ml-auto rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[10px] font-medium text-[#a3a3a3]">TBD</span>
-      </span>
-    );
-  }
-  // When the parent group decides which sibling is "the" active leaf
-  // (e.g. /admin/settings/integrations should NOT also highlight
-  // /admin/settings), it passes activeOverride to short-circuit the
-  // default prefix-match rule.
-  const isActive =
-    activeOverride ??
-    (pathname === item.href || pathname.startsWith(item.href + "/"));
-  return (
-    <Link
-      href={item.href}
-      aria-current={isActive ? "page" : undefined}
-      className={
-        isActive
-          ? `flex items-center gap-3 rounded-full ${padLeft} pr-3 py-2 ${touchTarget} text-sm font-medium text-[#000000] bg-[#e5e5e5]`
-          : `flex items-center gap-3 rounded-full ${padLeft} pr-3 py-2 ${touchTarget} text-sm font-normal text-[#737373] hover:bg-[#e5e5e5] hover:text-[#000000] transition-none`
-      }
-    >
-      <item.icon className="size-5 shrink-0" strokeWidth={1.5} />
-      {label}
-      {item.badge ? (
-        <span className="ml-auto rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[10px] font-medium text-[#a3a3a3]">
-          {item.badge}
-        </span>
-      ) : null}
-    </Link>
-  );
-}
-
-// Collapsible group for NavItems whose `children` are defined. The parent
-// row is non-navigable — clicking it toggles the child list. Default-open
-// when the current pathname matches one of the children (so the user lands
-// on `/admin/settings/integrations` and immediately sees the active leaf
-// highlighted instead of needing to expand the parent first).
-function NavGroup({
-  item,
-  pathname,
-  label,
-  childLabel,
-}: Readonly<{
-  item: NavItem;
-  pathname: string;
-  label: string;
-  childLabel: (key: string) => string;
-}>) {
-  const children = item.children ?? [];
-  // Pick the single most-specific match — the child whose href is the
-  // longest prefix of the current path. Without this, both
-  // /admin/settings (photo upload) and /admin/settings/integrations
-  // would light up on the integrations page.
-  const activeChildHref =
-    children
-      .filter(
-        (c) => pathname === c.href || pathname.startsWith(c.href + "/"),
-      )
-      .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null;
-  const hasActiveChild = activeChildHref !== null;
-  const [open, setOpen] = useState(hasActiveChild);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-center gap-3 rounded-full pl-3 pr-3 py-2 max-md:min-h-[44px] text-sm font-normal text-[#737373] hover:bg-[#e5e5e5] hover:text-[#000000] cursor-pointer"
-      >
-        <item.icon className="size-5 shrink-0" strokeWidth={1.5} />
-        <span className="flex-1 text-left">{label}</span>
-        <ChevronDown
-          className={`size-4 shrink-0 text-[#a3a3a3] transition-transform ${open ? "rotate-180" : ""}`}
-          strokeWidth={1.5}
-        />
-      </button>
-      {open
-        ? children.map((child) => (
-            <NavLink
-              key={child.href}
-              item={child}
-              pathname={pathname}
-              label={childLabel(child.labelKey)}
-              indented
-              activeOverride={child.href === activeChildHref}
-            />
-          ))
-        : null}
-    </>
-  );
-}
-
-/** Render either a flat link or a collapsible group depending on `children`. */
-function NavEntry({
-  item,
-  pathname,
-  label,
-  childLabel,
-}: Readonly<{
-  item: NavItem;
-  pathname: string;
-  label: string;
-  childLabel: (key: string) => string;
-}>) {
-  if (item.children && item.children.length > 0) {
-    return (
-      <NavGroup item={item} pathname={pathname} label={label} childLabel={childLabel} />
-    );
-  }
-  return <NavLink item={item} pathname={pathname} label={label} />;
-}
+type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
 
 export function Sidebar() {
   const t = useTranslations("nav");
-  const tAdmin = useTranslations("admin");
+  const tRoles = useTranslations("roles");
   const { user } = useAuth();
   const pathname = usePathname();
 
-  const role = user?.role ?? "";
-  const isAdmin = ADMIN_ROLES.has(role);
-  const canSeeMaster = MASTER_ROLES.has(role);
-  const initials = user?.name ? getInitials(user.name) : "";
-
   return (
-    <aside className="flex h-full w-64 flex-col bg-white border-r border-[#e5e5e5]">
-      {/* Logo — dark background to show white-text logo */}
-      <div className="flex h-14 items-center gap-2 border-b border-[#e5e5e5] bg-[#090909] px-4 shrink-0">
-        <Image
-          src="/mega_dnc_logo.png"
-          alt="MegaDnC"
-          width={90}
-          height={35}
-          priority
-        />
-        <span className="text-sm font-medium text-white" style={{ fontFamily: "var(--font-pretendard), ui-sans-serif, system-ui, -apple-system, sans-serif" }}>
-          PMIS
-        </span>
+    <aside className="flex h-full w-64 flex-col border-r border-[#e5e5e5] bg-white">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-[var(--brand-blue-500)] px-4">
+        <div className="flex size-9 items-center justify-center overflow-hidden rounded-md bg-white">
+          <Image
+            src="/logo/seoul-aqua-logo.jpg"
+            alt="Seoul Aqua"
+            width={36}
+            height={36}
+            priority
+          />
+        </div>
+        <span className="text-sm font-semibold text-white">Seoul Aqua SOMS</span>
       </div>
 
-      {/* Main navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-        <p className="px-3 pb-1 text-xs font-normal text-[#a3a3a3] uppercase tracking-wider">
+      <nav className="flex-1 overflow-y-auto p-3">
+        <p className="px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
           {t("main")}
         </p>
-        {mainNavItems.map((item) => (
-          <NavEntry
-            key={item.href || item.labelKey}
-            item={item}
-            pathname={pathname}
-            label={t(item.labelKey)}
-            childLabel={(k) => t(k)}
-          />
-        ))}
+        <ul className="space-y-0.5">
+          {navItems.map((item) => {
+            const label = t(item.labelKey);
+            const Icon = item.Icon;
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-        {canSeeMaster && (
+            if (item.disabled) {
+              return (
+                <li key={item.href}>
+                  <span className="flex max-md:min-h-[44px] cursor-default items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#a3a3a3]">
+                    <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                    <span className="flex-1">{label}</span>
+                    <span className="rounded-full bg-[#f5f5f5] px-2 py-0.5 text-[10px] font-medium text-[#a3a3a3]">
+                      TBD
+                    </span>
+                  </span>
+                </li>
+              );
+            }
+
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={
+                    active
+                      ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] px-3 py-2 text-sm font-medium text-[var(--brand-blue-700)]"
+                      : "flex max-md:min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                  }
+                >
+                  <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                  <span>{label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
           <>
-            <div className="my-2 h-px bg-[#e5e5e5]" />
-            <p className="px-3 pt-4 pb-1 text-xs font-normal text-[#a3a3a3] uppercase tracking-wider">
-              {t("master")}
+            <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
+              {t("userManagement")}
             </p>
-            {masterNavItems.map((item) => (
-              <NavEntry
-                key={item.href || item.labelKey}
-                item={item}
-                pathname={pathname}
-                label={t(item.labelKey)}
-                childLabel={(k) => t(k)}
-              />
-            ))}
+            <ul className="space-y-0.5">
+              {userMgmtNavItems.map((item) => {
+                const Icon = item.Icon;
+                const active =
+                  pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] px-3 py-2 text-sm font-medium text-[var(--brand-blue-700)]"
+                          : "flex max-md:min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                      }
+                    >
+                      <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
 
-        {isAdmin && (
+        {user?.role === "ADMIN" && (
           <>
-            <div className="my-2 h-px bg-[#e5e5e5]" />
-            <p className="px-3 pt-4 pb-1 text-xs font-normal text-[#a3a3a3] uppercase tracking-wider">
+            <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
               {t("admin")}
             </p>
-            {adminNavItems.map((item) => (
-              <NavEntry
-                key={item.href || item.labelKey}
-                item={item}
-                pathname={pathname}
-                label={t(item.labelKey)}
-                childLabel={(k) => t(k)}
-              />
-            ))}
+            <ul className="space-y-0.5">
+              {adminNavItems.map((item) => {
+                const Icon = item.Icon;
+                const active =
+                  pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`) ||
+                  pathname.startsWith("/admin/");
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] px-3 py-2 text-sm font-medium text-[var(--brand-blue-700)]"
+                          : "flex max-md:min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                      }
+                    >
+                      <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </>
         )}
       </nav>
 
-      {/* User section at bottom */}
       <div className="shrink-0 border-t border-[#e5e5e5] p-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e5e5e5]">
-            <span className="text-xs font-medium text-[#525252]">
-              {initials}
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-blue-100)]">
+            <span className="text-xs font-semibold text-[var(--brand-blue-700)]">
+              {user?.username ? getInitials(user.username) : ""}
             </span>
           </div>
-          <div className="min-w-0 flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <span className="truncate text-sm font-medium text-[#000000]">
-              {user?.name}
+              {user?.username ?? ""}
             </span>
             <span className="truncate text-xs font-normal text-[#737373]">
-              {user?.role ? tAdmin(`roles.${user.role}`) : ""}
+              {user?.role ? tRoles(user.role as RoleKey) : ""}
             </span>
           </div>
         </div>

@@ -1,91 +1,62 @@
-import { NextRequest } from 'next/server';
-import prisma from '@/lib/prisma';
-import { verifyAccessToken, type JwtPayload } from '@/lib/auth/jwt';
-import { checkPermission } from '@/lib/permissions/check';
-import { UnauthorizedError, ForbiddenError } from '@/lib/api/error';
+/**
+ * Staff guards — thin facade over `core/guards` bound to `staffRealm`.
+ *
+ * The actual mechanics (token extraction, JWT verify, actor hydration)
+ * live in `@/lib/auth/core/guards`; this file preserves the historical
+ * import path + adds the role-check helper used across routes.
+ */
+
+import type { NextRequest } from "next/server";
+import { ForbiddenError } from "@/lib/api/error";
+import { STAFF_ROLES, type StaffRole } from "@/lib/auth/roles";
+import { requireAuth as coreRequireAuth } from "@/lib/auth/core/guards";
+import {
+  staffRealm,
+  type AuthenticatedStaff,
+} from "@/lib/auth/realms/staff-realm";
+
+// Preserve historical re-exports — many callers import the cookie names
+// + the AuthenticatedStaff type from here.
+export {
+  STAFF_ACCESS_COOKIE as ACCESS_COOKIE_NAME,
+  STAFF_REFRESH_COOKIE as REFRESH_COOKIE_NAME,
+} from "@/lib/auth/realms/staff-realm";
+export type { AuthenticatedStaff };
 
 /**
- * Augmented caller payload returned by `requireAuth`. Adds the freshly loaded
- * DB user fields so downstream handlers can avoid a second query.
+ * Verify the access token and load fresh User fields. Throws
+ * `UnauthorizedError` on any failure (missing token, bad signature,
+ * expired, account deactivated).
+ *
+ * Call with the `NextRequest` from API routes; omit in Server Components
+ * and the cookie store will be read instead.
  */
-export interface AuthenticatedCaller extends JwtPayload {
-  // The user's display name as currently recorded in the DB.
-  name?: string;
+export async function requireAuth(
+  request?: NextRequest,
+): Promise<AuthenticatedStaff> {
+  return coreRequireAuth(staffRealm, request);
 }
 
-export async function requireAuth(request: NextRequest): Promise<AuthenticatedCaller> {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization header');
-  }
-
-  const token = authHeader.slice(7);
-  if (!token) {
-    throw new UnauthorizedError('Missing token');
-  }
-
-  let payload: JwtPayload;
-  try {
-    payload = await verifyAccessToken(token);
-  } catch {
-    throw new UnauthorizedError('Invalid or expired token');
-  }
-
-  // Verify the user still exists and is active. A valid JWT alone is not
-  // enough — a user deactivated mid-session must lose access immediately
-  // instead of waiting for the token to expire (up to 120 min).
-  const dbUser = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      isActive: true,
-      name: true,
-      permissionOverrides: true,
-    },
-  });
-  if (!dbUser || !dbUser.isActive) {
-    throw new UnauthorizedError('Account is inactive or missing');
-  }
-
-  return {
-    ...payload,
-    name: dbUser.name ?? undefined,
-    permissionOverrides:
-      (dbUser.permissionOverrides as Record<string, boolean> | null) ?? undefined,
-  };
-}
-
+/**
+ * Require the caller to be one of the given roles. Pass a single role or
+ * an array. Throws ForbiddenError on mismatch.
+ *
+ *   await requireRole(req, "ADMIN");
+ *   await requireRole(req, ["ADMIN", "MANAGER"]);
+ */
 export async function requireRole(
-  request: NextRequest,
-  roles: string[],
-): Promise<AuthenticatedCaller> {
-  const payload = await requireAuth(request);
-
-  if (!roles.includes(payload.role)) {
-    throw new ForbiddenError('Insufficient role');
+  request: NextRequest | undefined,
+  roles: StaffRole | readonly StaffRole[],
+): Promise<AuthenticatedStaff> {
+  const caller = await requireAuth(request);
+  const allowed = Array.isArray(roles) ? roles : [roles as StaffRole];
+  if (!(allowed as readonly string[]).includes(caller.role)) {
+    throw new ForbiddenError("Insufficient role");
   }
-
-  return payload;
+  return caller;
 }
 
-export async function requirePermission(
-  request: NextRequest,
-  resource: string,
-  action: string,
-  projectId?: string,
-): Promise<AuthenticatedCaller> {
-  const payload = await requireAuth(request);
-
-  const hasPermission = await checkPermission(
-    payload.userId,
-    resource,
-    action,
-    projectId,
-  );
-
-  if (!hasPermission) {
-    throw new ForbiddenError('Insufficient permissions');
-  }
-
-  return payload;
+/** Type-guard used by tests and callers that received `string` payloads. */
+export function isStaffRoleString(value: string): value is StaffRole {
+  return (STAFF_ROLES as readonly string[]).includes(value);
 }

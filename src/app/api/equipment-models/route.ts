@@ -1,0 +1,80 @@
+/**
+ * GET  /api/equipment-models — list (paginated).
+ * POST /api/equipment-models — create model (MANAGER+).
+ */
+
+import prisma from "@/lib/prisma";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { canManageEquipmentModel } from "@/lib/customers/access";
+import {
+  createEquipmentModelSchema,
+  equipmentModelListQuerySchema,
+} from "@/lib/validators/equipmentModel";
+import { ConflictError, ForbiddenError } from "@/lib/api/error";
+import type { Prisma } from "@/generated/prisma/client";
+
+export const GET = defineQuery({
+  audience: "staff",
+  query: equipmentModelListQuerySchema,
+  paginated: true,
+  handler: async ({ query }) => {
+    const { q, category, isActive, page, pageSize } = query;
+    const where: Prisma.EquipmentModelWhereInput = {};
+    if (category) where.category = category;
+    if (typeof isActive === "boolean") where.isActive = isActive;
+    if (q) {
+      where.OR = [
+        { modelCode: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+      ];
+    }
+    const [total, rows] = await Promise.all([
+      prisma.equipmentModel.count({ where }),
+      prisma.equipmentModel.findMany({
+        where,
+        orderBy: { modelCode: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    return { rows, pagination: { page, limit: pageSize, total } };
+  },
+});
+
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!canManageEquipmentModel(auth.role)) {
+      throw new ForbiddenError("MANAGER+ required");
+    }
+  },
+  body: createEquipmentModelSchema,
+  successStatus: 201,
+  handler: async ({ body }) => {
+    const existing = await prisma.equipmentModel.findUnique({
+      where: { modelCode: body.modelCode },
+      select: { id: true },
+    });
+    if (existing)
+      throw new ConflictError(`Model code ${body.modelCode} already exists`);
+
+    return prisma.equipmentModel.create({
+      data: {
+        modelCode: body.modelCode,
+        name: body.name,
+        category: body.category,
+        description: body.description ?? null,
+        retailPrice: body.retailPrice ?? null,
+        monthlyRentalPrice: body.monthlyRentalPrice ?? null,
+        monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
+        filterPolicy: body.filterPolicy ?? undefined,
+        isActive: body.isActive,
+      },
+    });
+  },
+  audit: {
+    action: "EQUIPMENT_MODEL_CREATE",
+    entityType: "EquipmentModel",
+    after: (r) => r,
+  },
+});

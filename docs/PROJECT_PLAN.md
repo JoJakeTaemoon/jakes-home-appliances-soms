@@ -392,7 +392,37 @@ portfolio:add-end -->
 
 ---
 
-## Phase 7 — Notifications + Field polish (estimated 1.5 weeks)
+## Phase 7 — Offline queue + Full reports + Dashboards + Polish ✅ (shipped 2026-05-27)
+
+**Status: COMPLETE — final v1 phase.**
+
+Phase 7 delivered the local-first remainder of the v1 scope: technician offline queue, full reports + charting module, customer-merge tooling, scheduler-map placeholder, portal conversation thread, admin notification-template editor, admin scheduler-weights editor, and CI workflow.
+
+**Shipped (this session 2026-05-27):**
+
+- **Offline queue (UC-VS-12)** — Dexie.js IndexedDB store + `enqueue`/`flush`/`useOnlineStatus`/`useFlushOnReconnect`; hand-rolled service worker (`/sw.js`) for shell + API caching; `OfflineIndicator` pill in the mobile shell; mobile complete-wizard transparently falls back to queue when offline.
+- **PNG icons** — 192/512 generated from logo JPG via `sharp`; manifest.json switched away from JPEG icons.
+- **Reports module (UC-RP-01..06)** — `src/lib/reports/*` (visit-summary, revenue, technician-productivity, aging, churn, audit-search) + `src/lib/csv.ts` BOM-aware CSV writer + 6 API routes with `?format=csv` query + 6 UI pages with Recharts bar/line/pie charts + CSV download buttons + STAFF self-scoping on the audit log.
+- **Customer merge (UC-CM-08)** — `mergeCustomers()` transactional repoint of 9 relation tables + ADMIN-only `/api/customers/merge` + ADMIN-only `/customers/merge` UI with source+target search picker.
+- **Visit map (C.5)** — placeholder `/visits/map` route with stylized Vietnam silhouette + region-anchored bubbles sized by count, fed by `/api/visits/map` (next-7-days aggregate). Real geocoded map deferred to Phase 8+.
+- **Portal SR conversation thread** — AuditLog-backed (action='SR_MESSAGE'), no new schema; portal customers and office staff post via `/api/portal/service-requests/:id/messages` and `/api/service-requests/:id/messages` respectively; thread rendered chronologically in both views.
+- **Cash-on-hand mobile badge** — wired the existing `/api/mobile/cash-on-hand` endpoint into `/mobile/today` with a colour-coded SLA pill (gray < 24h, amber 24-48h, red ≥ 48h).
+- **Admin notification-template editor (UC-AD-04)** — new `NotificationTemplate` table + override resolver in `src/lib/notifications/template-overrides.ts` (60s in-memory cache); ADMIN UI at `/admin/notification-templates` lists every (code × locale) row with file default + override; save invalidates cache; provider lookup reads override first.
+- **Admin scheduler-weights editor (UC-AD-05)** — new `SystemSetting` table + `src/lib/settings.ts` (keyed value store, 60s cache); ADMIN UI at `/admin/scheduler-weights` with three sliders; `scoreCandidate()` accepts pluggable weights; recommend.ts now reads from `getSchedulerWeights()`.
+- **CI workflow** — `.github/workflows/ci.yml` runs npm ci → prisma generate → tsc → tests → build on every PR / push to master|main; gated by `SKIP_DB_CHECK=1`.
+- **Sidebar wiring** — `Reports` link added for everyone; `Admin` section (notification-templates → admin home) gated to ADMIN role only.
+- **Phase 7 tests** — 27 new tests (csv, visit-summary, revenue, aging, productivity, audit-search, churn, customer-merge, sr-messages, settings, template-overrides, offline queue under fake-indexeddb, scheduler-scoring with custom weights). Cumulative: **418 passing**.
+
+**Deferred to Phase 8+:**
+
+- Real geocoded map (Leaflet/OpenStreetMap or Mapbox) — current SVG bubbles cover the v1 need
+- Real-time push notifications (Supabase Realtime)
+- Multi-tenant separation
+- BI dashboard with custom user-defined queries
+
+---
+
+## Phase 7 — Notifications + Field polish (original — now superseded by §"Phase 7 shipped" above)
 
 **Goal:** notification depth + tech-app polish. Core SMS infra was built in Phase 3.5; this phase extends it.
 

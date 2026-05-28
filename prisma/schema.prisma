@@ -1,0 +1,756 @@
+// Seoul Aqua SOMS — Prisma schema
+// Generated 2026-05-27 for Phase 1-7 local-first implementation.
+// Source: docs/DATA_MODEL_NOTES.md + docs/SPEC.md + docs/PRD.md.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AUTH & USERS (Phase 1)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum StaffRole {
+  ADMIN
+  MANAGER
+  STAFF
+  TECHNICIAN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id                String      @id @default(cuid())
+  // Phone is the login key for every staff role (admin/manager/staff/technician).
+  // username is a free-form display label (e.g. "admin", "Nguyễn Văn A") — not unique.
+  username          String
+  phone             String      @unique
+  email             String?
+  passwordHash      String
+  role              StaffRole
+  status            UserStatus  @default(ACTIVE)
+  preferredRegion   String?     // scheduler input
+  mustChangePassword Boolean    @default(false)
+  lastLoginAt       DateTime?
+  failedLoginCount  Int         @default(0)
+  lockedUntil       DateTime?
+  // Self-service password recovery (SMS verification → temp password).
+  passwordResetCodeHash       String?
+  passwordResetCodeExpiresAt  DateTime?
+  passwordResetAttempts       Int       @default(0)
+  passwordResetLastRequestAt  DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  sessions               Session[]
+  leadVisits             Visit[]     @relation("LeadTechnician")
+  auditActions           AuditLog[]  @relation("ActorUser")
+  collectedPayments      Payment[]
+  loginAttempts          LoginAttempt[]
+  preferredByCustomers   Customer[]  @relation("PreferredTech")
+
+  @@index([role, status])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginAttempt {
+  id          String    @id @default(cuid())
+  username    String
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress   String?
+  userAgent   String?
+  success     Boolean
+  attemptedAt DateTime  @default(now())
+
+  @@index([username, attemptedAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AUDIT LOG (Phase 1+)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ActorType {
+  USER         // staff
+  CUSTOMER     // portal account
+  SYSTEM       // cron / scheduler
+}
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  actorType   ActorType
+  actorId     String?
+  actorUser   User?      @relation("ActorUser", fields: [actorId], references: [id], onDelete: SetNull)
+  action      String     // e.g. "CUSTOMER_CREATE", "CONTRACT_AMEND"
+  entityType  String     // e.g. "Customer", "Contract"
+  entityId    String?
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  at          DateTime   @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([at])
+  @@index([action])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CUSTOMER + SITE + CONTACT (Phase 2)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum CustomerType {
+  B2C
+  B2B
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  PROSPECT
+}
+
+enum ContactRole {
+  CONTRACT_PARTY
+  OPS_CONTACT
+}
+
+enum ContactScope {
+  CUSTOMER     // organization-level (always for CONTRACT_PARTY)
+  SITE         // site-specific (OPS_CONTACT only)
+}
+
+enum Locale {
+  ko
+  vi
+  en
+}
+
+model Customer {
+  id                     String         @id @default(cuid())
+  code                   String         @unique  // KH#####
+  legacyCode             String?        @unique  // pre-migration code (A.2)
+  type                   CustomerType
+  status                 CustomerStatus @default(ACTIVE)
+
+  // B2C: just name; B2B: legal entity name
+  name                   String
+  shortcode              String?        @unique  // B2B 2-5 letter; used in contract code (B.2)
+  taxCode                String?        // B2B Vietnamese tax code
+
+  // Primary address (B2C uses this; B2B HQ address)
+  address                String?
+  district               String?
+  city                   String?
+
+  preferredTechnicianId  String?
+  preferredTechnician    User?          @relation("PreferredTech", fields: [preferredTechnicianId], references: [id], onDelete: SetNull, map: "Customer_preferredTechnicianId_fkey")
+  preferredRegion        String?        // soft hint for scheduler (C.2)
+
+  notes                  String?
+
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  deactivatedAt          DateTime?
+  deactivationReason     String?
+
+  sites                  Site[]
+  contacts               CustomerContact[]
+  equipment              Equipment[]
+  contracts              Contract[]
+  serviceRequests        ServiceRequest[]
+  visits                 Visit[]
+  payments               Payment[]
+  notificationLogs       NotificationLog[]
+  documents              Document[]
+
+  @@index([code])
+  @@index([type, status])
+  @@index([shortcode])
+}
+
+model Site {
+  id           String   @id @default(cuid())
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name         String   // e.g. "본사 사옥", "지점 1"
+  address      String
+  district     String?
+  city         String?
+  region       String?  // scheduler input
+  notes        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  contacts     CustomerContact[]
+  equipment    Equipment[]
+
+  @@index([customerId])
+  @@index([region])
+}
+
+model CustomerContact {
+  id                String       @id @default(cuid())
+  customerId        String
+  customer          Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId            String?
+  site              Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  role              ContactRole
+  scope             ContactScope @default(CUSTOMER)
+  isPrimary         Boolean      @default(false)  // exactly one primary OPS per customer (or per site)
+
+  name              String
+  title             String?      // e.g. "관리부장", "Mrs."
+  phone1            String       // primary phone (login key for portal)
+  phone2            String?
+  email             String?
+  language          Locale       @default(vi)
+
+  // Portal account
+  portalEnabled     Boolean      @default(false)
+  passwordHash      String?
+  mustChangePassword Boolean     @default(false)
+  lastLoginAt       DateTime?
+  failedLoginCount  Int          @default(0)
+  lockedUntil       DateTime?
+
+  // Opt-outs (F.3)
+  smsOptOut         Boolean      @default(false)
+  emailOptOut       Boolean      @default(false)
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  customerSessions  CustomerSession[]
+  serviceRequests   ServiceRequest[]
+  notificationLogs  NotificationLog[]
+
+  @@index([customerId, role])
+  @@index([siteId])
+  @@index([phone1])
+}
+
+model CustomerSession {
+  id           String          @id @default(cuid())
+  contactId    String
+  contact      CustomerContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  refreshToken String          @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@index([contactId])
+  @@index([expiresAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// EQUIPMENT (Phase 2-3)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum EquipmentCategory {
+  WATER_PURIFIER
+  BIDET
+  AIR_PURIFIER
+  FILTER
+  OTHER
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  REPLACED       // replaced by another unit (legacy retained)
+  RELOCATED
+  DEACTIVATED    // customer cancelled (A.3 — lifecycle preserved, no delete)
+  TERMINATED     // contract terminated
+}
+
+enum EquipmentOwnership {
+  COMPANY        // rental — owned by Seoul Aqua
+  CUSTOMER       // sold or post-rental transfer (B.3)
+}
+
+model EquipmentModel {
+  id                  String            @id @default(cuid())
+  modelCode           String            @unique  // e.g. SA-J430, PTS-2100
+  name                String
+  category            EquipmentCategory
+  description         String?
+  filterPolicy        Json?             // { filters: [{type, replaceEveryDays}, ...] }
+  retailPrice         Decimal?          @db.Decimal(14, 2)
+  monthlyRentalPrice  Decimal?          @db.Decimal(14, 2)
+  monthlyMaintenancePrice Decimal?      @db.Decimal(14, 2)
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  equipment           Equipment[]
+
+  @@index([category, isActive])
+}
+
+model Equipment {
+  id                    String             @id @default(cuid())
+  customerId            String
+  customer              Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                String?
+  site                  Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  modelId               String
+  model                 EquipmentModel     @relation(fields: [modelId], references: [id])
+  serialNumber          String?
+  status                EquipmentStatus    @default(ACTIVE)
+  ownership             EquipmentOwnership @default(COMPANY)
+  installedAt           DateTime?
+  installedByTechnicianId String?
+  filterPolicyOverride  Json?              // per-unit override
+  replacedByEquipmentId String?            @unique
+  notes                 String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  contracts             ContractEquipment[]
+  visits                Visit[]
+  serviceRequests       ServiceRequest[]
+
+  @@index([customerId, status])
+  @@index([siteId])
+  @@index([modelId])
+  @@index([serialNumber])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONTRACTS (Phase 3)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ContractType {
+  SALE
+  RENTAL
+  MAINTENANCE
+}
+
+enum ContractState {
+  DRAFT
+  PENDING_SIGNATURE
+  ACTIVE
+  AMENDED
+  COMPLETED        // rental term ended naturally
+  TERMINATED       // early termination
+  CANCELLED        // never activated
+}
+
+model Contract {
+  id                     String         @id @default(cuid())
+  contractNumber         String         @unique  // HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode}
+  legacyContractNumber   String?        @unique
+  customerId             String
+  customer               Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  type                   ContractType
+  state                  ContractState  @default(DRAFT)
+
+  startDate              DateTime?
+  endDate                DateTime?      // rental: start + 36 months
+  termMonths             Int?           // for rental
+
+  monthlyMaintenanceFee  Decimal?       @db.Decimal(14, 2)
+  totalContractValue     Decimal?       @db.Decimal(14, 2)
+  filterPolicy           Json?          // override of EquipmentModel.filterPolicy
+
+  // B2B amendment chain (B.2 + B.5)
+  parentContractId       String?
+  parentContract         Contract?      @relation("ContractAmendment", fields: [parentContractId], references: [id])
+  amendments             Contract[]     @relation("ContractAmendment")
+  amendmentRevision      Int            @default(0)
+  amendmentReason        String?
+
+  signedByCustomerAt     DateTime?
+  signedByCompanyAt      DateTime?
+  activatedAt            DateTime?
+  terminatedAt           DateTime?
+  terminationReason      String?
+
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  equipment              ContractEquipment[]
+  payments               Payment[]
+  documents              Document[]
+
+  @@index([customerId, state])
+  @@index([state])
+  @@index([parentContractId])
+}
+
+model ContractEquipment {
+  id           String     @id @default(cuid())
+  contractId   String
+  contract     Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  equipmentId  String
+  equipment    Equipment  @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  unitPrice    Decimal?   @db.Decimal(14, 2)
+  quantity     Int        @default(1)
+  notes        String?
+  createdAt    DateTime   @default(now())
+
+  @@unique([contractId, equipmentId])
+  @@index([equipmentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SERVICE REQUEST (Phase 5)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum ServiceRequestType {
+  INSPECTION
+  REPAIR
+  PART_REPLACEMENT
+  RELOCATION
+  OTHER
+}
+
+enum ServiceRequestState {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model ServiceRequest {
+  id            String              @id @default(cuid())
+  code          String              @unique  // SR-####
+  customerId    String
+  customer      Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contactId     String?
+  contact       CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  equipmentId   String?
+  equipment     Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  type          ServiceRequestType
+  isPaid        Boolean             @default(false)
+  state         ServiceRequestState @default(PENDING_REVIEW)
+  description   String
+  attachments   Json?               // [{ url, filename, type }]
+  approvedPrice Decimal?            @db.Decimal(14, 2)
+  approvedDate  DateTime?
+  rejectionReason String?
+  submittedAt   DateTime            @default(now())
+  decidedAt     DateTime?
+  decidedById   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  visit         Visit?
+
+  @@index([customerId, state])
+  @@index([state, submittedAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// VISIT (Phase 4)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum VisitState {
+  SUGGESTED        // scheduler proposed
+  SCHEDULED        // office confirmed
+  IN_PROGRESS      // technician opened on mobile
+  COMPLETED        // lead tech marked done
+  FAILED_NO_SHOW
+  RESCHEDULED
+  CANCELLED
+}
+
+enum VisitType {
+  INSTALLATION
+  PERIODIC_INSPECTION
+  REPAIR
+  FILTER_REPLACEMENT
+  RELOCATION
+  PAYMENT_COLLECTION
+  OTHER
+}
+
+model Visit {
+  id                       String     @id @default(cuid())
+  customerId               String
+  customer                 Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                   String?
+  equipmentId              String?
+  equipment                Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  serviceRequestId         String?    @unique
+  serviceRequest           ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  type                     VisitType
+  state                    VisitState @default(SUGGESTED)
+
+  scheduledFor             DateTime
+  scheduledWindow          String?    // e.g. "morning", "14:00-16:00"
+
+  leadTechnicianId         String?
+  leadTechnician           User?      @relation("LeadTechnician", fields: [leadTechnicianId], references: [id], onDelete: SetNull)
+  collaboratorTechnicianIds String[]  @default([])
+
+  expectedAmount           Decimal?   @db.Decimal(14, 2)
+  findings                 String?
+  partsReplaced            Json?
+  photos                   Json?      // [{ url, takenAt }]
+  customerSignaturePhotoUrl String?
+
+  startedAt                DateTime?
+  completedAt              DateTime?
+  failureReason            String?
+
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+
+  payments                 Payment[]
+  documents                Document[]
+
+  @@index([leadTechnicianId, state])
+  @@index([customerId, state])
+  @@index([scheduledFor])
+  @@index([state, scheduledFor])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PAYMENT (Phase 6)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+enum PaymentState {
+  EXPECTED        // invoice issued, awaiting payment
+  COLLECTED       // technician collected cash
+  HANDED_OVER     // tech deposited at office
+  RECONCILED      // manager approved final
+  OVERDUE_D7
+  OVERDUE_D14
+  OVERDUE_D30
+  WRITTEN_OFF
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  customerId          String
+  customer            Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contractId          String?
+  contract            Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  visitId             String?
+  visit               Visit?        @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  collectedById       String?       // technician
+  collectedBy         User?         @relation(fields: [collectedById], references: [id], onDelete: SetNull)
+
+  method              PaymentMethod
+  state               PaymentState  @default(EXPECTED)
+  expectedAmount      Decimal       @db.Decimal(14, 2)
+  actualAmount        Decimal       @db.Decimal(14, 2) @default(0)
+  carryoverAmount     Decimal       @db.Decimal(14, 2) @default(0)  // D.3
+  currency            String        @default("VND")
+  reference           String?       // bank transfer ref number
+
+  collectedAt         DateTime?
+  handedOverAt        DateTime?
+  reconciledAt        DateTime?
+
+  dueDate             DateTime?
+
+  notes               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  taxInvoice          TaxInvoice?
+  documents           Document[]
+
+  @@index([customerId, state])
+  @@index([state, dueDate])
+  @@index([collectedById])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// TAX INVOICE (Phase 6)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum InvoiceProvider {
+  MANUAL_UPLOAD
+  VIETTEL_SINVOICE   // Phase 8+
+}
+
+model TaxInvoice {
+  id                   String          @id @default(cuid())
+  paymentId            String          @unique
+  payment              Payment         @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceNumber        String?         @unique
+  invoiceDate          DateTime?
+  invoiceProvider      InvoiceProvider @default(MANUAL_UPLOAD)
+  invoiceProviderRef   String?
+  invoicePdfUploadedAt DateTime?
+  pdfStorageKey        String?
+  emailedAt            DateTime?
+  emailedToContactId   String?
+  reissuedFromId       String?
+  notes                String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([invoiceNumber])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS (Phase 3.5+)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+  MOCKED        // mock provider used
+  SKIPPED       // recipient opted out + non-system message
+}
+
+model NotificationLog {
+  id                String              @id @default(cuid())
+  customerId        String?
+  customer          Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contactId         String?
+  contact           CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  templateCode      String              // e.g. "SMS_VISIT_REMINDER"
+  channel           NotificationChannel
+  locale            Locale
+  provider          String              // "mock" / "esms" / "resend"
+  recipient         String              // phone or email
+  payload           Json?               // rendered body + subject + variables
+  status            NotificationStatus  @default(QUEUED)
+  providerMessageId String?
+  errorMessage      String?
+  segmentsUsed      Int?                // SMS segments billed
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@index([customerId])
+  @@index([contactId])
+  @@index([templateCode, createdAt])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// DOCUMENT (PDF storage — Phase 3+)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum DocumentKind {
+  CONTRACT
+  RECEIPT
+  WORK_CONFIRMATION
+  DELIVERY_SLIP
+  PERIODIC_INSPECTION
+  TAX_INVOICE
+  OTHER
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  kind          DocumentKind
+  customerId    String?
+  customer      Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contractId    String?
+  contract      Contract?    @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  visitId       String?
+  visit         Visit?       @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  paymentId     String?
+  payment       Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  templateCode  String       // e.g. "CONTRACT_B2C_RENTAL"
+  locale        Locale       @default(vi)
+  storageKey    String       // path under uploads/ (or future Supabase Storage)
+  filename      String
+  mimeType      String       @default("application/pdf")
+  sizeBytes    Int?
+  generatedAt   DateTime     @default(now())
+  generatedById String?
+
+  @@index([customerId, kind])
+  @@index([contractId])
+  @@index([visitId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NOTIFICATION TEMPLATES (Phase 7 — UC-AD-04 admin overrides)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * DB-backed overrides for SMS + email templates. Provider lookup checks this
+ * table first (cached 60s in-memory) and falls back to the file-based
+ * defaults in `src/lib/{sms,email}/templates.ts` when no row exists.
+ * Composite unique key on (code, locale).
+ */
+model NotificationTemplate {
+  id            String              @id @default(cuid())
+  code          String              // e.g. "SMS_VISIT_REMINDER"
+  channel       NotificationChannel
+  locale        Locale
+  subject       String?             // email only
+  body          String
+  updatedAt     DateTime            @updatedAt
+  updatedById   String?
+  createdAt     DateTime            @default(now())
+
+  @@unique([code, locale])
+  @@index([code])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SYSTEM SETTINGS (Phase 7 — singleton key/value config)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generic key/value store for scheduler weights (UC-AD-05) and other
+ * admin-tunable knobs. Values are JSON-typed so the same row can hold a
+ * single number or a struct. Caller decodes per-key.
+ */
+model SystemSetting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ADDITIONAL RELATIONS (declarations for FKs without back-relation)
+// ─────────────────────────────────────────────────────────────────────────
+
+// Add @relation aliases needed
+// Customer.preferredTechnician → User uses "PreferredTech"; declare on User:
+
+// (above User model needs the back-relation — add via inline since prisma requires both sides)
