@@ -8,7 +8,7 @@
  * Server Components should query Prisma directly; this is for client calls.
  */
 
-import { useCallback } from "react";
+import { useMemo } from "react";
 import { useAuth } from "@/providers/auth-provider";
 
 export class ApiClientError extends Error {
@@ -72,54 +72,47 @@ async function rawCall<T>(input: string, opts: ApiOptions): Promise<T> {
  */
 export function useApi() {
   const { accessToken } = useAuth();
-  return {
-    get: useCallback(
-      <T,>(url: string, init?: RequestInit) =>
+  // The returned object must be reference-stable across renders. Callers
+  // routinely pass `api` (or a callback derived from it) into useEffect /
+  // useCallback dependency arrays — without useMemo, the object literal
+  // is fresh every render and triggers an infinite re-fetch loop on the
+  // dashboard, the admin pages, and anywhere else that calls api.get
+  // inside an effect.
+  return useMemo(() => {
+    return {
+      get: <T,>(url: string, init?: RequestInit) =>
         rawCall<{ success: true; data: T; pagination?: unknown }>(url, {
           method: "GET",
           ...init,
           authToken: accessToken,
         }),
-      [accessToken],
-    ),
-    post: useCallback(
-      <T,>(url: string, body?: unknown, init?: RequestInit) =>
+      post: <T,>(url: string, body?: unknown, init?: RequestInit) =>
         rawCall<{ success: true; data: T }>(url, {
           method: "POST",
           body,
           ...init,
           authToken: accessToken,
         }),
-      [accessToken],
-    ),
-    patch: useCallback(
-      <T,>(url: string, body?: unknown, init?: RequestInit) =>
+      patch: <T,>(url: string, body?: unknown, init?: RequestInit) =>
         rawCall<{ success: true; data: T }>(url, {
           method: "PATCH",
           body,
           ...init,
           authToken: accessToken,
         }),
-      [accessToken],
-    ),
-    put: useCallback(
-      <T,>(url: string, body?: unknown, init?: RequestInit) =>
+      put: <T,>(url: string, body?: unknown, init?: RequestInit) =>
         rawCall<{ success: true; data: T }>(url, {
           method: "PUT",
           body,
           ...init,
           authToken: accessToken,
         }),
-      [accessToken],
-    ),
-    del: useCallback(
-      <T,>(url: string, init?: RequestInit) =>
+      del: <T,>(url: string, init?: RequestInit) =>
         rawCall<{ success: true; data: T }>(url, {
           method: "DELETE",
           ...init,
           authToken: accessToken,
         }),
-      [accessToken],
-    ),
-  };
+    };
+  }, [accessToken]);
 }
