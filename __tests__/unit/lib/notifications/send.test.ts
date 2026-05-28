@@ -30,6 +30,11 @@ vi.mock("@/lib/audit", () => ({
   logAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
+// HQ phone is injected into every template's vars from the admin setting.
+vi.mock("@/lib/settings", () => ({
+  getHqPhone: vi.fn().mockResolvedValue("028-9999-0000"),
+}));
+
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
@@ -117,6 +122,28 @@ describe("sendNotification orchestrator owns NotificationLog", () => {
       action: "NOTIFICATION_SENT",
       entityType: "NotificationLog",
     });
+  });
+
+  it("injects hq_phone from the setting, overriding any caller-supplied value", async () => {
+    const fake = new FakeProvider(async () => ({
+      providerMessageId: "rid-hq",
+      segmentsUsed: 1,
+      dryRun: false,
+    }));
+    setNotificationProviderOverride("SMS", fake);
+
+    await sendNotification({
+      templateCode: "SMS_SR_REJECTED",
+      customerContactId: "contact-1",
+      locale: "vi",
+      // Caller passes a stale/wrong number — the setting must win.
+      vars: { req_no: "SR-00001", reason: "Còn hạn", hq_phone: "000-STALE" },
+    });
+
+    const dispatched = fake.sends[0];
+    expect(dispatched.vars?.hq_phone).toBe("028-9999-0000");
+    expect(dispatched.body).toContain("028-9999-0000");
+    expect(dispatched.body).not.toContain("000-STALE");
   });
 
   it("writes status=MOCKED when adapter signals dryRun=true", async () => {

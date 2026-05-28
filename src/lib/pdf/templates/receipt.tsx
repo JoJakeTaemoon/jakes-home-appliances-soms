@@ -30,6 +30,7 @@ export interface ReceiptPayload {
   carryoverAmount: number;
   reference: string | null;
   notes: string | null;
+  hqPhone: string;
   langPair: PdfLangPair;
   generatedAt: Date;
 }
@@ -236,7 +237,7 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
           </View>
           <View>
             <Text style={styles.brandLegal}>cs@seoulaqua.com.vn</Text>
-            <Text style={styles.brandLegal}>+84-28-1234-5678</Text>
+            <Text style={styles.brandLegal}>{payload.hqPhone}</Text>
           </View>
         </View>
 

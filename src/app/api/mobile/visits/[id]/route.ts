@@ -9,6 +9,7 @@ import { z } from "zod";
 import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { VisitWorkflow } from "@/lib/visits/workflow";
+import { getHqPhone } from "@/lib/settings";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -44,6 +45,14 @@ export const GET = defineQuery({
     const collaborators = await VisitWorkflow.loadCollaborators(
       visit.collaboratorTechnicianIds,
     );
-    return { ...visit, customer: stripContactPhones(visit.customer), collaborators };
+    // HQ phone for the "Call HQ" action — admin-editable, so it ships with the
+    // payload rather than a client-baked constant.
+    const hqPhone = await getHqPhone();
+    return {
+      ...visit,
+      customer: stripContactPhones(visit.customer),
+      collaborators,
+      hqPhone,
+    };
   },
 });

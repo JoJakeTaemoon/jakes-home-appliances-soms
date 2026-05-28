@@ -13,7 +13,7 @@ import {
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
 import { formatDate } from "@/lib/format";
-import { HQ_PHONE, HQ_PHONE_TEL } from "@/lib/config/company";
+import { HQ_PHONE } from "@/lib/config/company";
 import { Phone, MapPin, CheckCircle2, AlertTriangle, Play, Send } from "lucide-react";
 
 interface OfficeNoteEntry {
@@ -34,6 +34,7 @@ interface VisitDetail {
   officeNotes: OfficeNoteEntry[] | null;
   leadTechnicianId: string | null;
   collaboratorTechnicianIds: string[];
+  hqPhone: string | null;
   customer: {
     name: string;
     code: string;
@@ -141,6 +142,8 @@ function MobileVisitDetailContent() {
   };
 
   const officeNotes = data.officeNotes ?? [];
+  const hqPhone = data.hqPhone ?? HQ_PHONE;
+  const hqPhoneTel = hqPhone.replace(/[^\d+]/g, "");
 
   return (
     <div className="flex flex-col gap-4">
@@ -158,14 +161,14 @@ function MobileVisitDetailContent() {
 
       <div className="grid grid-cols-1 gap-2">
         <a
-          href={`tel:${HQ_PHONE_TEL}`}
+          href={`tel:${hqPhoneTel}`}
           className="flex h-16 items-center justify-between rounded-xl border border-[#e5e5e5] bg-white px-4 text-sm font-medium text-[#002A4D] shadow-sm active:scale-[0.99]"
         >
           <span className="flex items-center gap-2">
             <Phone className="size-5 text-[var(--brand-blue-500)]" />
             {t("callHq")}
           </span>
-          <span className="text-xs text-[#737373]">{HQ_PHONE}</span>
+          <span className="text-xs text-[#737373]">{hqPhone}</span>
         </a>
         {primaryOps && (
           <p className="px-1 text-xs text-[#737373]">

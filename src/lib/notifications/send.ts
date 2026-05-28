@@ -40,6 +40,7 @@ import {
   renderTemplate,
 } from "@/lib/notifications/templates";
 import { getOverride } from "@/lib/notifications/template-overrides";
+import { getHqPhone } from "@/lib/settings";
 import type {
   NotificationChannel,
   NotificationLocale,
@@ -217,12 +218,17 @@ export async function sendNotification(
   // Allow admin DB overrides (UC-AD-04) to replace the file-based body/subject.
   const override = await getOverride(input.templateCode, locale);
 
+  // `hq_phone` is always the company HQ number, never caller-specific, so it is
+  // sourced from the admin-editable setting and overrides any value a caller
+  // happened to pass. Changing it in settings updates every template at once.
+  const vars: TemplateVars = { ...input.vars, hq_phone: await getHqPhone() };
+
   for (const r of routing) {
     const baseBody = override?.body ?? pickLocaleBody(tmpl, locale);
-    const body = renderTemplate(baseBody, input.vars ?? {});
+    const body = renderTemplate(baseBody, vars);
     const subjectRaw = override?.subject ?? pickLocaleSubject(tmpl, locale);
     const subject = subjectRaw
-      ? renderTemplate(subjectRaw, input.vars ?? {})
+      ? renderTemplate(subjectRaw, vars)
       : undefined;
 
     const provider = getNotificationProvider(r.channel);
@@ -236,7 +242,7 @@ export async function sendNotification(
         subject,
         contactId: contact.contactId,
         customerId: contact.customerId,
-        vars: input.vars,
+        vars,
       });
       const status: NotificationStatus = dispatch.dryRun ? "MOCKED" : "SENT";
       const logId = await recordLog({

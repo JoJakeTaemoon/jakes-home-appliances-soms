@@ -108,6 +108,7 @@
     "main": "메인",
     "catalog": "카탈로그",
     "admin": "관리자",
+    "companyContact": "본사 연락처",
     "userManagement": "사용자 관리",
     "reports": "보고서"
   },

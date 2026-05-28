@@ -108,6 +108,7 @@
     "main": "Main",
     "catalog": "Catalog",
     "admin": "Admin",
+    "companyContact": "Company contact",
     "userManagement": "User Management",
     "reports": "Reports"
   },

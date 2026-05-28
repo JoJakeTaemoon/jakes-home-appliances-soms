@@ -33,6 +33,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import prisma from "@/lib/prisma";
 import { NotFoundError } from "@/lib/api/error";
 import { registerFonts } from "@/lib/pdf/fonts";
+import { getHqPhone } from "@/lib/settings";
 import type {
   PdfContractView,
   PdfCustomerSummary,
@@ -388,6 +389,7 @@ async function loadReceipt(
     carryoverAmount: decimalToNumberOrZero(payment.carryoverAmount),
     reference: payment.reference ?? null,
     notes: payment.notes ?? null,
+    hqPhone: await getHqPhone(),
     langPair,
     generatedAt: new Date(),
   };
