@@ -128,6 +128,14 @@ export const cancelVisitSchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
+// Normalized consumable work record — references the Consumable catalog.
+// Coexists with `partsReplaced` (legacy free-text) during the rollout.
+export const consumableLogEntrySchema = z.object({
+  consumableId: z.string().trim().min(1),
+  action: z.enum(["REPLACE", "CLEAN"]),
+  notes: z.string().trim().max(500).optional(),
+});
+
 export const completeVisitSchema = z.object({
   findings: z.string().trim().min(1).max(4000),
   partsReplaced: z
@@ -135,11 +143,14 @@ export const completeVisitSchema = z.object({
     .max(50)
     .optional()
     .default([]),
+  consumableLogs: z.array(consumableLogEntrySchema).max(50).optional().default([]),
   photos: z.array(photoMetaSchema).max(40).optional().default([]),
   customerSignaturePhotoStorageKey: z.string().trim().min(1).max(500),
   collectedAmount: moneyOptional,
   paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CARD", "OTHER"]).optional(),
 });
+
+export type ConsumableLogEntry = z.infer<typeof consumableLogEntrySchema>;
 
 export const failVisitSchema = z.object({
   reason: z.string().trim().min(3).max(500),

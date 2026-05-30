@@ -132,6 +132,20 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
     entityName: "Visit",
   })) as VisitRow;
 
+  // Persist normalized consumable logs (replace/clean actions per SKU). The
+  // legacy `partsReplaced` JSON is still written above for PDF + back-compat
+  // — the next cleanup pass will drop it once all readers are migrated.
+  if (input.consumableLogs && input.consumableLogs.length > 0) {
+    await prisma.visitConsumableLog.createMany({
+      data: input.consumableLogs.map((c) => ({
+        visitId,
+        consumableId: c.consumableId,
+        action: c.action,
+        notes: c.notes ?? null,
+      })),
+    });
+  }
+
   // Payment row (optional) — routes through the Payment ops module so the
   // receipt email + audit log live in one place (UC-PY-01).
   let paymentId: string | null = null;

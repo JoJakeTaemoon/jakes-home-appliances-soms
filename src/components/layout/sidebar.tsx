@@ -16,6 +16,7 @@ import {
   BarChart3,
   Settings,
   Phone,
+  Package,
 } from "lucide-react";
 
 type LabelKey =
@@ -31,7 +32,8 @@ type LabelKey =
   | "reports"
   | "userManagement"
   | "admin"
-  | "companyContact";
+  | "companyContact"
+  | "products";
 
 interface NavItem {
   href: string;
@@ -58,6 +60,11 @@ const adminNavItems: NavItem[] = [
     href: "/admin/notification-templates",
     labelKey: "admin",
     Icon: Settings,
+  },
+  {
+    href: "/admin/products",
+    labelKey: "products",
+    Icon: Package,
   },
   {
     href: "/admin/company-contact",

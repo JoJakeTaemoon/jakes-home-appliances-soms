@@ -295,13 +295,37 @@ enum EquipmentOwnership {
   CUSTOMER       // sold or post-rental transfer (B.3)
 }
 
+// ProductCategory — multilingual catalog category (replaces the
+// EquipmentCategory enum). `code` keeps a stable identifier for code paths
+// that still rely on the enum semantics (WATER_PURIFIER, BIDET, AIR_PURIFIER,
+// FILTER, OTHER) during the transition.
+model ProductCategory {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameKo    String
+  nameVi    String
+  nameEn    String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models    EquipmentModel[]
+
+  @@index([isActive, sortOrder])
+}
+
 model EquipmentModel {
   id                  String            @id @default(cuid())
   modelCode           String            @unique  // e.g. SA-J430, PTS-2100
   name                String
+  // Legacy enum classification — kept during the ProductCategory rollout so
+  // existing list filters & seeded code paths keep working. Prefer `categoryId`.
   category            EquipmentCategory
+  categoryId          String?
+  productCategory     ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   description         String?
-  filterPolicy        Json?             // { filters: [{type, replaceEveryDays}, ...] }
+  filterPolicy        Json?             // legacy: { filters: [{type, replaceEveryDays}, ...] } — use Consumable instead
   retailPrice         Decimal?          @db.Decimal(14, 2)
   monthlyRentalPrice  Decimal?          @db.Decimal(14, 2)
   monthlyMaintenancePrice Decimal?      @db.Decimal(14, 2)
@@ -310,8 +334,100 @@ model EquipmentModel {
   updatedAt           DateTime          @updatedAt
 
   equipment           Equipment[]
+  consumables         ConsumableOnModel[]
+  accessories         AccessoryOnModel[]
 
   @@index([category, isActive])
+  @@index([categoryId, isActive])
+}
+
+// Catalog of replaceable/cleanable parts attached to an equipment model.
+// A consumable can carry both a replacement cycle and a cleaning cycle
+// (e.g. RO membrane: clean every 6 months, replace every 24 months).
+// At least one of replaceEveryMonths/cleanEveryMonths must be non-null —
+// enforced in Zod (see src/lib/validators/product.ts).
+model Consumable {
+  id                 String                @id @default(cuid())
+  sku                String                @unique
+  nameKo             String
+  nameVi             String
+  nameEn             String
+  replaceEveryMonths Int?
+  cleanEveryMonths   Int?
+  retailPrice        Decimal               @db.Decimal(14, 2)
+  notes              String?
+  isActive           Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+
+  compatibleModels   ConsumableOnModel[]
+  visitLogs          VisitConsumableLog[]
+
+  @@index([isActive])
+}
+
+// Non-cyclical attachments (mounts, adapters, hoses…) sold or replaced
+// on demand. No replacement cycle, just a sale price + compatibility.
+model Accessory {
+  id          String              @id @default(cuid())
+  sku         String              @unique
+  nameKo      String
+  nameVi      String
+  nameEn      String
+  retailPrice Decimal             @db.Decimal(14, 2)
+  notes       String?
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  compatibleModels AccessoryOnModel[]
+
+  @@index([isActive])
+}
+
+model ConsumableOnModel {
+  consumableId String
+  modelId      String
+  consumable   Consumable     @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  model        EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@id([consumableId, modelId])
+  @@index([modelId])
+}
+
+model AccessoryOnModel {
+  accessoryId String
+  modelId     String
+  accessory   Accessory      @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  model       EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@id([accessoryId, modelId])
+  @@index([modelId])
+}
+
+// Discrete action: at recommendation/log time we always know whether a
+// consumable touch was a replacement or a cleaning. Not stored on the
+// Consumable row itself (a single row can carry both cycles).
+enum ConsumableAction {
+  REPLACE
+  CLEAN
+}
+
+// Normalized record of consumable work performed during a Visit.
+// Coexists with Visit.partsReplaced (legacy free-text JSON) during the
+// gradual migration; new code reads from here.
+model VisitConsumableLog {
+  id           String           @id @default(cuid())
+  visitId      String
+  consumableId String
+  action       ConsumableAction
+  notes        String?
+  createdAt    DateTime         @default(now())
+  visit        Visit            @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  consumable   Consumable       @relation(fields: [consumableId], references: [id], onDelete: Restrict)
+
+  @@index([visitId])
+  @@index([consumableId, action, createdAt])
 }
 
 model Equipment {
@@ -533,6 +649,7 @@ model Visit {
 
   payments                 Payment[]
   documents                Document[]
+  consumableLogs           VisitConsumableLog[]
 
   @@index([leadTechnicianId, state])
   @@index([customerId, state])

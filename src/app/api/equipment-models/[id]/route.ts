@@ -64,6 +64,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         modelCode: data.modelCode,
         name: data.name,
         category: data.category,
+        categoryId: data.categoryId ?? undefined,
         description: data.description,
         retailPrice: data.retailPrice ?? undefined,
         monthlyRentalPrice: data.monthlyRentalPrice ?? undefined,

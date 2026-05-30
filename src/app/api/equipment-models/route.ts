@@ -63,6 +63,7 @@ export const POST = defineMutation({
         modelCode: body.modelCode,
         name: body.name,
         category: body.category,
+        categoryId: body.categoryId ?? null,
         description: body.description ?? null,
         retailPrice: body.retailPrice ?? null,
         monthlyRentalPrice: body.monthlyRentalPrice ?? null,
