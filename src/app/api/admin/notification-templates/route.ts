@@ -14,6 +14,7 @@ import {
   pickLocaleBody,
   pickLocaleSubject,
 } from "@/lib/notifications/templates";
+import { getTemplateDescription } from "@/lib/notifications/template-descriptions";
 import type { Locale } from "@/generated/prisma/client";
 
 const LOCALES: Locale[] = ["ko", "vi", "en"];
@@ -22,11 +23,13 @@ interface TemplateRow {
   code: string;
   channel: "SMS" | "EMAIL";
   locale: Locale;
+  description: string;
   defaultBody: string;
   defaultSubject: string | null;
   overrideBody: string | null;
   overrideSubject: string | null;
   overrideUpdatedAt: string | null;
+  enabled: boolean;
 }
 
 export const GET = defineQuery({
@@ -41,6 +44,7 @@ export const GET = defineQuery({
         locale: true,
         body: true,
         subject: true,
+        enabled: true,
         updatedAt: true,
       },
     });
@@ -57,11 +61,13 @@ export const GET = defineQuery({
           code,
           channel: def.channels[0] as "SMS" | "EMAIL",
           locale,
+          description: getTemplateDescription(code, locale),
           defaultBody: pickLocaleBody(def, locale),
           defaultSubject: pickLocaleSubject(def, locale) ?? null,
           overrideBody: o?.body ?? null,
           overrideSubject: o?.subject ?? null,
           overrideUpdatedAt: o?.updatedAt.toISOString() ?? null,
+          enabled: o?.enabled ?? true,
         });
       }
     }

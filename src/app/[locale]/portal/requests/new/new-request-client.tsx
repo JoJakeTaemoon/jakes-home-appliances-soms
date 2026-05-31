@@ -260,7 +260,7 @@ export function NewRequestClient() {
                               {e.model.name}
                             </div>
                             <div className="text-xs text-[#737373]">
-                              {e.model.modelCode}
+                              {e.model.name}
                               {e.serialNumber ? ` · ${e.serialNumber}` : ""}
                             </div>
                           </button>
@@ -379,7 +379,7 @@ export function NewRequestClient() {
           <div className="space-y-2 rounded-2xl border border-[#e5e5e5] bg-white p-4 text-sm">
             <Row label={t("detailEquipment")} value={
               selectedEquipment
-                ? `${selectedEquipment.model.modelCode} · ${selectedEquipment.model.name}`
+                ? `${selectedEquipment.model.name} · ${selectedEquipment.model.name}`
                 : "—"
             } />
             <Row label={t("detailType")} value={type ? t(`types.${type}` as never) : "—"} />

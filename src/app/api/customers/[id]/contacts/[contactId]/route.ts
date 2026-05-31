@@ -45,6 +45,26 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     }
     const data = parsed.data;
 
+    // Final-state values used by the invariant checks below.
+    const finalIsPrimary =
+      before.role === "OPS_CONTACT"
+        ? (data.isPrimary ?? before.isPrimary)
+        : false;
+    const finalIsAccounting =
+      data.isAccountingContact ?? before.isAccountingContact;
+    const finalEmail = data.email ?? before.email;
+
+    if (finalIsAccounting && (before.role !== "OPS_CONTACT" || before.scope !== "CUSTOMER")) {
+      throw new ValidationError(
+        "Accounting contact must be an OPS_CONTACT with customer-wide scope",
+      );
+    }
+    if ((finalIsPrimary || finalIsAccounting) && !finalEmail) {
+      throw new ValidationError(
+        "Email is required for primary operations contact and accounting contact",
+      );
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       // If toggling primary OPS, demote others in scope.
       if (data.isPrimary && before.role === "OPS_CONTACT") {
@@ -53,6 +73,12 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
             ? { customerId, siteId: before.siteId ?? undefined, role: "OPS_CONTACT", isPrimary: true, id: { not: contactId } }
             : { customerId, scope: "CUSTOMER", role: "OPS_CONTACT", isPrimary: true, id: { not: contactId } },
           data: { isPrimary: false },
+        });
+      }
+      if (data.isAccountingContact === true) {
+        await tx.customerContact.updateMany({
+          where: { customerId, isAccountingContact: true, id: { not: contactId } },
+          data: { isAccountingContact: false },
         });
       }
       return tx.customerContact.update({
@@ -65,6 +91,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           email: data.email,
           language: data.language,
           isPrimary: before.role === "OPS_CONTACT" ? data.isPrimary : undefined,
+          isAccountingContact: data.isAccountingContact,
           smsOptOut: data.smsOptOut,
           emailOptOut: data.emailOptOut,
         },
@@ -113,12 +140,13 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
       throw new ValidationError("Cannot delete CONTRACT_PARTY — assign a new one instead");
     }
 
-    // Soft-disable: turn off portal + primary, keep row for history.
+    // Soft-disable: turn off portal + primary + accounting, keep row for history.
     const updated = await prisma.customerContact.update({
       where: { id: contactId },
       data: {
         portalEnabled: false,
         isPrimary: false,
+        isAccountingContact: false,
       },
     });
 

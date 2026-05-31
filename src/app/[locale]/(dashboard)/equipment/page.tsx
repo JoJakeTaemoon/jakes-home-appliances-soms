@@ -56,6 +56,10 @@ export default function EquipmentPage() {
   const [rows, setRows] = useState<EquipmentRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "createdAt",
+    direction: "desc",
+  });
 
   useEffect(() => {
     setPage(1);
@@ -69,6 +73,10 @@ export default function EquipmentPage() {
         const qs = new URLSearchParams();
         if (dq) qs.set("q", dq);
         if (status) qs.set("status", status);
+        if (sort) {
+          qs.set("sortBy", sort.column);
+          qs.set("sortDir", sort.direction);
+        }
         qs.set("page", String(page));
         qs.set("pageSize", String(PAGE_SIZE));
         const res = await api.get<EquipmentRow[]>(`/api/equipment?${qs.toString()}`);
@@ -83,13 +91,14 @@ export default function EquipmentPage() {
     return () => {
       cancelled = true;
     };
-  }, [api, dq, status, page]);
+  }, [api, dq, status, page, sort]);
 
   const columns = useMemo<Column<EquipmentRow>[]>(
     () => [
       {
         key: "customer",
         header: t("customer"),
+        sortKey: "customer",
         cell: (r) => (
           <div className="flex flex-col">
             <span className="font-mono text-xs text-[#737373]">{r.customer.code}</span>
@@ -100,14 +109,16 @@ export default function EquipmentPage() {
       {
         key: "site",
         header: t("site"),
+        sortKey: "site",
         cell: (r) => r.site?.name ?? <span className="text-xs text-[#a3a3a3]">—</span>,
       },
       {
         key: "model",
         header: t("model"),
+        sortKey: "model",
         cell: (r) => (
           <div className="flex flex-col">
-            <span className="font-mono text-xs">{r.model.modelCode}</span>
+            <span className="font-mono text-xs">{r.model.name}</span>
             <span className="text-xs text-[#737373]">{r.model.name}</span>
           </div>
         ),
@@ -115,21 +126,25 @@ export default function EquipmentPage() {
       {
         key: "serial",
         header: t("serial"),
+        sortKey: "serialNumber",
         cell: (r) => <span className="font-mono text-xs">{r.serialNumber ?? "—"}</span>,
       },
       {
         key: "installed",
         header: t("installDate"),
+        sortKey: "installedAt",
         cell: (r) => formatDate(r.installedAt, locale),
       },
       {
         key: "status",
         header: t("status"),
+        sortKey: "status",
         cell: (r) => <StatusBadge tone={equipmentStatusTone(r.status)}>{r.status}</StatusBadge>,
       },
       {
         key: "ownership",
         header: t("ownership"),
+        sortKey: "ownership",
         cell: (r) => (
           <StatusBadge tone={equipmentOwnershipTone(r.ownership)}>{r.ownership}</StatusBadge>
         ),
@@ -157,6 +172,8 @@ export default function EquipmentPage() {
         rows={rows}
         rowKey={(r) => r.id}
         isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
         emptyText={dq || status ? tc("noResults") : t("noEquipment")}
         onRowClick={(r) => router.push(`/equipment/${r.id}`)}
         toolbar={

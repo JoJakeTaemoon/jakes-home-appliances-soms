@@ -10,7 +10,7 @@ import {
   createEquipmentModelSchema,
   equipmentModelListQuerySchema,
 } from "@/lib/validators/equipmentModel";
-import { ConflictError, ForbiddenError } from "@/lib/api/error";
+import { ForbiddenError } from "@/lib/api/error";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -52,22 +52,14 @@ export const POST = defineMutation({
   body: createEquipmentModelSchema,
   successStatus: 201,
   handler: async ({ body }) => {
-    const existing = await prisma.equipmentModel.findUnique({
-      where: { modelCode: body.modelCode },
-      select: { id: true },
-    });
-    if (existing)
-      throw new ConflictError(`Model code ${body.modelCode} already exists`);
-
     return prisma.equipmentModel.create({
       data: {
-        modelCode: body.modelCode,
         name: body.name,
         displayNameKo: body.displayNameKo ?? null,
         displayNameVi: body.displayNameVi ?? null,
         displayNameEn: body.displayNameEn ?? null,
         brandId: body.brandId ?? null,
-        category: body.category,
+        category: body.category ?? null,
         categoryId: body.categoryId ?? null,
         description: body.description ?? null,
         retailPrice: body.retailPrice ?? null,

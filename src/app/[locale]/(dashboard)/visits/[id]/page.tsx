@@ -229,7 +229,7 @@ export default function VisitDetailPage() {
             </DetailCard>
             <DetailCard label={t("equipment")}>
               {data.equipment
-                ? `${data.equipment.model.modelCode} · ${data.equipment.serialNumber ?? "—"}`
+                ? `${data.equipment.model.name} · ${data.equipment.serialNumber ?? "—"}`
                 : "—"}
             </DetailCard>
             <DetailCard label={t("site")}>
@@ -364,10 +364,11 @@ export default function VisitDetailPage() {
           </>
         }
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3" lang={locale}>
           <FormField label={t("scheduledFor")} required>
             <Input
               type="datetime-local"
+              lang={locale}
               value={reschedFor}
               onChange={(e) => setReschedFor(e.target.value)}
             />

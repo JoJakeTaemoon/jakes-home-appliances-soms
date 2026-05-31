@@ -12,23 +12,42 @@
  * composes these primitives, passing a `langPair` + a `titleKey`.
  */
 
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import path from "node:path";
+import { createContext, useContext } from "react";
+import { Document, Page, Image, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
+
+// Watermark logo is resolved at module load — `process.cwd()` is the project
+// root in both Next.js server runtime and the standalone tsx render script.
+const WATERMARK_LOGO_PATH = path.join(process.cwd(), "public", "logo", "seoul-aqua-logo.jpg");
 import type {
+  PdfCompanyInfo,
   PdfContractView,
   PdfCustomerSummary,
   PdfEquipmentLine,
   PdfLangPair,
+  PdfLocale,
 } from "@/lib/pdf/types";
+import { splitLangPair } from "@/lib/pdf/types";
 import { pickPdfPair, interpolate, type PdfMessages } from "@/lib/pdf/messages";
+import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
+
+interface BiLocales {
+  primary: PdfLocale;
+  secondary: PdfLocale;
+}
+const BiLocaleContext = createContext<BiLocales>({ primary: "vi", secondary: "ko" });
 
 export const styles = StyleSheet.create({
   page: {
     padding: 36,
     fontSize: 9.5,
-    fontFamily: "Helvetica",
+    fontFamily: PDF_DEFAULT_FAMILY,
     color: "#111111",
   },
+  koText: { fontFamily: PDF_FONT_FAMILY.ko },
+  viText: { fontFamily: PDF_FONT_FAMILY.vi },
+  enText: { fontFamily: PDF_FONT_FAMILY.en },
   brandHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -36,22 +55,51 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#0C6BA8", // brand blue
     paddingBottom: 8,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   brandTitle: { fontSize: 14, fontWeight: "bold", color: "#0C6BA8" },
   brandLegal: { fontSize: 8, color: "#666666" },
-  docTitle: { fontSize: 16, fontWeight: "bold", marginTop: 6, textAlign: "center" },
+  // Contract number rendered as one line: `Số hợp đồng / 계약 번호: HD-…`.
+  contractNumberRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    columnGap: 4,
+  },
+  contractNumberLabelPrimary: { fontSize: 9, color: "#666666" },
+  contractNumberLabelSecondary: { fontSize: 9, color: "#999999" },
+  contractNumberValue: { fontSize: 11, fontWeight: "bold", color: "#111111" },
+  docTitle: { fontSize: 14, fontWeight: "bold", marginTop: 4, textAlign: "center" },
   docTitleSecondary: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "normal",
     color: "#555555",
-    marginBottom: 14,
+    marginBottom: 8,
     textAlign: "center",
   },
-  metaRow: { flexDirection: "row", marginBottom: 4 },
-  metaLabel: { width: 130, color: "#666666" },
-  metaLabelSecondary: { fontSize: 8, color: "#999999" },
-  metaValue: { flex: 1, color: "#111111" },
+  // Two-column party layout — Seoul Aqua left, customer right; both fit on
+  // page 1 above the equipment + clauses.
+  partyRow: { flexDirection: "row", columnGap: 8, marginBottom: 6 },
+  partyCol: { flex: 1 },
+  partyTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#0C6BA8",
+    marginBottom: 4,
+  },
+  // Big, prominent name (customer or company representative) printed
+  // immediately under the "Party A" / "Party B" header.
+  partyName: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#111111",
+    marginBottom: 6,
+  },
+  metaRow: { flexDirection: "row", marginBottom: 3 },
+  metaLabel: { width: 90, color: "#666666", fontSize: 8.5 },
+  metaLabelSecondary: { fontSize: 7.5, color: "#999999" },
+  metaValue: { flex: 1, color: "#111111", fontSize: 9 },
   sectionTitle: {
     fontSize: 11,
     fontWeight: "bold",
@@ -97,17 +145,42 @@ export const styles = StyleSheet.create({
   signatureRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 36,
+    // 3x prior gap — leaves room between the clause-block tail and the
+    // horizontal signature lines, per layout spec.
+    marginTop: 96,
   },
   signatureBox: {
-    width: "45%",
-    borderTopWidth: 1,
-    borderTopColor: "#111111",
-    paddingTop: 4,
+    width: "46%",
     alignItems: "center",
+    // Stamp + ink + role labels + signer name all fit comfortably.
+    minHeight: 150,
   },
-  signatureLabel: { fontSize: 9, color: "#111111", textAlign: "center" },
+  // "Party A" / "Party B" header at the very top of each box.
+  signaturePartyTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#0C6BA8",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  // Empty room reserved for ink + company stamp. Horizontal line is drawn on
+  // the bottom edge so role labels and name sit beneath it.
+  signatureSlot: {
+    flex: 1,
+    alignSelf: "stretch",
+    borderBottomWidth: 1,
+    borderBottomColor: "#111111",
+    marginBottom: 4,
+  },
+  signatureLabel: { fontSize: 9, color: "#111111", textAlign: "center", marginTop: 2 },
   signatureLabelSecondary: { fontSize: 8, color: "#777777", textAlign: "center" },
+  signatureName: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#111111",
+    textAlign: "center",
+    marginTop: 4,
+  },
   footer: {
     position: "absolute",
     bottom: 18,
@@ -118,11 +191,58 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     color: "#888888",
   },
+  // Centered watermark logo, half opacity, lives behind every page's content.
+  watermark: {
+    position: "absolute",
+    top: "30%",
+    left: "10%",
+    right: "10%",
+    height: "40%",
+    opacity: 0.08,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  watermarkImage: { width: 320, height: 320, objectFit: "contain" },
 });
+
+function fontStyleFor(locale: PdfLocale): Style {
+  if (locale === "ko") return styles.koText;
+  if (locale === "en") return styles.enText;
+  return styles.viText;
+}
+
+const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
+/**
+ * Pick a font family per string content. Latin / Vietnamese text gets the
+ * default Be Vietnam Pro; any string containing Hangul switches to Noto Sans
+ * KR. Used for data fields whose language can vary at runtime (customer name,
+ * contact name, etc.) where the page-level default would otherwise eat the
+ * glyphs.
+ */
+function autoFontStyle(s: string | null | undefined): Style {
+  return s && HANGUL_RE.test(s) ? styles.koText : styles.viText;
+}
+
+/**
+ * Single-line secondary text that automatically uses the secondary locale's
+ * font family. Replaces hand-written `<Text style={styles.fooSecondary}>`
+ * calls so KO secondary content stops rendering with the Latin-only default
+ * family (which used to drop Hangul glyphs silently).
+ */
+function SecondaryText({
+  style,
+  children,
+}: Readonly<{ style?: Style | Style[]; children: string }>) {
+  const locales = useContext(BiLocaleContext);
+  const composed = ([] as Style[]).concat(style ?? [], fontStyleFor(locales.secondary));
+  return <Text style={composed}>{children}</Text>;
+}
 
 /**
  * Bilingual stacked text: primary on top, secondary beneath it in `subStyle`.
- * Uses nested <Text> + newline so it fits anywhere a single <Text> did.
+ * The current `BiLocaleContext` decides which font family each half uses —
+ * Pretendard for KO, Be Vietnam Pro for VI/EN. This keeps the page-level
+ * default Latin-capable family while still rendering Hangul correctly.
  */
 export function Bi({
   primary,
@@ -135,11 +255,14 @@ export function Bi({
   style?: Style | Style[];
   subStyle?: Style | Style[];
 }>) {
+  const locales = useContext(BiLocaleContext);
+  const composedStyle = ([] as Style[]).concat(style ?? [], fontStyleFor(locales.primary));
+  const composedSub = ([] as Style[]).concat(subStyle ?? [], fontStyleFor(locales.secondary));
   return (
-    <Text style={style}>
+    <Text style={composedStyle}>
       {primary}
       {"\n"}
-      <Text style={subStyle}>{secondary}</Text>
+      <Text style={composedSub}>{secondary}</Text>
     </Text>
   );
 }
@@ -177,7 +300,7 @@ interface HeaderProps extends PairProps {
   customer: PdfCustomerSummary;
 }
 
-export function PdfHeader({ contract, titleKey, customer, primary, secondary }: Readonly<HeaderProps>) {
+export function PdfHeader({ contract, titleKey, primary, secondary }: Readonly<HeaderProps>) {
   return (
     <>
       <View style={styles.brandHeader}>
@@ -185,43 +308,92 @@ export function PdfHeader({ contract, titleKey, customer, primary, secondary }: 
           <Text style={styles.brandTitle}>SEOUL AQUA</Text>
           <Text style={styles.brandLegal}>{primary.labels.seoulAquaLegalName}</Text>
         </View>
-        <View style={{ textAlign: "right" }}>
-          <Bi
-            primary={primary.labels.contractNumber}
-            secondary={secondary.labels.contractNumber}
-            style={{ fontSize: 9, color: "#666666" }}
-            subStyle={{ fontSize: 7.5, color: "#999999" }}
-          />
-          <Text style={{ fontSize: 11, fontWeight: "bold", color: "#111111" }}>
-            {contract.contractNumber}
+        <View style={styles.contractNumberRow}>
+          <Text style={styles.contractNumberLabelPrimary}>
+            {primary.labels.contractNumber}
           </Text>
+          <SecondaryText style={styles.contractNumberLabelSecondary}>
+            {`/ ${secondary.labels.contractNumber}:`}
+          </SecondaryText>
+          <Text style={styles.contractNumberValue}>{contract.contractNumber}</Text>
         </View>
       </View>
       <Text style={styles.docTitle}>{primary.documentTitle[titleKey]}</Text>
-      <Text style={styles.docTitleSecondary}>{secondary.documentTitle[titleKey]}</Text>
+      <SecondaryText style={styles.docTitleSecondary}>{secondary.documentTitle[titleKey]}</SecondaryText>
+    </>
+  );
+}
 
-      <View style={styles.card}>
-        <View style={styles.metaRow}>
-          <Bi primary={primary.labels.customerName} secondary={secondary.labels.customerName} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
-          <Text style={styles.metaValue}>{customer.name} ({customer.code})</Text>
-        </View>
+interface PartiesBlockProps extends PairProps {
+  customer: PdfCustomerSummary;
+  company: PdfCompanyInfo;
+  hqPhone: string;
+}
+
+/**
+ * Side-by-side parties block. **Party A (left) = customer**,
+ * **Party B (right) = Seoul Aqua**. The legal contract-party name (customer
+ * name, or company-representative name) is printed prominently right under
+ * the Party header; supporting fields follow in label/value rows.
+ *
+ * B2B customer only shows the contract-party (name/phone/email) — internal
+ * Ops or Accounting contacts are intentionally excluded per the contract
+ * layout spec.
+ */
+export function PdfPartiesBlock({ customer, company, hqPhone, primary, secondary }: Readonly<PartiesBlockProps>) {
+  const customerAddress =
+    [customer.address, customer.district, customer.city].filter(Boolean).join(", ") || "—";
+  return (
+    <View style={styles.partyRow}>
+      {/* Party A — Customer (left) */}
+      <View style={[styles.card, styles.partyCol]}>
+        <Text style={styles.partyTitle}>Party A</Text>
+        <Text style={[styles.partyName, autoFontStyle(customer.name)]}>
+          {customer.name} ({customer.code})
+        </Text>
         {customer.type === "B2B" && customer.taxCode && (
           <View style={styles.metaRow}>
             <Bi primary={primary.labels.taxCode} secondary={secondary.labels.taxCode} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
             <Text style={styles.metaValue}>{customer.taxCode}</Text>
           </View>
         )}
+        {customer.type === "B2B" && customer.representativeName && (
+          <View style={styles.metaRow}>
+            <Bi primary={primary.labels.customerRepresentative} secondary={secondary.labels.customerRepresentative} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+            <Text style={[styles.metaValue, autoFontStyle(customer.representativeName)]}>{customer.representativeName}</Text>
+          </View>
+        )}
+        {customer.type === "B2C" && customer.residency === "DOMESTIC" && customer.nationalId && (
+          <View style={styles.metaRow}>
+            <Bi primary={primary.labels.customerNationalId} secondary={secondary.labels.customerNationalId} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+            <Text style={styles.metaValue}>{customer.nationalId}</Text>
+          </View>
+        )}
+        {customer.type === "B2C" && customer.residency === "FOREIGN" && (
+          <>
+            {customer.nationality && (
+              <View style={styles.metaRow}>
+                <Bi primary={primary.labels.customerNationality} secondary={secondary.labels.customerNationality} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+                <Text style={[styles.metaValue, autoFontStyle(customer.nationality)]}>{customer.nationality}</Text>
+              </View>
+            )}
+            {customer.passportNumber && (
+              <View style={styles.metaRow}>
+                <Bi primary={primary.labels.customerPassport} secondary={secondary.labels.customerPassport} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+                <Text style={styles.metaValue}>{customer.passportNumber}</Text>
+              </View>
+            )}
+          </>
+        )}
         <View style={styles.metaRow}>
           <Bi primary={primary.labels.address} secondary={secondary.labels.address} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
-          <Text style={styles.metaValue}>
-            {[customer.address, customer.district, customer.city].filter(Boolean).join(", ") || "—"}
-          </Text>
+          <Text style={[styles.metaValue, autoFontStyle(customerAddress)]}>{customerAddress}</Text>
         </View>
         {customer.contractParty && (
           <>
             <View style={styles.metaRow}>
               <Bi primary={primary.labels.contactName} secondary={secondary.labels.contactName} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
-              <Text style={styles.metaValue}>
+              <Text style={[styles.metaValue, autoFontStyle(customer.contractParty.name)]}>
                 {customer.contractParty.name}
                 {customer.contractParty.title ? ` (${customer.contractParty.title})` : ""}
               </Text>
@@ -239,7 +411,31 @@ export function PdfHeader({ contract, titleKey, customer, primary, secondary }: 
           </>
         )}
       </View>
-    </>
+
+      {/* Party B — Seoul Aqua (right) */}
+      <View style={[styles.card, styles.partyCol]}>
+        <Text style={styles.partyTitle}>Party B</Text>
+        <Text style={[styles.partyName, autoFontStyle(company.legalName)]}>
+          {company.legalName}
+        </Text>
+        <View style={styles.metaRow}>
+          <Bi primary={primary.labels.companyRepresentative} secondary={secondary.labels.companyRepresentative} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+          <Text style={[styles.metaValue, autoFontStyle(company.representativeName)]}>{company.representativeName}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Bi primary={primary.labels.companyAddress} secondary={secondary.labels.companyAddress} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+          <Text style={styles.metaValue}>{company.address}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Bi primary={primary.labels.companyTaxCode} secondary={secondary.labels.companyTaxCode} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+          <Text style={styles.metaValue}>{company.taxCode}</Text>
+        </View>
+        <View style={styles.metaRow}>
+          <Bi primary={primary.labels.companyPhone} secondary={secondary.labels.companyPhone} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+          <Text style={styles.metaValue}>{hqPhone}</Text>
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -258,10 +454,6 @@ export function PdfMeta({ contract, primary, secondary }: Readonly<MetaProps>) {
           style={styles.metaValue}
           subStyle={styles.metaLabelSecondary}
         />
-      </View>
-      <View style={styles.metaRow}>
-        <Bi primary={primary.labels.state} secondary={secondary.labels.state} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
-        <Text style={styles.metaValue}>{contract.state}</Text>
       </View>
       {contract.startDate && (
         <View style={styles.metaRow}>
@@ -323,7 +515,7 @@ export function PdfEquipmentTable({ equipment, showSite, primary, secondary }: R
     <View>
       <View style={{ marginTop: 12, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: "#e5e5e5", paddingBottom: 2 }}>
         <Text style={{ fontSize: 11, fontWeight: "bold", color: "#0C6BA8" }}>{primary.labels.equipmentLines}</Text>
-        <Text style={styles.sectionTitleSecondary}>{secondary.labels.equipmentLines}</Text>
+        <SecondaryText style={styles.sectionTitleSecondary}>{secondary.labels.equipmentLines}</SecondaryText>
       </View>
       <View style={styles.tableHeader}>
         <Bi primary={primary.labels.model} secondary={secondary.labels.model} style={styles.tableCell} subStyle={styles.cellSecondary} />
@@ -392,29 +584,52 @@ export function PdfClauses({ contract, clauseKeys, primary, secondary }: Readonl
     <View>
       <Text style={styles.sectionTitle}>—</Text>
       <Text style={styles.clause}>{primary.clauses.intro}</Text>
-      <Text style={styles.clauseSecondary}>{secondary.clauses.intro}</Text>
+      <SecondaryText style={styles.clauseSecondary}>{secondary.clauses.intro}</SecondaryText>
       {clauseKeys.map((key) => (
         <View key={key} wrap={false}>
           <Text style={styles.clause}>{interpolateClause(primary.clauses[key], key, contract)}</Text>
-          <Text style={styles.clauseSecondary}>{interpolateClause(secondary.clauses[key], key, contract)}</Text>
+          <SecondaryText style={styles.clauseSecondary}>{interpolateClause(secondary.clauses[key], key, contract)}</SecondaryText>
         </View>
       ))}
       <Text style={styles.clause}>{primary.clauses.signatureBlock}</Text>
-      <Text style={styles.clauseSecondary}>{secondary.clauses.signatureBlock}</Text>
+      <SecondaryText style={styles.clauseSecondary}>{secondary.clauses.signatureBlock}</SecondaryText>
     </View>
   );
 }
 
-export function PdfSignatures({ primary, secondary }: Readonly<PairProps>) {
+interface SignaturesProps extends PairProps {
+  customer: PdfCustomerSummary;
+  company: PdfCompanyInfo;
+}
+
+/**
+ * Side-by-side signature blocks. Each box reserves vertical room for an ink
+ * signature + company stamp, then prints the responsible party's name beneath
+ * the line. Customer side prefers the contract-party name (the natural-person
+ * signatory) for B2C; for B2B we surface the legal representative when present
+ * and fall back to the contract-party. Company side always shows the Seoul
+ * Aqua legal representative pulled from `company.taxInfo`.
+ */
+export function PdfSignatures({ customer, company, primary, secondary }: Readonly<SignaturesProps>) {
+  const customerSignerName =
+    customer.type === "B2B"
+      ? customer.representativeName ?? customer.contractParty?.name ?? customer.name
+      : customer.contractParty?.name ?? customer.name;
   return (
     <View style={styles.signatureRow}>
       <View style={styles.signatureBox}>
+        <Text style={styles.signaturePartyTitle}>Party A</Text>
+        <View style={styles.signatureSlot} />
         <Text style={styles.signatureLabel}>{primary.labels.signatureCustomer}</Text>
-        <Text style={styles.signatureLabelSecondary}>{secondary.labels.signatureCustomer}</Text>
+        <SecondaryText style={styles.signatureLabelSecondary}>{secondary.labels.signatureCustomer}</SecondaryText>
+        <Text style={[styles.signatureName, autoFontStyle(customerSignerName)]}>{customerSignerName}</Text>
       </View>
       <View style={styles.signatureBox}>
+        <Text style={styles.signaturePartyTitle}>Party B</Text>
+        <View style={styles.signatureSlot} />
         <Text style={styles.signatureLabel}>{primary.labels.signatureCompany}</Text>
-        <Text style={styles.signatureLabelSecondary}>{secondary.labels.signatureCompany}</Text>
+        <SecondaryText style={styles.signatureLabelSecondary}>{secondary.labels.signatureCompany}</SecondaryText>
+        <Text style={[styles.signatureName, autoFontStyle(company.representativeName)]}>{company.representativeName}</Text>
       </View>
     </View>
   );
@@ -424,14 +639,57 @@ export function PdfFooter({ generatedAt, primary }: Readonly<{ generatedAt: Date
   return (
     <View style={styles.footer} fixed>
       <Text>
-        {primary.labels.generatedAt}: {formatDate(generatedAt)} ·{" "}
-        {generatedAt.toISOString().slice(11, 16)} UTC
+        {primary.labels.generatedAt}: {formatDate(generatedAt)}
       </Text>
       <Text
         render={({ pageNumber, totalPages }) =>
           interpolate(primary.labels.pageOf, { page: pageNumber, total: totalPages })
         }
       />
+    </View>
+  );
+}
+
+interface CompanyBlockProps extends PairProps {
+  company: PdfCompanyInfo;
+  hqPhone: string;
+}
+
+/**
+ * Issuing-company block: legal name, address, representative, MST and HQ
+ * phone. Pulled from SystemSetting (`company.taxInfo` + `company.hqPhone`)
+ * by the renderer; here we just lay it out as a card that matches the
+ * customer-summary card style above.
+ */
+export function PdfCompanyBlock({ company, hqPhone, primary, secondary }: Readonly<CompanyBlockProps>) {
+  return (
+    <View style={styles.card}>
+      <View style={{ marginBottom: 6 }}>
+        <Text style={[styles.sectionTitle, { marginTop: 0, borderBottomWidth: 0, paddingBottom: 0 }]}>
+          {primary.labels.companyBlockTitle}
+        </Text>
+        <Text style={styles.sectionTitleSecondary}>{secondary.labels.companyBlockTitle}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Bi primary={primary.labels.companyLegalName} secondary={secondary.labels.companyLegalName} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+        <Text style={styles.metaValue}>{company.legalName}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Bi primary={primary.labels.companyAddress} secondary={secondary.labels.companyAddress} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+        <Text style={styles.metaValue}>{company.address}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Bi primary={primary.labels.companyRepresentative} secondary={secondary.labels.companyRepresentative} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+        <Text style={styles.metaValue}>{company.representativeName}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Bi primary={primary.labels.companyTaxCode} secondary={secondary.labels.companyTaxCode} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+        <Text style={styles.metaValue}>{company.taxCode}</Text>
+      </View>
+      <View style={styles.metaRow}>
+        <Bi primary={primary.labels.companyPhone} secondary={secondary.labels.companyPhone} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
+        <Text style={styles.metaValue}>{hqPhone}</Text>
+      </View>
     </View>
   );
 }
@@ -444,6 +702,8 @@ export interface ContractDocumentProps {
   langPair: PdfLangPair;
   generatedAt: Date;
   clauseKeys: ReadonlyArray<ClauseKey>;
+  company: PdfCompanyInfo;
+  hqPhone: string;
 }
 
 export function ContractDocument({
@@ -454,26 +714,35 @@ export function ContractDocument({
   langPair,
   generatedAt,
   clauseKeys,
+  company,
+  hqPhone,
 }: Readonly<ContractDocumentProps>) {
   const { primary, secondary } = pickPdfPair(langPair);
+  const locales = splitLangPair(langPair);
   const showSite = customer.type === "B2B";
   return (
-    <Document>
-      <Page size="A4" style={styles.page} wrap>
-        <PdfHeader contract={contract} titleKey={titleKey} customer={customer} primary={primary} secondary={secondary} />
-        <PdfMeta contract={contract} primary={primary} secondary={secondary} />
-        <PdfEquipmentTable equipment={equipment} showSite={showSite} primary={primary} secondary={secondary} />
-        <PdfClauses contract={contract} clauseKeys={clauseKeys} primary={primary} secondary={secondary} />
-        {contract.notes && (
-          <View style={{ marginTop: 12 }}>
-            <Text style={styles.sectionTitle}>{primary.labels.notes}</Text>
-            <Text style={styles.sectionTitleSecondary}>{secondary.labels.notes}</Text>
-            <Text style={styles.clause}>{contract.notes}</Text>
+    <BiLocaleContext.Provider value={locales}>
+      <Document>
+        <Page size="A4" style={styles.page} wrap>
+          <View style={styles.watermark} fixed>
+            <Image src={WATERMARK_LOGO_PATH} style={styles.watermarkImage} />
           </View>
-        )}
-        <PdfSignatures primary={primary} secondary={secondary} />
-        <PdfFooter generatedAt={generatedAt} primary={primary} />
-      </Page>
-    </Document>
+          <PdfHeader contract={contract} titleKey={titleKey} customer={customer} primary={primary} secondary={secondary} />
+          <PdfPartiesBlock customer={customer} company={company} hqPhone={hqPhone} primary={primary} secondary={secondary} />
+          <PdfMeta contract={contract} primary={primary} secondary={secondary} />
+          <PdfEquipmentTable equipment={equipment} showSite={showSite} primary={primary} secondary={secondary} />
+          <PdfClauses contract={contract} clauseKeys={clauseKeys} primary={primary} secondary={secondary} />
+          {contract.notes && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.sectionTitle}>{primary.labels.notes}</Text>
+              <SecondaryText style={styles.sectionTitleSecondary}>{secondary.labels.notes}</SecondaryText>
+              <Text style={[styles.clause, autoFontStyle(contract.notes)]}>{contract.notes}</Text>
+            </View>
+          )}
+          <PdfSignatures customer={customer} company={company} primary={primary} secondary={secondary} />
+          <PdfFooter generatedAt={generatedAt} primary={primary} />
+        </Page>
+      </Document>
+    </BiLocaleContext.Provider>
   );
 }

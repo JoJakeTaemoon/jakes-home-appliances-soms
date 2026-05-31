@@ -114,7 +114,7 @@ export default function EquipmentDetailPage() {
             <StatusBadge tone={equipmentOwnershipTone(data.ownership)}>{data.ownership}</StatusBadge>
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-[#002A4D]">
-            {data.model.modelCode} — {data.model.name}
+            {data.model.name} — {data.model.name}
           </h1>
           <p className="text-xs text-[#737373]">
             <Link href={`/customers/${data.customer.id}`} className="underline">
@@ -157,7 +157,7 @@ export default function EquipmentDetailPage() {
           </h3>
           <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
           <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
-          <Row label={t("model")} value={`${data.model.modelCode} — ${data.model.name}`} />
+          <Row label={t("model")} value={`${data.model.name} — ${data.model.name}`} />
           <Row label={t("ownership")} value={data.ownership} />
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">

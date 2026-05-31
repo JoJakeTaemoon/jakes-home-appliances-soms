@@ -20,6 +20,8 @@ interface OpsContactInput {
   isPrimary: boolean;
 }
 
+type Residency = "DOMESTIC" | "FOREIGN";
+
 interface FormValues {
   type: "B2C" | "B2B";
   name: string;
@@ -28,8 +30,15 @@ interface FormValues {
   city?: string;
   preferredRegion?: string;
   notes?: string;
+  // B2B legal block
   shortcode?: string;
   taxCode?: string;
+  representativeName?: string;
+  // B2C legal block
+  residency?: Residency;
+  nationalId?: string;
+  passportNumber?: string;
+  nationality?: string;
   contractParty: {
     name: string;
     title?: string;
@@ -160,7 +169,29 @@ export default function NewCustomerPage() {
               >
                 <Input {...register("taxCode", { required: tv("required") })} placeholder="03XXXXXXXX" />
               </FormField>
+              <FormField
+                label={t("representativeName")}
+                required
+                error={errors.representativeName?.message}
+                className="sm:col-span-2"
+              >
+                <Input
+                  {...register("representativeName", { required: tv("required") })}
+                  placeholder={t("representativeNamePlaceholder")}
+                />
+              </FormField>
             </>
+          )}
+
+          {tab === "B2C" && (
+            <ResidencyBlock
+              residency={watch("residency") ?? "DOMESTIC"}
+              setResidency={(v) => setValue("residency", v)}
+              register={register}
+              errors={errors}
+              tv={tv}
+              t={t}
+            />
           )}
 
           <FormField label={tc("address")} className="sm:col-span-2">
@@ -319,6 +350,72 @@ export default function NewCustomerPage() {
   );
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function ResidencyBlock({
+  residency,
+  setResidency,
+  register,
+  errors,
+  tv,
+  t,
+}: Readonly<{
+  residency: Residency;
+  setResidency: (v: Residency) => void;
+  register: any;
+  errors: any;
+  tv: (k: string) => string;
+  t: (k: string) => string;
+}>) {
+  return (
+    <div className="sm:col-span-2 rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-medium text-[#525252]">{t("residency")}</span>
+        <div className="inline-flex rounded-md border border-[#d4d4d4] bg-white p-0.5 text-xs">
+          {(["DOMESTIC", "FOREIGN"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setResidency(value)}
+              className={
+                residency === value
+                  ? "rounded px-3 py-1 font-medium text-white bg-[var(--brand-blue-500)]"
+                  : "rounded px-3 py-1 text-[#525252] hover:text-[#111111]"
+              }
+              aria-pressed={residency === value}
+            >
+              {t(value === "DOMESTIC" ? "residencyDomestic" : "residencyForeign")}
+            </button>
+          ))}
+        </div>
+      </div>
+      {residency === "DOMESTIC" ? (
+        <FormField label={t("nationalId")} required error={errors.nationalId?.message}>
+          <Input
+            {...register("nationalId", { required: tv("required") })}
+            placeholder="012345678901"
+          />
+        </FormField>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={t("nationality")} required error={errors.nationality?.message}>
+            <Input
+              {...register("nationality", { required: tv("required") })}
+              placeholder={t("nationalityPlaceholder")}
+            />
+          </FormField>
+          <FormField label={t("passportNumber")} required error={errors.passportNumber?.message}>
+            <Input
+              {...register("passportNumber", { required: tv("required") })}
+              placeholder="M12345678"
+            />
+          </FormField>
+        </div>
+      )}
+    </div>
+  );
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 function defaultsFor(tab: "B2C" | "B2B"): FormValues {
   return {
     type: tab,
@@ -330,6 +427,11 @@ function defaultsFor(tab: "B2C" | "B2B"): FormValues {
     notes: "",
     shortcode: tab === "B2B" ? "" : undefined,
     taxCode: tab === "B2B" ? "" : undefined,
+    representativeName: tab === "B2B" ? "" : undefined,
+    residency: tab === "B2C" ? "DOMESTIC" : undefined,
+    nationalId: tab === "B2C" ? "" : undefined,
+    passportNumber: tab === "B2C" ? "" : undefined,
+    nationality: tab === "B2C" ? "" : undefined,
     contractParty: {
       name: "",
       title: "",

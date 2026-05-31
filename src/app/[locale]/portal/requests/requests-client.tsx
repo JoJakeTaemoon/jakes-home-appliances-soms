@@ -112,7 +112,7 @@ export function PortalRequestsClient() {
                 </div>
                 {r.equipment && (
                   <div className="mt-2 text-xs text-[#525252]">
-                    {r.equipment.model.modelCode} · {r.equipment.model.name}
+                    {r.equipment.model.name} · {r.equipment.model.name}
                   </div>
                 )}
                 <p className="mt-2 line-clamp-2 text-sm text-[#262626]">

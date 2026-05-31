@@ -8,7 +8,7 @@
 import { ContractDocument } from "./shared";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function MaintenanceContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
+export function MaintenanceContract({ contract, customer, equipment, langPair, generatedAt, company, hqPhone }: Readonly<PdfRenderProps>) {
   return (
     <ContractDocument
       titleKey="MAINTENANCE"
@@ -17,6 +17,8 @@ export function MaintenanceContract({ contract, customer, equipment, langPair, g
       equipment={equipment}
       langPair={langPair}
       generatedAt={generatedAt}
+      company={company}
+      hqPhone={hqPhone}
       clauseKeys={["maintenance", "paymentTerms"] as const}
     />
   );

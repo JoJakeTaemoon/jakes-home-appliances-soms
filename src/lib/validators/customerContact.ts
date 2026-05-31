@@ -28,6 +28,7 @@ export const createContactSchema = z.object({
   scope: z.enum(["CUSTOMER", "SITE"]).default("CUSTOMER"),
   siteId: optStr(60),
   isPrimary: z.boolean().default(false),
+  isAccountingContact: z.boolean().default(false),
   name: z.string().trim().min(1).max(120),
   title: optStr(120),
   phone1: z.string().trim().regex(phoneRegex).min(6).max(20),
@@ -51,6 +52,25 @@ export const createContactSchema = z.object({
       path: ["siteId"],
     });
   }
+  if (val.isAccountingContact) {
+    if (val.role !== "OPS_CONTACT" || val.scope !== "CUSTOMER") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Accounting contact must be an OPS_CONTACT with customer-wide scope",
+        path: ["isAccountingContact"],
+      });
+    }
+  }
+  // Primary OPS + accounting OPS must have email (tax invoice + ops broadcasts).
+  const needsEmail =
+    (val.role === "OPS_CONTACT" && val.isPrimary) || val.isAccountingContact;
+  if (needsEmail && !val.email) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Email is required for primary operations contact and accounting contact",
+      path: ["email"],
+    });
+  }
 });
 
 export const updateContactSchema = z.object({
@@ -61,6 +81,7 @@ export const updateContactSchema = z.object({
   email: optEmail(),
   language: z.enum(["ko", "vi", "en"]).optional(),
   isPrimary: z.boolean().optional(),
+  isAccountingContact: z.boolean().optional(),
   smsOptOut: z.boolean().optional(),
   emailOptOut: z.boolean().optional(),
 });

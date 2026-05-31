@@ -15,6 +15,7 @@ import type { Locale } from "@/generated/prisma/client";
 export interface TemplateOverride {
   body: string;
   subject: string | null;
+  enabled: boolean;
 }
 
 type CacheKey = string;
@@ -35,11 +36,11 @@ export async function getOverride(
   const now = Date.now();
   if (hit && hit.expiresAt > now) return hit.value;
 
-  let row: { body: string; subject: string | null } | null = null;
+  let row: { body: string; subject: string | null; enabled: boolean } | null = null;
   try {
     row = await prisma.notificationTemplate.findUnique({
       where: { code_locale: { code, locale } },
-      select: { body: true, subject: true },
+      select: { body: true, subject: true, enabled: true },
     });
   } catch {
     // DB unreachable — degrade silently; the file defaults will be used.
@@ -47,7 +48,7 @@ export async function getOverride(
     return null;
   }
   const value: TemplateOverride | null = row
-    ? { body: row.body, subject: row.subject ?? null }
+    ? { body: row.body, subject: row.subject ?? null, enabled: row.enabled }
     : null;
   cache.set(k, { value, expiresAt: now + CACHE_TTL_MS });
   return value;

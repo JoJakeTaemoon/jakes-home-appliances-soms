@@ -42,7 +42,12 @@ export const GET = defineQuery({
       where: { id: params.id },
       include: {
         contacts: {
-          orderBy: [{ role: "asc" }, { isPrimary: "desc" }, { createdAt: "asc" }],
+          orderBy: [
+            { role: "asc" },
+            { isPrimary: "desc" },
+            { isAccountingContact: "desc" },
+            { createdAt: "asc" },
+          ],
         },
         sites: {
           orderBy: { createdAt: "asc" },

@@ -218,6 +218,35 @@ export async function sendNotification(
   // Allow admin DB overrides (UC-AD-04) to replace the file-based body/subject.
   const override = await getOverride(input.templateCode, locale);
 
+  // Admin can disable a specific (code, locale) row from the templates page.
+  // We treat the per-locale flag as a hard skip: no dispatch on any channel,
+  // SKIPPED log written so the audit trail still surfaces what would have gone.
+  if (override && override.enabled === false) {
+    console.warn(
+      `[notifications] template disabled by admin — ${input.templateCode} / ${locale}`,
+    );
+    const logId = await recordLog({
+      contact,
+      channel: tmpl.channels[0],
+      recipient: contact.phone1 ?? contact.email ?? "unknown",
+      templateCode: input.templateCode,
+      locale,
+      providerName: "admin",
+      status: "SKIPPED",
+      errorMessage: "Template disabled by admin",
+      payload: { reason: "template-disabled", vars: input.vars ?? {} },
+      actorType,
+      actorId,
+      auditAction: "NOTIFICATION_SKIPPED",
+      auditAfter: {
+        templateCode: input.templateCode,
+        contactId: contact.contactId,
+        reason: "template-disabled",
+      },
+    });
+    return [{ notificationLogId: logId, status: "SKIPPED" }];
+  }
+
   // `hq_phone` is always the company HQ number, never caller-specific, so it is
   // sourced from the admin-editable setting and overrides any value a caller
   // happened to pass. Changing it in settings updates every template at once.

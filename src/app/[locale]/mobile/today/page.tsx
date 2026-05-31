@@ -126,7 +126,7 @@ function VisitSection({
               </p>
               {v.equipment && (
                 <p className="text-xs text-[#737373]">
-                  {v.equipment.model.modelCode}
+                  {v.equipment.model.name}
                   {v.equipment.serialNumber ? ` · ${v.equipment.serialNumber}` : ""}
                 </p>
               )}

@@ -11,7 +11,21 @@ import {
   createPaymentSchema,
   listPaymentQuerySchema,
 } from "@/lib/validators/payment";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const PAYMENT_SORT_MAP: SortMap<Prisma.PaymentOrderByWithRelationInput | Prisma.PaymentOrderByWithRelationInput[]> = {
+  state: (dir) => ({ state: dir }),
+  method: (dir) => ({ method: dir }),
+  expectedAmount: (dir) => ({ expectedAmount: dir }),
+  actualAmount: (dir) => ({ actualAmount: dir }),
+  dueDate: (dir) => ({ dueDate: dir }),
+  collectedAt: (dir) => ({ collectedAt: dir }),
+  handedOverAt: (dir) => ({ handedOverAt: dir }),
+  reconciledAt: (dir) => ({ reconciledAt: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+  createdAt: (dir) => ({ createdAt: dir }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -33,9 +47,16 @@ export const GET = defineQuery({
       pendingHandover,
       from,
       to,
+      sortBy,
+      sortDir,
       page,
       pageSize,
     } = query;
+    const orderBy = resolveOrderBy(
+      { sortBy, sortDir },
+      PAYMENT_SORT_MAP,
+      [{ dueDate: "asc" }, { createdAt: "desc" }],
+    );
 
     const where: Prisma.PaymentWhereInput = {};
     if (state) where.state = state;
@@ -67,7 +88,7 @@ export const GET = defineQuery({
       prisma.payment.count({ where }),
       prisma.payment.findMany({
         where,
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {

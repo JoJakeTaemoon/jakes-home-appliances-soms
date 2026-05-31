@@ -11,7 +11,19 @@ import {
   createContractSchema,
 } from "@/lib/validators/contract";
 import { ForbiddenError } from "@/lib/api/error";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const CONTRACT_SORT_MAP: SortMap<Prisma.ContractOrderByWithRelationInput> = {
+  contractNumber: (dir) => ({ contractNumber: dir }),
+  type: (dir) => ({ type: dir }),
+  state: (dir) => ({ state: dir }),
+  startDate: (dir) => ({ startDate: dir }),
+  endDate: (dir) => ({ endDate: dir }),
+  monthlyMaintenanceFee: (dir) => ({ monthlyMaintenanceFee: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+  createdAt: (dir) => ({ createdAt: dir }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -23,13 +35,34 @@ export const GET = defineQuery({
   query: contractListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, customerId, type, state, endingBefore, page, pageSize } = query;
+    const {
+      q,
+      customerId,
+      type,
+      state,
+      endingBefore,
+      customerType,
+      startDateFrom,
+      startDateTo,
+      sortBy,
+      sortDir,
+      page,
+      pageSize,
+    } = query;
+    const orderBy = resolveOrderBy({ sortBy, sortDir }, CONTRACT_SORT_MAP, { createdAt: "desc" });
 
     const where: Prisma.ContractWhereInput = {};
     if (customerId) where.customerId = customerId;
     if (type) where.type = type;
     if (state) where.state = state;
     if (endingBefore) where.endDate = { lte: endingBefore };
+    if (customerType) where.customer = { type: customerType };
+    if (startDateFrom || startDateTo) {
+      where.startDate = {
+        ...(startDateFrom ? { gte: startDateFrom } : {}),
+        ...(startDateTo ? { lte: startDateTo } : {}),
+      };
+    }
     if (q) {
       const term = q.trim();
       where.OR = [
@@ -44,7 +77,7 @@ export const GET = defineQuery({
       prisma.contract.count({ where }),
       prisma.contract.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: pageSize,
         include: {

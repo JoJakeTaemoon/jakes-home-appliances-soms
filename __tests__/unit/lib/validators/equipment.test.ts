@@ -64,24 +64,21 @@ describe("filterPolicySchema", () => {
 });
 
 describe("createEquipmentModelSchema", () => {
-  it("requires modelCode + name + category", () => {
+  it("requires name (category + brand are optional)", () => {
     expect(
       createEquipmentModelSchema.safeParse({
-        modelCode: "PTS-2100",
         name: "Test",
         category: "WATER_PURIFIER",
       }).success,
     ).toBe(true);
   });
 
-  it("rejects bad modelCode characters", () => {
+  it("accepts a model with no category or brand", () => {
     expect(
       createEquipmentModelSchema.safeParse({
-        modelCode: "bad code!",
         name: "Test",
-        category: "WATER_PURIFIER",
       }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 
@@ -92,7 +89,6 @@ describe("updateEquipmentModelSchema (red-team — mass-assignment via defaults)
     // model, putting it back on technician model lists and admin filters.
     const parsed = updateEquipmentModelSchema.parse({});
     expect(parsed.isActive).toBeUndefined();
-    expect(parsed.modelCode).toBeUndefined();
     expect(parsed.name).toBeUndefined();
     expect(parsed.brandId).toBeUndefined();
   });

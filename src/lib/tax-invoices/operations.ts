@@ -21,15 +21,34 @@ function getInvoiceDir(paymentId: string): string {
   return path.join(process.cwd(), "uploads", "tax-invoices", paymentId);
 }
 
-function selectContractPartyContact(
-  contacts: { id: string; role: string; isPrimary: boolean }[],
+/**
+ * Tax-invoice recipient routing.
+ *
+ * Priority:
+ *   1. Accounting contact (`isAccountingContact=true`) — explicit designation
+ *   2. Primary customer-scoped OPS contact (`isPrimary=true, scope=CUSTOMER`)
+ *   3. CONTRACT_PARTY — legal fallback
+ *   4. First available contact
+ */
+function selectTaxInvoiceRecipient(
+  contacts: {
+    id: string;
+    role: string;
+    scope: string;
+    isPrimary: boolean;
+    isAccountingContact: boolean;
+  }[],
 ): string | null {
+  const accounting = contacts.find((c) => c.isAccountingContact);
+  if (accounting) return accounting.id;
+  const primaryOps = contacts.find(
+    (c) =>
+      c.role === "OPS_CONTACT" && c.isPrimary && c.scope === "CUSTOMER",
+  );
+  if (primaryOps) return primaryOps.id;
   const cp = contacts.find((c) => c.role === "CONTRACT_PARTY");
   if (cp) return cp.id;
-  const primaryOps = contacts.find(
-    (c) => c.role === "OPS_CONTACT" && c.isPrimary,
-  );
-  return primaryOps?.id ?? contacts[0]?.id ?? null;
+  return contacts[0]?.id ?? null;
 }
 
 export interface UploadTaxInvoiceInput {
@@ -51,7 +70,13 @@ export async function uploadTaxInvoice(input: UploadTaxInvoiceInput) {
           id: true,
           name: true,
           contacts: {
-            select: { id: true, role: true, isPrimary: true },
+            select: {
+              id: true,
+              role: true,
+              scope: true,
+              isPrimary: true,
+              isAccountingContact: true,
+            },
           },
         },
       },
@@ -136,7 +161,7 @@ export async function uploadTaxInvoice(input: UploadTaxInvoiceInput) {
   });
 
   // Email the contract party with EMAIL_TAX_INVOICE.
-  const contactId = selectContractPartyContact(payment.customer.contacts);
+  const contactId = selectTaxInvoiceRecipient(payment.customer.contacts);
   let notificationsQueued = 0;
   if (contactId) {
     try {
@@ -232,7 +257,13 @@ export async function resendTaxInvoiceEmail(args: {
               id: true,
               name: true,
               contacts: {
-                select: { id: true, role: true, isPrimary: true },
+                select: {
+              id: true,
+              role: true,
+              scope: true,
+              isPrimary: true,
+              isAccountingContact: true,
+            },
               },
             },
           },
@@ -241,7 +272,7 @@ export async function resendTaxInvoiceEmail(args: {
     },
   });
   if (!inv) throw new Error("TaxInvoice not found");
-  const contactId = selectContractPartyContact(inv.payment.customer.contacts);
+  const contactId = selectTaxInvoiceRecipient(inv.payment.customer.contacts);
   if (!contactId) return { sent: 0 };
 
   const subtotal = Number(inv.payment.actualAmount.toString());

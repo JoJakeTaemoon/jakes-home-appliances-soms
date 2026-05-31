@@ -20,7 +20,18 @@ import {
 import { ConflictError, ForbiddenError, ValidationError } from "@/lib/api/error";
 import { allocateCustomerCode } from "@/lib/customers/code";
 import { logAudit } from "@/lib/audit";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const CUSTOMER_SORT_MAP: SortMap<Prisma.CustomerOrderByWithRelationInput> = {
+  code: (dir) => ({ code: dir }),
+  name: (dir) => ({ name: dir }),
+  type: (dir) => ({ type: dir }),
+  status: (dir) => ({ status: dir }),
+  shortcode: (dir) => ({ shortcode: dir }),
+  preferredRegion: (dir) => ({ preferredRegion: dir }),
+  createdAt: (dir) => ({ createdAt: dir }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -32,7 +43,8 @@ export const GET = defineQuery({
   query: customerListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, type, status, region, page, pageSize } = query;
+    const { q, type, status, region, sortBy, sortDir, page, pageSize } = query;
+    const orderBy = resolveOrderBy({ sortBy, sortDir }, CUSTOMER_SORT_MAP, { code: "asc" });
 
     const where: Prisma.CustomerWhereInput = {};
     if (type) where.type = type;
@@ -45,8 +57,10 @@ export const GET = defineQuery({
         { name: { contains: term, mode: "insensitive" } },
         { shortcode: { contains: term, mode: "insensitive" } },
         { taxCode: { contains: term, mode: "insensitive" } },
+        { address: { contains: term, mode: "insensitive" } },
         { contacts: { some: { phone1: { contains: term } } } },
         { contacts: { some: { name: { contains: term, mode: "insensitive" } } } },
+        { sites: { some: { address: { contains: term, mode: "insensitive" } } } },
       ];
     }
 
@@ -56,7 +70,7 @@ export const GET = defineQuery({
       prisma.customer.count({ where }),
       prisma.customer.findMany({
         where,
-        orderBy: { code: "asc" },
+        orderBy,
         skip,
         take: pageSize,
         include: {
@@ -128,6 +142,20 @@ export async function POST(request: NextRequest) {
       name: data.name,
       shortcode: data.type === "B2B" ? data.shortcode : null,
       taxCode: data.type === "B2B" ? data.taxCode : null,
+      representativeName: data.type === "B2B" ? data.representativeName : null,
+      residency: data.type === "B2C" ? data.residency : null,
+      nationalId:
+        data.type === "B2C" && data.residency === "DOMESTIC"
+          ? data.nationalId ?? null
+          : null,
+      passportNumber:
+        data.type === "B2C" && data.residency === "FOREIGN"
+          ? data.passportNumber ?? null
+          : null,
+      nationality:
+        data.type === "B2C" && data.residency === "FOREIGN"
+          ? data.nationality ?? null
+          : null,
       address: data.address ?? null,
       district: data.district ?? null,
       city: data.city ?? null,

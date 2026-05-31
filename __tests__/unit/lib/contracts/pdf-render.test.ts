@@ -33,6 +33,11 @@ const customerB2C: PdfCustomerSummary = {
   type: "B2C",
   shortcode: null,
   taxCode: null,
+  representativeName: null,
+  residency: "DOMESTIC",
+  nationalId: "001234567890",
+  passportNumber: null,
+  nationality: null,
   address: "123 Test St",
   district: "Q1",
   city: "HCMC",
@@ -52,6 +57,11 @@ const customerB2B: PdfCustomerSummary = {
   type: "B2B",
   shortcode: "SHV",
   taxCode: "0399999999",
+  representativeName: "Lê Thị Test",
+  residency: null,
+  nationalId: null,
+  passportNumber: null,
+  nationality: null,
 };
 
 const baseContract: PdfContractView = {
@@ -93,6 +103,13 @@ function makeProps(langPair: PdfLangPair, overrides: Partial<{ contract: PdfCont
     customer: overrides.customer ?? customerB2C,
     equipment,
     generatedAt: new Date("2026-05-27T00:00:00.000Z"),
+    company: {
+      legalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á",
+      address: "Số 47 Đường Hoàng Trọng Mậu, TP Hồ Chí Minh",
+      representativeName: "CHOI ONE HO",
+      taxCode: "0309395579",
+    },
+    hqPhone: "028-2225-3939",
   };
 }
 

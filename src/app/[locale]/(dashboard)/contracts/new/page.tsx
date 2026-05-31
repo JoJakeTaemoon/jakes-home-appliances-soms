@@ -2,13 +2,14 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { Input, Textarea } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { NumberInput } from "@/components/ui/number-input";
 import { ContractTypeBadge } from "@/components/contracts/contract-state-badge";
 import { formatVnd } from "@/lib/format";
@@ -51,7 +52,6 @@ export default function NewContractPage() {
 function NewContractPageInner() {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
-  const locale = useLocale();
   const router = useRouter();
   const api = useApi();
   const sp = useSearchParams();
@@ -73,6 +73,8 @@ function NewContractPageInner() {
   const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showAddEquipment, setShowAddEquipment] = useState(false);
 
   const customer = useMemo(() => customers.find((c) => c.id === customerId) ?? null, [customers, customerId]);
 
@@ -111,7 +113,7 @@ function NewContractPageInner() {
       setEquipment(
         res.data.map((e) => ({
           id: e.id,
-          modelCode: e.model.modelCode,
+          modelCode: e.model.name,
           modelName: e.model.name,
           serialNumber: e.serialNumber,
           siteId: e.siteId,
@@ -219,22 +221,56 @@ function NewContractPageInner() {
       {step === 1 && (
         <section className="rounded-xl border border-[#e5e5e5] bg-white p-4">
           <FormField label={t("wizard.pickCustomer")} required>
-            <Combobox
-              value={customerId}
-              onChange={(v) => {
-                setCustomerId(v);
-                setLines([]);
-              }}
-              options={customers.map((c) => ({
-                value: c.id,
-                label: `${c.code} — ${c.name}`,
-                description: c.type === "B2B" ? `B2B · ${c.shortcode ?? "—"}` : "B2C",
-              }))}
-              placeholder={loadingCustomers ? tc("loading") : t("wizard.pickCustomer")}
-              ariaLabel={t("wizard.pickCustomer")}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Combobox
+                  value={customerId}
+                  onChange={(v) => {
+                    setCustomerId(v);
+                    setLines([]);
+                  }}
+                  options={customers.map((c) => ({
+                    value: c.id,
+                    label: `${c.code} — ${c.name}`,
+                    description: c.type === "B2B" ? `B2B · ${c.shortcode ?? "—"}` : "B2C",
+                  }))}
+                  placeholder={loadingCustomers ? tc("loading") : t("wizard.pickCustomer")}
+                  ariaLabel={t("wizard.pickCustomer")}
+                />
+              </div>
+              <Button variant="secondary" onClick={() => setShowNewCustomer(true)}>
+                + {t("wizard.newCustomer")}
+              </Button>
+            </div>
           </FormField>
         </section>
+      )}
+
+      {showNewCustomer && (
+        <NewCustomerQuickModal
+          onClose={() => setShowNewCustomer(false)}
+          onCreated={(created) => {
+            setCustomers((prev) => [created, ...prev]);
+            setCustomerId(created.id);
+            setLines([]);
+            setShowNewCustomer(false);
+          }}
+        />
+      )}
+
+      {showAddEquipment && customer && (
+        <AddEquipmentQuickModal
+          customerId={customer.id}
+          customerType={customer.type}
+          onClose={() => setShowAddEquipment(false)}
+          onCreated={async (createdEquipmentId) => {
+            setShowAddEquipment(false);
+            // Refresh the equipment list, auto-pick the new row as a contract
+            // line so the user doesn't lose context.
+            await loadEquipment();
+            addLine(createdEquipmentId);
+          }}
+        />
       )}
 
       {step === 2 && (
@@ -289,12 +325,13 @@ function NewContractPageInner() {
                 );
               })}
               {customer && (
-                <Link
-                  href={`/equipment/new?customerId=${customer.id}` as never}
-                  className="text-xs text-[var(--brand-blue-700)] underline"
+                <button
+                  type="button"
+                  onClick={() => setShowAddEquipment(true)}
+                  className="self-start text-xs text-[var(--brand-blue-700)] underline"
                 >
                   + {t("wizard.addLine")}
-                </Link>
+                </button>
               )}
             </div>
           </FormField>
@@ -453,8 +490,355 @@ function NewContractPageInner() {
           )}
         </div>
       </footer>
-      <p className="text-xs text-[#737373]">{locale.toUpperCase()}</p>
     </div>
+  );
+}
+
+function NewCustomerQuickModal({
+  onClose,
+  onCreated,
+}: Readonly<{
+  onClose: () => void;
+  onCreated: (created: CustomerOption) => void;
+}>) {
+  const t = useTranslations("contracts");
+  const tCust = useTranslations("customers");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [type, setType] = useState<"B2C" | "B2B">("B2C");
+  const [name, setName] = useState("");
+  const [shortcode, setShortcode] = useState("");
+  const [taxCode, setTaxCode] = useState("");
+  const [address, setAddress] = useState("");
+  const [cpName, setCpName] = useState("");
+  const [cpPhone, setCpPhone] = useState("");
+  const [cpEmail, setCpEmail] = useState("");
+  const [opsName, setOpsName] = useState("");
+  const [opsPhone, setOpsPhone] = useState("");
+  const [opsEmail, setOpsEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const body: Record<string, unknown> = {
+        type,
+        name,
+        address: address || undefined,
+        contractParty: {
+          name: cpName,
+          phone1: cpPhone,
+          email: cpEmail || undefined,
+        },
+      };
+      if (type === "B2B") {
+        body.shortcode = shortcode.toUpperCase();
+        body.taxCode = taxCode;
+        body.opsContacts = [
+          {
+            name: opsName,
+            phone1: opsPhone,
+            email: opsEmail || undefined,
+            isPrimary: true,
+          },
+        ];
+      } else {
+        body.opsContacts =
+          opsName && opsPhone
+            ? [{ name: opsName, phone1: opsPhone, email: opsEmail || undefined, isPrimary: true }]
+            : [];
+      }
+      const res = await api.post<{ id: string; code: string; name: string; type: "B2C" | "B2B"; shortcode: string | null }>(
+        "/api/customers",
+        body,
+      );
+      onCreated({
+        id: res.data.id,
+        code: res.data.code,
+        name: res.data.name,
+        type: res.data.type,
+        shortcode: res.data.shortcode ?? null,
+      });
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const requiredFilled =
+    name.trim() &&
+    cpName.trim() &&
+    cpPhone.trim() &&
+    (type === "B2C" || (shortcode.trim() && taxCode.trim() && opsName.trim() && opsPhone.trim()));
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("wizard.newCustomerTitle")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy} disabled={!requiredFilled}>
+            {tc("save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={tc("type")} required>
+            <Combobox
+              value={type}
+              onChange={(v) => v && setType(v as "B2C" | "B2B")}
+              options={[
+                { value: "B2C", label: "B2C" },
+                { value: "B2B", label: "B2B" },
+              ]}
+              searchable={false}
+              allowClear={false}
+            />
+          </FormField>
+          <FormField label={tc("name")} required>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </FormField>
+          {type === "B2B" && (
+            <>
+              <FormField label="Shortcode" required>
+                <Input
+                  value={shortcode}
+                  onChange={(e) => setShortcode(e.target.value.toUpperCase())}
+                  placeholder="ABC"
+                />
+              </FormField>
+              <FormField label="Tax code" required>
+                <Input value={taxCode} onChange={(e) => setTaxCode(e.target.value)} />
+              </FormField>
+            </>
+          )}
+          <FormField label={tc("address")} className="sm:col-span-2">
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+          </FormField>
+        </div>
+
+        <fieldset className="rounded-lg border border-[#e5e5e5] p-3">
+          <legend className="px-1 text-xs font-medium text-[#525252]">
+            {tCust("contractParty")}
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FormField label={tc("name")} required>
+              <Input value={cpName} onChange={(e) => setCpName(e.target.value)} />
+            </FormField>
+            <FormField label={tc("phone")} required>
+              <Input value={cpPhone} onChange={(e) => setCpPhone(e.target.value)} />
+            </FormField>
+            <FormField label={tc("email")}>
+              <Input value={cpEmail} onChange={(e) => setCpEmail(e.target.value)} type="email" />
+            </FormField>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-lg border border-[#e5e5e5] p-3">
+          <legend className="px-1 text-xs font-medium text-[#525252]">
+            {tCust("opsContact")} {type === "B2B" ? "*" : `(${tc("optional")})`}
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FormField label={tc("name")} required={type === "B2B"}>
+              <Input value={opsName} onChange={(e) => setOpsName(e.target.value)} />
+            </FormField>
+            <FormField label={tc("phone")} required={type === "B2B"}>
+              <Input value={opsPhone} onChange={(e) => setOpsPhone(e.target.value)} />
+            </FormField>
+            <FormField label={tc("email")}>
+              <Input value={opsEmail} onChange={(e) => setOpsEmail(e.target.value)} type="email" />
+            </FormField>
+          </div>
+        </fieldset>
+
+        {err && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function AddEquipmentQuickModal({
+  customerId,
+  customerType,
+  onClose,
+  onCreated,
+}: Readonly<{
+  customerId: string;
+  customerType: "B2C" | "B2B";
+  onClose: () => void;
+  onCreated: (equipmentId: string) => void | Promise<void>;
+}>) {
+  const t = useTranslations("equipment");
+  const tc = useTranslations("common");
+  const api = useApi();
+
+  interface ModelOpt {
+    id: string;
+    name: string;
+    displayNameKo: string | null;
+    displayNameVi: string | null;
+    displayNameEn: string | null;
+  }
+  interface SiteOpt {
+    id: string;
+    name: string;
+  }
+
+  const [models, setModels] = useState<ModelOpt[]>([]);
+  const [sites, setSites] = useState<SiteOpt[]>([]);
+  const [modelId, setModelId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
+  const [serialNumber, setSerialNumber] = useState("");
+  const [installedAt, setInstalledAt] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [ownership, setOwnership] = useState<"COMPANY" | "CUSTOMER">("COMPANY");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await api.get<ModelOpt[]>(
+          "/api/equipment-models?pageSize=200&isActive=true",
+        );
+        if (!cancelled) setModels(res.data ?? []);
+      } catch {
+        if (!cancelled) setModels([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  useEffect(() => {
+    if (customerType !== "B2B") {
+      setSites([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await api.get<SiteOpt[]>(`/api/customers/${customerId}/sites`);
+        if (!cancelled) setSites(res.data ?? []);
+      } catch {
+        if (!cancelled) setSites([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, customerId, customerType]);
+
+  async function submit() {
+    if (!modelId) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await api.post<{ id: string }>(`/api/equipment`, {
+        customerId,
+        siteId: siteId || undefined,
+        modelId,
+        serialNumber: serialNumber.trim() || undefined,
+        ownership,
+        installedAt: installedAt ? new Date(installedAt).toISOString() : undefined,
+      });
+      await onCreated(res.data.id);
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("installNew")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy} disabled={!modelId}>
+            {tc("save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <FormField label={t("model")} required className="sm:col-span-2">
+          <Combobox
+            value={modelId}
+            onChange={setModelId}
+            options={models.map((m) => ({
+              value: m.id,
+              label: m.displayNameKo ?? m.displayNameVi ?? m.displayNameEn ?? m.name,
+            }))}
+            placeholder={t("model")}
+            searchable
+          />
+        </FormField>
+        {customerType === "B2B" && sites.length > 0 && (
+          <FormField label={t("site")} className="sm:col-span-2">
+            <Combobox
+              value={siteId}
+              onChange={setSiteId}
+              options={sites.map((s) => ({ value: s.id, label: s.name }))}
+              placeholder={t("site")}
+              searchable={sites.length > 5}
+              allowClear
+            />
+          </FormField>
+        )}
+        <FormField label={t("serial")}>
+          <Input
+            value={serialNumber}
+            onChange={(e) => setSerialNumber(e.target.value)}
+          />
+        </FormField>
+        <FormField label={t("installDate")}>
+          <Input
+            type="date"
+            value={installedAt}
+            onChange={(e) => setInstalledAt(e.target.value)}
+          />
+        </FormField>
+        <FormField label={t("ownership")}>
+          <Combobox
+            value={ownership}
+            onChange={(v) => v && setOwnership(v as "COMPANY" | "CUSTOMER")}
+            options={[
+              { value: "COMPANY", label: t("ownershipValues.COMPANY") },
+              { value: "CUSTOMER", label: t("ownershipValues.CUSTOMER") },
+            ]}
+            searchable={false}
+            allowClear={false}
+          />
+        </FormField>
+      </div>
+      {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+    </Modal>
   );
 }
 

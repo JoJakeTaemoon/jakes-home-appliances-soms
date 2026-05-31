@@ -40,7 +40,7 @@ const STATE_OPTIONS = [
   "OVERDUE_D30",
   "WRITTEN_OFF",
 ];
-const METHOD_OPTIONS = ["CASH", "BANK_TRANSFER", "CARD", "OTHER"];
+const METHOD_OPTIONS = ["CASH", "BANK_TRANSFER"];
 
 function stateTone(state: string): "success" | "warning" | "danger" | "info" | "muted" | "neutral" {
   if (state === "RECONCILED") return "success";
@@ -67,6 +67,10 @@ export default function PaymentsListPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "dueDate",
+    direction: "asc",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,6 +82,10 @@ export default function PaymentsListPage() {
       if (methodFilter) params.set("method", methodFilter);
       if (overdueOnly) params.set("overdueOnly", "true");
       if (pendingHandover) params.set("pendingHandover", "true");
+      if (sort) {
+        params.set("sortBy", sort.column);
+        params.set("sortDir", sort.direction);
+      }
       const res = await api.get<PaymentRow[]>(
         `/api/payments?${params.toString()}`,
       );
@@ -92,7 +100,7 @@ export default function PaymentsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, page, stateFilter, methodFilter, overdueOnly, pendingHandover]);
+  }, [api, page, stateFilter, methodFilter, overdueOnly, pendingHandover, sort]);
 
   useEffect(() => {
     load().catch(() => undefined);
@@ -102,6 +110,7 @@ export default function PaymentsListPage() {
     {
       key: "customer",
       header: t("tableCustomer"),
+      sortKey: "customer",
       cell: (r) => (
         <div>
           <div className="font-medium text-[#111]">{r.customer.name}</div>
@@ -117,23 +126,27 @@ export default function PaymentsListPage() {
     {
       key: "method",
       header: t("tableMethod"),
+      sortKey: "method",
       cell: (r) => tMethods(r.method as "CASH"),
     },
     {
       key: "expected",
       header: t("tableExpected"),
+      sortKey: "expectedAmount",
       align: "right",
       cell: (r) => formatVnd(r.expectedAmount),
     },
     {
       key: "actual",
       header: t("tableActual"),
+      sortKey: "actualAmount",
       align: "right",
       cell: (r) => formatVnd(r.actualAmount),
     },
     {
       key: "state",
       header: t("tableState"),
+      sortKey: "state",
       cell: (r) => (
         <StatusBadge tone={stateTone(r.state)}>
           {tStates(r.state as "EXPECTED")}
@@ -143,6 +156,7 @@ export default function PaymentsListPage() {
     {
       key: "due",
       header: t("tableDueDate"),
+      sortKey: "dueDate",
       cell: (r) => (r.dueDate ? formatDate(r.dueDate, locale) : "—"),
     },
     {
@@ -237,6 +251,8 @@ export default function PaymentsListPage() {
         rows={filtered}
         rowKey={(r) => r.id}
         isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
         emptyText={t("noPayments")}
         onRowClick={(r) => router.push(`/payments/${r.id}`)}
         footer={

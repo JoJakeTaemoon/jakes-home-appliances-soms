@@ -43,6 +43,16 @@ export interface PdfMessages {
     signatureCompany: string;
     seoulAquaLegalName: string;
     generatedAt: string;
+    companyBlockTitle: string;
+    companyLegalName: string;
+    companyAddress: string;
+    companyRepresentative: string;
+    companyTaxCode: string;
+    companyPhone: string;
+    customerRepresentative: string;
+    customerNationalId: string;
+    customerPassport: string;
+    customerNationality: string;
     type: { SALE: string; RENTAL: string; MAINTENANCE: string };
   };
   clauses: {
@@ -60,8 +70,8 @@ export interface PdfMessages {
 export const ko: PdfMessages = {
   documentTitle: {
     SALE: "납품서 (영수증 겸용)",
-    RENTAL_B2C: "가정집 정수기 임대 계약서",
-    RENTAL_B2B: "임대 계약서 (법인용)",
+    RENTAL_B2C: "임대 계약서",
+    RENTAL_B2B: "임대 계약서",
     MAINTENANCE: "유지관리 계약서",
     APPENDIX: "계약 부록 (수정 부록)",
   },
@@ -102,6 +112,16 @@ export const ko: PdfMessages = {
     signatureCompany: "회사 (대표)",
     seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
     generatedAt: "발행일시",
+    companyBlockTitle: "발행 회사 정보",
+    companyLegalName: "기업명",
+    companyAddress: "주소",
+    companyRepresentative: "대표자",
+    companyTaxCode: "세무코드 (MST)",
+    companyPhone: "전화",
+    customerRepresentative: "법적 대표자",
+    customerNationalId: "주민등록번호 (CCCD)",
+    customerPassport: "여권번호",
+    customerNationality: "국적",
     type: { SALE: "판매", RENTAL: "임대", MAINTENANCE: "유지관리" },
   },
   clauses: {

@@ -8,7 +8,7 @@
 import { ContractDocument } from "./shared";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function B2bContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
+export function B2bContract({ contract, customer, equipment, langPair, generatedAt, company, hqPhone }: Readonly<PdfRenderProps>) {
   const titleKey = contract.type === "RENTAL" ? "RENTAL_B2B" : "SALE";
   const clauseKeys =
     contract.type === "RENTAL"
@@ -22,6 +22,8 @@ export function B2bContract({ contract, customer, equipment, langPair, generated
       equipment={equipment}
       langPair={langPair}
       generatedAt={generatedAt}
+      company={company}
+      hqPhone={hqPhone}
       clauseKeys={clauseKeys}
     />
   );

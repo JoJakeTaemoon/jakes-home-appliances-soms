@@ -21,12 +21,21 @@ import fs from "node:fs";
 
 let registered = false;
 
-const DEFAULT_FAMILY = "Helvetica";
+/**
+ * Font family per locale. Pretendard covers Hangul + Latin; Be Vietnam Pro
+ * covers Latin + Vietnamese diacritics with proper hinting. Both are bundled
+ * in `public/fonts/` as TTF. If a binary is missing on disk, `registerFonts`
+ * silently falls back to Helvetica — which renders Latin only and garbles
+ * Vietnamese diacritics / Korean.
+ */
 export const PDF_FONT_FAMILY = {
-  ko: DEFAULT_FAMILY, // TODO: swap to "Pretendard" once a .ttf is available
-  vi: DEFAULT_FAMILY,
-  en: DEFAULT_FAMILY,
+  ko: "NotoSansKR",
+  vi: "BeVietnamPro",
+  en: "BeVietnamPro",
 } as const;
+
+/** Family used by the page-level default style (Latin + Vietnamese capable). */
+export const PDF_DEFAULT_FAMILY = "BeVietnamPro";
 
 /**
  * Register optional brand fonts if the source files exist on disk. We accept
@@ -39,13 +48,16 @@ export function registerFonts(): void {
 
   const fontsDir = path.join(process.cwd(), "public", "fonts");
 
+  // Korean — Pretendard "Alternative" misses some symbols (· — etc.),
+  // so we fall back to Noto Sans KR (variable font) which has full Hangul +
+  // Unicode symbol coverage. Listed second so Pretendard renders the bulk of
+  // Korean text and Noto only catches the misses.
   const candidates: { family: string; file: string; fontWeight?: number | "bold" }[] = [
     { family: "Pretendard", file: "Pretendard-Regular.ttf" },
     { family: "Pretendard", file: "Pretendard-Bold.ttf", fontWeight: "bold" },
+    { family: "NotoSansKR", file: "NotoSansKR-Variable.ttf" },
     { family: "BeVietnamPro", file: "BeVietnamPro-Regular.ttf" },
     { family: "BeVietnamPro", file: "BeVietnamPro-Bold.ttf", fontWeight: "bold" },
-    { family: "Inter", file: "Inter-Regular.ttf" },
-    { family: "Inter", file: "Inter-Bold.ttf", fontWeight: "bold" },
   ];
 
   for (const c of candidates) {

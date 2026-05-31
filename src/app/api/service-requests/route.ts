@@ -7,11 +7,24 @@
  */
 
 import prisma from "@/lib/prisma";
-import { defineQuery } from "@/lib/api/mutation";
-import { ForbiddenError } from "@/lib/api/error";
-import { listServiceRequestQuerySchema } from "@/lib/validators/serviceRequest";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
+import {
+  listServiceRequestQuerySchema,
+  staffCreateServiceRequestSchema,
+} from "@/lib/validators/serviceRequest";
 import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const SR_SORT_MAP: SortMap<Prisma.ServiceRequestOrderByWithRelationInput | Prisma.ServiceRequestOrderByWithRelationInput[]> = {
+  code: (dir) => ({ code: dir }),
+  type: (dir) => ({ type: dir }),
+  state: (dir) => ({ state: dir }),
+  isPaid: (dir) => ({ isPaid: dir }),
+  submittedAt: (dir) => ({ submittedAt: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -23,7 +36,12 @@ export const GET = defineQuery({
   query: listServiceRequestQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, state, type, customerId, isPaid, page, pageSize } = query;
+    const { q, state, type, customerId, isPaid, sortBy, sortDir, page, pageSize } = query;
+    const orderBy = resolveOrderBy(
+      { sortBy, sortDir },
+      SR_SORT_MAP,
+      [{ state: "asc" }, { submittedAt: "asc" }],
+    );
 
     const where: Prisma.ServiceRequestWhereInput = {};
     if (state) where.state = state;
@@ -43,7 +61,7 @@ export const GET = defineQuery({
       prisma.serviceRequest.count({ where }),
       prisma.serviceRequest.findMany({
         where,
-        orderBy: [{ state: "asc" }, { submittedAt: "asc" }],
+        orderBy,
         skip,
         take: pageSize,
         include: {
@@ -64,5 +82,60 @@ export const GET = defineQuery({
     ]);
 
     return { rows, pagination: { page, limit: pageSize, total } };
+  },
+});
+
+/**
+ * POST /api/service-requests — manual SR creation by office staff (UC-SR-01,
+ * staff path). Used when a customer phones in instead of using the portal.
+ * Body adds `customerId` (required) + optional `contactId` to the standard
+ * portal create payload.
+ */
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    if (!ServiceRequestWorkflow.access.isOfficeRole(auth.role)) {
+      throw new ForbiddenError("Office role required");
+    }
+  },
+  body: staffCreateServiceRequestSchema,
+  successStatus: 201,
+  handler: async ({ auth, body }) => {
+    const customer = await prisma.customer.findUnique({
+      where: { id: body.customerId },
+      select: { id: true },
+    });
+    if (!customer) throw new NotFoundError("Customer not found");
+
+    if (body.equipmentId) {
+      const eq = await prisma.equipment.findUnique({
+        where: { id: body.equipmentId },
+        select: { customerId: true },
+      });
+      if (!eq || eq.customerId !== body.customerId) {
+        throw new ValidationError("Equipment does not belong to the selected customer");
+      }
+    }
+
+    if (body.contactId) {
+      const contact = await prisma.customerContact.findUnique({
+        where: { id: body.contactId },
+        select: { customerId: true },
+      });
+      if (!contact || contact.customerId !== body.customerId) {
+        throw new ValidationError("Contact does not belong to the selected customer");
+      }
+    }
+
+    const { customerId, contactId, ...input } = body;
+    return ServiceRequestWorkflow.create({
+      customerId,
+      contactId: contactId ?? null,
+      input,
+      actor: {
+        actorType: "USER",
+        actorUserId: auth.userId,
+      },
+    });
   },
 });

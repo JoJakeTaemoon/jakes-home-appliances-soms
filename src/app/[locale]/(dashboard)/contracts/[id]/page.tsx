@@ -118,7 +118,9 @@ export default function ContractDetailPage() {
             <ContractTypeBadge type={data.type} />
             <ContractStateBadge state={data.state} />
             {data.amendmentRevision > 0 && (
-              <span className="font-mono text-xs text-[#737373]">A{data.amendmentRevision}</span>
+              <span className="text-xs text-[#737373]">
+                {t("appendixBadge", { n: data.amendmentRevision })}
+              </span>
             )}
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-[#002A4D]">
@@ -250,7 +252,7 @@ export default function ContractDetailPage() {
                     >
                       <td className="px-3 py-2">
                         <div className="flex flex-col">
-                          <span className="font-medium">{ce.equipment.model.modelCode}</span>
+                          <span className="font-medium">{ce.equipment.model.name}</span>
                           <span className="text-xs text-[#737373]">{ce.equipment.model.name}</span>
                         </div>
                       </td>

@@ -40,6 +40,8 @@ export const GET = defineQuery({
       thisWeekPayments,
       renewalsDue,
       overdueCount,
+      taxInvoicePending,
+      openServiceRequests,
     ] = await Promise.all([
       prisma.visit.groupBy({
         by: ["state"],
@@ -72,7 +74,37 @@ export const GET = defineQuery({
           state: { in: ["OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"] },
         },
       }),
+      // RECONCILED B2B payments where no TaxInvoice row exists yet —
+      // surfaces the "office needs to upload Viettel-generated PDF" queue.
+      prisma.payment.count({
+        where: {
+          state: "RECONCILED",
+          customer: { type: "B2B" },
+          taxInvoice: { is: null },
+        },
+      }),
+      // Service requests that haven't been completed/cancelled — surfaces the
+      // "still open" queue on the dashboard, ordered oldest-first.
+      prisma.serviceRequest.findMany({
+        where: {
+          state: { in: ["PENDING_REVIEW", "APPROVED", "SCHEDULED"] },
+        },
+        orderBy: { submittedAt: "asc" },
+        take: 5,
+        select: {
+          id: true,
+          code: true,
+          type: true,
+          state: true,
+          submittedAt: true,
+          customer: { select: { id: true, code: true, name: true } },
+        },
+      }),
     ]);
+
+    const openServiceRequestsCount = await prisma.serviceRequest.count({
+      where: { state: { in: ["PENDING_REVIEW", "APPROVED", "SCHEDULED"] } },
+    });
 
     const slaCutoff = new Date(now.getTime() - 48 * HOUR_MS);
     const stalePendingHandover = pendingHandovers.filter(
@@ -101,6 +133,18 @@ export const GET = defineQuery({
       },
       renewals60d: renewalsDue,
       overduePayments: overdueCount,
+      taxInvoicePending,
+      openServiceRequests: {
+        count: openServiceRequestsCount,
+        recent: openServiceRequests.map((sr) => ({
+          id: sr.id,
+          code: sr.code,
+          type: sr.type,
+          state: sr.state,
+          submittedAt: sr.submittedAt.toISOString(),
+          customer: sr.customer,
+        })),
+      },
     };
   },
 });

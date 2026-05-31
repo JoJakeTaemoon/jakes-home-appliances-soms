@@ -23,7 +23,6 @@ type LabelKey =
   | "dashboard"
   | "customers"
   | "equipment"
-  | "equipmentModels"
   | "contracts"
   | "visits"
   | "serviceRequests"
@@ -32,6 +31,8 @@ type LabelKey =
   | "reports"
   | "userManagement"
   | "admin"
+  | "settings"
+  | "notificationTemplates"
   | "companyContact"
   | "products";
 
@@ -46,7 +47,6 @@ const navItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard },
   { href: "/customers", labelKey: "customers", Icon: Users },
   { href: "/equipment", labelKey: "equipment", Icon: Cpu },
-  { href: "/equipment-models", labelKey: "equipmentModels", Icon: Cpu },
   { href: "/contracts", labelKey: "contracts", Icon: FileText },
   { href: "/visits", labelKey: "visits", Icon: CalendarCheck },
   { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox },
@@ -57,14 +57,14 @@ const navItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   {
-    href: "/admin/notification-templates",
-    labelKey: "admin",
-    Icon: Settings,
-  },
-  {
     href: "/admin/products",
     labelKey: "products",
     Icon: Package,
+  },
+  {
+    href: "/admin/users",
+    labelKey: "userManagement",
+    Icon: Users,
   },
   {
     href: "/admin/company-contact",
@@ -73,11 +73,11 @@ const adminNavItems: NavItem[] = [
   },
 ];
 
-const userMgmtNavItems: NavItem[] = [
+const adminSettingsItems: NavItem[] = [
   {
-    href: "/admin/users",
-    labelKey: "userManagement",
-    Icon: Users,
+    href: "/admin/notification-templates",
+    labelKey: "notificationTemplates",
+    Icon: Settings,
   },
 ];
 
@@ -161,37 +161,6 @@ export function Sidebar() {
         {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
           <>
             <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
-              {t("userManagement")}
-            </p>
-            <ul className="space-y-0.5">
-              {userMgmtNavItems.map((item) => {
-                const Icon = item.Icon;
-                const active =
-                  pathname === item.href || pathname.startsWith(`${item.href}/`);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      aria-current={active ? "page" : undefined}
-                      className={
-                        active
-                          ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] px-3 py-2 text-sm font-medium text-[var(--brand-blue-700)]"
-                          : "flex max-md:min-h-[44px] items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
-                      }
-                    >
-                      <Icon className="size-5 shrink-0" strokeWidth={1.5} />
-                      <span>{t(item.labelKey)}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-
-        {user?.role === "ADMIN" && (
-          <>
-            <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
               {t("admin")}
             </p>
             <ul className="space-y-0.5">
@@ -212,6 +181,35 @@ export function Sidebar() {
                       }
                     >
                       <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="mt-2 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252]">
+              <Settings className="size-5 shrink-0" strokeWidth={1.5} />
+              <span>{t("settings")}</span>
+            </div>
+            <ul className="space-y-0.5">
+              {adminSettingsItems.map((item) => {
+                const Icon = item.Icon;
+                const active =
+                  pathname === item.href ||
+                  pathname.startsWith(`${item.href}/`);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={
+                        active
+                          ? "flex max-md:min-h-[44px] items-center gap-3 rounded-md bg-[var(--brand-blue-50)] py-2 pl-10 pr-3 text-sm font-medium text-[var(--brand-blue-700)]"
+                          : "flex max-md:min-h-[44px] items-center gap-3 rounded-md py-2 pl-10 pr-3 text-sm font-normal text-[#525252] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                      }
+                    >
+                      <Icon className="size-4 shrink-0" strokeWidth={1.5} />
                       <span>{t(item.labelKey)}</span>
                     </Link>
                   </li>

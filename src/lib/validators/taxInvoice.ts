@@ -28,6 +28,8 @@ export const listTaxInvoiceQuerySchema = z.object({
   paymentId: optStr(60),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
+  sortBy: z.string().trim().min(1).max(60).optional(),
+  sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(25),
 });

@@ -84,7 +84,7 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
             <>
               <dt className="text-[#737373]">Equipment</dt>
               <dd>
-                {data.equipment.model.name} ({data.equipment.model.modelCode})
+                {data.equipment.model.name} ({data.equipment.model.name})
               </dd>
             </>
           )}

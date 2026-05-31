@@ -126,3 +126,73 @@ export async function setHqPhone(
 export function hqPhoneTel(displayPhone: string): string {
   return displayPhone.replace(/[^\d+]/g, "");
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Company tax info — legal entity name, registered address, representative,
+// MST (Mã số thuế / tax code). Used when generating contracts, tax invoices,
+// and any document that must show the issuing company's legal block.
+// ─────────────────────────────────────────────────────────────────────────
+
+export const COMPANY_TAX_INFO_KEY = "company.taxInfo";
+
+export interface CompanyTaxInfo {
+  /** Legal entity name (Vietnamese, full form). */
+  legalName: string;
+  /** Registered headquarters address. */
+  address: string;
+  /** Authorized representative (Người đại diện theo pháp luật). */
+  representativeName: string;
+  /** Vietnamese tax code (Mã số thuế / MST). 10 or 13 digits. */
+  taxCode: string;
+}
+
+export const COMPANY_TAX_INFO_DEFAULT: CompanyTaxInfo = {
+  legalName:
+    "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ ĐẠI Á",
+  address:
+    "Số 47 Đường Hoàng Trọng Mậu, Khu dân cư Him Lam, Phường Tân Hưng, TP Hồ Chí Minh, Việt Nam",
+  representativeName: "CHOI ONE HO",
+  taxCode: "0309395579",
+};
+
+export async function getCompanyTaxInfo(): Promise<CompanyTaxInfo> {
+  const raw = await getSetting<Partial<CompanyTaxInfo>>(
+    COMPANY_TAX_INFO_KEY,
+    COMPANY_TAX_INFO_DEFAULT,
+  );
+  return {
+    legalName:
+      typeof raw.legalName === "string" && raw.legalName.trim().length > 0
+        ? raw.legalName.trim()
+        : COMPANY_TAX_INFO_DEFAULT.legalName,
+    address:
+      typeof raw.address === "string" && raw.address.trim().length > 0
+        ? raw.address.trim()
+        : COMPANY_TAX_INFO_DEFAULT.address,
+    representativeName:
+      typeof raw.representativeName === "string" &&
+      raw.representativeName.trim().length > 0
+        ? raw.representativeName.trim()
+        : COMPANY_TAX_INFO_DEFAULT.representativeName,
+    taxCode:
+      typeof raw.taxCode === "string" && raw.taxCode.trim().length > 0
+        ? raw.taxCode.trim()
+        : COMPANY_TAX_INFO_DEFAULT.taxCode,
+  };
+}
+
+export async function setCompanyTaxInfo(
+  info: CompanyTaxInfo,
+  updatedById?: string | null,
+): Promise<void> {
+  await setSetting(
+    COMPANY_TAX_INFO_KEY,
+    {
+      legalName: info.legalName.trim(),
+      address: info.address.trim(),
+      representativeName: info.representativeName.trim(),
+      taxCode: info.taxCode.trim(),
+    },
+    updatedById,
+  );
+}

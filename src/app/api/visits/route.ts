@@ -12,15 +12,26 @@ import {
   createVisitSchema,
   visitListQuerySchema,
 } from "@/lib/validators/visit";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const VISIT_SORT_MAP: SortMap<Prisma.VisitOrderByWithRelationInput> = {
+  scheduledFor: (dir) => ({ scheduledFor: dir }),
+  type: (dir) => ({ type: dir }),
+  state: (dir) => ({ state: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+  technician: (dir) => ({ leadTechnician: { username: dir } }),
+  createdAt: (dir) => ({ createdAt: dir }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
   query: visitListQuerySchema,
   paginated: true,
   handler: async ({ auth, query }) => {
-    const { technicianId, customerId, state, type, from, to, page, pageSize } =
+    const { q, technicianId, customerId, state, type, from, to, sortBy, sortDir, page, pageSize } =
       query;
+    const orderBy = resolveOrderBy({ sortBy, sortDir }, VISIT_SORT_MAP, { scheduledFor: "asc" });
 
     const where: Prisma.VisitWhereInput = {};
     if (customerId) where.customerId = customerId;
@@ -30,6 +41,20 @@ export const GET = defineQuery({
       where.scheduledFor = {};
       if (from) (where.scheduledFor as Prisma.DateTimeFilter).gte = from;
       if (to) (where.scheduledFor as Prisma.DateTimeFilter).lte = to;
+    }
+    if (q) {
+      const term = q.trim();
+      where.AND = [
+        {
+          OR: [
+            { customer: { name: { contains: term, mode: "insensitive" } } },
+            { customer: { code: { contains: term, mode: "insensitive" } } },
+            { equipment: { serialNumber: { contains: term, mode: "insensitive" } } },
+            { equipment: { model: { name: { contains: term, mode: "insensitive" } } } },
+            { findings: { contains: term, mode: "insensitive" } },
+          ],
+        },
+      ];
     }
 
     if (VisitWorkflow.access.isOfficeRole(auth.role)) {
@@ -52,7 +77,7 @@ export const GET = defineQuery({
       prisma.visit.count({ where }),
       prisma.visit.findMany({
         where,
-        orderBy: { scheduledFor: "asc" },
+        orderBy,
         skip,
         take: pageSize,
         include: {

@@ -89,7 +89,7 @@ function MobileUpcomingContent() {
                         <VisitTypeBadge type={v.type} />
                         {v.equipment && (
                           <span className="font-mono text-xs text-[#737373]">
-                            {v.equipment.model.modelCode}
+                            {v.equipment.model.name}
                           </span>
                         )}
                       </div>

@@ -99,7 +99,7 @@ export function EquipmentListClient() {
                         {r.model.name}
                       </div>
                       <div className="text-xs text-[#737373]">
-                        {r.model.modelCode}
+                        {r.model.name}
                         {r.serialNumber ? ` · ${r.serialNumber}` : ""}
                       </div>
                     </div>
