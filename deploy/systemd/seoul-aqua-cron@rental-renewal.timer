@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — rental-renewal daily
+# vercel.json: "0 3 * * *" UTC == 10:00 Asia/Ho_Chi_Minh
+
+[Timer]
+OnCalendar=*-*-* 10:00:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@rental-renewal.service
+
+[Install]
+WantedBy=timers.target

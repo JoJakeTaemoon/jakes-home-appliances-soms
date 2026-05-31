@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — overdue-escalation daily
+# vercel.json: "0 1 * * *" UTC == 08:00 Asia/Ho_Chi_Minh
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@overdue-escalation.service
+
+[Install]
+WantedBy=timers.target

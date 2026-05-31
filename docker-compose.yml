@@ -1,0 +1,76 @@
+# Seoul Aqua SOMS — staging stack (Ubuntu 22.04, 103.27.60.70).
+#
+# Host layout:
+#   /opt/seoul-aqua-soms/
+#     ├── .env                 # secrets, chmod 600, deploy:deploy
+#     ├── docker-compose.yml   # this file (rsynced from repo by deploy script)
+#     ├── Caddyfile            # reverse-proxy config
+#     ├── postgres-data/       # bind volume — PG cluster
+#     ├── uploads/             # bind volume — app uploads
+#     ├── caddy-data/          # Caddy's auto-cert cache
+#     ├── caddy-config/        # Caddy's runtime config
+#     └── backups/             # pg_dump nightly drops
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-soms}
+      POSTGRES_DB: ${POSTGRES_DB:-soms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in /opt/seoul-aqua-soms/.env}
+    volumes:
+      - /opt/seoul-aqua-soms/postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soms} -d ${POSTGRES_DB:-soms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    # Postgres listens only on the compose-internal network; the host
+    # never exposes 5432 publicly. Off-server access goes via psql over
+    # SSH or `docker compose exec postgres psql`.
+    expose:
+      - "5432"
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/jojaketaemoon/seoulaqua-soms:staging}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - /opt/seoul-aqua-soms/.env
+    environment:
+      # Override `localhost` Postgres URLs from .env.example — inside the
+      # compose network Prisma talks to the service hostname `postgres`.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-soms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-soms}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-soms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-soms}?schema=public
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    volumes:
+      - /opt/seoul-aqua-soms/uploads:/app/uploads
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - /opt/seoul-aqua-soms/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/seoul-aqua-soms/caddy-data:/data
+      - /opt/seoul-aqua-soms/caddy-config:/config

@@ -1,0 +1,30 @@
+[Unit]
+# Templated service that fires one cron route per instance.
+# Instance name = the path segment under /api/cron/, e.g.
+#   systemctl start seoul-aqua-cron@filter-due.service
+#     →  POST https://localhost/api/cron/filter-due
+#
+# Driven by the matching seoul-aqua-cron@<job>.timer below.
+Description=Seoul Aqua SOMS — cron job %i
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# CRON_SECRET lives in /opt/seoul-aqua-soms/.env alongside DB / JWT secrets.
+# `-` prefix tolerates the file not yet existing on first-boot, where the
+# deploy script writes it before enabling these timers.
+EnvironmentFile=-/opt/seoul-aqua-soms/.env
+# `-k` so the self-signed cert during the IP-only window doesn't reject;
+# once the domain swap + Let's Encrypt land, drop the `-k`.
+# `--fail-with-body` makes the unit exit non-zero on 4xx/5xx so journalctl
+# surfaces a real failure (otherwise curl swallows HTTP errors silently).
+ExecStart=/usr/bin/curl -fsS -k --fail-with-body \
+  -X POST \
+  -H "Authorization: Bearer ${CRON_SECRET}" \
+  -H "Content-Type: application/json" \
+  --max-time 600 \
+  https://localhost/api/cron/%i
+# Don't tie the unit to the docker container restart — if app is down,
+# the next timer fire retries.
+TimeoutStartSec=10min
