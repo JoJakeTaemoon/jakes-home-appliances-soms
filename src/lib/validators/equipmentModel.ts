@@ -15,6 +15,9 @@ export const createEquipmentModelSchema = z.object({
   modelCode: z.string().trim().regex(modelCodeRegex, "Model code must be 2-30 chars, letters/digits/dash"),
   name: z.string().trim().min(1).max(180),
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]),
+  // Reference to ProductCategory. Optional during rollout — when null, the
+  // legacy `category` enum is the only classifier. New models should set both.
+  categoryId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),

@@ -27,6 +27,23 @@ interface PhotoState extends UploadResp {
   takenAt: string;
 }
 
+interface SuggestionResp {
+  consumableId: string;
+  sku: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+  action: "REPLACE" | "CLEAN";
+  lastDoneAt: string | null;
+  nextDueAt: string;
+  daysUntilDue: number;
+  cycleMonths: number;
+}
+
+function suggestionKey(s: { consumableId: string; action: string }): string {
+  return `${s.consumableId}:${s.action}`;
+}
+
 export default function MobileCompletePage() {
   return (
     <MobileWrapper>
@@ -48,6 +65,10 @@ function CompleteWizard() {
   const [findings, setFindings] = useState("");
   const [partInput, setPartInput] = useState("");
   const [parts, setParts] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionResp[]>([]);
+  const [selectedSuggestionKeys, setSelectedSuggestionKeys] = useState<Set<string>>(
+    new Set(),
+  );
   const [photos, setPhotos] = useState<PhotoState[]>([]);
   const [signature, setSignature] = useState<PhotoState | null>(null);
   const [collectedAmount, setCollectedAmount] = useState<number>(0);
@@ -78,6 +99,33 @@ function CompleteWizard() {
     if (!id) return;
     reload().catch(() => undefined);
   }, [id, reload]);
+
+  // Fetch consumable recommendations once on mount. Default-select every
+  // suggestion — the technician unchecks what they didn't actually do.
+  useEffect(() => {
+    if (!id) return;
+    void (async () => {
+      try {
+        const res = await api.get<{ recommendations: SuggestionResp[] }>(
+          `/api/mobile/visits/${id}/suggest-consumables`,
+        );
+        const recs = res.data.recommendations ?? [];
+        setSuggestions(recs);
+        setSelectedSuggestionKeys(new Set(recs.map((r) => suggestionKey(r))));
+      } catch {
+        // Recommendations are best-effort prefill — silent fail is OK.
+      }
+    })();
+  }, [id, api]);
+
+  const toggleSuggestion = (key: string) => {
+    setSelectedSuggestionKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const upload = async (file: File): Promise<UploadResp | null> => {
     const compressed = await compressImage(file).catch(() => file);
@@ -157,9 +205,13 @@ function CompleteWizard() {
       return;
     }
     setSubmitting(true);
+    const consumableLogs = suggestions
+      .filter((s) => selectedSuggestionKeys.has(suggestionKey(s)))
+      .map((s) => ({ consumableId: s.consumableId, action: s.action }));
     const body = {
       findings,
       partsReplaced: parts,
+      consumableLogs,
       photos: photos.map((p) => ({
         storageKey: p.storageKey,
         takenAt: p.takenAt,
@@ -253,6 +305,52 @@ function CompleteWizard() {
               rows={5}
             />
           </FormField>
+          {suggestions.length > 0 && (
+            <FormField label={t("suggestedConsumables")}>
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-[#737373]">{t("suggestedHint")}</p>
+                <ul className="flex flex-col gap-1">
+                  {suggestions.map((s) => {
+                    const key = suggestionKey(s);
+                    const checked = selectedSuggestionKeys.has(key);
+                    const label =
+                      s.action === "REPLACE"
+                        ? t("actionReplace")
+                        : t("actionClean");
+                    const overdue = s.daysUntilDue < 0;
+                    return (
+                      <li
+                        key={key}
+                        className="flex items-start gap-2 rounded-md border border-[#e5e5e5] p-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSuggestion(key)}
+                          className="mt-1"
+                        />
+                        <div className="flex flex-col text-xs">
+                          <span className="font-semibold">
+                            {s.nameVi}{" "}
+                            <span className="text-[var(--brand-blue-600)]">
+                              [{label}]
+                            </span>
+                          </span>
+                          <span className="text-[#737373]">
+                            {s.sku} · {t("cycleEvery")} {s.cycleMonths}
+                            {t("monthsShort")} ·{" "}
+                            {overdue
+                              ? t("overdueBy", { days: -s.daysUntilDue })
+                              : t("dueIn", { days: s.daysUntilDue })}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </FormField>
+          )}
           <FormField label={t("partsReplaced")}>
             <div className="flex gap-2">
               <Input

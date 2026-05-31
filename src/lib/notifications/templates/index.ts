@@ -251,18 +251,18 @@ const EMAIL_FILTER_DUE_D14: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] {equipment} 필터 교체 시기 안내 ({days}일 후)",
-    vi: "[Seoul Aqua] Đến hạn thay lõi lọc — {equipment} (còn {days} ngày)",
-    en: "[Seoul Aqua] Filter replacement due in {days} days — {equipment}",
+    ko: "[Seoul Aqua] {equipment} {part_name} {action_label} 시기 안내 ({days}일 후)",
+    vi: "[Seoul Aqua] Đến hạn {action_label} {part_name} — {equipment} (còn {days} ngày)",
+    en: "[Seoul Aqua] {part_name} {action_label} due in {days} days — {equipment}",
   },
   bodies: {
     ko: `{name}님,
 
-귀하의 {equipment}의 필터가 {days}일 후 교체 시기에 도달합니다.
+귀하의 {equipment}의 {part_name}이(가) {days}일 후 {action_label} 시기에 도달합니다.
 
-▸ 권장 교체일: {date}
-▸ 임대 고객: 무상 교체
-▸ 판매/유지관리 고객: 부품비용 별도 (포털에서 견적 확인)
+▸ 권장 {action_label}일: {date}
+▸ 임대 고객: 무상 {action_label}
+▸ 판매/유지관리 고객: 부품비용/작업비 별도 (포털에서 견적 확인)
 
 방문 예약: {url}
 
@@ -271,11 +271,11 @@ const EMAIL_FILTER_DUE_D14: TemplateDef = {
 문의: {hq_phone}`,
     vi: `Kính chào {name},
 
-Lõi lọc của thiết bị {equipment} sẽ đến hạn thay trong {days} ngày tới.
+{part_name} của thiết bị {equipment} sẽ đến hạn {action_label} trong {days} ngày tới.
 
 ▸ Ngày khuyến nghị: {date}
-▸ Khách thuê: thay miễn phí
-▸ Khách mua / bảo trì: phí vật tư riêng (xem báo giá tại cổng)
+▸ Khách thuê: {action_label} miễn phí
+▸ Khách mua / bảo trì: phí vật tư/dịch vụ riêng (xem báo giá tại cổng)
 
 Đặt lịch: {url}
 
@@ -284,11 +284,11 @@ Lịch KTV sẽ được xác nhận qua SMS trước 3 ngày.
 Liên hệ: {hq_phone}`,
     en: `Dear {name},
 
-The filter on your {equipment} is due for replacement in {days} days.
+The {part_name} on your {equipment} is due for {action_label} in {days} days.
 
 ▸ Recommended date: {date}
-▸ Rental customers: replaced free of charge
-▸ Sale/Maintenance customers: parts billed separately (see portal for quote)
+▸ Rental customers: {action_label} free of charge
+▸ Sale/Maintenance customers: parts/labor billed separately (see portal for quote)
 
 Book a visit: {url}
 

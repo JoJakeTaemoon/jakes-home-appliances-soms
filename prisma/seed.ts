@@ -119,14 +119,39 @@ async function main() {
 
   console.log(`  ✓ users (${2 + 2 + techs.length})`);
 
+  // ─── Product categories (multilingual) ──────────────────────────────
+  // Mirror the legacy EquipmentCategory enum during the rollout — both the
+  // enum column and the FK get populated so list filters keep working.
+  const catSeed = [
+    { code: "WATER_PURIFIER", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier", sortOrder: 10 },
+    { code: "BIDET", nameKo: "비데", nameVi: "Bồn cầu thông minh", nameEn: "Bidet", sortOrder: 20 },
+    { code: "AIR_PURIFIER", nameKo: "공기청정기", nameVi: "Máy lọc không khí", nameEn: "Air purifier", sortOrder: 30 },
+    { code: "FILTER", nameKo: "필터/소모품", nameVi: "Lõi lọc / Vật tư tiêu hao", nameEn: "Filter / Consumable", sortOrder: 40 },
+  ];
+  const categoriesByCode = new Map<string, { id: string }>();
+  for (const c of catSeed) {
+    const row = await prisma.productCategory.upsert({
+      where: { code: c.code },
+      update: { nameKo: c.nameKo, nameVi: c.nameVi, nameEn: c.nameEn, sortOrder: c.sortOrder },
+      create: c,
+    });
+    categoriesByCode.set(c.code, row);
+  }
+  console.log(`  ✓ product categories (${catSeed.length})`);
+
   // ─── Equipment models ───────────────────────────────────────────────
+  // Each model is linked to a ProductCategory via categoryId AND keeps the
+  // legacy `category` enum during the gradual migration. The `filterPolicy`
+  // JSON is also retained as a fallback for code paths that haven't yet
+  // moved to the Consumable model.
   const purifier = await prisma.equipmentModel.upsert({
     where: { modelCode: "PTS-2100" },
-    update: {},
+    update: { categoryId: categoriesByCode.get("WATER_PURIFIER")?.id },
     create: {
       modelCode: "PTS-2100",
       name: "PTS-2100 Water Purifier",
       category: "WATER_PURIFIER",
+      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
       retailPrice: 8_500_000,
       monthlyRentalPrice: 350_000,
       monthlyMaintenancePrice: 120_000,
@@ -142,11 +167,12 @@ async function main() {
   });
   const purifierPro = await prisma.equipmentModel.upsert({
     where: { modelCode: "PTS-3500" },
-    update: {},
+    update: { categoryId: categoriesByCode.get("WATER_PURIFIER")?.id },
     create: {
       modelCode: "PTS-3500",
       name: "PTS-3500 Hot/Cold Water Purifier",
       category: "WATER_PURIFIER",
+      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
       retailPrice: 13_500_000,
       monthlyRentalPrice: 520_000,
       monthlyMaintenancePrice: 150_000,
@@ -162,11 +188,12 @@ async function main() {
   });
   const bidet = await prisma.equipmentModel.upsert({
     where: { modelCode: "SA-J430" },
-    update: {},
+    update: { categoryId: categoriesByCode.get("BIDET")?.id },
     create: {
       modelCode: "SA-J430",
       name: "SA-J430 Smart Bidet",
       category: "BIDET",
+      categoryId: categoriesByCode.get("BIDET")?.id,
       retailPrice: 12_000_000,
       monthlyRentalPrice: 480_000,
       monthlyMaintenancePrice: 80_000,
@@ -177,11 +204,12 @@ async function main() {
   });
   const air = await prisma.equipmentModel.upsert({
     where: { modelCode: "AC-700" },
-    update: {},
+    update: { categoryId: categoriesByCode.get("AIR_PURIFIER")?.id },
     create: {
       modelCode: "AC-700",
       name: "AC-700 Air Purifier",
       category: "AIR_PURIFIER",
+      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
       retailPrice: 6_000_000,
       monthlyRentalPrice: 280_000,
       monthlyMaintenancePrice: 100_000,
@@ -193,20 +221,196 @@ async function main() {
       },
     },
   });
-  // Consumable filter SKU — used on delivery slips / part replacements.
-  await prisma.equipmentModel.upsert({
-    where: { modelCode: "FLT-RO-001" },
-    update: {},
-    create: {
-      modelCode: "FLT-RO-001",
-      name: "RO Membrane Filter (replacement)",
-      category: "FILTER",
-      retailPrice: 650_000,
-      isActive: true,
-    },
-  });
 
-  console.log(`  ✓ equipment models (5)`);
+  console.log(`  ✓ equipment models (4)`);
+
+  // ─── Consumables ─────────────────────────────────────────────────────
+  // RO membrane carries BOTH cycles (clean every 6mo, replace every 24mo)
+  // to exercise the dual-cycle code path. Pre-Carbon and Sediment are
+  // shared by both PTS-2100 and PTS-3500 (N:N compatibility).
+  type ConsumableSeed = {
+    sku: string;
+    nameKo: string;
+    nameVi: string;
+    nameEn: string;
+    replaceEveryMonths: number | null;
+    cleanEveryMonths: number | null;
+    retailPrice: number;
+    compatibleModelIds: string[];
+  };
+  const purifierModelIds = [purifier.id, purifierPro.id];
+  const consumableSeed: ConsumableSeed[] = [
+    {
+      sku: "FLT-SED-001",
+      nameKo: "세디먼트 필터",
+      nameVi: "Lõi lọc thô (Sediment)",
+      nameEn: "Sediment filter",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModelIds: purifierModelIds,
+    },
+    {
+      sku: "FLT-PRE-001",
+      nameKo: "프리카본 필터",
+      nameVi: "Lõi lọc tiền carbon (Pre-Carbon)",
+      nameEn: "Pre-Carbon filter",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 220_000,
+      compatibleModelIds: purifierModelIds,
+    },
+    {
+      sku: "FLT-RO-001",
+      nameKo: "RO 멤브레인",
+      nameVi: "Màng RO",
+      nameEn: "RO Membrane",
+      replaceEveryMonths: 24,
+      cleanEveryMonths: 6,
+      retailPrice: 650_000,
+      compatibleModelIds: purifierModelIds,
+    },
+    {
+      sku: "FLT-POST-001",
+      nameKo: "포스트카본 필터",
+      nameVi: "Lõi lọc hậu carbon (Post-Carbon)",
+      nameEn: "Post-Carbon filter",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 240_000,
+      compatibleModelIds: purifierModelIds,
+    },
+    {
+      sku: "FLT-BIDET-001",
+      nameKo: "비데 워터필터",
+      nameVi: "Lõi lọc nước bồn cầu",
+      nameEn: "Bidet water filter",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 280_000,
+      compatibleModelIds: [bidet.id],
+    },
+    {
+      sku: "FLT-HEPA-001",
+      nameKo: "HEPA 필터",
+      nameVi: "Lõi HEPA",
+      nameEn: "HEPA filter",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 420_000,
+      compatibleModelIds: [air.id],
+    },
+    {
+      sku: "FLT-CARB-001",
+      nameKo: "카본 필터(공기청정기)",
+      nameVi: "Lõi carbon (lọc khí)",
+      nameEn: "Carbon filter (air)",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModelIds: [air.id],
+    },
+    {
+      sku: "FLT-AIR-PREFILTER",
+      nameKo: "공기청정기 프리필터",
+      nameVi: "Lõi lọc thô máy lọc khí",
+      nameEn: "Air pre-filter",
+      replaceEveryMonths: null,
+      cleanEveryMonths: 2,
+      retailPrice: 90_000,
+      compatibleModelIds: [air.id],
+    },
+  ];
+
+  for (const c of consumableSeed) {
+    const row = await prisma.consumable.upsert({
+      where: { sku: c.sku },
+      update: {
+        nameKo: c.nameKo,
+        nameVi: c.nameVi,
+        nameEn: c.nameEn,
+        replaceEveryMonths: c.replaceEveryMonths,
+        cleanEveryMonths: c.cleanEveryMonths,
+        retailPrice: c.retailPrice,
+      },
+      create: {
+        sku: c.sku,
+        nameKo: c.nameKo,
+        nameVi: c.nameVi,
+        nameEn: c.nameEn,
+        replaceEveryMonths: c.replaceEveryMonths,
+        cleanEveryMonths: c.cleanEveryMonths,
+        retailPrice: c.retailPrice,
+      },
+    });
+    // Reset compatibility and rewrite — keeps the join table aligned with
+    // the seed declaration (small N, safe to nuke+recreate).
+    await prisma.consumableOnModel.deleteMany({ where: { consumableId: row.id } });
+    for (const modelId of c.compatibleModelIds) {
+      await prisma.consumableOnModel.create({ data: { consumableId: row.id, modelId } });
+    }
+  }
+  console.log(`  ✓ consumables (${consumableSeed.length})`);
+
+  // ─── Accessories ─────────────────────────────────────────────────────
+  type AccessorySeed = {
+    sku: string;
+    nameKo: string;
+    nameVi: string;
+    nameEn: string;
+    retailPrice: number;
+    compatibleModelIds: string[];
+  };
+  const accessorySeed: AccessorySeed[] = [
+    {
+      sku: "ACC-MOUNT-001",
+      nameKo: "벽걸이 거치대",
+      nameVi: "Giá treo tường",
+      nameEn: "Wall mount",
+      retailPrice: 120_000,
+      compatibleModelIds: purifierModelIds,
+    },
+    {
+      sku: "ACC-ADAPTER-001",
+      nameKo: "전원 어댑터",
+      nameVi: "Bộ chuyển nguồn",
+      nameEn: "Power adapter",
+      retailPrice: 90_000,
+      compatibleModelIds: [...purifierModelIds, bidet.id, air.id],
+    },
+    {
+      sku: "ACC-HOSE-001",
+      nameKo: "급수 호스 (3m)",
+      nameVi: "Ống cấp nước (3m)",
+      nameEn: "Inlet hose (3m)",
+      retailPrice: 60_000,
+      compatibleModelIds: [...purifierModelIds, bidet.id],
+    },
+  ];
+
+  for (const a of accessorySeed) {
+    const row = await prisma.accessory.upsert({
+      where: { sku: a.sku },
+      update: {
+        nameKo: a.nameKo,
+        nameVi: a.nameVi,
+        nameEn: a.nameEn,
+        retailPrice: a.retailPrice,
+      },
+      create: {
+        sku: a.sku,
+        nameKo: a.nameKo,
+        nameVi: a.nameVi,
+        nameEn: a.nameEn,
+        retailPrice: a.retailPrice,
+      },
+    });
+    await prisma.accessoryOnModel.deleteMany({ where: { accessoryId: row.id } });
+    for (const modelId of a.compatibleModelIds) {
+      await prisma.accessoryOnModel.create({ data: { accessoryId: row.id, modelId } });
+    }
+  }
+  console.log(`  ✓ accessories (${accessorySeed.length})`);
 
   // ─── B2C customer #1 (portal smoke account) ─────────────────────────
   // KH00001's CONTRACT_PARTY has portalEnabled + a known dev password
