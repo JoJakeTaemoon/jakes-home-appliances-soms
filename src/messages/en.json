@@ -177,7 +177,7 @@
     "preferredRegion": "Preferred region",
     "preferredTechnician": "Preferred technician",
     "notes": "Notes",
-    "searchPlaceholder": "Search code / name / shortcode / phone / address",
+    "searchPlaceholder": "Search code / name / shortcode / phone / address / CCCD / MST",
     "filterType": "Filter by type",
     "filterStatus": "Filter by status",
     "filterRegion": "Filter by region",

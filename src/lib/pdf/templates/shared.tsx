@@ -13,30 +13,22 @@
  */
 
 import path from "node:path";
-import { createContext, useContext } from "react";
 import { Document, Page, Image, Text, View, StyleSheet } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
 
-// Watermark logo is resolved at module load — `process.cwd()` is the project
-// root in both Next.js server runtime and the standalone tsx render script.
-const WATERMARK_LOGO_PATH = path.join(process.cwd(), "public", "logo", "seoul-aqua-logo.jpg");
 import type {
   PdfCompanyInfo,
   PdfContractView,
   PdfCustomerSummary,
   PdfEquipmentLine,
   PdfLangPair,
-  PdfLocale,
 } from "@/lib/pdf/types";
-import { splitLangPair } from "@/lib/pdf/types";
 import { pickPdfPair, interpolate, type PdfMessages } from "@/lib/pdf/messages";
 import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
 
-interface BiLocales {
-  primary: PdfLocale;
-  secondary: PdfLocale;
-}
-const BiLocaleContext = createContext<BiLocales>({ primary: "vi", secondary: "ko" });
+// Watermark logo is resolved at module load — `process.cwd()` is the project
+// root in both Next.js server runtime and the standalone tsx render script.
+const WATERMARK_LOGO_PATH = path.join(process.cwd(), "public", "logo", "seoul-aqua-logo.jpg");
 
 export const styles = StyleSheet.create({
   page: {
@@ -205,44 +197,37 @@ export const styles = StyleSheet.create({
   watermarkImage: { width: 320, height: 320, objectFit: "contain" },
 });
 
-function fontStyleFor(locale: PdfLocale): Style {
-  if (locale === "ko") return styles.koText;
-  if (locale === "en") return styles.enText;
-  return styles.viText;
-}
-
 const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
 /**
  * Pick a font family per string content. Latin / Vietnamese text gets the
  * default Be Vietnam Pro; any string containing Hangul switches to Noto Sans
- * KR. Used for data fields whose language can vary at runtime (customer name,
- * contact name, etc.) where the page-level default would otherwise eat the
- * glyphs.
+ * KR. Used everywhere instead of a React Context — Next.js 16's RSC analyzer
+ * blocks top-level `createContext` calls in any module reachable from App
+ * Router entrypoints, and the @react-pdf templates need to be reachable from
+ * the `/api/contracts` Route Handler chain. Content-based selection works
+ * because each call already knows the text it is rendering.
  */
 function autoFontStyle(s: string | null | undefined): Style {
   return s && HANGUL_RE.test(s) ? styles.koText : styles.viText;
 }
 
 /**
- * Single-line secondary text that automatically uses the secondary locale's
- * font family. Replaces hand-written `<Text style={styles.fooSecondary}>`
- * calls so KO secondary content stops rendering with the Latin-only default
- * family (which used to drop Hangul glyphs silently).
+ * Single-line secondary text. The font family is chosen from the content
+ * itself (Hangul → NotoSansKR, otherwise BeVietnamPro), so KO secondary
+ * content keeps its glyphs without needing a locale prop threaded all the
+ * way down.
  */
 function SecondaryText({
   style,
   children,
 }: Readonly<{ style?: Style | Style[]; children: string }>) {
-  const locales = useContext(BiLocaleContext);
-  const composed = ([] as Style[]).concat(style ?? [], fontStyleFor(locales.secondary));
+  const composed = ([] as Style[]).concat(style ?? [], autoFontStyle(children));
   return <Text style={composed}>{children}</Text>;
 }
 
 /**
  * Bilingual stacked text: primary on top, secondary beneath it in `subStyle`.
- * The current `BiLocaleContext` decides which font family each half uses —
- * Pretendard for KO, Be Vietnam Pro for VI/EN. This keeps the page-level
- * default Latin-capable family while still rendering Hangul correctly.
+ * Each half picks its font family from its own content via `autoFontStyle`.
  */
 export function Bi({
   primary,
@@ -255,9 +240,8 @@ export function Bi({
   style?: Style | Style[];
   subStyle?: Style | Style[];
 }>) {
-  const locales = useContext(BiLocaleContext);
-  const composedStyle = ([] as Style[]).concat(style ?? [], fontStyleFor(locales.primary));
-  const composedSub = ([] as Style[]).concat(subStyle ?? [], fontStyleFor(locales.secondary));
+  const composedStyle = ([] as Style[]).concat(style ?? [], autoFontStyle(primary));
+  const composedSub = ([] as Style[]).concat(subStyle ?? [], autoFontStyle(secondary));
   return (
     <Text style={composedStyle}>
       {primary}
@@ -718,31 +702,28 @@ export function ContractDocument({
   hqPhone,
 }: Readonly<ContractDocumentProps>) {
   const { primary, secondary } = pickPdfPair(langPair);
-  const locales = splitLangPair(langPair);
   const showSite = customer.type === "B2B";
   return (
-    <BiLocaleContext.Provider value={locales}>
-      <Document>
-        <Page size="A4" style={styles.page} wrap>
-          <View style={styles.watermark} fixed>
-            <Image src={WATERMARK_LOGO_PATH} style={styles.watermarkImage} />
+    <Document>
+      <Page size="A4" style={styles.page} wrap>
+        <View style={styles.watermark} fixed>
+          <Image src={WATERMARK_LOGO_PATH} style={styles.watermarkImage} />
+        </View>
+        <PdfHeader contract={contract} titleKey={titleKey} customer={customer} primary={primary} secondary={secondary} />
+        <PdfPartiesBlock customer={customer} company={company} hqPhone={hqPhone} primary={primary} secondary={secondary} />
+        <PdfMeta contract={contract} primary={primary} secondary={secondary} />
+        <PdfEquipmentTable equipment={equipment} showSite={showSite} primary={primary} secondary={secondary} />
+        <PdfClauses contract={contract} clauseKeys={clauseKeys} primary={primary} secondary={secondary} />
+        {contract.notes && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.sectionTitle}>{primary.labels.notes}</Text>
+            <SecondaryText style={styles.sectionTitleSecondary}>{secondary.labels.notes}</SecondaryText>
+            <Text style={[styles.clause, autoFontStyle(contract.notes)]}>{contract.notes}</Text>
           </View>
-          <PdfHeader contract={contract} titleKey={titleKey} customer={customer} primary={primary} secondary={secondary} />
-          <PdfPartiesBlock customer={customer} company={company} hqPhone={hqPhone} primary={primary} secondary={secondary} />
-          <PdfMeta contract={contract} primary={primary} secondary={secondary} />
-          <PdfEquipmentTable equipment={equipment} showSite={showSite} primary={primary} secondary={secondary} />
-          <PdfClauses contract={contract} clauseKeys={clauseKeys} primary={primary} secondary={secondary} />
-          {contract.notes && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.sectionTitle}>{primary.labels.notes}</Text>
-              <SecondaryText style={styles.sectionTitleSecondary}>{secondary.labels.notes}</SecondaryText>
-              <Text style={[styles.clause, autoFontStyle(contract.notes)]}>{contract.notes}</Text>
-            </View>
-          )}
-          <PdfSignatures customer={customer} company={company} primary={primary} secondary={secondary} />
-          <PdfFooter generatedAt={generatedAt} primary={primary} />
-        </Page>
-      </Document>
-    </BiLocaleContext.Provider>
+        )}
+        <PdfSignatures customer={customer} company={company} primary={primary} secondary={secondary} />
+        <PdfFooter generatedAt={generatedAt} primary={primary} />
+      </Page>
+    </Document>
   );
 }

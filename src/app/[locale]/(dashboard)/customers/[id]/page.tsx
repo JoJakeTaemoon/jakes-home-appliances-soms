@@ -494,13 +494,42 @@ function Card({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  label,
+  value,
+  href,
+}: Readonly<{
+  label: string;
+  value: string | null | undefined;
+  href?: string;
+}>) {
+  const display = value ?? "—";
   return (
-    <div className="flex items-baseline justify-between gap-3 text-sm">
-      <span className="text-xs text-[#737373]">{label}</span>
-      <span className="text-[#111111]">{value ?? "—"}</span>
+    <div className="flex items-baseline gap-2 text-sm">
+      <span className="shrink-0 text-xs text-[#737373]">{label}</span>
+      {href && value ? (
+        <a
+          href={href}
+          className="truncate text-[#0C6BA8] hover:underline"
+        >
+          {display}
+        </a>
+      ) : (
+        <span className="truncate text-[#111111]">{display}</span>
+      )}
     </div>
   );
+}
+
+/**
+ * Language code → "<native-name> <flag>" — the contact's own language, not
+ * the viewer's locale, so the label always reads as the contact would read
+ * it themselves.
+ */
+function languageLabel(lang: "vi" | "ko" | "en"): string {
+  if (lang === "vi") return "Tiếng Việt 🇻🇳";
+  if (lang === "ko") return "한국어 🇰🇷";
+  return "English 🇺🇸";
 }
 
 function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[] }>) {
@@ -735,9 +764,13 @@ function ContactsTab({
             <ContactActions contact={cp} customer={customer} role={role} reload={reload} />
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Field label={tc("phone")} value={cp.phone1} />
-            <Field label={tc("email")} value={cp.email} />
-            <Field label={tc("language")} value={cp.language.toUpperCase()} />
+            <Field label={tc("phone")} value={cp.phone1} href={`tel:${cp.phone1}`} />
+            <Field
+              label={tc("email")}
+              value={cp.email}
+              href={cp.email ? `mailto:${cp.email}` : undefined}
+            />
+            <Field label={tc("language")} value={languageLabel(cp.language)} />
           </div>
         </div>
       )}
@@ -764,9 +797,13 @@ function ContactsTab({
               <ContactActions contact={c} customer={customer} role={role} reload={reload} />
             </div>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <Field label={tc("phone")} value={c.phone1} />
-              <Field label={tc("email")} value={c.email} />
-              <Field label={tc("language")} value={c.language.toUpperCase()} />
+              <Field label={tc("phone")} value={c.phone1} href={`tel:${c.phone1}`} />
+              <Field
+                label={tc("email")}
+                value={c.email}
+                href={c.email ? `mailto:${c.email}` : undefined}
+              />
+              <Field label={tc("language")} value={languageLabel(c.language)} />
             </div>
           </div>
         ))}
@@ -1532,7 +1569,7 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
               </td>
               <td className="px-3 py-2">{t(`types.${r.type}` as never)}</td>
               <td className="px-3 py-2">{t(`states.${r.state}` as never)}</td>
-              <td className="px-3 py-2">{r.isPaid ? t("yes") : t("no")}</td>
+              <td className="px-3 py-2">{r.isPaid ? t("isPaidYes") : t("isPaidNo")}</td>
               <td className="px-3 py-2">{formatDate(r.submittedAt, locale)}</td>
             </tr>
           ))}

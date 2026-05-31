@@ -177,7 +177,7 @@
     "preferredRegion": "Khu vực ưu tiên",
     "preferredTechnician": "KTV ưu tiên",
     "notes": "Ghi chú",
-    "searchPlaceholder": "Tìm theo mã / tên / mã viết tắt / điện thoại / địa chỉ",
+    "searchPlaceholder": "Tìm theo mã / tên / mã viết tắt / điện thoại / địa chỉ / CCCD / MST",
     "filterType": "Lọc theo loại",
     "filterStatus": "Lọc theo trạng thái",
     "filterRegion": "Lọc theo khu vực",

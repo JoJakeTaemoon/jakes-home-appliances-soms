@@ -177,7 +177,7 @@
     "preferredRegion": "선호 지역",
     "preferredTechnician": "선호 기사",
     "notes": "메모",
-    "searchPlaceholder": "코드 / 이름 / 약어 / 전화번호 / 주소로 검색",
+    "searchPlaceholder": "코드 / 이름 / 약어 / 전화번호 / 주소 / CCCD / MST로 검색",
     "filterType": "유형 필터",
     "filterStatus": "상태 필터",
     "filterRegion": "지역 필터",

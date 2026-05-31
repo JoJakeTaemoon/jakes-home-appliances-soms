@@ -1800,7 +1800,33 @@ async function main() {
     }
   }
 
-  console.log(`  ✓ visits (6 anchor + ${bulkVisitCounter} bulk = ${6 + bulkVisitCounter} total across all VisitState values)`);
+  // ─── Daily SCHEDULED visits (today + next 30 days, one per day) ────────
+  // Gives the calendar / dashboard widgets a steady stream of upcoming work
+  // so cron jobs (D-1 reminder) + the today/upcoming mobile screens always
+  // have something to render in dev. Round-robins through bulk customers
+  // and the technician pool; alternates visit type day by day.
+  let dailyVisitCounter = 0;
+  for (let dayOff = 0; dayOff <= 30; dayOff++) {
+    const targetCustomer = bulkVisitPool[dailyVisitCounter % bulkVisitPool.length];
+    const techPick = techs[dailyVisitCounter % techs.length];
+    const vType = visitTypePool[dailyVisitCounter % visitTypePool.length];
+    // Spread starting hours 8–16 so the day-view doesn't look identical.
+    const hourBase = 8 + (dailyVisitCounter % 9);
+    const id = `seed-visit-daily-${String(dayOff).padStart(2, "0")}`;
+    await ensureVisit(id, {
+      customerId: targetCustomer.customerId,
+      type: vType,
+      state: "SCHEDULED",
+      scheduledFor: at(daysFromNow(dayOff), hourBase),
+      scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
+      leadTechnicianId: techPick.id,
+    });
+    dailyVisitCounter++;
+  }
+
+  console.log(
+    `  ✓ visits (6 anchor + ${bulkVisitCounter} bulk + ${dailyVisitCounter} daily = ${6 + bulkVisitCounter + dailyVisitCounter} total across all VisitState values)`,
+  );
 
   // ─── Payments (covering all states) ─────────────────────────────────
   async function ensurePayment(id: string, data: Parameters<typeof prisma.payment.create>[0]["data"]) {
