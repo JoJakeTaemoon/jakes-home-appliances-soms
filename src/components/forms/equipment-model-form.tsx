@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
@@ -17,11 +17,17 @@ interface FilterRow {
 interface ModelInput {
   modelCode: string;
   name: string;
+  displayNameKo: string;
+  displayNameVi: string;
+  displayNameEn: string;
+  brandId: string | null;
   category: "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
   description: string;
   retailPrice: string;
   monthlyRentalPrice: string;
   monthlyMaintenancePrice: string;
+  inspectionEveryMonths: string;
+  warrantyMonths: string;
   filters: FilterRow[];
   isActive: boolean;
 }
@@ -31,14 +37,25 @@ interface Props {
   mode: "create" | "edit";
 }
 
+interface BrandOpt {
+  id: string;
+  name: string;
+}
+
 const EMPTY: ModelInput = {
   modelCode: "",
   name: "",
+  displayNameKo: "",
+  displayNameVi: "",
+  displayNameEn: "",
+  brandId: null,
   category: "WATER_PURIFIER",
   description: "",
   retailPrice: "",
   monthlyRentalPrice: "",
   monthlyMaintenancePrice: "",
+  inspectionEveryMonths: "",
+  warrantyMonths: "12",
   filters: [],
   isActive: true,
 };
@@ -51,6 +68,24 @@ export function EquipmentModelForm({ initial, mode }: Props) {
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [brands, setBrands] = useState<BrandOpt[]>([]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await api.get<BrandOpt[]>(
+          "/api/admin/products/brands?pageSize=100&isActive=true",
+        );
+        setBrands(res.data ?? []);
+      } catch (err) {
+        // STAFF without catalog access gets 403 — that's expected, fall
+        // through silently. Anything else (network, 5xx, schema drift) is
+        // a real failure we want visible in the console.
+        if (err instanceof ApiClientError && err.status === 403) return;
+        console.warn("[equipment-model-form] failed to load brands", err);
+      }
+    })();
+  }, [api]);
 
   function setField<K extends keyof ModelInput>(key: K, value: ModelInput[K]) {
     setData((d) => ({ ...d, [key]: value }));
@@ -63,11 +98,17 @@ export function EquipmentModelForm({ initial, mode }: Props) {
       const payload = {
         modelCode: data.modelCode,
         name: data.name,
+        displayNameKo: data.displayNameKo || undefined,
+        displayNameVi: data.displayNameVi || undefined,
+        displayNameEn: data.displayNameEn || undefined,
+        brandId: data.brandId,
         category: data.category,
         description: data.description || undefined,
         retailPrice: data.retailPrice ? Number(data.retailPrice) : null,
         monthlyRentalPrice: data.monthlyRentalPrice ? Number(data.monthlyRentalPrice) : null,
         monthlyMaintenancePrice: data.monthlyMaintenancePrice ? Number(data.monthlyMaintenancePrice) : null,
+        inspectionEveryMonths: data.inspectionEveryMonths ? Number(data.inspectionEveryMonths) : null,
+        warrantyMonths: data.warrantyMonths ? Number(data.warrantyMonths) : null,
         filterPolicy: data.filters.length > 0 ? { filters: data.filters } : null,
         isActive: data.isActive,
       };
@@ -107,6 +148,40 @@ export function EquipmentModelForm({ initial, mode }: Props) {
         </FormField>
         <FormField label={t("name")} required>
           <Input value={data.name} onChange={(e) => setField("name", e.target.value)} />
+        </FormField>
+        <FormField label={t("brand")}>
+          <Combobox
+            value={data.brandId ?? ""}
+            onChange={(v) => setField("brandId", v ? v : null)}
+            options={brands.map((b) => ({ value: b.id, label: b.name }))}
+            searchable
+            allowClear
+          />
+        </FormField>
+        <FormField label={t("displayNameKo")}>
+          <Input value={data.displayNameKo} onChange={(e) => setField("displayNameKo", e.target.value)} placeholder="PTS-2100" />
+        </FormField>
+        <FormField label={t("displayNameVi")}>
+          <Input value={data.displayNameVi} onChange={(e) => setField("displayNameVi", e.target.value)} placeholder="PTS-2100" />
+        </FormField>
+        <FormField label={t("displayNameEn")}>
+          <Input value={data.displayNameEn} onChange={(e) => setField("displayNameEn", e.target.value)} placeholder="PTS-2100" />
+        </FormField>
+        <FormField label={t("inspectionEveryMonths")}>
+          <Input
+            value={data.inspectionEveryMonths}
+            onChange={(e) => setField("inspectionEveryMonths", e.target.value)}
+            inputMode="numeric"
+            placeholder="1"
+          />
+        </FormField>
+        <FormField label={t("warrantyMonths")}>
+          <Input
+            value={data.warrantyMonths}
+            onChange={(e) => setField("warrantyMonths", e.target.value)}
+            inputMode="numeric"
+            placeholder="12"
+          />
         </FormField>
         <FormField label={t("category")} required>
           <Combobox

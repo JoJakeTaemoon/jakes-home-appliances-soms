@@ -315,10 +315,32 @@ model ProductCategory {
   @@index([isActive, sortOrder])
 }
 
+// Brand — distinct manufacturer/marketer of equipment models. Single name
+// field for now; future work will add brand-level sales/billing rollups.
+model Brand {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models    EquipmentModel[]
+
+  @@index([isActive, sortOrder])
+}
+
 model EquipmentModel {
   id                  String            @id @default(cuid())
   modelCode           String            @unique  // e.g. SA-J430, PTS-2100
-  name                String
+  name                String                   // deprecated — prefer displayName*
+  // Customer-facing product names in KO/VI/EN. The model code itself
+  // stays single-language (alphanumeric/symbol).
+  displayNameKo       String?
+  displayNameVi       String?
+  displayNameEn       String?
+  brandId             String?
+  brand               Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
   // Legacy enum classification — kept during the ProductCategory rollout so
   // existing list filters & seeded code paths keep working. Prefer `categoryId`.
   category            EquipmentCategory
@@ -329,6 +351,10 @@ model EquipmentModel {
   retailPrice         Decimal?          @db.Decimal(14, 2)
   monthlyRentalPrice  Decimal?          @db.Decimal(14, 2)
   monthlyMaintenancePrice Decimal?      @db.Decimal(14, 2)
+  // Periodic inspection cycle (months). 1 for water purifiers (PDF A.2).
+  inspectionEveryMonths Int?
+  // Warranty months for SALE customers — used by charge-policy default rules.
+  warrantyMonths      Int?              @default(12)
   isActive            Boolean           @default(true)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -339,6 +365,7 @@ model EquipmentModel {
 
   @@index([category, isActive])
   @@index([categoryId, isActive])
+  @@index([brandId, isActive])
 }
 
 // Catalog of replaceable/cleanable parts attached to an equipment model.
@@ -354,6 +381,10 @@ model Consumable {
   nameEn             String
   replaceEveryMonths Int?
   cleanEveryMonths   Int?
+  // PDF A.4: pre-filters are cleaned on every periodic-inspection visit
+  // (no fixed month-based cycle). When true, recommender prefills CLEAN
+  // on every PERIODIC_INSPECTION visit regardless of cycle math.
+  cleanOnEveryVisit  Boolean               @default(false)
   retailPrice        Decimal               @db.Decimal(14, 2)
   notes              String?
   isActive           Boolean               @default(true)
@@ -362,6 +393,7 @@ model Consumable {
 
   compatibleModels   ConsumableOnModel[]
   visitLogs          VisitConsumableLog[]
+  chargePolicies     ChargePolicy[]
 
   @@index([isActive])
 }
@@ -374,6 +406,10 @@ model Accessory {
   nameKo      String
   nameVi      String
   nameEn      String
+  // PDF C.2 — small parts (cocks, valves, hoses, fittings) are still free
+  // for MAINTENANCE customers, while larger parts (compressor, hot-water
+  // tank, PCB…) are billed. Feeds the default charge-policy rule.
+  isMinorPart Boolean             @default(false)
   retailPrice Decimal             @db.Decimal(14, 2)
   notes       String?
   isActive    Boolean             @default(true)
@@ -381,6 +417,7 @@ model Accessory {
   updatedAt   DateTime            @updatedAt
 
   compatibleModels AccessoryOnModel[]
+  chargePolicies   ChargePolicy[]
 
   @@index([isActive])
 }
@@ -388,6 +425,8 @@ model Accessory {
 model ConsumableOnModel {
   consumableId String
   modelId      String
+  // PDF A.1 — most models hold 1 of each filter, oversize units carry 2.
+  quantity     Int            @default(1)
   consumable   Consumable     @relation(fields: [consumableId], references: [id], onDelete: Cascade)
   model        EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
@@ -398,11 +437,51 @@ model ConsumableOnModel {
 model AccessoryOnModel {
   accessoryId String
   modelId     String
+  quantity    Int            @default(1)
   accessory   Accessory      @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
   model       EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@id([accessoryId, modelId])
   @@index([modelId])
+}
+
+// Contract types used by ChargePolicy. Distinct from `ContractType` so the
+// charge matrix isn't coupled to other contract domain changes.
+enum ChargePolicyContractType {
+  RENTAL
+  SALE
+  MAINTENANCE
+}
+
+// Exception rules for billing parts. The default rule lives in code
+// (`src/lib/charge-policy.ts`):
+//   RENTAL                → free
+//   SALE  + withinWarranty → free
+//   SALE  + after warranty → charged
+//   MAINTENANCE + minor    → free (accessories only — small parts)
+//   MAINTENANCE + major    → charged
+// Anything else (consumables under MAINTENANCE, etc.) follows the SALE rule.
+// Rows in this table override the default for one specific
+// (part, contractType, withinWarranty) tuple.
+model ChargePolicy {
+  id             String                    @id @default(cuid())
+  accessoryId    String?
+  consumableId   String?
+  contractType   ChargePolicyContractType
+  // SALE only — for RENTAL/MAINTENANCE this is stored as `false` so the
+  // unique index still works without conditional uniqueness.
+  withinWarranty Boolean                   @default(false)
+  isChargeable   Boolean
+  notes          String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  accessory      Accessory?                @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  consumable     Consumable?               @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+
+  @@unique([accessoryId, contractType, withinWarranty])
+  @@unique([consumableId, contractType, withinWarranty])
+  @@index([accessoryId])
+  @@index([consumableId])
 }
 
 // Discrete action: at recommendation/log time we always know whether a

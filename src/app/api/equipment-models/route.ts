@@ -35,6 +35,7 @@ export const GET = defineQuery({
         orderBy: { modelCode: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: { brand: { select: { id: true, name: true } } },
       }),
     ]);
     return { rows, pagination: { page, limit: pageSize, total } };
@@ -62,12 +63,18 @@ export const POST = defineMutation({
       data: {
         modelCode: body.modelCode,
         name: body.name,
+        displayNameKo: body.displayNameKo ?? null,
+        displayNameVi: body.displayNameVi ?? null,
+        displayNameEn: body.displayNameEn ?? null,
+        brandId: body.brandId ?? null,
         category: body.category,
         categoryId: body.categoryId ?? null,
         description: body.description ?? null,
         retailPrice: body.retailPrice ?? null,
         monthlyRentalPrice: body.monthlyRentalPrice ?? null,
         monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
+        inspectionEveryMonths: body.inspectionEveryMonths ?? null,
+        warrantyMonths: body.warrantyMonths ?? null,
         filterPolicy: body.filterPolicy ?? undefined,
         isActive: body.isActive,
       },

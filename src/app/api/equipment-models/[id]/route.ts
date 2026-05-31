@@ -9,6 +9,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
@@ -58,18 +59,34 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       );
     }
     const data = parsed.data;
+    // Pass Zod-parsed values through without coalescing null→undefined: Prisma
+    // treats `undefined` as "don't touch" and `null` as "set to NULL", which
+    // matches what nullable+optional schema fields advertise. Coalescing
+    // would silently drop `{brandId: null}` clears from the client.
     const updated = await prisma.equipmentModel.update({
       where: { id },
       data: {
         modelCode: data.modelCode,
         name: data.name,
+        displayNameKo: data.displayNameKo,
+        displayNameVi: data.displayNameVi,
+        displayNameEn: data.displayNameEn,
+        brandId: data.brandId,
         category: data.category,
-        categoryId: data.categoryId ?? undefined,
+        categoryId: data.categoryId,
         description: data.description,
-        retailPrice: data.retailPrice ?? undefined,
-        monthlyRentalPrice: data.monthlyRentalPrice ?? undefined,
-        monthlyMaintenancePrice: data.monthlyMaintenancePrice ?? undefined,
-        filterPolicy: data.filterPolicy ?? undefined,
+        retailPrice: data.retailPrice,
+        monthlyRentalPrice: data.monthlyRentalPrice,
+        monthlyMaintenancePrice: data.monthlyMaintenancePrice,
+        inspectionEveryMonths: data.inspectionEveryMonths,
+        warrantyMonths: data.warrantyMonths,
+        // Prisma JSON columns don't accept literal null; use Prisma.DbNull.
+        filterPolicy:
+          data.filterPolicy === undefined
+            ? undefined
+            : data.filterPolicy === null
+              ? Prisma.DbNull
+              : data.filterPolicy,
         isActive: data.isActive,
       },
     });

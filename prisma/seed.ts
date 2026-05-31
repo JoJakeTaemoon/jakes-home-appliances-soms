@@ -119,14 +119,45 @@ async function main() {
 
   console.log(`  ✓ users (${2 + 2 + techs.length})`);
 
+  // ─── Brands ───────────────────────────────────────────────────────────
+  // Seoul Aqua = own products; DEWBEL + FRELLE = household water filter and
+  // microbubble shower lines from the attached client catalog.
+  const brandSeed = [
+    { name: "Seoul Aqua", sortOrder: 10 },
+    { name: "DEWBEL", sortOrder: 20 },
+    { name: "FRELLE", sortOrder: 30 },
+  ];
+  const brandsByName = new Map<string, { id: string }>();
+  for (const b of brandSeed) {
+    const row = await prisma.brand.upsert({
+      where: { name: b.name },
+      update: { sortOrder: b.sortOrder },
+      create: b,
+    });
+    brandsByName.set(b.name, row);
+  }
+  const seoulAquaBrand = brandsByName.get("Seoul Aqua")!;
+  console.log(`  ✓ brands (${brandSeed.length})`);
+
   // ─── Product categories (multilingual) ──────────────────────────────
   // Mirror the legacy EquipmentCategory enum during the rollout — both the
   // enum column and the FK get populated so list filters keep working.
+  // Categories from the attached "브랜드+제품군+모델명…" PDF.
   const catSeed = [
     { code: "WATER_PURIFIER", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier", sortOrder: 10 },
+    { code: "HOT_COLD_PURIFIER", nameKo: "냉온정수기", nameVi: "Máy lọc nước nóng lạnh", nameEn: "Hot and cold water purifier", sortOrder: 11 },
+    { code: "RO_HOT_COLD_PURIFIER", nameKo: "냉온정수기 — RO 방식", nameVi: "Máy lọc nước nóng lạnh RO", nameEn: "Hot and cold water purifier (RO)", sortOrder: 12 },
+    { code: "POWERLESS_PURIFIER", nameKo: "무전원 정수기", nameVi: "Máy lọc nước không dùng điện", nameEn: "Powerless water purifier", sortOrder: 13 },
     { code: "BIDET", nameKo: "비데", nameVi: "Bồn cầu thông minh", nameEn: "Bidet", sortOrder: 20 },
+    { code: "MANUAL_BIDET", nameKo: "무전원 수동 비데", nameVi: "Nắp vệ sinh thông minh không dùng điện", nameEn: "Non-powered manual bidet", sortOrder: 21 },
     { code: "AIR_PURIFIER", nameKo: "공기청정기", nameVi: "Máy lọc không khí", nameEn: "Air purifier", sortOrder: 30 },
-    { code: "FILTER", nameKo: "필터/소모품", nameVi: "Lõi lọc / Vật tư tiêu hao", nameEn: "Filter / Consumable", sortOrder: 40 },
+    { code: "HOME_DEHUMIDIFIER", nameKo: "가정용 제습기", nameVi: "Máy hút ẩm gia dụng", nameEn: "Home dehumidifier", sortOrder: 31 },
+    { code: "INDUSTRIAL_DEHUMIDIFIER", nameKo: "산업용 제습기", nameVi: "Máy hút ẩm công nghiệp", nameEn: "Industrial dehumidifier", sortOrder: 32 },
+    { code: "ICE_MAKER", nameKo: "제빙기", nameVi: "Máy làm đá", nameEn: "Ice maker", sortOrder: 40 },
+    { code: "WATER_DISPENSER", nameKo: "냉온수기", nameVi: "Máy úp bình", nameEn: "Water dispenser", sortOrder: 41 },
+    { code: "MICROBUBBLE_CLEANER", nameKo: "마이크로 버블세정기", nameVi: "Máy làm sạch bong bóng siêu nhỏ", nameEn: "Micro bubble cleaner", sortOrder: 42 },
+    { code: "HOUSEHOLD_FILTER", nameKo: "생활용 정수필터", nameVi: "Bộ lọc nhà bếp", nameEn: "Household water filter", sortOrder: 50 },
+    { code: "FILTER", nameKo: "필터/소모품", nameVi: "Lõi lọc / Vật tư tiêu hao", nameEn: "Filter / Consumable", sortOrder: 60 },
   ];
   const categoriesByCode = new Map<string, { id: string }>();
   for (const c of catSeed) {
@@ -146,12 +177,26 @@ async function main() {
   // moved to the Consumable model.
   const purifier = await prisma.equipmentModel.upsert({
     where: { modelCode: "PTS-2100" },
-    update: { categoryId: categoriesByCode.get("WATER_PURIFIER")?.id },
+    update: {
+      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+      displayNameKo: "PTS-2100",
+      displayNameVi: "PTS-2100",
+      displayNameEn: "PTS-2100",
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+    },
     create: {
       modelCode: "PTS-2100",
       name: "PTS-2100 Water Purifier",
+      displayNameKo: "PTS-2100",
+      displayNameVi: "PTS-2100",
+      displayNameEn: "PTS-2100",
+      brandId: seoulAquaBrand.id,
       category: "WATER_PURIFIER",
       categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
       retailPrice: 8_500_000,
       monthlyRentalPrice: 350_000,
       monthlyMaintenancePrice: 120_000,
@@ -167,12 +212,26 @@ async function main() {
   });
   const purifierPro = await prisma.equipmentModel.upsert({
     where: { modelCode: "PTS-3500" },
-    update: { categoryId: categoriesByCode.get("WATER_PURIFIER")?.id },
+    update: {
+      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+      displayNameKo: "PTS-3500",
+      displayNameVi: "PTS-3500",
+      displayNameEn: "PTS-3500",
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+    },
     create: {
       modelCode: "PTS-3500",
       name: "PTS-3500 Hot/Cold Water Purifier",
+      displayNameKo: "PTS-3500",
+      displayNameVi: "PTS-3500",
+      displayNameEn: "PTS-3500",
+      brandId: seoulAquaBrand.id,
       category: "WATER_PURIFIER",
       categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
       retailPrice: 13_500_000,
       monthlyRentalPrice: 520_000,
       monthlyMaintenancePrice: 150_000,
@@ -188,12 +247,26 @@ async function main() {
   });
   const bidet = await prisma.equipmentModel.upsert({
     where: { modelCode: "SA-J430" },
-    update: { categoryId: categoriesByCode.get("BIDET")?.id },
+    update: {
+      categoryId: categoriesByCode.get("BIDET")?.id,
+      brandId: seoulAquaBrand.id,
+      displayNameKo: "SA-J430",
+      displayNameVi: "SA-J430",
+      displayNameEn: "SA-J430",
+      inspectionEveryMonths: 6,
+      warrantyMonths: 12,
+    },
     create: {
       modelCode: "SA-J430",
       name: "SA-J430 Smart Bidet",
+      displayNameKo: "SA-J430",
+      displayNameVi: "SA-J430",
+      displayNameEn: "SA-J430",
+      brandId: seoulAquaBrand.id,
       category: "BIDET",
       categoryId: categoriesByCode.get("BIDET")?.id,
+      inspectionEveryMonths: 6,
+      warrantyMonths: 12,
       retailPrice: 12_000_000,
       monthlyRentalPrice: 480_000,
       monthlyMaintenancePrice: 80_000,
@@ -204,12 +277,26 @@ async function main() {
   });
   const air = await prisma.equipmentModel.upsert({
     where: { modelCode: "AC-700" },
-    update: { categoryId: categoriesByCode.get("AIR_PURIFIER")?.id },
+    update: {
+      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+      displayNameKo: "AC-700",
+      displayNameVi: "AC-700",
+      displayNameEn: "AC-700",
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+    },
     create: {
       modelCode: "AC-700",
       name: "AC-700 Air Purifier",
+      displayNameKo: "AC-700",
+      displayNameVi: "AC-700",
+      displayNameEn: "AC-700",
+      brandId: seoulAquaBrand.id,
       category: "AIR_PURIFIER",
       categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
       retailPrice: 6_000_000,
       monthlyRentalPrice: 280_000,
       monthlyMaintenancePrice: 100_000,
@@ -222,7 +309,140 @@ async function main() {
     },
   });
 
-  console.log(`  ✓ equipment models (4)`);
+  // ─── Additional equipment models (representative slice of the PDF) ──
+  // Phase 2 seeds a representative model per new category so the catalog
+  // UI shows non-trivial data. The remaining ~50 PDF models can be added
+  // via the admin UI without further code changes.
+  const purifierRoTop = await prisma.equipmentModel.upsert({
+    where: { modelCode: "PTS-4000T" },
+    update: {
+      categoryId: categoriesByCode.get("HOT_COLD_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "PTS-4000T",
+      name: "PTS-4000T Hot/Cold Purifier",
+      displayNameKo: "PTS-4000T",
+      displayNameVi: "PTS-4000T",
+      displayNameEn: "PTS-4000T",
+      brandId: seoulAquaBrand.id,
+      category: "WATER_PURIFIER",
+      categoryId: categoriesByCode.get("HOT_COLD_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+      retailPrice: 16_500_000,
+      monthlyRentalPrice: 620_000,
+      monthlyMaintenancePrice: 180_000,
+    },
+  });
+  const purifierRoChp = await prisma.equipmentModel.upsert({
+    where: { modelCode: "CHP-590R" },
+    update: {
+      categoryId: categoriesByCode.get("RO_HOT_COLD_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "CHP-590R",
+      name: "CHP-590R RO Hot/Cold Purifier",
+      displayNameKo: "CHP-590R",
+      displayNameVi: "CHP-590R",
+      displayNameEn: "CHP-590R",
+      brandId: seoulAquaBrand.id,
+      category: "WATER_PURIFIER",
+      categoryId: categoriesByCode.get("RO_HOT_COLD_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+      retailPrice: 18_500_000,
+      monthlyRentalPrice: 720_000,
+      monthlyMaintenancePrice: 200_000,
+    },
+  });
+  const airCa5000 = await prisma.equipmentModel.upsert({
+    where: { modelCode: "CA-5000W" },
+    update: {
+      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "CA-5000W",
+      name: "CA-5000W Air Purifier",
+      displayNameKo: "CA-5000W",
+      displayNameVi: "CA-5000W",
+      displayNameEn: "CA-5000W",
+      brandId: seoulAquaBrand.id,
+      category: "AIR_PURIFIER",
+      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+      retailPrice: 7_200_000,
+      monthlyRentalPrice: 320_000,
+      monthlyMaintenancePrice: 110_000,
+    },
+  });
+  const dehumDxth = await prisma.equipmentModel.upsert({
+    where: { modelCode: "DXTH120-NEK" },
+    update: {
+      categoryId: categoriesByCode.get("HOME_DEHUMIDIFIER")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "DXTH120-NEK",
+      name: "DXTH120-NEK Home Dehumidifier",
+      displayNameKo: "DXTH120-NEK",
+      displayNameVi: "DXTH120-NEK",
+      displayNameEn: "DXTH120-NEK",
+      brandId: seoulAquaBrand.id,
+      category: "OTHER",
+      categoryId: categoriesByCode.get("HOME_DEHUMIDIFIER")?.id,
+      inspectionEveryMonths: 3,
+      warrantyMonths: 12,
+      retailPrice: 5_400_000,
+    },
+  });
+  const iceFsm30 = await prisma.equipmentModel.upsert({
+    where: { modelCode: "FSM30" },
+    update: {
+      categoryId: categoriesByCode.get("ICE_MAKER")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "FSM30",
+      name: "FSM30 Ice Maker",
+      displayNameKo: "FSM30",
+      displayNameVi: "FSM30",
+      displayNameEn: "FSM30",
+      brandId: seoulAquaBrand.id,
+      category: "OTHER",
+      categoryId: categoriesByCode.get("ICE_MAKER")?.id,
+      inspectionEveryMonths: 1,
+      warrantyMonths: 12,
+      retailPrice: 22_000_000,
+      monthlyRentalPrice: 850_000,
+      monthlyMaintenancePrice: 250_000,
+    },
+  });
+  const bidetJ830 = await prisma.equipmentModel.upsert({
+    where: { modelCode: "SA-J830" },
+    update: {
+      categoryId: categoriesByCode.get("BIDET")?.id,
+      brandId: seoulAquaBrand.id,
+    },
+    create: {
+      modelCode: "SA-J830",
+      name: "SA-J830 Smart Bidet",
+      displayNameKo: "SA-J830",
+      displayNameVi: "SA-J830",
+      displayNameEn: "SA-J830",
+      brandId: seoulAquaBrand.id,
+      category: "BIDET",
+      categoryId: categoriesByCode.get("BIDET")?.id,
+      inspectionEveryMonths: 6,
+      warrantyMonths: 12,
+      retailPrice: 14_500_000,
+    },
+  });
+
+  console.log(`  ✓ equipment models (10)`);
 
   // ─── Consumables ─────────────────────────────────────────────────────
   // RO membrane carries BOTH cycles (clean every 6mo, replace every 24mo)
@@ -235,10 +455,15 @@ async function main() {
     nameEn: string;
     replaceEveryMonths: number | null;
     cleanEveryMonths: number | null;
+    cleanOnEveryVisit?: boolean;
     retailPrice: number;
-    compatibleModelIds: string[];
+    compatibleModels: { modelId: string; quantity: number }[];
   };
   const purifierModelIds = [purifier.id, purifierPro.id];
+  const allPurifierIds = [purifier.id, purifierPro.id, purifierRoTop.id, purifierRoChp.id];
+  function withQty(ids: string[], quantity = 1) {
+    return ids.map((modelId) => ({ modelId, quantity }));
+  }
   const consumableSeed: ConsumableSeed[] = [
     {
       sku: "FLT-SED-001",
@@ -248,7 +473,7 @@ async function main() {
       replaceEveryMonths: 3,
       cleanEveryMonths: null,
       retailPrice: 180_000,
-      compatibleModelIds: purifierModelIds,
+      compatibleModels: withQty(purifierModelIds),
     },
     {
       sku: "FLT-PRE-001",
@@ -258,7 +483,7 @@ async function main() {
       replaceEveryMonths: 6,
       cleanEveryMonths: null,
       retailPrice: 220_000,
-      compatibleModelIds: purifierModelIds,
+      compatibleModels: withQty(purifierModelIds),
     },
     {
       sku: "FLT-RO-001",
@@ -268,7 +493,7 @@ async function main() {
       replaceEveryMonths: 24,
       cleanEveryMonths: 6,
       retailPrice: 650_000,
-      compatibleModelIds: purifierModelIds,
+      compatibleModels: withQty(purifierModelIds),
     },
     {
       sku: "FLT-POST-001",
@@ -278,7 +503,7 @@ async function main() {
       replaceEveryMonths: 12,
       cleanEveryMonths: null,
       retailPrice: 240_000,
-      compatibleModelIds: purifierModelIds,
+      compatibleModels: withQty(purifierModelIds),
     },
     {
       sku: "FLT-BIDET-001",
@@ -288,7 +513,7 @@ async function main() {
       replaceEveryMonths: 12,
       cleanEveryMonths: null,
       retailPrice: 280_000,
-      compatibleModelIds: [bidet.id],
+      compatibleModels: withQty([bidet.id, bidetJ830.id]),
     },
     {
       sku: "FLT-HEPA-001",
@@ -298,7 +523,7 @@ async function main() {
       replaceEveryMonths: 12,
       cleanEveryMonths: null,
       retailPrice: 420_000,
-      compatibleModelIds: [air.id],
+      compatibleModels: withQty([air.id, airCa5000.id]),
     },
     {
       sku: "FLT-CARB-001",
@@ -308,7 +533,7 @@ async function main() {
       replaceEveryMonths: 6,
       cleanEveryMonths: null,
       retailPrice: 180_000,
-      compatibleModelIds: [air.id],
+      compatibleModels: withQty([air.id, airCa5000.id]),
     },
     {
       sku: "FLT-AIR-PREFILTER",
@@ -318,7 +543,41 @@ async function main() {
       replaceEveryMonths: null,
       cleanEveryMonths: 2,
       retailPrice: 90_000,
-      compatibleModelIds: [air.id],
+      compatibleModels: withQty([air.id, airCa5000.id]),
+    },
+    // PDF A.4 — water-purifier PRE-FILTER cleaned on EVERY periodic visit.
+    {
+      sku: "FLT-PURIFIER-PREFILTER",
+      nameKo: "정수기 PRE-FILTER",
+      nameVi: "Lõi PRE-FILTER (lọc nước)",
+      nameEn: "PRE-FILTER (water purifier)",
+      replaceEveryMonths: null,
+      cleanEveryMonths: null,
+      cleanOnEveryVisit: true,
+      retailPrice: 80_000,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    // Ice-maker JB-S filter, replaced every 6 months.
+    {
+      sku: "FLT-ICE-JBS",
+      nameKo: "JB-S 필터(제빙기)",
+      nameVi: "Lõi JB-S (máy làm đá)",
+      nameEn: "JB-S filter",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 320_000,
+      compatibleModels: withQty([iceFsm30.id]),
+    },
+    // Ice-maker UV lamp, 12-month replacement.
+    {
+      sku: "FLT-ICE-UVLAMP",
+      nameKo: "UV 램프(제빙기)",
+      nameVi: "Đèn UV (máy làm đá)",
+      nameEn: "UV lamp (ice maker)",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 540_000,
+      compatibleModels: withQty([iceFsm30.id]),
     },
   ];
 
@@ -331,6 +590,7 @@ async function main() {
         nameEn: c.nameEn,
         replaceEveryMonths: c.replaceEveryMonths,
         cleanEveryMonths: c.cleanEveryMonths,
+        cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
       },
       create: {
@@ -340,26 +600,33 @@ async function main() {
         nameEn: c.nameEn,
         replaceEveryMonths: c.replaceEveryMonths,
         cleanEveryMonths: c.cleanEveryMonths,
+        cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
       },
     });
     // Reset compatibility and rewrite — keeps the join table aligned with
     // the seed declaration (small N, safe to nuke+recreate).
     await prisma.consumableOnModel.deleteMany({ where: { consumableId: row.id } });
-    for (const modelId of c.compatibleModelIds) {
-      await prisma.consumableOnModel.create({ data: { consumableId: row.id, modelId } });
+    for (const m of c.compatibleModels) {
+      await prisma.consumableOnModel.create({
+        data: { consumableId: row.id, modelId: m.modelId, quantity: m.quantity },
+      });
     }
   }
   console.log(`  ✓ consumables (${consumableSeed.length})`);
 
   // ─── Accessories ─────────────────────────────────────────────────────
+  // PDF C.2 — minor parts (cocks, valves, hoses, fittings) stay free for
+  // MAINTENANCE customers; major parts (compressor, hot-water tank, PCB)
+  // are billed. Seeded mix demonstrates both branches of the default rule.
   type AccessorySeed = {
     sku: string;
     nameKo: string;
     nameVi: string;
     nameEn: string;
     retailPrice: number;
-    compatibleModelIds: string[];
+    isMinorPart: boolean;
+    compatibleModels: { modelId: string; quantity: number }[];
   };
   const accessorySeed: AccessorySeed[] = [
     {
@@ -368,7 +635,8 @@ async function main() {
       nameVi: "Giá treo tường",
       nameEn: "Wall mount",
       retailPrice: 120_000,
-      compatibleModelIds: purifierModelIds,
+      isMinorPart: true,
+      compatibleModels: withQty(purifierModelIds),
     },
     {
       sku: "ACC-ADAPTER-001",
@@ -376,7 +644,8 @@ async function main() {
       nameVi: "Bộ chuyển nguồn",
       nameEn: "Power adapter",
       retailPrice: 90_000,
-      compatibleModelIds: [...purifierModelIds, bidet.id, air.id],
+      isMinorPart: true,
+      compatibleModels: withQty([...purifierModelIds, bidet.id, air.id]),
     },
     {
       sku: "ACC-HOSE-001",
@@ -384,7 +653,109 @@ async function main() {
       nameVi: "Ống cấp nước (3m)",
       nameEn: "Inlet hose (3m)",
       retailPrice: 60_000,
-      compatibleModelIds: [...purifierModelIds, bidet.id],
+      isMinorPart: true,
+      compatibleModels: withQty([...purifierModelIds, bidet.id]),
+    },
+    // PDF "정수기 부속품" — common (all-purifier) small parts.
+    {
+      sku: "ACC-SHUTOFF-VALVE",
+      nameKo: "아답터 (Water shut-off valve)",
+      nameVi: "Van khóa nước",
+      nameEn: "Water shut-off valve",
+      retailPrice: 45_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-FITTING-L14",
+      nameKo: "L 피팅 1/4\"",
+      nameVi: "Co nối 90 (1/4\")",
+      nameEn: "L fitting 1/4\"",
+      retailPrice: 18_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-FITTING-T14",
+      nameKo: "T 피팅 1/4\"",
+      nameVi: "Co nối chữ T (1/4\")",
+      nameEn: "T fitting 1/4\"",
+      retailPrice: 22_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-FUSE-001",
+      nameKo: "퓨즈 (Fuse)",
+      nameVi: "Cầu chì",
+      nameEn: "Fuse",
+      retailPrice: 12_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-FLOAT-VALVE",
+      nameKo: "볼탑 (Floating Valve)",
+      nameVi: "Van phao",
+      nameEn: "Floating valve",
+      retailPrice: 95_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-COLD-TAP",
+      nameKo: "냉수코크",
+      nameVi: "Vòi nước lạnh",
+      nameEn: "Cold water tap",
+      retailPrice: 220_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-HOT-TAP",
+      nameKo: "온수코크",
+      nameVi: "Vòi nước nóng",
+      nameEn: "Hot water tap",
+      retailPrice: 250_000,
+      isMinorPart: true,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    // PDF — major (billable for MAINTENANCE) parts.
+    {
+      sku: "ACC-COMPRESSOR",
+      nameKo: "콤프레샤",
+      nameVi: "Block làm lạnh",
+      nameEn: "Compressor",
+      retailPrice: 3_800_000,
+      isMinorPart: false,
+      compatibleModels: withQty(allPurifierIds),
+    },
+    {
+      sku: "ACC-HOT-TANK-3L",
+      nameKo: "3L 온수탱크 (PTS-2100)",
+      nameVi: "Bình nóng 3L (PTS-2100)",
+      nameEn: "3L Hot water tank (PTS-2100)",
+      retailPrice: 1_450_000,
+      isMinorPart: false,
+      compatibleModels: withQty([purifier.id]),
+    },
+    {
+      sku: "ACC-PCB-CLOCK",
+      nameKo: "PCB clock (PTS-4000T)",
+      nameVi: "Mạch điện đồng hồ (PTS-4000T)",
+      nameEn: "PCB clock (PTS-4000T)",
+      retailPrice: 1_200_000,
+      isMinorPart: false,
+      compatibleModels: withQty([purifierRoTop.id]),
+    },
+    {
+      sku: "ACC-COLD-TC",
+      nameKo: "COLD TC (냉수 센서)",
+      nameVi: "Cảm biến lạnh",
+      nameEn: "COLD TC sensor",
+      retailPrice: 380_000,
+      isMinorPart: false,
+      compatibleModels: withQty(allPurifierIds),
     },
   ];
 
@@ -395,6 +766,7 @@ async function main() {
         nameKo: a.nameKo,
         nameVi: a.nameVi,
         nameEn: a.nameEn,
+        isMinorPart: a.isMinorPart,
         retailPrice: a.retailPrice,
       },
       create: {
@@ -402,12 +774,15 @@ async function main() {
         nameKo: a.nameKo,
         nameVi: a.nameVi,
         nameEn: a.nameEn,
+        isMinorPart: a.isMinorPart,
         retailPrice: a.retailPrice,
       },
     });
     await prisma.accessoryOnModel.deleteMany({ where: { accessoryId: row.id } });
-    for (const modelId of a.compatibleModelIds) {
-      await prisma.accessoryOnModel.create({ data: { accessoryId: row.id, modelId } });
+    for (const m of a.compatibleModels) {
+      await prisma.accessoryOnModel.create({
+        data: { accessoryId: row.id, modelId: m.modelId, quantity: m.quantity },
+      });
     }
   }
   console.log(`  ✓ accessories (${accessorySeed.length})`);

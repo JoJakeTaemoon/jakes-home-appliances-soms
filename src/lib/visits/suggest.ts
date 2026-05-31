@@ -72,6 +72,8 @@ export interface ConsumableMeta {
   nameEn: string;
   replaceEveryMonths: number | null;
   cleanEveryMonths: number | null;
+  /** PDF A.4 — pre-filters cleaned on every periodic-inspection visit. */
+  cleanOnEveryVisit?: boolean;
 }
 
 export interface ComputeArgs {
@@ -80,13 +82,26 @@ export interface ComputeArgs {
   installedAt: Date | null;
   visitDate: Date;
   windowDays?: number;
+  /**
+   * When true, consumables marked `cleanOnEveryVisit` produce a CLEAN
+   * recommendation regardless of cycle math. Pass false for ad-hoc visits
+   * that aren't periodic inspections.
+   */
+  isPeriodicInspection?: boolean;
 }
 
 /**
  * Pure computation core — split out from the DB query for testability.
  */
 export function computeRecommendations(args: ComputeArgs): ConsumableRecommendation[] {
-  const { consumables, logs, installedAt, visitDate, windowDays = 30 } = args;
+  const {
+    consumables,
+    logs,
+    installedAt,
+    visitDate,
+    windowDays = 30,
+    isPeriodicInspection = true,
+  } = args;
   const out: ConsumableRecommendation[] = [];
 
   const lastByKey = new Map<string, Date>();
@@ -94,6 +109,22 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
     const key = `${log.consumableId}:${log.action}`;
     const existing = lastByKey.get(key);
     if (!existing || log.createdAt > existing) lastByKey.set(key, log.createdAt);
+  }
+
+  function pushAlwaysClean(c: ConsumableMeta): void {
+    const lastDoneAt = lastByKey.get(`${c.id}:CLEAN`) ?? null;
+    out.push({
+      consumableId: c.id,
+      sku: c.sku,
+      nameKo: c.nameKo,
+      nameVi: c.nameVi,
+      nameEn: c.nameEn,
+      action: "CLEAN",
+      lastDoneAt,
+      nextDueAt: visitDate,
+      daysUntilDue: 0,
+      cycleMonths: 0, // not a real cycle — flagged via cycleMonths=0
+    });
   }
 
   function evaluate(c: ConsumableMeta, action: SuggestAction, cycleMonths: number): void {
@@ -118,8 +149,16 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
   }
 
   for (const c of consumables) {
+    // "매 방문 세척" — only relevant on periodic-inspection visits.
+    const alwaysClean = c.cleanOnEveryVisit && isPeriodicInspection;
+    if (alwaysClean) {
+      pushAlwaysClean(c);
+    }
     if (c.replaceEveryMonths != null) evaluate(c, "REPLACE", c.replaceEveryMonths);
-    if (c.cleanEveryMonths != null) evaluate(c, "CLEAN", c.cleanEveryMonths);
+    // Skip cycle-based CLEAN when pushAlwaysClean already emitted one for
+    // this consumable — otherwise the mobile UI shows two CLEAN rows for
+    // the same SKU (one cycle-driven, one every-visit).
+    if (!alwaysClean && c.cleanEveryMonths != null) evaluate(c, "CLEAN", c.cleanEveryMonths);
   }
 
   out.sort((a, b) => a.nextDueAt.getTime() - b.nextDueAt.getTime());
@@ -134,7 +173,7 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
 export async function suggestConsumablesForVisit(
   equipmentId: string,
   visitDate: Date,
-  opts: { windowDays?: number } = {},
+  opts: { windowDays?: number; isPeriodicInspection?: boolean } = {},
 ): Promise<ConsumableRecommendation[]> {
   const equipment = await prisma.equipment.findUnique({
     where: { id: equipmentId },
@@ -154,6 +193,7 @@ export async function suggestConsumablesForVisit(
                   nameEn: true,
                   replaceEveryMonths: true,
                   cleanEveryMonths: true,
+                  cleanOnEveryVisit: true,
                   isActive: true,
                 },
               },
@@ -176,6 +216,7 @@ export async function suggestConsumablesForVisit(
       nameEn: c.nameEn,
       replaceEveryMonths: c.replaceEveryMonths,
       cleanEveryMonths: c.cleanEveryMonths,
+      cleanOnEveryVisit: c.cleanOnEveryVisit,
     }));
 
   if (consumables.length === 0) return [];
@@ -199,5 +240,6 @@ export async function suggestConsumablesForVisit(
     installedAt: equipment.installedAt,
     visitDate,
     windowDays: opts.windowDays,
+    isPeriodicInspection: opts.isPeriodicInspection,
   });
 }

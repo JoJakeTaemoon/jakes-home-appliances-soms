@@ -14,6 +14,13 @@ const modelCodeRegex = /^[A-Z0-9][A-Z0-9-]{1,29}$/i;
 export const createEquipmentModelSchema = z.object({
   modelCode: z.string().trim().regex(modelCodeRegex, "Model code must be 2-30 chars, letters/digits/dash"),
   name: z.string().trim().min(1).max(180),
+  // Customer-facing display names (KO/VI/EN). When omitted, list views fall
+  // back to `modelCode` (the legacy single-language `name` stays around for
+  // older consumers only).
+  displayNameKo: optStr(180),
+  displayNameVi: optStr(180),
+  displayNameEn: optStr(180),
+  brandId: z.string().trim().min(1).nullable().optional(),
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]),
   // Reference to ProductCategory. Optional during rollout — when null, the
   // legacy `category` enum is the only classifier. New models should set both.
@@ -22,11 +29,37 @@ export const createEquipmentModelSchema = z.object({
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
+  // PDF A.2 — periodic inspection cycle in months (1 for water purifiers).
+  inspectionEveryMonths: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  // Warranty period in months for SALE customers — drives the charge-policy
+  // default rule. 12 is the legal/business default for purchased equipment.
+  warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),
   isActive: z.boolean().default(true),
 });
 
-export const updateEquipmentModelSchema = createEquipmentModelSchema.partial();
+// Hand-built so `.partial()` doesn't carry `.default(true)` on isActive
+// (mass-assignment via Zod defaults — a PATCH `{}` body would otherwise
+// un-soft-delete a retired model). Mirrors the createEquipmentModelSchema
+// shape but every field is .optional() and no defaults are applied.
+export const updateEquipmentModelSchema = z.object({
+  modelCode: z.string().trim().regex(modelCodeRegex, "Model code must be 2-30 chars, letters/digits/dash").optional(),
+  name: z.string().trim().min(1).max(180).optional(),
+  displayNameKo: optStr(180),
+  displayNameVi: optStr(180),
+  displayNameEn: optStr(180),
+  brandId: z.string().trim().min(1).nullable().optional(),
+  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  description: optStr(2000),
+  retailPrice: z.coerce.number().nonnegative().nullable().optional(),
+  monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
+  monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
+  inspectionEveryMonths: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
+  filterPolicy: filterPolicySchema.nullable().optional(),
+  isActive: z.boolean().optional(),
+});
 
 export const equipmentModelListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),

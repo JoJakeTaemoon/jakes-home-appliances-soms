@@ -29,7 +29,11 @@ export const GET = defineQuery({
       where: { id: params.id },
       include: {
         compatibleModels: {
-          select: { modelId: true, model: { select: { modelCode: true, name: true } } },
+          select: {
+            modelId: true,
+            quantity: true,
+            model: { select: { modelCode: true, name: true } },
+          },
         },
       },
     });
@@ -47,7 +51,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const { id } = await ctx.params;
     const before = await prisma.accessory.findUnique({
       where: { id },
-      include: { compatibleModels: { select: { modelId: true } } },
+      include: { compatibleModels: { select: { modelId: true, quantity: true } } },
     });
     if (!before) throw new NotFoundError("Accessory not found");
 
@@ -71,16 +75,21 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           nameKo: data.nameKo,
           nameVi: data.nameVi,
           nameEn: data.nameEn,
+          isMinorPart: data.isMinorPart,
           retailPrice: data.retailPrice,
           notes: data.notes,
           isActive: data.isActive,
         },
       });
-      if (data.compatibleModelIds) {
+      if (data.compatibleModels) {
         await tx.accessoryOnModel.deleteMany({ where: { accessoryId: id } });
-        for (const modelId of data.compatibleModelIds) {
-          await tx.accessoryOnModel.create({
-            data: { accessoryId: id, modelId },
+        if (data.compatibleModels.length > 0) {
+          await tx.accessoryOnModel.createMany({
+            data: data.compatibleModels.map((m) => ({
+              accessoryId: id,
+              modelId: m.modelId,
+              quantity: m.quantity,
+            })),
           });
         }
       }

@@ -41,6 +41,7 @@ export const GET = defineQuery({
     const recommendations = await suggestConsumablesForVisit(
       current.equipmentId,
       visitDate,
+      { isPeriodicInspection: current.type === "PERIODIC_INSPECTION" },
     );
     return {
       recommendations: recommendations.map((r) => ({

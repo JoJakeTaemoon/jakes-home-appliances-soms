@@ -5,7 +5,10 @@ import {
   replaceEquipmentSchema,
   filterPolicySchema,
 } from "@/lib/validators/equipment";
-import { createEquipmentModelSchema } from "@/lib/validators/equipmentModel";
+import {
+  createEquipmentModelSchema,
+  updateEquipmentModelSchema,
+} from "@/lib/validators/equipmentModel";
 
 describe("createEquipmentSchema", () => {
   it("accepts a minimal install payload", () => {
@@ -79,5 +82,34 @@ describe("createEquipmentModelSchema", () => {
         category: "WATER_PURIFIER",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("updateEquipmentModelSchema (red-team — mass-assignment via defaults)", () => {
+  it("accepts empty object and does NOT reset isActive", () => {
+    // Red-team finding: was createEquipmentModelSchema.partial() which kept
+    // .default(true) on isActive — empty PATCH un-soft-deleted a retired
+    // model, putting it back on technician model lists and admin filters.
+    const parsed = updateEquipmentModelSchema.parse({});
+    expect(parsed.isActive).toBeUndefined();
+    expect(parsed.modelCode).toBeUndefined();
+    expect(parsed.name).toBeUndefined();
+    expect(parsed.brandId).toBeUndefined();
+  });
+
+  it("accepts explicit isActive=false (soft-delete via PATCH)", () => {
+    const parsed = updateEquipmentModelSchema.parse({ isActive: false });
+    expect(parsed.isActive).toBe(false);
+  });
+
+  it("accepts a single-field name update", () => {
+    const parsed = updateEquipmentModelSchema.parse({ name: "Renamed model" });
+    expect(parsed.name).toBe("Renamed model");
+    expect(parsed.isActive).toBeUndefined();
+  });
+
+  it("accepts brandId=null (clear) via PATCH", () => {
+    const parsed = updateEquipmentModelSchema.parse({ brandId: null });
+    expect(parsed.brandId).toBeNull();
   });
 });

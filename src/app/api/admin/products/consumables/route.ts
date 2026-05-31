@@ -42,7 +42,11 @@ export const GET = defineQuery({
         take: pageSize,
         include: {
           compatibleModels: {
-            select: { modelId: true, model: { select: { modelCode: true, name: true } } },
+            select: {
+              modelId: true,
+              quantity: true,
+              model: { select: { modelCode: true, name: true } },
+            },
           },
         },
       }),
@@ -75,14 +79,19 @@ export const POST = defineMutation({
           nameEn: body.nameEn,
           replaceEveryMonths: body.replaceEveryMonths ?? null,
           cleanEveryMonths: body.cleanEveryMonths ?? null,
+          cleanOnEveryVisit: body.cleanOnEveryVisit,
           retailPrice: body.retailPrice,
           notes: body.notes ?? null,
           isActive: body.isActive,
         },
       });
-      for (const modelId of body.compatibleModelIds) {
-        await tx.consumableOnModel.create({
-          data: { consumableId: row.id, modelId },
+      if (body.compatibleModels.length > 0) {
+        await tx.consumableOnModel.createMany({
+          data: body.compatibleModels.map((m) => ({
+            consumableId: row.id,
+            modelId: m.modelId,
+            quantity: m.quantity,
+          })),
         });
       }
       return row;

@@ -39,7 +39,11 @@ export const GET = defineQuery({
         take: pageSize,
         include: {
           compatibleModels: {
-            select: { modelId: true, model: { select: { modelCode: true, name: true } } },
+            select: {
+              modelId: true,
+              quantity: true,
+              model: { select: { modelCode: true, name: true } },
+            },
           },
         },
       }),
@@ -70,14 +74,19 @@ export const POST = defineMutation({
           nameKo: body.nameKo,
           nameVi: body.nameVi,
           nameEn: body.nameEn,
+          isMinorPart: body.isMinorPart,
           retailPrice: body.retailPrice,
           notes: body.notes ?? null,
           isActive: body.isActive,
         },
       });
-      for (const modelId of body.compatibleModelIds) {
-        await tx.accessoryOnModel.create({
-          data: { accessoryId: row.id, modelId },
+      if (body.compatibleModels.length > 0) {
+        await tx.accessoryOnModel.createMany({
+          data: body.compatibleModels.map((m) => ({
+            accessoryId: row.id,
+            modelId: m.modelId,
+            quantity: m.quantity,
+          })),
         });
       }
       return row;

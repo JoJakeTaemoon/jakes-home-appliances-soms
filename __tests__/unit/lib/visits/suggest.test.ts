@@ -52,6 +52,70 @@ describe("computeRecommendations", () => {
   const visitDate = new Date("2026-06-15");
   const installedAt = new Date("2026-01-15");
 
+  it("always adds CLEAN for cleanOnEveryVisit consumables on periodic inspections", () => {
+    const PRE: ConsumableMeta = {
+      ...SEDIMENT,
+      id: "pre",
+      sku: "PRE",
+      replaceEveryMonths: null,
+      cleanOnEveryVisit: true,
+    };
+    const recs = computeRecommendations({
+      consumables: [PRE],
+      logs: [],
+      installedAt: null, // even with no install date
+      visitDate,
+      isPeriodicInspection: true,
+    });
+    expect(recs).toHaveLength(1);
+    expect(recs[0].action).toBe("CLEAN");
+    expect(recs[0].nextDueAt.toISOString()).toBe(visitDate.toISOString());
+    // pushAlwaysClean sentinel invariants — downstream UI uses these to
+    // distinguish "every-visit clean" from a cycle-driven CLEAN:
+    expect(recs[0].daysUntilDue).toBe(0);
+    expect(recs[0].cycleMonths).toBe(0);
+    // No prior log → lastDoneAt is null (NOT installedAt, NOT visitDate)
+    expect(recs[0].lastDoneAt).toBeNull();
+  });
+
+  it("cleanOnEveryVisit picks lastDoneAt from prior CLEAN log when present", () => {
+    const lastClean = new Date("2026-05-15");
+    const PRE: ConsumableMeta = {
+      ...SEDIMENT,
+      id: "pre",
+      sku: "PRE",
+      replaceEveryMonths: null,
+      cleanOnEveryVisit: true,
+    };
+    const recs = computeRecommendations({
+      consumables: [PRE],
+      logs: [{ consumableId: "pre", action: "CLEAN", createdAt: lastClean }],
+      installedAt: null,
+      visitDate,
+      isPeriodicInspection: true,
+    });
+    expect(recs).toHaveLength(1);
+    expect(recs[0].lastDoneAt?.toISOString()).toBe(lastClean.toISOString());
+  });
+
+  it("skips cleanOnEveryVisit when not a periodic inspection", () => {
+    const PRE: ConsumableMeta = {
+      ...SEDIMENT,
+      id: "pre",
+      sku: "PRE",
+      replaceEveryMonths: null,
+      cleanOnEveryVisit: true,
+    };
+    const recs = computeRecommendations({
+      consumables: [PRE],
+      logs: [],
+      installedAt: null,
+      visitDate,
+      isPeriodicInspection: false,
+    });
+    expect(recs).toEqual([]);
+  });
+
   it("produces TWO recommendations when a consumable carries both cycles and both fall in window", () => {
     // RO: replace at install+24mo = 2028-01-15, clean at install+6mo = 2026-07-15.
     // 2026-07-15 is within ±30 days of visit 2026-06-15 → CLEAN suggested.
