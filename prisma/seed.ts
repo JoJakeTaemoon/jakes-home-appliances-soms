@@ -824,6 +824,7 @@ async function main() {
             isPrimary: true,
             name: "Nguyễn Văn Hùng",
             phone1: "0901234568",
+            email: "hung.nguyen@example.com",
             language: "vi",
           },
         ],
@@ -878,6 +879,17 @@ async function main() {
             title: "Quản lý Văn phòng",
             phone1: "0901112234",
             email: "mai.le@sheratonvn.example.com",
+            language: "vi",
+          },
+          {
+            role: "OPS_CONTACT",
+            scope: "CUSTOMER",
+            isPrimary: false,
+            isAccountingContact: true,
+            name: "Vũ Thị Hương",
+            title: "Trưởng phòng Kế toán",
+            phone1: "0901112235",
+            email: "huong.vu@sheratonvn.example.com",
             language: "vi",
           },
         ],
@@ -1132,6 +1144,17 @@ async function main() {
               title: "Quản lý Văn phòng",
               phone1: `09023${c.code.slice(-5)}`,
               email: `ops@${c.shortcode.toLowerCase()}.example.com`,
+              language: "vi",
+            },
+            {
+              role: "OPS_CONTACT",
+              scope: "CUSTOMER",
+              isPrimary: false,
+              isAccountingContact: true,
+              name: `Accounting ${c.shortcode}`,
+              title: "Kế toán trưởng",
+              phone1: `09024${c.code.slice(-5)}`,
+              email: `accounting@${c.shortcode.toLowerCase()}.example.com`,
               language: "vi",
             },
           ],
@@ -1448,7 +1471,77 @@ async function main() {
     serviceRequestId: serviceRequests["SR-00005"].id,
   });
 
-  console.log(`  ✓ visits (6: completed/scheduled/suggested/in-progress/no-show)`);
+  // ─── Bulk visits per state (~50 total, ~7 per VisitState) ──────────────
+  // Seeds enough volume for filter / dashboard widgets to surface meaningful
+  // numbers in dev. Reuses bulk B2C/B2B customers + tech pool above.
+  const bulkVisitPool: Array<{ customerId: string; equipmentId?: string }> = [
+    { customerId: b2cCustomers["KH00004"].id },
+    { customerId: b2cCustomers["KH00005"].id },
+    { customerId: b2cCustomers["KH00006"].id },
+    { customerId: b2cCustomers["KH00007"].id },
+    { customerId: b2cCustomers["KH00008"].id },
+    { customerId: b2cCustomers["KH00009"].id },
+    { customerId: b2cCustomers["KH00010"].id },
+    { customerId: b2bCustomers["KH00011"].id },
+    { customerId: b2bCustomers["KH00012"].id },
+    { customerId: b2bCustomers["KH00013"].id },
+    { customerId: b2bCustomers["KH00014"].id },
+  ];
+  const visitTypePool = ["PERIODIC_INSPECTION", "FILTER_REPLACEMENT", "REPAIR", "INSTALLATION"] as const;
+  const stateBuckets: Array<{
+    state: "SUGGESTED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "FAILED_NO_SHOW" | "RESCHEDULED" | "CANCELLED";
+    count: number;
+    dayOffset: (i: number) => number; // signed: negative = past, positive = future
+  }> = [
+    { state: "SUGGESTED", count: 7, dayOffset: (i) => 2 + i },
+    { state: "SCHEDULED", count: 7, dayOffset: (i) => 1 + (i % 5) },
+    { state: "IN_PROGRESS", count: 7, dayOffset: () => 0 },
+    { state: "COMPLETED", count: 8, dayOffset: (i) => -2 - i },
+    { state: "FAILED_NO_SHOW", count: 7, dayOffset: (i) => -3 - i },
+    { state: "RESCHEDULED", count: 7, dayOffset: (i) => -1 - i },
+    { state: "CANCELLED", count: 7, dayOffset: (i) => -4 - i },
+  ];
+  let bulkVisitCounter = 0;
+  for (const bucket of stateBuckets) {
+    for (let i = 0; i < bucket.count; i++) {
+      const targetCustomer = bulkVisitPool[bulkVisitCounter % bulkVisitPool.length];
+      const techPick = techs[bulkVisitCounter % techs.length];
+      const collabPick = techs[(bulkVisitCounter + 1) % techs.length];
+      const vType = visitTypePool[bulkVisitCounter % visitTypePool.length];
+      const dayOff = bucket.dayOffset(i);
+      const hourBase = 8 + (bulkVisitCounter % 8);
+      const id = `seed-visit-bulk-${String(bulkVisitCounter + 100).padStart(3, "0")}`;
+      bulkVisitCounter++;
+
+      const baseData: Parameters<typeof prisma.visit.create>[0]["data"] = {
+        customerId: targetCustomer.customerId,
+        type: vType,
+        state: bucket.state,
+        scheduledFor: at(daysFromNow(dayOff), hourBase),
+        scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
+        leadTechnicianId: techPick.id,
+        collaboratorTechnicianIds: i % 3 === 0 ? [collabPick.id] : [],
+      };
+
+      if (bucket.state === "COMPLETED") {
+        baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
+        baseData.completedAt = at(daysFromNow(dayOff), hourBase + 1, 0);
+        baseData.findings = `Bulk seed visit #${bulkVisitCounter} — ${vType.toLowerCase()} completed.`;
+      } else if (bucket.state === "IN_PROGRESS") {
+        baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
+      } else if (bucket.state === "FAILED_NO_SHOW") {
+        baseData.failureReason = "Khách không có mặt theo lịch hẹn.";
+      } else if (bucket.state === "RESCHEDULED") {
+        baseData.failureReason = "Khách yêu cầu dời lịch sang tuần sau.";
+      } else if (bucket.state === "CANCELLED") {
+        baseData.failureReason = "Khách hủy do thay đổi kế hoạch.";
+      }
+
+      await ensureVisit(id, baseData);
+    }
+  }
+
+  console.log(`  ✓ visits (6 anchor + ${bulkVisitCounter} bulk = ${6 + bulkVisitCounter} total across all VisitState values)`);
 
   // ─── Payments (covering all states) ─────────────────────────────────
   async function ensurePayment(id: string, data: Parameters<typeof prisma.payment.create>[0]["data"]) {
@@ -1532,7 +1625,43 @@ async function main() {
     handedOverAt: daysFromNow(-1),
   });
 
-  console.log(`  ✓ payments (7: expected/collected/handed-over/reconciled/overdue×3)`);
+  // RECONCILED B2B with NO tax invoice yet — surfaces the "tax invoice pending"
+  // queue for office accounting to upload Viettel-generated PDFs.
+  await ensurePayment("seed-pay-008", {
+    customerId: b2b.id,
+    method: "BANK_TRANSFER",
+    state: "RECONCILED",
+    expectedAmount: 1_500_000,
+    actualAmount: 1_500_000,
+    reference: "VCB-20260520-0008",
+    collectedAt: daysFromNow(-11),
+    handedOverAt: daysFromNow(-10),
+    reconciledAt: daysFromNow(-9),
+  });
+  await ensurePayment("seed-pay-009", {
+    customerId: b2bCustomers["KH00013"].id,
+    method: "BANK_TRANSFER",
+    state: "RECONCILED",
+    expectedAmount: 880_000,
+    actualAmount: 880_000,
+    reference: "VCB-20260522-0009",
+    collectedAt: daysFromNow(-9),
+    handedOverAt: daysFromNow(-8),
+    reconciledAt: daysFromNow(-7),
+  });
+  await ensurePayment("seed-pay-010", {
+    customerId: b2bCustomers["KH00014"].id,
+    method: "BANK_TRANSFER",
+    state: "RECONCILED",
+    expectedAmount: 2_100_000,
+    actualAmount: 2_100_000,
+    reference: "VCB-20260525-0010",
+    collectedAt: daysFromNow(-6),
+    handedOverAt: daysFromNow(-5),
+    reconciledAt: daysFromNow(-4),
+  });
+
+  console.log(`  ✓ payments (10: expected/collected/handed-over/reconciled×4/overdue×3)`);
 
   // ─── Tax invoices (B2B only) ────────────────────────────────────────
   await prisma.taxInvoice.upsert({
@@ -1624,7 +1753,7 @@ async function main() {
   console.log("  tech5    phone 0123456788  / pw 12341234 (HCMC-D1)");
   console.log("\nPortal credentials (KH00001 CONTRACT_PARTY):");
   console.log("  phone 0901234567 / pw portal1234 (mustChangePassword=true)");
-  console.log("\nData volume: 14 customers, 9 contracts, 5 service requests, 6 visits, 7 payments.");
+  console.log("\nData volume: 14 customers, 9 contracts, 5 service requests, 56 visits, 10 payments.");
 }
 
 main()

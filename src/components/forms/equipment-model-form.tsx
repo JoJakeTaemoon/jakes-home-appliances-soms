@@ -35,6 +35,8 @@ interface ModelInput {
 interface Props {
   initial?: Partial<ModelInput> & { id?: string };
   mode: "create" | "edit";
+  /** When provided, replaces the default `finish()` on save/cancel. */
+  onDone?: () => void;
 }
 
 interface BrandOpt {
@@ -60,11 +62,15 @@ const EMPTY: ModelInput = {
   isActive: true,
 };
 
-export function EquipmentModelForm({ initial, mode }: Props) {
+export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
   const t = useTranslations("equipmentModels");
   const tc = useTranslations("common");
   const router = useRouter();
   const api = useApi();
+  const finish = () => {
+    if (onDone) onDone();
+    else finish();
+  };
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -117,7 +123,7 @@ export function EquipmentModelForm({ initial, mode }: Props) {
       } else {
         await api.patch(`/api/equipment-models/${initial?.id}`, payload);
       }
-      router.push("/equipment-models");
+      finish();
     } catch (e) {
       if (e instanceof ApiClientError) setErr(e.message);
       else setErr(e instanceof Error ? e.message : String(e));
@@ -132,7 +138,7 @@ export function EquipmentModelForm({ initial, mode }: Props) {
         <h1 className="text-2xl font-semibold text-[#002A4D]">
           {mode === "create" ? t("newModel") : t("title")}
         </h1>
-        <Button variant="ghost" onClick={() => router.push("/equipment-models")}>
+        <Button variant="ghost" onClick={() => finish()}>
           {tc("cancel")}
         </Button>
       </header>
@@ -293,7 +299,7 @@ export function EquipmentModelForm({ initial, mode }: Props) {
       )}
 
       <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={() => router.push("/equipment-models")} disabled={busy}>
+        <Button variant="ghost" onClick={() => finish()} disabled={busy}>
           {tc("cancel")}
         </Button>
         <Button onClick={submit} isLoading={busy} disabled={!data.modelCode || !data.name}>

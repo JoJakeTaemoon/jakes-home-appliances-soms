@@ -60,6 +60,7 @@ interface CustomerContact {
   scope: "CUSTOMER" | "SITE";
   siteId: string | null;
   isPrimary: boolean;
+  isAccountingContact: boolean;
   name: string;
   title: string | null;
   phone1: string;
@@ -548,7 +549,8 @@ function ContactsTab({
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  {c.isPrimary && <StatusBadge tone="success">PRIMARY</StatusBadge>}
+                  {c.isPrimary && <StatusBadge tone="success">{t("primaryBadge")}</StatusBadge>}
+                  {c.isAccountingContact && <StatusBadge tone="warning">{t("accountingBadge")}</StatusBadge>}
                   {c.scope === "SITE" && <StatusBadge tone="info">SITE</StatusBadge>}
                 </div>
                 <h4 className="mt-1 text-base font-semibold">{c.name}</h4>
@@ -660,6 +662,10 @@ function EditContactModal({
   const [email, setEmail] = useState(contact.email ?? "");
   const [language, setLanguage] = useState(contact.language);
   const [isPrimary, setIsPrimary] = useState(contact.isPrimary);
+  const [isAccountingContact, setIsAccountingContact] = useState(contact.isAccountingContact);
+  const accountingAllowed =
+    contact.role === "OPS_CONTACT" && contact.scope === "CUSTOMER";
+  const emailRequired = isPrimary || isAccountingContact;
 
   async function submit() {
     setBusy(true);
@@ -672,6 +678,7 @@ function EditContactModal({
         email: email || undefined,
         language,
         isPrimary,
+        isAccountingContact: accountingAllowed ? isAccountingContact : undefined,
       });
       onSaved();
     } catch (e) {
@@ -709,7 +716,7 @@ function EditContactModal({
         <FormField label={tc("phone")} required>
           <Input value={phone1} onChange={(e) => setPhone1(e.target.value)} />
         </FormField>
-        <FormField label={tc("email")}>
+        <FormField label={tc("email")} required={emailRequired}>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
         </FormField>
         <FormField label={tc("language")}>
@@ -733,6 +740,16 @@ function EditContactModal({
               onChange={(e) => setIsPrimary(e.target.checked)}
             />
             {t("primaryToggle")}
+          </label>
+        )}
+        {accountingAllowed && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={isAccountingContact}
+              onChange={(e) => setIsAccountingContact(e.target.checked)}
+            />
+            {t("accountingToggle")}
           </label>
         )}
       </div>
@@ -768,9 +785,12 @@ function AddContactModal({
   const [email, setEmail] = useState("");
   const [language, setLanguage] = useState<"vi" | "ko" | "en">("vi");
   const [isPrimary, setIsPrimary] = useState(false);
+  const [isAccountingContact, setIsAccountingContact] = useState(false);
 
   const hasCp = customer.contacts.some((c) => c.role === "CONTRACT_PARTY");
   const allowCpRole = !hasCp; // refuse adding a 2nd one
+  const accountingAllowed = role === "OPS_CONTACT" && scope === "CUSTOMER";
+  const emailRequired = (role === "OPS_CONTACT" && isPrimary) || isAccountingContact;
 
   async function submit() {
     setBusy(true);
@@ -786,6 +806,7 @@ function AddContactModal({
         email: email || undefined,
         language,
         isPrimary: role === "OPS_CONTACT" ? isPrimary : false,
+        isAccountingContact: accountingAllowed ? isAccountingContact : false,
       });
       onCreated();
     } catch (e) {
@@ -856,7 +877,7 @@ function AddContactModal({
         <FormField label={tc("phone")} required>
           <Input value={phone1} onChange={(e) => setPhone1(e.target.value)} />
         </FormField>
-        <FormField label={tc("email")}>
+        <FormField label={tc("email")} required={emailRequired}>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
         </FormField>
         <FormField label={tc("language")}>
@@ -880,6 +901,16 @@ function AddContactModal({
               onChange={(e) => setIsPrimary(e.target.checked)}
             />
             {t("primaryToggle")}
+          </label>
+        )}
+        {accountingAllowed && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={isAccountingContact}
+              onChange={(e) => setIsAccountingContact(e.target.checked)}
+            />
+            {t("accountingToggle")}
           </label>
         )}
       </div>

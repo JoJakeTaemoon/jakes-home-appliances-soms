@@ -41,16 +41,22 @@ function Widget({
     : "border-[#e5e5e5]";
   const inner = (
     <div
-      className={`rounded-2xl border-2 ${borderClass} bg-white p-4 transition-colors hover:bg-[#FAFAFA]`}
+      className={`flex h-full flex-col rounded-2xl border-2 ${borderClass} bg-white p-4 transition-colors hover:bg-[#FAFAFA]`}
     >
       <div className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
         {label}
       </div>
       <div className="text-2xl font-semibold text-[#002A4D]">{value}</div>
-      {hint && <div className="mt-1 text-xs text-[#525252]">{hint}</div>}
+      <div className="mt-auto pt-1 text-xs text-[#525252]">{hint ?? " "}</div>
     </div>
   );
-  return href ? <Link href={href}>{inner}</Link> : inner;
+  return href ? (
+    <Link href={href} className="block h-full">
+      {inner}
+    </Link>
+  ) : (
+    inner
+  );
 }
 
 export default function DashboardPage() {

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { Input, Textarea } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { NumberInput } from "@/components/ui/number-input";
 import { ContractTypeBadge } from "@/components/contracts/contract-state-badge";
 import { formatVnd } from "@/lib/format";
@@ -73,6 +74,7 @@ function NewContractPageInner() {
   const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
 
   const customer = useMemo(() => customers.find((c) => c.id === customerId) ?? null, [customers, customerId]);
 
@@ -219,22 +221,41 @@ function NewContractPageInner() {
       {step === 1 && (
         <section className="rounded-xl border border-[#e5e5e5] bg-white p-4">
           <FormField label={t("wizard.pickCustomer")} required>
-            <Combobox
-              value={customerId}
-              onChange={(v) => {
-                setCustomerId(v);
-                setLines([]);
-              }}
-              options={customers.map((c) => ({
-                value: c.id,
-                label: `${c.code} — ${c.name}`,
-                description: c.type === "B2B" ? `B2B · ${c.shortcode ?? "—"}` : "B2C",
-              }))}
-              placeholder={loadingCustomers ? tc("loading") : t("wizard.pickCustomer")}
-              ariaLabel={t("wizard.pickCustomer")}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Combobox
+                  value={customerId}
+                  onChange={(v) => {
+                    setCustomerId(v);
+                    setLines([]);
+                  }}
+                  options={customers.map((c) => ({
+                    value: c.id,
+                    label: `${c.code} — ${c.name}`,
+                    description: c.type === "B2B" ? `B2B · ${c.shortcode ?? "—"}` : "B2C",
+                  }))}
+                  placeholder={loadingCustomers ? tc("loading") : t("wizard.pickCustomer")}
+                  ariaLabel={t("wizard.pickCustomer")}
+                />
+              </div>
+              <Button variant="secondary" onClick={() => setShowNewCustomer(true)}>
+                + {t("wizard.newCustomer")}
+              </Button>
+            </div>
           </FormField>
         </section>
+      )}
+
+      {showNewCustomer && (
+        <NewCustomerQuickModal
+          onClose={() => setShowNewCustomer(false)}
+          onCreated={(created) => {
+            setCustomers((prev) => [created, ...prev]);
+            setCustomerId(created.id);
+            setLines([]);
+            setShowNewCustomer(false);
+          }}
+        />
       )}
 
       {step === 2 && (
@@ -455,6 +476,184 @@ function NewContractPageInner() {
       </footer>
       <p className="text-xs text-[#737373]">{locale.toUpperCase()}</p>
     </div>
+  );
+}
+
+function NewCustomerQuickModal({
+  onClose,
+  onCreated,
+}: Readonly<{
+  onClose: () => void;
+  onCreated: (created: CustomerOption) => void;
+}>) {
+  const t = useTranslations("contracts");
+  const tCust = useTranslations("customers");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [type, setType] = useState<"B2C" | "B2B">("B2C");
+  const [name, setName] = useState("");
+  const [shortcode, setShortcode] = useState("");
+  const [taxCode, setTaxCode] = useState("");
+  const [address, setAddress] = useState("");
+  const [cpName, setCpName] = useState("");
+  const [cpPhone, setCpPhone] = useState("");
+  const [cpEmail, setCpEmail] = useState("");
+  const [opsName, setOpsName] = useState("");
+  const [opsPhone, setOpsPhone] = useState("");
+  const [opsEmail, setOpsEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const body: Record<string, unknown> = {
+        type,
+        name,
+        address: address || undefined,
+        contractParty: {
+          name: cpName,
+          phone1: cpPhone,
+          email: cpEmail || undefined,
+        },
+      };
+      if (type === "B2B") {
+        body.shortcode = shortcode.toUpperCase();
+        body.taxCode = taxCode;
+        body.opsContacts = [
+          {
+            name: opsName,
+            phone1: opsPhone,
+            email: opsEmail || undefined,
+            isPrimary: true,
+          },
+        ];
+      } else {
+        body.opsContacts =
+          opsName && opsPhone
+            ? [{ name: opsName, phone1: opsPhone, email: opsEmail || undefined, isPrimary: true }]
+            : [];
+      }
+      const res = await api.post<{ id: string; code: string; name: string; type: "B2C" | "B2B"; shortcode: string | null }>(
+        "/api/customers",
+        body,
+      );
+      onCreated({
+        id: res.data.id,
+        code: res.data.code,
+        name: res.data.name,
+        type: res.data.type,
+        shortcode: res.data.shortcode ?? null,
+      });
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const requiredFilled =
+    name.trim() &&
+    cpName.trim() &&
+    cpPhone.trim() &&
+    (type === "B2C" || (shortcode.trim() && taxCode.trim() && opsName.trim() && opsPhone.trim()));
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("wizard.newCustomerTitle")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy} disabled={!requiredFilled}>
+            {tc("save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={tc("type")} required>
+            <Combobox
+              value={type}
+              onChange={(v) => v && setType(v as "B2C" | "B2B")}
+              options={[
+                { value: "B2C", label: "B2C" },
+                { value: "B2B", label: "B2B" },
+              ]}
+              searchable={false}
+              allowClear={false}
+            />
+          </FormField>
+          <FormField label={tc("name")} required>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </FormField>
+          {type === "B2B" && (
+            <>
+              <FormField label="Shortcode" required>
+                <Input
+                  value={shortcode}
+                  onChange={(e) => setShortcode(e.target.value.toUpperCase())}
+                  placeholder="ABC"
+                />
+              </FormField>
+              <FormField label="Tax code" required>
+                <Input value={taxCode} onChange={(e) => setTaxCode(e.target.value)} />
+              </FormField>
+            </>
+          )}
+          <FormField label={tc("address")} className="sm:col-span-2">
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+          </FormField>
+        </div>
+
+        <fieldset className="rounded-lg border border-[#e5e5e5] p-3">
+          <legend className="px-1 text-xs font-medium text-[#525252]">
+            {tCust("contractParty")}
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FormField label={tc("name")} required>
+              <Input value={cpName} onChange={(e) => setCpName(e.target.value)} />
+            </FormField>
+            <FormField label={tc("phone")} required>
+              <Input value={cpPhone} onChange={(e) => setCpPhone(e.target.value)} />
+            </FormField>
+            <FormField label={tc("email")}>
+              <Input value={cpEmail} onChange={(e) => setCpEmail(e.target.value)} type="email" />
+            </FormField>
+          </div>
+        </fieldset>
+
+        <fieldset className="rounded-lg border border-[#e5e5e5] p-3">
+          <legend className="px-1 text-xs font-medium text-[#525252]">
+            {tCust("opsContact")} {type === "B2B" ? "*" : `(${tc("optional")})`}
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <FormField label={tc("name")} required={type === "B2B"}>
+              <Input value={opsName} onChange={(e) => setOpsName(e.target.value)} />
+            </FormField>
+            <FormField label={tc("phone")} required={type === "B2B"}>
+              <Input value={opsPhone} onChange={(e) => setOpsPhone(e.target.value)} />
+            </FormField>
+            <FormField label={tc("email")}>
+              <Input value={opsEmail} onChange={(e) => setOpsEmail(e.target.value)} type="email" />
+            </FormField>
+          </div>
+        </fieldset>
+
+        {err && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 

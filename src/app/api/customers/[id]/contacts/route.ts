@@ -75,6 +75,14 @@ export const POST = defineMutation({
           data: { isPrimary: false },
         });
       }
+      // Accounting flag is unique per customer (DB-enforced); demote any
+      // prior holder before we set it on the new row.
+      if (body.isAccountingContact) {
+        await tx.customerContact.updateMany({
+          where: { customerId, isAccountingContact: true },
+          data: { isAccountingContact: false },
+        });
+      }
       return tx.customerContact.create({
         data: {
           customerId,
@@ -82,6 +90,7 @@ export const POST = defineMutation({
           role: body.role,
           scope: body.scope,
           isPrimary: body.role === "OPS_CONTACT" ? body.isPrimary : false,
+          isAccountingContact: body.isAccountingContact,
           name: body.name,
           title: body.title ?? null,
           phone1: body.phone1,

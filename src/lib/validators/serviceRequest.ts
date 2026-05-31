@@ -65,6 +65,12 @@ export const createServiceRequestSchema = z.object({
   attachments: z.array(srAttachmentSchema).max(8).optional().default([]),
 });
 
+/** Office-staff manual SR creation — adds customerId + optional contactId. */
+export const staffCreateServiceRequestSchema = createServiceRequestSchema.extend({
+  customerId: z.string().min(1, "customerId is required"),
+  contactId: optStr(60),
+});
+
 export const listServiceRequestQuerySchema = z.object({
   q: optStr(200),
   state: srStateEnum.optional(),

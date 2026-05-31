@@ -23,7 +23,6 @@ type LabelKey =
   | "dashboard"
   | "customers"
   | "equipment"
-  | "equipmentModels"
   | "contracts"
   | "visits"
   | "serviceRequests"
@@ -46,7 +45,6 @@ const navItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard },
   { href: "/customers", labelKey: "customers", Icon: Users },
   { href: "/equipment", labelKey: "equipment", Icon: Cpu },
-  { href: "/equipment-models", labelKey: "equipmentModels", Icon: Cpu },
   { href: "/contracts", labelKey: "contracts", Icon: FileText },
   { href: "/visits", labelKey: "visits", Icon: CalendarCheck },
   { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox },

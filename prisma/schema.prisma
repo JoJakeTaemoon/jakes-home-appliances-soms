@@ -220,9 +220,10 @@ model CustomerContact {
   siteId            String?
   site              Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
 
-  role              ContactRole
-  scope             ContactScope @default(CUSTOMER)
-  isPrimary         Boolean      @default(false)  // exactly one primary OPS per customer (or per site)
+  role                ContactRole
+  scope               ContactScope @default(CUSTOMER)
+  isPrimary           Boolean      @default(false)  // exactly one primary OPS per customer (or per site)
+  isAccountingContact Boolean      @default(false)  // at most one accounting OPS per customer (CUSTOMER scope) — receives tax invoices / accounting comms
 
   name              String
   title             String?      // e.g. "관리부장", "Mrs."

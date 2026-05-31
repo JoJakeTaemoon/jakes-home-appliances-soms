@@ -3,26 +3,26 @@
 /**
  * UC-AD-05 — Product catalog admin (MANAGER+).
  *
- * Four tabs: Categories, Models, Consumables, Accessories. Each tab shows
- * a list (paginated) and an "Add" panel that POSTs to the corresponding
- * /api/admin/products/* route. Compatibility is selected via a simple
- * multi-select of equipment model codes. Editing & soft-delete are wired
- * directly to PATCH/DELETE on the detail routes; the UI re-fetches on
- * any mutation.
+ * Six tabs: Brands, Categories, Models, Consumables, Accessories, Charges.
+ * Each tab supports CRUD against /api/admin/products/* (and the Models tab
+ * also drives /api/equipment-models). Tables sort client-side by clicking a
+ * column header (already paginated server-side at pageSize=100 — Phase 4
+ * volumes fit comfortably in memory).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useApi } from "@/lib/api/client";
+import { useApi, ApiClientError } from "@/lib/api/client";
 
-// Shared aliases for the tab components below — drops the `any` blanket on
-// every TabProps and gives autocomplete on api.get/post/patch + t("...").
 type ApiClient = ReturnType<typeof useApi>;
 type Translate = ReturnType<typeof useTranslations>;
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
 
 type Tab = "brands" | "categories" | "models" | "consumables" | "accessories" | "charges";
 
@@ -98,7 +98,7 @@ export default function ProductCatalogPage() {
   const t = useTranslations("admin.products");
   const { user } = useAuth();
   const api = useApi();
-  const [tab, setTab] = useState<Tab>("categories");
+  const [tab, setTab] = useState<Tab>("brands");
 
   const role = user?.role;
   const allowed = role === "ADMIN" || role === "MANAGER";
@@ -137,7 +137,7 @@ export default function ProductCatalogPage() {
                   : "border-transparent text-[#525252] hover:bg-muted hover:text-brand-blue-700"
               }`}
             >
-              {t(tabLabel(key))}
+              {t(TAB_LABEL_KEYS[key])}
             </button>
           );
         })}
@@ -153,8 +153,6 @@ export default function ProductCatalogPage() {
   );
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const TAB_LABEL_KEYS: Record<Tab, string> = {
   brands: "tabBrands",
   categories: "tabCategories",
@@ -164,17 +162,91 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   charges: "tabCharges",
 };
 
-function tabLabel(key: Tab): string {
-  return TAB_LABEL_KEYS[key];
+// ───────────────────────────────────────────────────────────────────────────
+// Reusable helpers
+// ───────────────────────────────────────────────────────────────────────────
+
+interface SortState<C extends string> {
+  column: C;
+  direction: "asc" | "desc";
 }
 
-function StatusPill({ active, t }: { active: boolean; t: (k: string) => string }) {
+function useSort<C extends string>(initial: C): {
+  sort: SortState<C>;
+  onClick: (column: C) => void;
+} {
+  const [sort, setSort] = useState<SortState<C>>({ column: initial, direction: "asc" });
+  const onClick = useCallback((column: C) => {
+    setSort((prev) =>
+      prev.column === column
+        ? { column, direction: prev.direction === "asc" ? "desc" : "asc" }
+        : { column, direction: "asc" },
+    );
+  }, []);
+  return { sort, onClick };
+}
+
+function sortRows<T, C extends string>(
+  rows: T[],
+  sort: SortState<C>,
+  accessors: Record<C, (row: T) => string | number | boolean | null | undefined>,
+): T[] {
+  const accessor = accessors[sort.column];
+  if (!accessor) return rows;
+  const copy = [...rows];
+  copy.sort((a, b) => {
+    const av = accessor(a);
+    const bv = accessor(b);
+    const an = av === null || av === undefined ? "" : av;
+    const bn = bv === null || bv === undefined ? "" : bv;
+    if (typeof an === "number" && typeof bn === "number") {
+      return sort.direction === "asc" ? an - bn : bn - an;
+    }
+    if (typeof an === "boolean" && typeof bn === "boolean") {
+      const a01 = an ? 1 : 0;
+      const b01 = bn ? 1 : 0;
+      return sort.direction === "asc" ? a01 - b01 : b01 - a01;
+    }
+    return sort.direction === "asc"
+      ? String(an).localeCompare(String(bn))
+      : String(bn).localeCompare(String(an));
+  });
+  return copy;
+}
+
+function SortableTh<C extends string>({
+  column,
+  sort,
+  onClick,
+  children,
+  align = "left",
+}: Readonly<{
+  column: C;
+  sort: SortState<C>;
+  onClick: (c: C) => void;
+  children: React.ReactNode;
+  align?: "left" | "right" | "center";
+}>) {
+  const active = sort.column === column;
+  const indicator = active ? (sort.direction === "asc" ? "▲" : "▼") : "↕";
+  return (
+    <th
+      className={`p-2 border-b border-border text-${align} cursor-pointer select-none whitespace-nowrap`}
+      onClick={() => onClick(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        <span className={`text-xs ${active ? "text-brand-blue-700" : "text-[#a3a3a3]"}`}>{indicator}</span>
+      </span>
+    </th>
+  );
+}
+
+function StatusPill({ active, t }: Readonly<{ active: boolean; t: (k: string) => string }>) {
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        active
-          ? "bg-[#dcfce7] text-[#166534]"
-          : "bg-[#f5f5f0] text-[#525252]"
+        active ? "bg-[#dcfce7] text-[#166534]" : "bg-[#f5f5f0] text-[#525252]"
       }`}
     >
       {active ? t("statusActive") : t("statusInactive")}
@@ -182,12 +254,36 @@ function StatusPill({ active, t }: { active: boolean; t: (k: string) => string }
   );
 }
 
-function BrandsTab({ api, t }: { api: ApiClient; t: Translate }) {
+function RowActions({
+  onEdit,
+  onDelete,
+  t,
+}: Readonly<{ onEdit: () => void; onDelete: () => void; t: Translate }>) {
+  return (
+    <div className="flex items-center gap-2">
+      <Button variant="secondary" size="sm" onClick={onEdit}>
+        {t("edit")}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onDelete}>
+        {t("deactivate")}
+      </Button>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Brands
+// ───────────────────────────────────────────────────────────────────────────
+
+function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [rows, setRows] = useState<BrandRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<BrandRow | null>(null);
+  const [deleting, setDeleting] = useState<BrandRow | null>(null);
   const [form, setForm] = useState({ name: "", sortOrder: 0 });
   const [error, setError] = useState<string | null>(null);
+  const { sort, onClick } = useSort<"name" | "models" | "sortOrder" | "isActive">("name");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -203,7 +299,7 @@ function BrandsTab({ api, t }: { api: ApiClient; t: Translate }) {
     void load();
   }, [load]);
 
-  async function submit() {
+  async function submitCreate() {
     setError(null);
     try {
       await api.post("/api/admin/products/brands", form);
@@ -214,6 +310,17 @@ function BrandsTab({ api, t }: { api: ApiClient; t: Translate }) {
       setError(err instanceof Error ? err.message : t("errorGeneric"));
     }
   }
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        name: (r) => r.name,
+        models: (r) => r._count?.models ?? 0,
+        sortOrder: (r) => r.sortOrder,
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort],
+  );
 
   return (
     <section className="space-y-4">
@@ -233,10 +340,8 @@ function BrandsTab({ api, t }: { api: ApiClient; t: Translate }) {
             />
           </FormField>
           <div className="flex items-end gap-2">
-            <Button onClick={submit}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>
-              {t("cancel")}
-            </Button>
+            <Button onClick={submitCreate}>{t("save")}</Button>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
           {error && <div className="md:col-span-3 text-red-600 text-sm">{error}</div>}
         </div>
@@ -244,111 +349,127 @@ function BrandsTab({ api, t }: { api: ApiClient; t: Translate }) {
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
-            <th className="p-2 text-left border-b border-border">{t("colName")}</th>
-            <th className="p-2 text-right border-b border-border">{t("colCompatibility")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colActive")}</th>
+            <SortableTh column="name" sort={sort} onClick={onClick}>{t("colName")}</SortableTh>
+            <SortableTh column="sortOrder" sort={sort} onClick={onClick} align="right">{t("colSortOrder")}</SortableTh>
+            <SortableTh column="models" sort={sort} onClick={onClick} align="right">{t("colCompatibility")}</SortableTh>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={3} className="p-4 text-center">
-                ...
-              </td>
-            </tr>
+            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
           ) : (
-            rows.map((r) => (
+            sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-semibold">{r.name}</td>
+                <td className="p-2 text-right">{r.sortOrder}</td>
                 <td className="p-2 text-right text-xs">
                   {t("statusModelCount", { count: r._count?.models ?? 0 })}
                 </td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {editing && (
+        <BrandEditModal
+          api={api}
+          t={t}
+          row={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: deleting.name })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              await api.del(`/api/admin/products/brands/${deleting.id}`);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ChargesTab({ api, t }: { api: ApiClient; t: Translate }) {
-  const [rows, setRows] = useState<ChargePolicyRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    void (async () => {
-      try {
-        const res = await api.get<ChargePolicyRow[]>("/api/admin/products/charge-policies?pageSize=100");
-        setRows(res.data);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [api]);
-
+function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiClient; t: Translate; row: BrandRow; onClose: () => void; onSaved: () => void }>) {
+  const [name, setName] = useState(row.name);
+  const [sortOrder, setSortOrder] = useState(row.sortOrder);
+  const [isActive, setIsActive] = useState(row.isActive);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/api/admin/products/brands/${row.id}`, { name, sortOrder, isActive });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <section className="space-y-4">
-      <p className="text-sm text-gray-700">{t("chargeHint")}</p>
-      <table className="w-full border border-border">
-        <thead className="bg-muted">
-          <tr>
-            <th className="p-2 text-left border-b border-border">{t("colPart")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colContractType")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colWarrantyState")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colChargeable")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNotes")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr>
-              <td colSpan={5} className="p-4 text-center">
-                ...
-              </td>
-            </tr>
-          ) : rows.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="p-4 text-center text-gray-500">
-                —
-              </td>
-            </tr>
-          ) : (
-            rows.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2 text-xs font-mono">
-                  {r.accessory?.sku ?? r.consumable?.sku} ({r.accessory?.nameVi ?? r.consumable?.nameVi})
-                </td>
-                <td className="p-2">{r.contractType}</td>
-                <td className="p-2">
-                  {r.contractType === "SALE"
-                    ? r.withinWarranty
-                      ? t("warrantyWithin")
-                      : t("warrantyAfter")
-                    : "—"}
-                </td>
-                <td className="p-2">
-                  <span className={r.isChargeable ? "text-red-600 font-semibold" : "text-green-700 font-semibold"}>
-                    {r.isChargeable ? t("chargeBilled") : t("chargeFree")}
-                  </span>
-                </td>
-                <td className="p-2 text-xs text-gray-600">{r.notes ?? ""}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </section>
+    <Modal
+      open
+      onClose={onClose}
+      title={t("editBrand")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label={t("colName")}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </FormField>
+        <FormField label={t("colSortOrder")}>
+          <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          {t("statusActive")}
+        </label>
+      </div>
+      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
+    </Modal>
   );
 }
 
-function CategoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
+// ───────────────────────────────────────────────────────────────────────────
+// Categories
+// ───────────────────────────────────────────────────────────────────────────
+
+function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<CategoryRow | null>(null);
+  const [deleting, setDeleting] = useState<CategoryRow | null>(null);
   const [form, setForm] = useState({ code: "", nameKo: "", nameVi: "", nameEn: "", sortOrder: 0 });
   const [error, setError] = useState<string | null>(null);
+  const { sort, onClick } = useSort<"code" | "nameKo" | "nameVi" | "nameEn" | "sortOrder" | "isActive">("code");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -360,11 +481,9 @@ function CategoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
     }
   }, [api]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function submit() {
+  async function submitCreate() {
     setError(null);
     try {
       await api.post("/api/admin/products/categories", form);
@@ -375,6 +494,19 @@ function CategoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
       setError(err instanceof Error ? err.message : t("errorGeneric"));
     }
   }
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        code: (r) => r.code,
+        nameKo: (r) => r.nameKo,
+        nameVi: (r) => r.nameVi,
+        nameEn: (r) => r.nameEn,
+        sortOrder: (r) => r.sortOrder,
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort],
+  );
 
   return (
     <section className="space-y-4">
@@ -396,10 +528,8 @@ function CategoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
             <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
           </FormField>
           <div className="flex items-end gap-2">
-            <Button onClick={submit}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>
-              {t("cancel")}
-            </Button>
+            <Button onClick={submitCreate}>{t("save")}</Button>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
           {error && <div className="md:col-span-5 text-red-600 text-sm">{error}</div>}
         </div>
@@ -407,91 +537,253 @@ function CategoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
-            <th className="p-2 text-left border-b border-border">{t("colCode")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNameKo")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNameVi")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNameEn")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colActive")}</th>
+            <SortableTh column="code" sort={sort} onClick={onClick}>{t("colCode")}</SortableTh>
+            <SortableTh column="nameKo" sort={sort} onClick={onClick}>{t("colNameKo")}</SortableTh>
+            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
+            <SortableTh column="nameEn" sort={sort} onClick={onClick}>{t("colNameEn")}</SortableTh>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={5} className="p-4 text-center">
-                ...
-              </td>
-            </tr>
+            <tr><td colSpan={6} className="p-4 text-center">...</td></tr>
           ) : (
-            rows.map((r) => (
+            sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.code}</td>
                 <td className="p-2">{r.nameKo}</td>
                 <td className="p-2">{r.nameVi}</td>
                 <td className="p-2">{r.nameEn}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {editing && (
+        <CategoryEditModal
+          api={api}
+          t={t}
+          row={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: deleting.nameVi || deleting.code })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              await api.del(`/api/admin/products/categories/${deleting.id}`);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ModelsTab({ api, t }: { api: ApiClient; t: Translate }) {
+function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiClient; t: Translate; row: CategoryRow; onClose: () => void; onSaved: () => void }>) {
+  const [nameKo, setNameKo] = useState(row.nameKo);
+  const [nameVi, setNameVi] = useState(row.nameVi);
+  const [nameEn, setNameEn] = useState(row.nameEn);
+  const [sortOrder, setSortOrder] = useState(row.sortOrder);
+  const [isActive, setIsActive] = useState(row.isActive);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/api/admin/products/categories/${row.id}`, { nameKo, nameVi, nameEn, sortOrder, isActive });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof ApiClientError ? e.message : e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("editCategory")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <FormField label={t("colCode")}>
+          <Input value={row.code} disabled />
+        </FormField>
+        <FormField label={t("colSortOrder")}>
+          <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
+        </FormField>
+        <FormField label={t("colNameKo")}>
+          <Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameVi")}>
+          <Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameEn")}>
+          <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          {t("statusActive")}
+        </label>
+      </div>
+      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
+    </Modal>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Models
+// ───────────────────────────────────────────────────────────────────────────
+
+function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<ModelRow | null>(null);
+  const [deleting, setDeleting] = useState<ModelRow | null>(null);
+  const { sort, onClick } = useSort<"modelCode" | "name" | "brand" | "category" | "isActive">("modelCode");
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const res = await api.get<ModelRow[]>("/api/equipment-models?pageSize=100");
-        setRows(res.data);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<ModelRow[]>("/api/equipment-models?pageSize=100");
+      setRows(res.data);
+    } finally {
+      setLoading(false);
+    }
   }, [api]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        modelCode: (r) => r.modelCode,
+        name: (r) => r.displayNameKo ?? r.name,
+        brand: (r) => r.brand?.name ?? "",
+        category: (r) => r.category,
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort],
+  );
 
   return (
     <section className="space-y-4">
-      <p className="text-sm text-[#525252]">
-        {t("modelsHintLead")}{" "}
-        <a href="/equipment-models" className="text-brand-blue-700 hover:underline">
-          {t("modelsHintLink")}
-        </a>
-        {t("modelsHintTail")}
-      </p>
+      <div className="flex justify-end">
+        <Button onClick={() => setCreating(true)}>+ {t("addModel")}</Button>
+      </div>
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
-            <th className="p-2 text-left border-b border-border">{t("colCode")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNameKo")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colBrand")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colCategory")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colActive")}</th>
+            <SortableTh column="modelCode" sort={sort} onClick={onClick}>{t("colCode")}</SortableTh>
+            <SortableTh column="name" sort={sort} onClick={onClick}>{t("colNameKo")}</SortableTh>
+            <SortableTh column="brand" sort={sort} onClick={onClick}>{t("colBrand")}</SortableTh>
+            <SortableTh column="category" sort={sort} onClick={onClick}>{t("colCategory")}</SortableTh>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={5} className="p-4 text-center">
-                ...
-              </td>
-            </tr>
+            <tr><td colSpan={6} className="p-4 text-center">...</td></tr>
           ) : (
-            rows.map((r) => (
+            sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.modelCode}</td>
                 <td className="p-2">{r.displayNameKo ?? r.name}</td>
                 <td className="p-2 text-sm">{r.brand?.name ?? "—"}</td>
                 <td className="p-2">{r.category}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
+      {creating && (
+        <Modal
+          open
+          onClose={() => setCreating(false)}
+          title={t("addModel")}
+          size="lg"
+        >
+          <EquipmentModelForm mode="create" onDone={() => { setCreating(false); void load(); }} />
+        </Modal>
+      )}
+      {editing && (
+        <Modal
+          open
+          onClose={() => setEditing(null)}
+          title={t("editModel")}
+          size="lg"
+        >
+          <EquipmentModelForm
+            mode="edit"
+            initial={{
+              id: editing.id,
+              modelCode: editing.modelCode,
+              name: editing.name,
+              displayNameKo: editing.displayNameKo ?? "",
+              displayNameVi: editing.displayNameVi ?? "",
+              displayNameEn: editing.displayNameEn ?? "",
+              brandId: editing.brand?.id ?? null,
+              category: editing.category as "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER",
+              isActive: editing.isActive,
+            }}
+            onDone={() => { setEditing(null); void load(); }}
+          />
+        </Modal>
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: deleting.displayNameKo ?? deleting.name })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              // Model has no DELETE endpoint — PATCH isActive=false is the
+              // soft-disable path that the equipment-models GET filter respects.
+              await api.patch(`/api/equipment-models/${deleting.id}`, { isActive: false });
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -507,11 +799,17 @@ function useModelOptions(api: ApiClient): ModelRow[] {
   return models;
 }
 
-function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
+// ───────────────────────────────────────────────────────────────────────────
+// Consumables
+// ───────────────────────────────────────────────────────────────────────────
+
+function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const models = useModelOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<ConsumableRow | null>(null);
+  const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -524,6 +822,7 @@ function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
     compatibleModelIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
+  const { sort, onClick } = useSort<"sku" | "nameVi" | "replaceEveryMonths" | "cleanEveryMonths" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -535,11 +834,9 @@ function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
     }
   }, [api]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function submit() {
+  async function submitCreate() {
     setError(null);
     try {
       await api.post("/api/admin/products/consumables", {
@@ -571,6 +868,20 @@ function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
     }
   }
 
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        sku: (r) => r.sku,
+        nameVi: (r) => r.nameVi,
+        replaceEveryMonths: (r) => r.replaceEveryMonths ?? -1,
+        cleanEveryMonths: (r) => r.cleanEveryMonths ?? -1,
+        cleanOnEveryVisit: (r) => r.cleanOnEveryVisit,
+        retailPrice: (r) => Number(r.retailPrice),
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort],
+  );
+
   return (
     <section className="space-y-4">
       <div className="flex justify-end">
@@ -592,33 +903,17 @@ function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
               <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
             </FormField>
             <FormField label={t("colReplaceCycle")}>
-              <Input
-                type="number"
-                value={form.replaceEveryMonths}
-                onChange={(e) => setForm({ ...form, replaceEveryMonths: e.target.value })}
-              />
+              <Input type="number" value={form.replaceEveryMonths} onChange={(e) => setForm({ ...form, replaceEveryMonths: e.target.value })} />
             </FormField>
             <FormField label={t("colCleanCycle")}>
-              <Input
-                type="number"
-                value={form.cleanEveryMonths}
-                onChange={(e) => setForm({ ...form, cleanEveryMonths: e.target.value })}
-              />
+              <Input type="number" value={form.cleanEveryMonths} onChange={(e) => setForm({ ...form, cleanEveryMonths: e.target.value })} />
             </FormField>
             <FormField label={t("colRetailPrice")}>
-              <Input
-                type="number"
-                value={form.retailPrice}
-                onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })}
-              />
+              <Input type="number" value={form.retailPrice} onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })} />
             </FormField>
             <FormField label={t("colCleanOnVisit")}>
               <label className="inline-flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
-                  checked={form.cleanOnEveryVisit}
-                  onChange={(e) => setForm({ ...form, cleanOnEveryVisit: e.target.checked })}
-                />
+                <input type="checkbox" checked={form.cleanOnEveryVisit} onChange={(e) => setForm({ ...form, cleanOnEveryVisit: e.target.checked })} />
                 <span className="text-sm">{t("yes")}</span>
               </label>
             </FormField>
@@ -627,69 +922,178 @@ function ConsumablesTab({ api, t }: { api: ApiClient; t: Translate }) {
             <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
           </FormField>
           <div className="flex gap-2">
-            <Button onClick={submit}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>
-              {t("cancel")}
-            </Button>
+            <Button onClick={submitCreate}>{t("save")}</Button>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
       )}
-      <ConsumableTable rows={rows} loading={loading} t={t} />
+      <table className="w-full border border-border">
+        <thead className="bg-muted">
+          <tr>
+            <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
+            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
+            <SortableTh column="replaceEveryMonths" sort={sort} onClick={onClick} align="right">{t("colReplaceCycle")}</SortableTh>
+            <SortableTh column="cleanEveryMonths" sort={sort} onClick={onClick} align="right">{t("colCleanCycle")}</SortableTh>
+            <SortableTh column="cleanOnEveryVisit" sort={sort} onClick={onClick} align="center">{t("colCleanOnVisit")}</SortableTh>
+            <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
+            <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr><td colSpan={9} className="p-4 text-center">...</td></tr>
+          ) : (
+            sorted.map((r) => (
+              <tr key={r.id} className="border-b border-border">
+                <td className="p-2 font-mono text-sm">{r.sku}</td>
+                <td className="p-2">{r.nameVi}</td>
+                <td className="p-2 text-right">{r.replaceEveryMonths ?? t("cycleNone")}</td>
+                <td className="p-2 text-right">{r.cleanEveryMonths ?? t("cycleNone")}</td>
+                <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
+                <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
+                <td className="p-2 text-xs">
+                  {r.compatibleModels.map((m) => `${m.model.modelCode}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
+                </td>
+                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      {editing && (
+        <ConsumableEditModal
+          api={api}
+          t={t}
+          row={editing}
+          models={models}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: deleting.nameVi || deleting.sku })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              await api.del(`/api/admin/products/consumables/${deleting.id}`);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ConsumableTable({ rows, loading, t }: { rows: ConsumableRow[]; loading: boolean; t: Translate }) {
+function ConsumableEditModal({
+  api, t, row, models, onClose, onSaved,
+}: Readonly<{ api: ApiClient; t: Translate; row: ConsumableRow; models: ModelRow[]; onClose: () => void; onSaved: () => void }>) {
+  const [nameKo, setNameKo] = useState(row.nameKo);
+  const [nameVi, setNameVi] = useState(row.nameVi);
+  const [nameEn, setNameEn] = useState(row.nameEn);
+  const [replaceEveryMonths, setReplaceEveryMonths] = useState(row.replaceEveryMonths?.toString() ?? "");
+  const [cleanEveryMonths, setCleanEveryMonths] = useState(row.cleanEveryMonths?.toString() ?? "");
+  const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row.cleanOnEveryVisit);
+  const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
+  const [isActive, setIsActive] = useState(row.isActive);
+  const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/api/admin/products/consumables/${row.id}`, {
+        nameKo, nameVi, nameEn,
+        replaceEveryMonths: replaceEveryMonths === "" ? null : Number(replaceEveryMonths),
+        cleanEveryMonths: cleanEveryMonths === "" ? null : Number(cleanEveryMonths),
+        cleanOnEveryVisit,
+        retailPrice,
+        isActive,
+        compatibleModels: compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
+      });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <table className="w-full border border-border">
-      <thead className="bg-muted">
-        <tr>
-          <th className="p-2 text-left border-b border-border">{t("colSku")}</th>
-          <th className="p-2 text-left border-b border-border">{t("colNameVi")}</th>
-          <th className="p-2 text-right border-b border-border">{t("colReplaceCycle")}</th>
-          <th className="p-2 text-right border-b border-border">{t("colCleanCycle")}</th>
-          <th className="p-2 text-center border-b border-border">{t("colCleanOnVisit")}</th>
-          <th className="p-2 text-right border-b border-border">{t("colRetailPrice")}</th>
-          <th className="p-2 text-left border-b border-border">{t("colCompatibility")}</th>
-          <th className="p-2 text-left border-b border-border">{t("colActive")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {loading ? (
-          <tr>
-            <td colSpan={8} className="p-4 text-center">
-              ...
-            </td>
-          </tr>
-        ) : (
-          rows.map((r) => (
-            <tr key={r.id} className="border-b border-border">
-              <td className="p-2 font-mono text-sm">{r.sku}</td>
-              <td className="p-2">{r.nameVi}</td>
-              <td className="p-2 text-right">{r.replaceEveryMonths ?? t("cycleNone")}</td>
-              <td className="p-2 text-right">{r.cleanEveryMonths ?? t("cycleNone")}</td>
-              <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
-              <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
-              <td className="p-2 text-xs">
-                {r.compatibleModels
-                  .map((m) => `${m.model.modelCode}${m.quantity > 1 ? `×${m.quantity}` : ""}`)
-                  .join(", ") || "—"}
-              </td>
-              <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+    <Modal
+      open
+      onClose={onClose}
+      title={t("editConsumable")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <FormField label={t("colSku")}><Input value={row.sku} disabled /></FormField>
+          <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
+          <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
+          <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
+          <FormField label={t("colReplaceCycle")}>
+            <Input type="number" value={replaceEveryMonths} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
+          </FormField>
+          <FormField label={t("colCleanCycle")}>
+            <Input type="number" value={cleanEveryMonths} onChange={(e) => setCleanEveryMonths(e.target.value)} />
+          </FormField>
+          <FormField label={t("colRetailPrice")}>
+            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
+          </FormField>
+          <FormField label={t("colCleanOnVisit")}>
+            <label className="inline-flex items-center gap-2 mt-2">
+              <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
+              <span className="text-sm">{t("yes")}</span>
+            </label>
+          </FormField>
+        </div>
+        <FormField label={t("colCompatibility")}>
+          <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          {t("statusActive")}
+        </label>
+      </div>
+      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
+    </Modal>
   );
 }
 
-function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
+// ───────────────────────────────────────────────────────────────────────────
+// Accessories
+// ───────────────────────────────────────────────────────────────────────────
+
+function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const models = useModelOptions(api);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<AccessoryRow | null>(null);
+  const [deleting, setDeleting] = useState<AccessoryRow | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -700,6 +1104,7 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
     compatibleModelIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
+  const { sort, onClick } = useSort<"sku" | "nameVi" | "isMinorPart" | "retailPrice" | "isActive">("sku");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -711,11 +1116,9 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
     }
   }, [api]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  async function submit() {
+  async function submitCreate() {
     setError(null);
     try {
       await api.post("/api/admin/products/accessories", {
@@ -734,6 +1137,18 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
       setError(err instanceof Error ? err.message : t("errorGeneric"));
     }
   }
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        sku: (r) => r.sku,
+        nameVi: (r) => r.nameVi,
+        isMinorPart: (r) => r.isMinorPart,
+        retailPrice: (r) => Number(r.retailPrice),
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort],
+  );
 
   return (
     <section className="space-y-4">
@@ -756,19 +1171,11 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
               <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
             </FormField>
             <FormField label={t("colRetailPrice")}>
-              <Input
-                type="number"
-                value={form.retailPrice}
-                onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })}
-              />
+              <Input type="number" value={form.retailPrice} onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })} />
             </FormField>
             <FormField label={t("colMinorPart")}>
               <label className="inline-flex items-center gap-2 mt-2">
-                <input
-                  type="checkbox"
-                  checked={form.isMinorPart}
-                  onChange={(e) => setForm({ ...form, isMinorPart: e.target.checked })}
-                />
+                <input type="checkbox" checked={form.isMinorPart} onChange={(e) => setForm({ ...form, isMinorPart: e.target.checked })} />
                 <span className="text-sm">{t("yes")}</span>
               </label>
             </FormField>
@@ -777,10 +1184,8 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
             <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
           </FormField>
           <div className="flex gap-2">
-            <Button onClick={submit}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>
-              {t("cancel")}
-            </Button>
+            <Button onClick={submitCreate}>{t("save")}</Button>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
@@ -788,32 +1193,207 @@ function AccessoriesTab({ api, t }: { api: ApiClient; t: Translate }) {
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
-            <th className="p-2 text-left border-b border-border">{t("colSku")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colNameVi")}</th>
-            <th className="p-2 text-center border-b border-border">{t("colMinorPart")}</th>
-            <th className="p-2 text-right border-b border-border">{t("colRetailPrice")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colCompatibility")}</th>
-            <th className="p-2 text-left border-b border-border">{t("colActive")}</th>
+            <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
+            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
+            <SortableTh column="isMinorPart" sort={sort} onClick={onClick} align="center">{t("colMinorPart")}</SortableTh>
+            <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
+            <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={6} className="p-4 text-center">
-                ...
-              </td>
-            </tr>
+            <tr><td colSpan={7} className="p-4 text-center">...</td></tr>
           ) : (
-            rows.map((r) => (
+            sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
                 <td className="p-2">{r.nameVi}</td>
                 <td className="p-2 text-center">{r.isMinorPart ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
-                <td className="p-2 text-xs">
-                  {r.compatibleModels.map((m) => m.model.modelCode).join(", ") || "—"}
-                </td>
+                <td className="p-2 text-xs">{r.compatibleModels.map((m) => m.model.modelCode).join(", ") || "—"}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      {editing && (
+        <AccessoryEditModal
+          api={api}
+          t={t}
+          row={editing}
+          models={models}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: deleting.nameVi || deleting.sku })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              await api.del(`/api/admin/products/accessories/${deleting.id}`);
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function AccessoryEditModal({
+  api, t, row, models, onClose, onSaved,
+}: Readonly<{ api: ApiClient; t: Translate; row: AccessoryRow; models: ModelRow[]; onClose: () => void; onSaved: () => void }>) {
+  const [nameKo, setNameKo] = useState(row.nameKo);
+  const [nameVi, setNameVi] = useState(row.nameVi);
+  const [nameEn, setNameEn] = useState(row.nameEn);
+  const [isMinorPart, setIsMinorPart] = useState(row.isMinorPart);
+  const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
+  const [isActive, setIsActive] = useState(row.isActive);
+  const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/api/admin/products/accessories/${row.id}`, {
+        nameKo, nameVi, nameEn,
+        isMinorPart,
+        retailPrice,
+        isActive,
+        compatibleModels: compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
+      });
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : t("errorGeneric"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("editAccessory")}
+      size="lg"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <FormField label={t("colSku")}><Input value={row.sku} disabled /></FormField>
+          <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
+          <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
+          <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
+          <FormField label={t("colRetailPrice")}>
+            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
+          </FormField>
+          <FormField label={t("colMinorPart")}>
+            <label className="inline-flex items-center gap-2 mt-2">
+              <input type="checkbox" checked={isMinorPart} onChange={(e) => setIsMinorPart(e.target.checked)} />
+              <span className="text-sm">{t("yes")}</span>
+            </label>
+          </FormField>
+        </div>
+        <FormField label={t("colCompatibility")}>
+          <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          {t("statusActive")}
+        </label>
+      </div>
+      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
+    </Modal>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Charges (read-only)
+// ───────────────────────────────────────────────────────────────────────────
+
+function ChargesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const [rows, setRows] = useState<ChargePolicyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { sort, onClick } = useSort<"part" | "contractType" | "warranty" | "chargeable">("part");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await api.get<ChargePolicyRow[]>("/api/admin/products/charge-policies?pageSize=100");
+        setRows(res.data);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [api]);
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        part: (r) => r.accessory?.sku ?? r.consumable?.sku ?? "",
+        contractType: (r) => r.contractType,
+        warranty: (r) => (r.contractType === "SALE" ? (r.withinWarranty ? 1 : 0) : -1),
+        chargeable: (r) => r.isChargeable,
+      }),
+    [rows, sort],
+  );
+
+  return (
+    <section className="space-y-4">
+      <p className="text-sm text-gray-700">{t("chargeHint")}</p>
+      <table className="w-full border border-border">
+        <thead className="bg-muted">
+          <tr>
+            <SortableTh column="part" sort={sort} onClick={onClick}>{t("colPart")}</SortableTh>
+            <SortableTh column="contractType" sort={sort} onClick={onClick}>{t("colContractType")}</SortableTh>
+            <SortableTh column="warranty" sort={sort} onClick={onClick}>{t("colWarrantyState")}</SortableTh>
+            <SortableTh column="chargeable" sort={sort} onClick={onClick}>{t("colChargeable")}</SortableTh>
+            <th className="p-2 text-left border-b border-border">{t("colNotes")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
+          ) : sorted.length === 0 ? (
+            <tr><td colSpan={5} className="p-4 text-center text-gray-500">—</td></tr>
+          ) : (
+            sorted.map((r) => (
+              <tr key={r.id} className="border-b border-border">
+                <td className="p-2 text-xs font-mono">
+                  {r.accessory?.sku ?? r.consumable?.sku} ({r.accessory?.nameVi ?? r.consumable?.nameVi})
+                </td>
+                <td className="p-2">{r.contractType}</td>
+                <td className="p-2">
+                  {r.contractType === "SALE" ? (r.withinWarranty ? t("warrantyWithin") : t("warrantyAfter")) : "—"}
+                </td>
+                <td className="p-2">
+                  <span className={r.isChargeable ? "text-red-600 font-semibold" : "text-green-700 font-semibold"}>
+                    {r.isChargeable ? t("chargeBilled") : t("chargeFree")}
+                  </span>
+                </td>
+                <td className="p-2 text-xs text-gray-600">{r.notes ?? ""}</td>
               </tr>
             ))
           )}
@@ -827,11 +1407,7 @@ function CompatibilityPicker({
   models,
   selected,
   onChange,
-}: {
-  models: ModelRow[];
-  selected: string[];
-  onChange: (ids: string[]) => void;
-}) {
+}: Readonly<{ models: ModelRow[]; selected: string[]; onChange: (ids: string[]) => void }>) {
   const set = useMemo(() => new Set(selected), [selected]);
   function toggle(id: string) {
     const next = new Set(set);

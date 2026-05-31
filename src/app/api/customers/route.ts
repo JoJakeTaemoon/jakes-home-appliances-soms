@@ -45,8 +45,10 @@ export const GET = defineQuery({
         { name: { contains: term, mode: "insensitive" } },
         { shortcode: { contains: term, mode: "insensitive" } },
         { taxCode: { contains: term, mode: "insensitive" } },
+        { address: { contains: term, mode: "insensitive" } },
         { contacts: { some: { phone1: { contains: term } } } },
         { contacts: { some: { name: { contains: term, mode: "insensitive" } } } },
+        { sites: { some: { address: { contains: term, mode: "insensitive" } } } },
       ];
     }
 
