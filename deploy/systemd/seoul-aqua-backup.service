@@ -1,0 +1,16 @@
+[Unit]
+# Nightly pg_dump of the staging DB into /opt/seoul-aqua-soms/backups/.
+# Implements H.3 (daily backup at VST 03:00 — minus 30 min as a buffer
+# before cron jobs start firing).
+Description=Seoul Aqua SOMS — pg_dump backup
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+Group=deploy
+EnvironmentFile=-/opt/seoul-aqua-soms/.env
+WorkingDirectory=/opt/seoul-aqua-soms
+ExecStart=/opt/seoul-aqua-soms/scripts/backup.sh
+TimeoutStartSec=30min

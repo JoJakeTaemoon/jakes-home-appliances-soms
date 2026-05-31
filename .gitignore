@@ -34,6 +34,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# but always commit env templates so devs / ops can see what the app expects
+!.env.example
+!.env.staging.example
 
 # vercel
 .vercel

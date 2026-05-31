@@ -1,0 +1,12 @@
+[Unit]
+Description=Seoul Aqua SOMS — nightly pg_dump
+# H.3: daily backup at VST 03:00. We fire at 02:30 so the dump finishes
+# before the 08:00 cron jobs start hitting the DB.
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-backup.service
+
+[Install]
+WantedBy=timers.target

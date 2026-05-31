@@ -1,0 +1,44 @@
+# Dependencies / build outputs the image rebuilds itself
+node_modules
+.next
+.turbo
+out
+build
+coverage
+playwright-report
+test-results
+
+# Local environment (secrets live on the host at /opt/seoul-aqua-soms/.env)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.dev
+*.local
+
+# VCS and editor noise
+.git
+.gitignore
+.github
+.gitattributes
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Runtime data — bind-mounted from /opt/seoul-aqua-soms/uploads in compose
+uploads
+
+# Docs / planning / reference material that the runtime never reads
+docs
+reference
+__tests__
+e2e
+*.md
+LICENSE
+
+# Tooling configs that aren't used at runtime
+.eslintcache
+.claude
+agents

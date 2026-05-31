@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — filter-due daily
+# vercel.json: "0 2 * * *" UTC == 09:00 Asia/Ho_Chi_Minh
+
+[Timer]
+OnCalendar=*-*-* 09:00:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@filter-due.service
+
+[Install]
+WantedBy=timers.target

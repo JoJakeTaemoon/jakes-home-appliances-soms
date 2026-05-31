@@ -29,6 +29,7 @@ Most of what's worth knowing lives in dedicated documents rather than this READM
 | [AGENTS.md](AGENTS.md) | The 11-agent TDD pipeline + how to invoke each agent |
 | [.claude/CLAUDE.md](.claude/CLAUDE.md) | Project context loaded by every Claude Code session (conventions, gotchas, vocabulary) |
 | [docs/DATA_MODEL_NOTES.md](docs/DATA_MODEL_NOTES.md) | Schema rationale derived from client CSV samples |
+| [docs/INFRA.md](docs/INFRA.md) | Self-hosted staging runbook (vhost.vn dry-run) — Docker Compose, systemd cron, pg_dump backup, deploy workflow |
 | [.claude/skills/DESIGN.md](.claude/skills/DESIGN.md) | Design system: Intercom-frame + Seoul Aqua brand-blue |
 | [.claude/skills/tdd-workflow.md](.claude/skills/tdd-workflow.md) | TDD methodology — RED → implement → GREEN gates |
 

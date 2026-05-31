@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — visit-reminder daily
+# vercel.json: "0 9 * * *" UTC == 16:00 Asia/Ho_Chi_Minh
+
+[Timer]
+OnCalendar=*-*-* 16:00:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@visit-reminder.service
+
+[Install]
+WantedBy=timers.target

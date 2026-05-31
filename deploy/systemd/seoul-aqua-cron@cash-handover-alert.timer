@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — cash-handover-alert daily
+# vercel.json: "30 18 * * *" UTC == 01:30 Asia/Ho_Chi_Minh next day
+
+[Timer]
+OnCalendar=*-*-* 01:30:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@cash-handover-alert.service
+
+[Install]
+WantedBy=timers.target

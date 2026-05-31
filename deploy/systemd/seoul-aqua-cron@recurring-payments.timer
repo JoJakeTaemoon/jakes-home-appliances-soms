@@ -1,0 +1,11 @@
+[Unit]
+Description=Seoul Aqua SOMS — recurring-payments monthly
+# vercel.json: "0 0 1 * *" UTC == 07:00 Asia/Ho_Chi_Minh on day 1
+
+[Timer]
+OnCalendar=*-*-01 07:00:00 Asia/Ho_Chi_Minh
+Persistent=true
+Unit=seoul-aqua-cron@recurring-payments.service
+
+[Install]
+WantedBy=timers.target

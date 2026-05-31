@@ -1,0 +1,54 @@
+# Seoul Aqua SOMS — staging reverse proxy.
+#
+# Current: IP-only HTTPS with a Caddy-managed self-signed cert (`tls internal`).
+# The browser will warn on first visit; accept once and the cert sticks.
+#
+# When staging.seoulaqua.com.vn DNS is ready:
+#   1. Point an A record at this server's public IP.
+#   2. Replace the `:443` block below with the domain hostname.
+#   3. Drop the `tls internal` directive — Caddy will auto-issue from
+#      Let's Encrypt on first start.
+#   4. `docker compose restart caddy`.
+
+{
+	# Tell Caddy how to reach itself for the internal CA bootstrap.
+	# Default is fine; left here as a hook for future tuning.
+	admin off
+}
+
+# IP-bound HTTPS. Caddy issues + stores a local cert under /data on first run.
+:443 {
+	tls internal
+
+	# Trust forwarded-for / proto headers from this proxy itself only.
+	# Nothing upstream of caddy — direct client traffic.
+
+	# Larger body limit so visit photos and SR attachments (~5–10 MB) succeed.
+	request_body {
+		max_size 20MB
+	}
+
+	# Same-origin defaults that don't break next-intl locale routing.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Self-signed cert means HSTS preload is not appropriate yet; revisit
+		# after the domain swap.
+		-Server
+	}
+
+	# Compress everything text-y. Images/PDFs are already compressed upstream.
+	encode zstd gzip
+
+	reverse_proxy app:3000 {
+		# Pass through real client IP + protocol so Next.js logs are useful.
+		header_up X-Real-IP {remote_host}
+	}
+}
+
+# Force HTTP → HTTPS redirect. Hits :80 only when something speaks plain
+# HTTP to the IP; production clients should always use https://.
+:80 {
+	redir https://{host}{uri} permanent
+}
