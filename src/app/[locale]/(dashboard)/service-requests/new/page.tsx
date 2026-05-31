@@ -175,7 +175,7 @@ export default function ServiceRequestNewPage() {
                 onChange={setEquipmentId}
                 options={equipment.map((e) => ({
                   value: e.id,
-                  label: `${e.model.modelCode}${e.serialNumber ? ` / ${e.serialNumber}` : ""}`,
+                  label: `${e.model.name}${e.serialNumber ? ` / ${e.serialNumber}` : ""}`,
                 }))}
                 placeholder={t("equipmentPlaceholder")}
                 searchable={equipment.length > 5}

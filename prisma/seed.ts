@@ -799,6 +799,8 @@ async function main() {
       code: "KH00001",
       type: "B2C",
       name: "Nguyễn Thị Lan",
+      residency: "DOMESTIC",
+      nationalId: "079123456701",
       address: "123 Lê Lợi, Phường Bến Nghé",
       district: "Quận 1",
       city: "TP. Hồ Chí Minh",
@@ -856,6 +858,8 @@ async function main() {
       name: "CÔNG TY TNHH SHERATON VIETNAM",
       shortcode: "SHV",
       taxCode: "0312345678",
+      representativeName: "TRẦN VĂN MINH",
+      residency: null,
       address: "Tầng 5, Tòa nhà HCMC HQ",
       city: "TP. Hồ Chí Minh",
       preferredRegion: "HCMC-D1",
@@ -1014,6 +1018,9 @@ async function main() {
       code: "KH00003",
       type: "B2C",
       name: "김민수",
+      residency: "FOREIGN",
+      passportNumber: "M22334455",
+      nationality: "Korea",
       address: "456 Nguyễn Trãi",
       district: "Quận 5",
       city: "TP. Hồ Chí Minh",
@@ -1049,15 +1056,33 @@ async function main() {
 
   console.log(`  ✓ B2C customer ${b2c2.code} (Korean speaker)`);
 
-  // ─── Bulk B2C customers (KH00004–KH00010) for list/pagination testing ─
-  const bulkB2c = [
-    { code: "KH00004", name: "Trần Thị Hồng", district: "Quận 3", region: "HCMC-D3", tech: tech3.id, model: bidet, serial: "SA-J430-000020" },
-    { code: "KH00005", name: "Võ Văn Tâm", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, model: purifier, serial: "PTS-2100-000030" },
-    { code: "KH00006", name: "Đặng Thị Thúy", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, model: air, serial: "AC-700-000020" },
-    { code: "KH00007", name: "Bùi Minh Khôi", district: "Quận 3", region: "HCMC-D3", tech: tech3.id, model: purifierPro, serial: "PTS-3500-000001" },
-    { code: "KH00008", name: "Hoàng Văn Long", district: "Hoàn Kiếm", region: "HN-HK", tech: tech4.id, model: purifier, serial: "PTS-2100-000031" },
-    { code: "KH00009", name: "이지은", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, model: bidet, serial: "SA-J430-000021", lang: "ko" as const },
-    { code: "KH00010", name: "Phan Thị Cẩm", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, model: purifier, serial: "PTS-2100-000032" },
+  // ─── Bulk B2C customers (KH00004–KH00010 domestic + KH00018-00020 foreign) ─
+  type B2cSeed = {
+    code: string;
+    name: string;
+    district: string;
+    region: string;
+    tech: string;
+    model: { id: string };
+    serial: string;
+    lang?: "ko" | "vi" | "en";
+    residency?: "DOMESTIC" | "FOREIGN";
+    nationalId?: string;
+    passportNumber?: string;
+    nationality?: string;
+  };
+  const bulkB2c: B2cSeed[] = [
+    { code: "KH00004", name: "Trần Thị Hồng", district: "Quận 3", region: "HCMC-D3", tech: tech3.id, model: bidet, serial: "SA-J430-000020", nationalId: "079123456704" },
+    { code: "KH00005", name: "Võ Văn Tâm", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, model: purifier, serial: "PTS-2100-000030", nationalId: "079123456705" },
+    { code: "KH00006", name: "Đặng Thị Thúy", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, model: air, serial: "AC-700-000020", nationalId: "079123456706" },
+    { code: "KH00007", name: "Bùi Minh Khôi", district: "Quận 3", region: "HCMC-D3", tech: tech3.id, model: purifierPro, serial: "PTS-3500-000001", nationalId: "079123456707" },
+    { code: "KH00008", name: "Hoàng Văn Long", district: "Hoàn Kiếm", region: "HN-HK", tech: tech4.id, model: purifier, serial: "PTS-2100-000031", nationalId: "001123456708" },
+    { code: "KH00009", name: "이지은", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, model: bidet, serial: "SA-J430-000021", lang: "ko", residency: "FOREIGN", passportNumber: "M12345678", nationality: "Korea" },
+    { code: "KH00010", name: "Phan Thị Cẩm", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, model: purifier, serial: "PTS-2100-000032", nationalId: "079123456710" },
+    // ── Foreign B2C seeds (3) — covers KO/JA/EN nationalities. ──
+    { code: "KH00018", name: "TANAKA HIROSHI", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, model: purifier, serial: "PTS-2100-000050", lang: "en", residency: "FOREIGN", passportNumber: "TK0099887", nationality: "Japan" },
+    { code: "KH00019", name: "EMILY JOHNSON", district: "Quận 2", region: "HCMC-D2", tech: tech1.id, model: bidet, serial: "SA-J430-000051", lang: "en", residency: "FOREIGN", passportNumber: "US7820011", nationality: "United States" },
+    { code: "KH00020", name: "박지훈", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, model: air, serial: "AC-700-000052", lang: "ko", residency: "FOREIGN", passportNumber: "M88990011", nationality: "Korea" },
   ];
   const b2cCustomers: Record<string, { id: string; code: string }> = {};
   for (const c of bulkB2c) {
@@ -1068,6 +1093,10 @@ async function main() {
         code: c.code,
         type: "B2C",
         name: c.name,
+        residency: c.residency ?? "DOMESTIC",
+        nationalId: c.residency === "FOREIGN" ? null : c.nationalId ?? null,
+        passportNumber: c.residency === "FOREIGN" ? c.passportNumber ?? null : null,
+        nationality: c.residency === "FOREIGN" ? c.nationality ?? null : null,
         address: `${c.district} address line`,
         district: c.district,
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
@@ -1105,10 +1134,14 @@ async function main() {
 
   // ─── Bulk B2B customers (KH00011–KH00014) ───────────────────────────
   const bulkB2b = [
-    { code: "KH00011", name: "CÔNG TY CỔ PHẦN ABC FOODS", shortcode: "ABC", tax: "0301234501", region: "HCMC-D1" },
-    { code: "KH00012", name: "CÔNG TY TNHH XYZ LOGISTICS", shortcode: "XYZ", tax: "0301234502", region: "HCMC-D7" },
-    { code: "KH00013", name: "NGÂN HÀNG TMCP DELTA", shortcode: "DLT", tax: "0301234503", region: "HN-HK" },
-    { code: "KH00014", name: "TRƯỜNG QUỐC TẾ GAMMA", shortcode: "GMA", tax: "0301234504", region: "HCMC-D3" },
+    { code: "KH00011", name: "CÔNG TY CỔ PHẦN ABC FOODS", shortcode: "ABC", tax: "0301234501", region: "HCMC-D1", rep: "NGUYỄN VĂN HÙNG" },
+    { code: "KH00012", name: "CÔNG TY TNHH XYZ LOGISTICS", shortcode: "XYZ", tax: "0301234502", region: "HCMC-D7", rep: "TRẦN THỊ MAI" },
+    { code: "KH00013", name: "NGÂN HÀNG TMCP DELTA", shortcode: "DLT", tax: "0301234503", region: "HN-HK", rep: "LÊ QUANG HƯNG" },
+    { code: "KH00014", name: "TRƯỜNG QUỐC TẾ GAMMA", shortcode: "GMA", tax: "0301234504", region: "HCMC-D3", rep: "PHẠM THỊ LAN ANH" },
+    // New B2B seeds (3) — covering different industries + regions.
+    { code: "KH00015", name: "CÔNG TY TNHH SAMSUNG VINA", shortcode: "SVN", tax: "0301234505", region: "HCMC-D2", rep: "KIM JONG SU" },
+    { code: "KH00016", name: "CÔNG TY TNHH LOTTE MART VIỆT NAM", shortcode: "LMT", tax: "0301234506", region: "HCMC-D7", rep: "LEE HYUN WOO" },
+    { code: "KH00017", name: "CÔNG TY CỔ PHẦN GIÁO DỤC FPT", shortcode: "FED", tax: "0301234507", region: "HN-HK", rep: "TRƯƠNG GIA BÌNH" },
   ];
   const b2bCustomers: Record<string, { id: string; code: string }> = {};
   for (const c of bulkB2b) {
@@ -1121,6 +1154,8 @@ async function main() {
         name: c.name,
         shortcode: c.shortcode,
         taxCode: c.tax,
+        representativeName: c.rep,
+        residency: null,
         address: `HQ, ${c.region}`,
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
         preferredRegion: c.region,
@@ -1352,7 +1387,231 @@ async function main() {
     },
   });
 
-  console.log(`  ✓ contracts (9: draft/pending/active/amended/completed/terminated)`);
+  // ─── Bulk contracts (state + customer-type + sale-type coverage) ──────
+  // Covers DRAFT×3, PENDING×3, AMENDED×2, COMPLETED×3, TERMINATED×2,
+  // CANCELLED×2 (= 15). Within those, 6 are B2B (≥5) and 6 are SALE (≥4).
+  type BulkContract = {
+    contractNumber: string;
+    customerId: string;
+    type: "RENTAL" | "SALE" | "MAINTENANCE";
+    state: "DRAFT" | "PENDING_SIGNATURE" | "AMENDED" | "COMPLETED" | "TERMINATED" | "CANCELLED";
+    startDate?: Date | null;
+    endDate?: Date | null;
+    termMonths?: number | null;
+    monthlyFee?: number | null;
+    totalValue?: number | null;
+    signedByCompany?: Date | null;
+    signedByCustomer?: Date | null;
+    activatedAt?: Date | null;
+    terminatedAt?: Date | null;
+    terminationReason?: string | null;
+    amendmentReason?: string | null;
+  };
+  const bulkContracts: BulkContract[] = [
+    // ── DRAFT (3) ─────────────────────────────────────────────────────
+    {
+      contractNumber: "HD-20260601/SA-KH0008",
+      customerId: b2cCustomers["KH00008"].id,
+      type: "SALE",
+      state: "DRAFT",
+      totalValue: 9_000_000,
+    },
+    {
+      contractNumber: "HD-20260605/SA-KH0009",
+      customerId: b2cCustomers["KH00009"].id,
+      type: "RENTAL",
+      state: "DRAFT",
+      termMonths: 36,
+      monthlyFee: 130_000,
+    },
+    {
+      contractNumber: "HD-20260610/SA-ABC",
+      customerId: b2bCustomers["KH00011"].id,
+      type: "SALE",
+      state: "DRAFT",
+      totalValue: 18_500_000,
+    },
+
+    // ── PENDING_SIGNATURE (3) — company signed, awaiting customer ───
+    {
+      contractNumber: "HD-20260612/SA-KH0010",
+      customerId: b2cCustomers["KH00010"].id,
+      type: "RENTAL",
+      state: "PENDING_SIGNATURE",
+      startDate: new Date("2026-06-15"),
+      endDate: monthsFromNow(36),
+      termMonths: 36,
+      monthlyFee: 140_000,
+      signedByCompany: new Date("2026-06-12"),
+    },
+    {
+      contractNumber: "HD-20260615/SA-XYZ",
+      customerId: b2bCustomers["KH00012"].id,
+      type: "RENTAL",
+      state: "PENDING_SIGNATURE",
+      startDate: new Date("2026-06-20"),
+      endDate: monthsFromNow(36),
+      termMonths: 36,
+      monthlyFee: 280_000,
+      signedByCompany: new Date("2026-06-15"),
+    },
+    {
+      contractNumber: "HD-20260618/SA-DLT",
+      customerId: b2bCustomers["KH00013"].id,
+      type: "SALE",
+      state: "PENDING_SIGNATURE",
+      startDate: new Date("2026-06-25"),
+      totalValue: 32_000_000,
+      signedByCompany: new Date("2026-06-18"),
+    },
+
+    // ── AMENDED (2) — fully active, marked AMENDED to surface state ──
+    {
+      contractNumber: "HD-20260120/SA-GMA",
+      customerId: b2bCustomers["KH00014"].id,
+      type: "RENTAL",
+      state: "AMENDED",
+      startDate: new Date("2026-01-20"),
+      endDate: monthsFromNow(34),
+      termMonths: 36,
+      monthlyFee: 310_000,
+      totalValue: 33_480_000,
+      signedByCustomer: new Date("2026-01-20"),
+      signedByCompany: new Date("2026-01-20"),
+      activatedAt: new Date("2026-01-20"),
+      amendmentReason: "Tăng số lượng thiết bị theo phụ lục",
+    },
+    {
+      contractNumber: "HD-20260225/SA-KH0008",
+      customerId: b2cCustomers["KH00008"].id,
+      type: "RENTAL",
+      state: "AMENDED",
+      startDate: new Date("2026-02-25"),
+      endDate: monthsFromNow(33),
+      termMonths: 36,
+      monthlyFee: 110_000,
+      totalValue: 11_880_000,
+      signedByCustomer: new Date("2026-02-25"),
+      signedByCompany: new Date("2026-02-25"),
+      activatedAt: new Date("2026-02-25"),
+      amendmentReason: "Điều chỉnh phí định kỳ theo phụ lục",
+    },
+
+    // ── COMPLETED (3) — full lifecycle, term ended naturally ──────────
+    {
+      contractNumber: "HD-20230315/SA-KH0005",
+      customerId: b2cCustomers["KH00005"].id,
+      type: "RENTAL",
+      state: "COMPLETED",
+      startDate: new Date("2023-03-15"),
+      endDate: new Date("2026-03-15"),
+      termMonths: 36,
+      monthlyFee: 100_000,
+      totalValue: 10_800_000,
+      signedByCustomer: new Date("2023-03-15"),
+      signedByCompany: new Date("2023-03-15"),
+      activatedAt: new Date("2023-03-15"),
+    },
+    {
+      contractNumber: "HD-20230420/SA-KH0006",
+      customerId: b2cCustomers["KH00006"].id,
+      type: "SALE",
+      state: "COMPLETED",
+      startDate: new Date("2023-04-20"),
+      totalValue: 8_500_000,
+      signedByCustomer: new Date("2023-04-20"),
+      signedByCompany: new Date("2023-04-20"),
+      activatedAt: new Date("2023-04-20"),
+    },
+    {
+      contractNumber: "HD-20230510/SA-XYZ",
+      customerId: b2bCustomers["KH00012"].id,
+      type: "SALE",
+      state: "COMPLETED",
+      startDate: new Date("2023-05-10"),
+      totalValue: 22_000_000,
+      signedByCustomer: new Date("2023-05-10"),
+      signedByCompany: new Date("2023-05-10"),
+      activatedAt: new Date("2023-05-10"),
+    },
+
+    // ── TERMINATED (2) — early termination with reason ────────────────
+    {
+      contractNumber: "HD-20250105/SA-KH0009",
+      customerId: b2cCustomers["KH00009"].id,
+      type: "RENTAL",
+      state: "TERMINATED",
+      startDate: new Date("2025-01-05"),
+      endDate: monthsFromNow(20),
+      termMonths: 36,
+      monthlyFee: 120_000,
+      signedByCustomer: new Date("2025-01-05"),
+      signedByCompany: new Date("2025-01-05"),
+      activatedAt: new Date("2025-01-05"),
+      terminatedAt: monthsFromNow(-2),
+      terminationReason: "Khách hàng phá sản, không thể tiếp tục thanh toán.",
+    },
+    {
+      contractNumber: "HD-20250215/SA-ABC",
+      customerId: b2bCustomers["KH00011"].id,
+      type: "RENTAL",
+      state: "TERMINATED",
+      startDate: new Date("2025-02-15"),
+      endDate: monthsFromNow(22),
+      termMonths: 36,
+      monthlyFee: 240_000,
+      signedByCustomer: new Date("2025-02-15"),
+      signedByCompany: new Date("2025-02-15"),
+      activatedAt: new Date("2025-02-15"),
+      terminatedAt: monthsFromNow(-3),
+      terminationReason: "Doanh nghiệp đóng cửa chi nhánh, không cần thiết bị.",
+    },
+
+    // ── CANCELLED (2) — never activated, killed before sign-off ────────
+    {
+      contractNumber: "HD-20260301/SA-KH0010",
+      customerId: b2cCustomers["KH00010"].id,
+      type: "RENTAL",
+      state: "CANCELLED",
+      termMonths: 36,
+      monthlyFee: 100_000,
+    },
+    {
+      contractNumber: "HD-20260315/SA-DLT",
+      customerId: b2bCustomers["KH00013"].id,
+      type: "SALE",
+      state: "CANCELLED",
+      totalValue: 14_000_000,
+    },
+  ];
+
+  for (const c of bulkContracts) {
+    await prisma.contract.upsert({
+      where: { contractNumber: c.contractNumber },
+      update: {},
+      create: {
+        contractNumber: c.contractNumber,
+        customerId: c.customerId,
+        type: c.type,
+        state: c.state,
+        startDate: c.startDate ?? null,
+        endDate: c.endDate ?? null,
+        termMonths: c.termMonths ?? null,
+        monthlyMaintenanceFee: c.monthlyFee ?? null,
+        totalContractValue: c.totalValue ?? null,
+        signedByCustomerAt: c.signedByCustomer ?? null,
+        signedByCompanyAt: c.signedByCompany ?? null,
+        activatedAt: c.activatedAt ?? null,
+        terminatedAt: c.terminatedAt ?? null,
+        terminationReason: c.terminationReason ?? null,
+        amendmentReason: c.amendmentReason ?? null,
+      },
+    });
+  }
+
+  console.log(
+    `  ✓ contracts (9 anchor + ${bulkContracts.length} bulk = ${9 + bulkContracts.length}: full state matrix incl. 6 B2B and 6 SALE)`,
+  );
 
   // ─── Service requests (covering all states) ─────────────────────────
   const b2cPrimaryContact = b2c.contacts.find((c) => c.role === "CONTRACT_PARTY")!;
@@ -1730,6 +1989,22 @@ async function main() {
     { key: "scheduler.weights", value: { preferredTech: 100, regionMatch: 50, dailyLoadBalance: 25 } },
     { key: "audit.retentionMonths", value: 24 },
     { key: "backup.dailyTimeVST", value: "03:00" },
+    // Company HQ phone — admin-editable, single source of truth for the
+    // {hq_phone} notification placeholder + the mobile "Call HQ" button.
+    { key: "company.hqPhone", value: "028-2225-3939" },
+    // Company tax info — used when generating contracts and tax invoices.
+    // Editable at /admin/company-contact → 세무 정보 section.
+    {
+      key: "company.taxInfo",
+      value: {
+        legalName:
+          "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ ĐẠI Á",
+        address:
+          "Số 47 Đường Hoàng Trọng Mậu, Khu dân cư Him Lam, Phường Tân Hưng, TP Hồ Chí Minh, Việt Nam",
+        representativeName: "CHOI ONE HO",
+        taxCode: "0309395579",
+      },
+    },
   ];
   for (const s of settings) {
     await prisma.systemSetting.upsert({
@@ -1753,7 +2028,7 @@ async function main() {
   console.log("  tech5    phone 0123456788  / pw 12341234 (HCMC-D1)");
   console.log("\nPortal credentials (KH00001 CONTRACT_PARTY):");
   console.log("  phone 0901234567 / pw portal1234 (mustChangePassword=true)");
-  console.log("\nData volume: 14 customers, 9 contracts, 5 service requests, 56 visits, 10 payments.");
+  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 56 visits, 10 payments.");
 }
 
 main()

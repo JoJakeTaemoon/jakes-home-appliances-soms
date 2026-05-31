@@ -28,6 +28,23 @@ export function langPairForLocale(locale: string | null | undefined): PdfLangPai
   return locale === "en" ? "vi-en" : "vi-ko";
 }
 
+/**
+ * Resolve the bilingual pair based on the contract party's preferred language.
+ *
+ * Rule (Phase 6 update):
+ *   - VI primary always.
+ *   - Secondary follows the contract party's language.
+ *   - If the party is already VI (so KO/EN would be empty), fall back to EN
+ *     as a courtesy block.
+ */
+export function langPairForContractParty(
+  partyLanguage: string | null | undefined,
+): PdfLangPair {
+  if (partyLanguage === "ko") return "vi-ko";
+  if (partyLanguage === "en" || partyLanguage === "vi") return "vi-en";
+  return "vi-en";
+}
+
 export interface PdfCustomerSummary {
   id: string;
   code: string;
@@ -35,6 +52,16 @@ export interface PdfCustomerSummary {
   type: "B2C" | "B2B";
   shortcode: string | null;
   taxCode: string | null;
+  /** B2B: legal representative. */
+  representativeName: string | null;
+  /** B2C: DOMESTIC / FOREIGN (null for B2B). */
+  residency: "DOMESTIC" | "FOREIGN" | null;
+  /** B2C DOMESTIC: Vietnamese CCCD. */
+  nationalId: string | null;
+  /** B2C FOREIGN: passport number. */
+  passportNumber: string | null;
+  /** B2C FOREIGN: nationality. */
+  nationality: string | null;
   address: string | null;
   district: string | null;
   city: string | null;
@@ -77,6 +104,18 @@ export interface PdfContractView {
   amendmentReason: string | null;
 }
 
+/**
+ * Issuing-company info inlined into every contract PDF. Mirrors
+ * `CompanyTaxInfo` from `@/lib/settings` so PDF code stays self-contained
+ * (no settings imports in template files).
+ */
+export interface PdfCompanyInfo {
+  legalName: string;
+  address: string;
+  representativeName: string;
+  taxCode: string;
+}
+
 export interface PdfRenderProps {
   langPair: PdfLangPair;
   contract: PdfContractView;
@@ -84,4 +123,8 @@ export interface PdfRenderProps {
   equipment: PdfEquipmentLine[];
   /** Generated-at timestamp used in the page footer. */
   generatedAt: Date;
+  /** Issuing-company legal block, from `SystemSetting company.taxInfo`. */
+  company: PdfCompanyInfo;
+  /** HQ phone, from `SystemSetting company.hqPhone`. */
+  hqPhone: string;
 }

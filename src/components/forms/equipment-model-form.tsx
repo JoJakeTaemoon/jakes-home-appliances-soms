@@ -14,14 +14,15 @@ interface FilterRow {
   replaceEveryDays: number;
 }
 
+type CategoryValue = "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
+
 interface ModelInput {
-  modelCode: string;
   name: string;
   displayNameKo: string;
   displayNameVi: string;
   displayNameEn: string;
   brandId: string | null;
-  category: "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
+  category: CategoryValue | null;
   description: string;
   retailPrice: string;
   monthlyRentalPrice: string;
@@ -45,13 +46,12 @@ interface BrandOpt {
 }
 
 const EMPTY: ModelInput = {
-  modelCode: "",
   name: "",
   displayNameKo: "",
   displayNameVi: "",
   displayNameEn: "",
   brandId: null,
-  category: "WATER_PURIFIER",
+  category: null,
   description: "",
   retailPrice: "",
   monthlyRentalPrice: "",
@@ -69,7 +69,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
   const api = useApi();
   const finish = () => {
     if (onDone) onDone();
-    else finish();
+    else router.push("/admin/products");
   };
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
   const [busy, setBusy] = useState(false);
@@ -102,13 +102,12 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
     setErr(null);
     try {
       const payload = {
-        modelCode: data.modelCode,
         name: data.name,
         displayNameKo: data.displayNameKo || undefined,
         displayNameVi: data.displayNameVi || undefined,
         displayNameEn: data.displayNameEn || undefined,
         brandId: data.brandId,
-        category: data.category,
+        category: data.category ?? null,
         description: data.description || undefined,
         retailPrice: data.retailPrice ? Number(data.retailPrice) : null,
         monthlyRentalPrice: data.monthlyRentalPrice ? Number(data.monthlyRentalPrice) : null,
@@ -144,14 +143,6 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
       </header>
 
       <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[#e5e5e5] bg-white p-6 sm:grid-cols-2">
-        <FormField label={t("modelCode")} required>
-          <Input
-            value={data.modelCode}
-            onChange={(e) => setField("modelCode", e.target.value.toUpperCase())}
-            placeholder="PTS-2100"
-            disabled={mode === "edit"}
-          />
-        </FormField>
         <FormField label={t("name")} required>
           <Input value={data.name} onChange={(e) => setField("name", e.target.value)} />
         </FormField>
@@ -189,16 +180,16 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
             placeholder="12"
           />
         </FormField>
-        <FormField label={t("category")} required>
+        <FormField label={t("category")}>
           <Combobox
             value={data.category}
-            onChange={(v) => v && setField("category", v as ModelInput["category"])}
+            onChange={(v) => setField("category", (v as CategoryValue | null) ?? null)}
             options={(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"] as const).map((c) => ({
               value: c,
               label: t(`categoryValues.${c}`),
             }))}
             searchable={false}
-            allowClear={false}
+            allowClear
           />
         </FormField>
         <FormField label={t("isActive")}>
@@ -302,7 +293,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         <Button variant="ghost" onClick={() => finish()} disabled={busy}>
           {tc("cancel")}
         </Button>
-        <Button onClick={submit} isLoading={busy} disabled={!data.modelCode || !data.name}>
+        <Button onClick={submit} isLoading={busy} disabled={!data.name}>
           {tc("save")}
         </Button>
       </div>

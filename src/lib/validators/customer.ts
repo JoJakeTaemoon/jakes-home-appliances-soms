@@ -66,12 +66,48 @@ const createBaseFields = {
   notes: optString(2000),
 } as const;
 
-export const createB2CCustomerSchema = z.object({
-  type: z.literal("B2C"),
-  ...createBaseFields,
-  contractParty: contractPartyInputSchema,
-  opsContacts: z.array(opsContactInputSchema).default([]),
-});
+export const residencyEnum = z.enum(["DOMESTIC", "FOREIGN"]);
+
+export const createB2CCustomerSchema = z
+  .object({
+    type: z.literal("B2C"),
+    ...createBaseFields,
+    residency: residencyEnum.default("DOMESTIC"),
+    /** DOMESTIC residents: Vietnamese CCCD (national ID). */
+    nationalId: optString(40),
+    /** FOREIGN residents: passport number. */
+    passportNumber: optString(40),
+    /** FOREIGN residents: nationality (free-form). */
+    nationality: optString(80),
+    contractParty: contractPartyInputSchema,
+    opsContacts: z.array(opsContactInputSchema).default([]),
+  })
+  .superRefine((val, ctx) => {
+    if (val.residency === "DOMESTIC") {
+      if (!val.nationalId || val.nationalId.trim() === "") {
+        ctx.addIssue({
+          code: "custom",
+          path: ["nationalId"],
+          message: "CCCD is required for domestic residents",
+        });
+      }
+    } else if (val.residency === "FOREIGN") {
+      if (!val.passportNumber || val.passportNumber.trim() === "") {
+        ctx.addIssue({
+          code: "custom",
+          path: ["passportNumber"],
+          message: "Passport number is required for foreign residents",
+        });
+      }
+      if (!val.nationality || val.nationality.trim() === "") {
+        ctx.addIssue({
+          code: "custom",
+          path: ["nationality"],
+          message: "Nationality is required for foreign residents",
+        });
+      }
+    }
+  });
 
 export const createB2BCustomerSchema = z.object({
   type: z.literal("B2B"),
@@ -81,6 +117,7 @@ export const createB2BCustomerSchema = z.object({
     .trim()
     .regex(shortcodeRegex, "Shortcode must be 2-5 chars starting A-Z (A-Z0-9)"),
   taxCode: z.string().trim().min(6).max(40),
+  representativeName: z.string().trim().min(1).max(200),
   contractParty: contractPartyInputSchema,
   opsContacts: z.array(opsContactInputSchema).min(1, "B2B requires at least one OPS contact"),
 });
@@ -111,6 +148,8 @@ export const customerListQuerySchema = z.object({
   type: z.enum(["B2C", "B2B"]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "PROSPECT"]).optional(),
   region: z.string().trim().max(60).optional(),
+  sortBy: z.string().trim().min(1).max(60).optional(),
+  sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(25),
 });

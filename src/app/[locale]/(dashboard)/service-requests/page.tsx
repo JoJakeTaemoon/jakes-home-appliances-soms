@@ -59,6 +59,10 @@ export default function ServiceRequestsListPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "submittedAt",
+    direction: "desc",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,6 +78,10 @@ export default function ServiceRequestsListPage() {
       }
       if (typeFilter) sp.set("type", typeFilter);
       if (paidFilter) sp.set("isPaid", paidFilter);
+      if (sort) {
+        sp.set("sortBy", sort.column);
+        sp.set("sortDir", sort.direction);
+      }
       const res = await api.get<SrRow[]>(`/api/service-requests?${sp.toString()}`);
       setRows(res.data);
       const pag = (res as { pagination?: { total: number } }).pagination;
@@ -81,7 +89,7 @@ export default function ServiceRequestsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, page, debouncedQ, tab, stateFilter, typeFilter, paidFilter]);
+  }, [api, page, debouncedQ, tab, stateFilter, typeFilter, paidFilter, sort]);
 
   useEffect(() => {
     void load();
@@ -91,6 +99,7 @@ export default function ServiceRequestsListPage() {
     {
       key: "code",
       header: t("code"),
+      sortKey: "code",
       cell: (r) => (
         <span className="font-mono text-xs text-[#262626]">{r.code}</span>
       ),
@@ -98,6 +107,7 @@ export default function ServiceRequestsListPage() {
     {
       key: "customer",
       header: t("customer"),
+      sortKey: "customer",
       cell: (r) => (
         <div className="flex flex-col">
           <span className="font-medium">{r.customer.name}</span>
@@ -105,14 +115,15 @@ export default function ServiceRequestsListPage() {
         </div>
       ),
     },
-    { key: "type", header: t("type"), cell: (r) => <SrTypeBadge type={r.type} /> },
-    { key: "state", header: t("state"), cell: (r) => <SrStateBadge state={r.state} /> },
+    { key: "type", header: t("type"), sortKey: "type", cell: (r) => <SrTypeBadge type={r.type} /> },
+    { key: "state", header: t("state"), sortKey: "state", cell: (r) => <SrStateBadge state={r.state} /> },
     {
       key: "isPaid",
       header: t("isPaid"),
+      sortKey: "isPaid",
       cell: (r) => (
         <StatusBadge tone={r.isPaid ? "warning" : "success"}>
-          {r.isPaid ? t("yes") : t("no")}
+          {r.isPaid ? t("isPaidYes") : t("isPaidNo")}
         </StatusBadge>
       ),
     },
@@ -122,7 +133,7 @@ export default function ServiceRequestsListPage() {
       cell: (r) =>
         r.equipment ? (
           <div className="flex flex-col">
-            <span className="font-mono text-xs">{r.equipment.model.modelCode}</span>
+            <span className="font-mono text-xs">{r.equipment.model.name}</span>
             <span className="text-xs text-[#737373]">{r.equipment.serialNumber ?? "—"}</span>
           </div>
         ) : (
@@ -132,6 +143,7 @@ export default function ServiceRequestsListPage() {
     {
       key: "submittedAt",
       header: t("submittedAt"),
+      sortKey: "submittedAt",
       cell: (r) => (
         <span className="text-sm text-[#262626]">
           {formatDate(r.submittedAt, locale)}
@@ -179,6 +191,8 @@ export default function ServiceRequestsListPage() {
         rowKey={(r) => r.id}
         onRowClick={(r) => router.push(`/service-requests/${r.id}`)}
         isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
         emptyText={
           debouncedQ || stateFilter || typeFilter || paidFilter
             ? t("noResults")

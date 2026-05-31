@@ -1,13 +1,17 @@
 /**
- * GET  /api/admin/company-contact  → current HQ phone + default
+ * GET  /api/admin/company-contact  → HQ phone + tax info (current + defaults)
  * PUT  /api/admin/company-contact  → upsert HQ phone
+ * PATCH /api/admin/company-contact → upsert tax info (legal block)
  *
- * ADMIN only. Writes a SystemSetting row keyed `company.hqPhone`. The value is
- * the single source of truth for the mobile "Call HQ" action and every
- * {hq_phone} notification placeholder (injected in sendNotification).
+ * ADMIN only. Writes SystemSetting rows keyed `company.hqPhone` and
+ * `company.taxInfo`. PUT keeps a single-field payload for backward compat;
+ * PATCH handles the new tax-info block (legalName / address /
+ * representativeName / taxCode).
  *
- * GET uses `defineQuery`; PUT keeps the manual shape for the AuditLog
- * before/after pair (mirrors the scheduler-weights route).
+ * `getHqPhone()` is the source of truth for the {hq_phone} notification
+ * placeholder + the technician "Call HQ" action. `getCompanyTaxInfo()` is
+ * the source of truth for contract PDFs and any document showing the
+ * issuing company's legal block.
  */
 
 import { NextRequest } from "next/server";
@@ -18,14 +22,15 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError } from "@/lib/api/error";
 import {
   COMPANY_HQ_PHONE_DEFAULT,
+  COMPANY_TAX_INFO_DEFAULT,
+  getCompanyTaxInfo,
   getHqPhone,
+  setCompanyTaxInfo,
   setHqPhone,
 } from "@/lib/settings";
 import { logAudit } from "@/lib/audit";
 
-const schema = z.object({
-  // Display format is free-form (local "028-..." or intl "+84-..."); keep it to
-  // dialable characters and a sane length.
+const phoneSchema = z.object({
   hqPhone: z
     .string()
     .trim()
@@ -34,21 +39,42 @@ const schema = z.object({
     .regex(/^[0-9+().\-\s]+$/, "Phone may only contain digits, spaces, and + ( ) - ."),
 });
 
+const taxInfoSchema = z.object({
+  legalName: z.string().trim().min(1).max(500),
+  address: z.string().trim().min(1).max(500),
+  representativeName: z.string().trim().min(1).max(200),
+  taxCode: z
+    .string()
+    .trim()
+    .min(8)
+    .max(20)
+    .regex(/^[0-9-]+$/, "Tax code may only contain digits and dashes."),
+});
+
 export const GET = defineQuery({
   audience: "staff",
   authorize: (auth) => {
     if (auth.role !== "ADMIN") throw new ForbiddenError("Insufficient role");
   },
-  handler: async () => ({
-    current: { hqPhone: await getHqPhone() },
-    defaults: { hqPhone: COMPANY_HQ_PHONE_DEFAULT },
-  }),
+  handler: async () => {
+    const [hqPhone, taxInfo] = await Promise.all([
+      getHqPhone(),
+      getCompanyTaxInfo(),
+    ]);
+    return {
+      current: { hqPhone, taxInfo },
+      defaults: {
+        hqPhone: COMPANY_HQ_PHONE_DEFAULT,
+        taxInfo: COMPANY_TAX_INFO_DEFAULT,
+      },
+    };
+  },
 });
 
 export async function PUT(request: NextRequest) {
   try {
     const caller = await requireRole(request, "ADMIN");
-    const parsed = schema.parse(await request.json());
+    const parsed = phoneSchema.parse(await request.json());
     const before = await getHqPhone();
     await setHqPhone(parsed.hqPhone, caller.userId);
     await logAudit({
@@ -62,6 +88,28 @@ export async function PUT(request: NextRequest) {
       request,
     });
     return successResponse({ current: { hqPhone: parsed.hqPhone } });
+  } catch (err) {
+    return toErrorResponse(err);
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const caller = await requireRole(request, "ADMIN");
+    const parsed = taxInfoSchema.parse(await request.json());
+    const before = await getCompanyTaxInfo();
+    await setCompanyTaxInfo(parsed, caller.userId);
+    await logAudit({
+      actorType: "USER",
+      actorId: caller.userId,
+      action: "COMPANY_TAX_INFO_UPDATE",
+      entityType: "SystemSetting",
+      entityId: "company.taxInfo",
+      before,
+      after: parsed,
+      request,
+    });
+    return successResponse({ current: { taxInfo: parsed } });
   } catch (err) {
     return toErrorResponse(err);
   }

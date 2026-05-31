@@ -139,7 +139,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
         {sr.equipment && (
           <Row
             label={t("detailEquipment")}
-            value={`${sr.equipment.model.modelCode} · ${sr.equipment.model.name}`}
+            value={`${sr.equipment.model.name} · ${sr.equipment.model.name}`}
           />
         )}
         {sr.approvedPrice && (

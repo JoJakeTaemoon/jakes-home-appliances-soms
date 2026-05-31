@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -22,14 +23,17 @@ interface TemplateRow {
   code: string;
   channel: "SMS" | "EMAIL";
   locale: "ko" | "vi" | "en";
+  description: string;
   defaultBody: string;
   defaultSubject: string | null;
   overrideBody: string | null;
   overrideSubject: string | null;
   overrideUpdatedAt: string | null;
+  enabled: boolean;
 }
 
 export default function NotificationTemplatesPage() {
+  const t = useTranslations("admin");
   const { user } = useAuth();
   const api = useApi();
   const [rows, setRows] = useState<TemplateRow[]>([]);
@@ -136,7 +140,7 @@ export default function NotificationTemplatesPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">
-          Notification templates
+          {t("notificationTemplates")}
         </h1>
         <div className="w-44">
           <Combobox
@@ -161,43 +165,58 @@ export default function NotificationTemplatesPage() {
         {/* List */}
         <section className="rounded-2xl border border-[#e5e5e5] bg-white">
           <ul className="divide-y divide-[#f0f0f0]">
-            {[...grouped.entries()].map(([code, codeRows]) => (
-              <li key={code} className="p-3">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-mono text-xs text-[#525252]">{code}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-[#a3a3a3]">
-                    {codeRows[0]?.channel}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {codeRows.map((r) => {
-                    const active =
-                      r.code === selectedCode && r.locale === selectedLocale;
-                    const hasOverride = !!r.overrideBody;
-                    return (
-                      <button
-                        key={`${r.code}-${r.locale}`}
-                        type="button"
-                        onClick={() => {
-                          setSelectedCode(r.code);
-                          setSelectedLocale(r.locale);
-                        }}
-                        className={
-                          active
-                            ? "rounded-md border-2 border-[var(--brand-blue-500)] bg-[var(--brand-blue-50)] px-2 py-1 text-xs font-medium text-[var(--brand-blue-700)]"
-                            : "rounded-md border border-[#e5e5e5] bg-white px-2 py-1 text-xs text-[#525252] hover:bg-[#fafafa]"
-                        }
-                      >
-                        {r.locale.toUpperCase()}
-                        {hasOverride && (
-                          <span className="ml-1 text-amber-600">•</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </li>
-            ))}
+            {[...grouped.entries()].map(([code, codeRows]) => {
+              // Description matches the active locale's tab; falls back to vi.
+              const localeRow =
+                codeRows.find((r) => r.locale === selectedLocale) ?? codeRows[0];
+              return (
+                <li key={code} className="p-3">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="font-mono text-xs text-[#525252]">{code}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-[#a3a3a3]">
+                      {codeRows[0]?.channel}
+                    </span>
+                  </div>
+                  {localeRow?.description && (
+                    <p className="mb-2 text-[11px] leading-snug text-[#737373]">
+                      {localeRow.description}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1">
+                    {codeRows.map((r) => {
+                      const active =
+                        r.code === selectedCode && r.locale === selectedLocale;
+                      const hasOverride = !!r.overrideBody;
+                      return (
+                        <button
+                          key={`${r.code}-${r.locale}`}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCode(r.code);
+                            setSelectedLocale(r.locale);
+                          }}
+                          className={
+                            active
+                              ? "inline-flex items-center gap-1 rounded-md border-2 border-[var(--brand-blue-500)] bg-[var(--brand-blue-50)] px-2 py-1 text-xs font-medium text-[var(--brand-blue-700)]"
+                              : "inline-flex items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2 py-1 text-xs text-[#525252] hover:bg-[#fafafa]"
+                          }
+                        >
+                          <span>{r.locale.toUpperCase()}</span>
+                          {!r.enabled && (
+                            <span className="rounded-sm bg-red-100 px-1 text-[9px] font-semibold uppercase text-red-700">
+                              OFF
+                            </span>
+                          )}
+                          {hasOverride && (
+                            <span className="text-amber-600">•</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
 
@@ -209,15 +228,41 @@ export default function NotificationTemplatesPage() {
             </p>
           ) : (
             <div className="flex flex-col gap-3">
-              <header>
-                <h2 className="font-mono text-sm text-[#002A4D]">
-                  {selected.code} · {selected.locale.toUpperCase()}
-                </h2>
-                <p className="mt-0.5 text-xs text-[#737373]">
-                  Channel: {selected.channel}
-                  {selected.overrideUpdatedAt &&
-                    ` · Override saved ${new Date(selected.overrideUpdatedAt).toLocaleString()}`}
-                </p>
+              <header className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <h2 className="font-mono text-sm text-[#002A4D]">
+                    {selected.code} · {selected.locale.toUpperCase()}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-[#737373]">
+                    Channel: {selected.channel}
+                    {selected.overrideUpdatedAt &&
+                      ` · Override saved ${new Date(selected.overrideUpdatedAt).toLocaleString()}`}
+                  </p>
+                  {selected.description && (
+                    <p className="mt-2 rounded-md bg-[#fafafa] px-2 py-1.5 text-[11px] leading-snug text-[#525252]">
+                      {selected.description}
+                    </p>
+                  )}
+                </div>
+                <EnabledToggle
+                  enabled={selected.enabled}
+                  busy={saving}
+                  onToggle={async () => {
+                    setSaving(true);
+                    setError(null);
+                    try {
+                      await api.patch(
+                        `/api/admin/notification-templates/${selected.code}?locale=${selected.locale}`,
+                        { enabled: !selected.enabled },
+                      );
+                      await load();
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : String(err));
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                />
               </header>
               {selected.channel === "EMAIL" && (
                 <FormField label="Subject">
@@ -271,5 +316,30 @@ export default function NotificationTemplatesPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+function EnabledToggle({
+  enabled,
+  busy,
+  onToggle,
+}: Readonly<{ enabled: boolean; busy: boolean; onToggle: () => void }>) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={busy}
+      aria-pressed={enabled}
+      className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-50 ${
+        enabled ? "bg-emerald-500" : "bg-[#d4d4d4]"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+          enabled ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+      <span className="sr-only">{enabled ? "Enabled" : "Disabled"}</span>
+    </button>
   );
 }

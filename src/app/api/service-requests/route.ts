@@ -14,7 +14,17 @@ import {
   staffCreateServiceRequestSchema,
 } from "@/lib/validators/serviceRequest";
 import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const SR_SORT_MAP: SortMap<Prisma.ServiceRequestOrderByWithRelationInput | Prisma.ServiceRequestOrderByWithRelationInput[]> = {
+  code: (dir) => ({ code: dir }),
+  type: (dir) => ({ type: dir }),
+  state: (dir) => ({ state: dir }),
+  isPaid: (dir) => ({ isPaid: dir }),
+  submittedAt: (dir) => ({ submittedAt: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -26,7 +36,12 @@ export const GET = defineQuery({
   query: listServiceRequestQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, state, type, customerId, isPaid, page, pageSize } = query;
+    const { q, state, type, customerId, isPaid, sortBy, sortDir, page, pageSize } = query;
+    const orderBy = resolveOrderBy(
+      { sortBy, sortDir },
+      SR_SORT_MAP,
+      [{ state: "asc" }, { submittedAt: "asc" }],
+    );
 
     const where: Prisma.ServiceRequestWhereInput = {};
     if (state) where.state = state;
@@ -46,7 +61,7 @@ export const GET = defineQuery({
       prisma.serviceRequest.count({ where }),
       prisma.serviceRequest.findMany({
         where,
-        orderBy: [{ state: "asc" }, { submittedAt: "asc" }],
+        orderBy,
         skip,
         take: pageSize,
         include: {

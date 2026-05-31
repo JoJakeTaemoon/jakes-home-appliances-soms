@@ -133,6 +133,13 @@ enum CustomerStatus {
   PROSPECT
 }
 
+/// B2C-only legal-identity discriminator. DOMESTIC ties to a Vietnamese
+/// national ID (CCCD); FOREIGN ties to a passport + nationality pair.
+enum CustomerResidency {
+  DOMESTIC
+  FOREIGN
+}
+
 enum ContactRole {
   CONTRACT_PARTY
   OPS_CONTACT
@@ -159,7 +166,22 @@ model Customer {
   // B2C: just name; B2B: legal entity name
   name                   String
   shortcode              String?        @unique  // B2B 2-5 letter; used in contract code (B.2)
-  taxCode                String?        // B2B Vietnamese tax code
+  taxCode                String?        // B2B Vietnamese tax code (MST)
+
+  // ── Legal-identity block (required for contract issuance) ───────────────
+  /// B2C only: DOMESTIC requires CCCD, FOREIGN requires passport + nationality.
+  /// Defaults to DOMESTIC so existing rows behave like Vietnamese individuals.
+  /// Ignored for B2B (where the legal block is taxCode + representativeName).
+  residency              CustomerResidency? @default(DOMESTIC)
+  /// B2C DOMESTIC: Vietnamese national ID (CCCD / Căn cước công dân).
+  nationalId             String?
+  /// B2C FOREIGN: passport number, paired with `nationality`.
+  passportNumber         String?
+  /// B2C FOREIGN: ISO country name (e.g. "Korea", "Japan").
+  nationality            String?
+  /// B2B: legal representative (Người đại diện theo pháp luật). Mirrors the
+  /// equivalent field on the issuing-company side stored in SystemSetting.
+  representativeName     String?
 
   // Primary address (B2C uses this; B2B HQ address)
   address                String?
@@ -333,8 +355,11 @@ model Brand {
 
 model EquipmentModel {
   id                  String            @id @default(cuid())
-  modelCode           String            @unique  // e.g. SA-J430, PTS-2100
-  name                String                   // deprecated — prefer displayName*
+  /// Legacy SKU-like identifier. UI no longer surfaces this field; new rows
+  /// may leave it null. Kept on the table for back-compat with existing data.
+  /// NULL is allowed (Postgres permits multiple NULL rows under @unique).
+  modelCode           String?           @unique
+  name                String                   // user-facing display name
   // Customer-facing product names in KO/VI/EN. The model code itself
   // stays single-language (alphanumeric/symbol).
   displayNameKo       String?
@@ -344,7 +369,7 @@ model EquipmentModel {
   brand               Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
   // Legacy enum classification — kept during the ProductCategory rollout so
   // existing list filters & seeded code paths keep working. Prefer `categoryId`.
-  category            EquipmentCategory
+  category            EquipmentCategory?
   categoryId          String?
   productCategory     ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   description         String?
@@ -924,6 +949,9 @@ model NotificationTemplate {
   locale        Locale
   subject       String?             // email only
   body          String
+  /// Admin-controlled per-(code, locale) on/off switch. When false, the
+  /// send pipeline records a SKIPPED log and the message is never dispatched.
+  enabled       Boolean             @default(true)
   updatedAt     DateTime            @updatedAt
   updatedById   String?
   createdAt     DateTime            @default(now())

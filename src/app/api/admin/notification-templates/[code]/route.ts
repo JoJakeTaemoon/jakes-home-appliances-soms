@@ -27,6 +27,10 @@ const putSchema = z.object({
   subject: z.string().max(2_000).optional().nullable(),
 });
 
+const patchSchema = z.object({
+  enabled: z.boolean(),
+});
+
 function parseLocale(request: NextRequest): Locale {
   const url = new URL(request.url);
   const raw = url.searchParams.get("locale") ?? "vi";
@@ -89,6 +93,84 @@ export async function PUT(
       locale: row.locale,
       body: row.body,
       subject: row.subject,
+      updatedAt: row.updatedAt.toISOString(),
+    });
+  } catch (err) {
+    return toErrorResponse(err);
+  }
+}
+
+/**
+ * PATCH /api/admin/notification-templates/:code?locale=vi
+ *   body: { enabled: boolean }
+ *
+ * Flips the per-(code, locale) on/off switch. If the row doesn't yet exist
+ * (i.e. file default is in use), we materialize it with the file body so
+ * that flipping it back on later keeps a consistent body source.
+ */
+export async function PATCH(
+  request: NextRequest,
+  ctx: { params: Promise<{ code: string }> },
+) {
+  try {
+    const caller = await requireRole(request, "ADMIN");
+    const { code } = await ctx.params;
+    if (!TEMPLATES[code]) {
+      throw new ValidationError("Unknown template code");
+    }
+    const locale = parseLocale(request);
+    const parsed = patchSchema.parse(await request.json());
+    const def = TEMPLATES[code];
+    const isEmail = def.channels.includes("EMAIL");
+
+    // Materialize a row from the file default if one doesn't exist yet.
+    const existing = await prisma.notificationTemplate.findUnique({
+      where: { code_locale: { code, locale } },
+      select: { id: true, body: true, subject: true, enabled: true },
+    });
+    const { pickLocaleBody, pickLocaleSubject } = await import(
+      "@/lib/notifications/templates"
+    );
+    const row = await prisma.notificationTemplate.upsert({
+      where: { code_locale: { code, locale } },
+      create: {
+        code,
+        locale,
+        channel: def.channels[0],
+        body: pickLocaleBody(def, locale),
+        subject: isEmail ? pickLocaleSubject(def, locale) ?? null : null,
+        enabled: parsed.enabled,
+        updatedById: caller.userId,
+      },
+      update: {
+        enabled: parsed.enabled,
+        updatedById: caller.userId,
+      },
+      select: {
+        id: true,
+        code: true,
+        locale: true,
+        enabled: true,
+        updatedAt: true,
+      },
+    });
+    clearOverrideCache();
+    await logAudit({
+      actorType: "USER",
+      actorId: caller.userId,
+      action: parsed.enabled
+        ? "NOTIFICATION_TEMPLATE_ENABLE"
+        : "NOTIFICATION_TEMPLATE_DISABLE",
+      entityType: "NotificationTemplate",
+      entityId: row.id,
+      before: existing ? { enabled: existing.enabled } : null,
+      after: { enabled: parsed.enabled },
+      request,
+    });
+    return successResponse({
+      code: row.code,
+      locale: row.locale,
+      enabled: row.enabled,
       updatedAt: row.updatedAt.toISOString(),
     });
   } catch (err) {

@@ -8,7 +8,7 @@
 import { ContractDocument } from "./shared";
 import type { PdfRenderProps } from "@/lib/pdf/types";
 
-export function AppendixContract({ contract, customer, equipment, langPair, generatedAt }: Readonly<PdfRenderProps>) {
+export function AppendixContract({ contract, customer, equipment, langPair, generatedAt, company, hqPhone }: Readonly<PdfRenderProps>) {
   return (
     <ContractDocument
       titleKey="APPENDIX"
@@ -17,6 +17,8 @@ export function AppendixContract({ contract, customer, equipment, langPair, gene
       equipment={equipment}
       langPair={langPair}
       generatedAt={generatedAt}
+      company={company}
+      hqPhone={hqPhone}
       clauseKeys={["appendix", "rentalTerm", "paymentTerms"] as const}
     />
   );

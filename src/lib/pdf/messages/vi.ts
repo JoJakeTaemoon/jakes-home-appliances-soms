@@ -3,8 +3,8 @@ import type { PdfMessages } from "./ko";
 export const vi: PdfMessages = {
   documentTitle: {
     SALE: "Phiếu giao hàng (kiêm hóa đơn)",
-    RENTAL_B2C: "Hợp đồng thuê máy lọc nước (Hộ gia đình)",
-    RENTAL_B2B: "Hợp đồng thuê (Doanh nghiệp)",
+    RENTAL_B2C: "Hợp đồng thuê",
+    RENTAL_B2B: "Hợp đồng thuê",
     MAINTENANCE: "Hợp đồng bảo trì",
     APPENDIX: "Phụ lục hợp đồng",
   },
@@ -45,6 +45,16 @@ export const vi: PdfMessages = {
     signatureCompany: "CÔNG TY (Đại diện)",
     seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
     generatedAt: "Ngày xuất",
+    companyBlockTitle: "Thông tin công ty phát hành",
+    companyLegalName: "Tên pháp nhân",
+    companyAddress: "Địa chỉ",
+    companyRepresentative: "Người đại diện",
+    companyTaxCode: "Mã số thuế (MST)",
+    companyPhone: "Điện thoại",
+    customerRepresentative: "Người đại diện pháp luật",
+    customerNationalId: "CCCD",
+    customerPassport: "Số hộ chiếu",
+    customerNationality: "Quốc tịch",
     type: { SALE: "Bán", RENTAL: "Thuê", MAINTENANCE: "Bảo trì" },
   },
   clauses: {

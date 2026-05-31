@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -101,6 +101,8 @@ interface ContractRow {
   state: string;
   type: string;
   startDate: string | null;
+  endDate: string | null;
+  amendmentRevision: number;
 }
 
 interface AuditRow {
@@ -251,6 +253,9 @@ export default function CustomerDetailPage() {
                 <Field label={t("taxCode")} value={data.taxCode} />
               </Card>
             )}
+            <EquipmentSummaryCard equipment={data.equipment} />
+            <ContractsSummaryCard contracts={data.contracts} />
+            <ServiceSummaryCard customerId={data.id} />
             <Card label={t("notes")}>
               <p className="whitespace-pre-wrap text-sm text-[#525252]">
                 {data.notes ?? "—"}
@@ -352,7 +357,7 @@ export default function CustomerDetailPage() {
                       >
                         <td className="px-3 py-2">
                           <div className="flex flex-col">
-                            <span className="font-medium">{e.model.modelCode}</span>
+                            <span className="font-medium">{e.model.name}</span>
                             <span className="text-xs text-[#737373]">{e.model.name}</span>
                           </div>
                         </td>
@@ -495,6 +500,206 @@ function Field({ label, value }: { label: string; value: string | null | undefin
       <span className="text-xs text-[#737373]">{label}</span>
       <span className="text-[#111111]">{value ?? "—"}</span>
     </div>
+  );
+}
+
+function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[] }>) {
+  const t = useTranslations("customers");
+  const tEq = useTranslations("equipment");
+  const grouped = useMemo(() => {
+    const buckets = new Map<string, { modelCode: string; modelName: string; count: number }>();
+    for (const e of equipment) {
+      const key = e.model.name;
+      const cur = buckets.get(key);
+      if (cur) cur.count++;
+      else buckets.set(key, { modelCode: e.model.name, modelName: e.model.name, count: 1 });
+    }
+    return Array.from(buckets.values()).sort((a, b) => b.count - a.count || a.modelCode.localeCompare(b.modelCode));
+  }, [equipment]);
+
+  return (
+    <Card label={`${t("tabs.equipment")} · ${equipment.length}`}>
+      {grouped.length === 0 ? (
+        <p className="text-sm text-[#737373]">{tEq("noEquipment")}</p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {grouped.map((g) => (
+            <li key={g.modelCode} className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="flex flex-col">
+                <span className="font-mono text-xs text-[#262626]">{g.modelCode}</span>
+                <span className="text-xs text-[#737373]">{g.modelName}</span>
+              </span>
+              <span className="font-semibold text-[#111111]">
+                {tEq("countUnits", { count: g.count })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function ContractsSummaryCard({ contracts }: Readonly<{ contracts: ContractRow[] }>) {
+  const t = useTranslations("customers");
+  const tCon = useTranslations("contracts");
+  const locale = useLocale();
+
+  return (
+    <Card label={`${t("tabs.contracts")} · ${contracts.length}`}>
+      {contracts.length === 0 ? (
+        <p className="text-sm text-[#737373]">{tCon("noContracts")}</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-[#f5f5f5]">
+          {contracts.map((c) => (
+            <li key={c.id} className="flex flex-col gap-1 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href={`/contracts/${c.id}` as never}
+                  className="font-mono text-xs text-[var(--brand-blue-700)] underline"
+                >
+                  {c.contractNumber}
+                  {c.amendmentRevision > 0
+                    ? ` · ${tCon("appendixBadge", { n: c.amendmentRevision })}`
+                    : ""}
+                </Link>
+                <StatusBadge tone="info">{tCon(`types.${c.type}` as never)}</StatusBadge>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 text-xs text-[#525252]">
+                <span>{tCon(`states.${c.state}` as never)}</span>
+                <span>
+                  {formatDate(c.startDate, locale) || "—"} ~ {formatDate(c.endDate, locale) || "—"}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+function ServiceSummaryCard({ customerId }: Readonly<{ customerId: string }>) {
+  const t = useTranslations("customers");
+  const tSr = useTranslations("serviceRequests");
+  const tV = useTranslations("visits");
+  const locale = useLocale();
+  const api = useApi();
+
+  interface SrItem {
+    id: string;
+    code: string;
+    type: string;
+    state: string;
+    submittedAt: string;
+  }
+  interface VisitItem {
+    id: string;
+    type: string;
+    state: string;
+    scheduledFor: string;
+    completedAt: string | null;
+  }
+
+  const [srs, setSrs] = useState<SrItem[]>([]);
+  const [visits, setVisits] = useState<VisitItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      api
+        .get<SrItem[]>(`/api/service-requests?customerId=${customerId}&pageSize=5&sortBy=submittedAt&sortDir=desc`)
+        .then((r) => r.data)
+        .catch(() => [] as SrItem[]),
+      api
+        .get<VisitItem[]>(`/api/visits?customerId=${customerId}&pageSize=5&sortBy=scheduledFor&sortDir=desc`)
+        .then((r) => r.data)
+        .catch(() => [] as VisitItem[]),
+    ])
+      .then(([srRows, visitRows]) => {
+        if (cancelled) return;
+        setSrs(srRows);
+        setVisits(visitRows);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, customerId]);
+
+  return (
+    <Card label={t("serviceSummary")}>
+      <div className="flex flex-col gap-4">
+        <section>
+          <h4 className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
+            {t("tabs.serviceRequests")} · {srs.length}
+          </h4>
+          {loading ? (
+            <p className="text-xs text-[#a3a3a3]">{t("loading")}</p>
+          ) : srs.length === 0 ? (
+            <p className="text-xs text-[#a3a3a3]">{tSr("noRequests")}</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-[#f5f5f5]">
+              {srs.map((sr) => (
+                <li key={sr.id} className="flex flex-col gap-0.5 py-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/service-requests/${sr.id}` as never}
+                      className="font-mono text-[var(--brand-blue-700)] underline"
+                    >
+                      {sr.code}
+                    </Link>
+                    <span className="text-[#737373]">
+                      {formatDate(sr.submittedAt, locale)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2 text-[#525252]">
+                    <span>{tSr(`types.${sr.type}` as never)}</span>
+                    <span>{tSr(`states.${sr.state}` as never)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section>
+          <h4 className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
+            {t("visitHistory")} · {visits.length}
+          </h4>
+          {loading ? (
+            <p className="text-xs text-[#a3a3a3]">{t("loading")}</p>
+          ) : visits.length === 0 ? (
+            <p className="text-xs text-[#a3a3a3]">{tV("noVisits")}</p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-[#f5f5f5]">
+              {visits.map((v) => (
+                <li key={v.id} className="flex flex-col gap-0.5 py-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <Link
+                      href={`/visits/${v.id}` as never}
+                      className="text-[var(--brand-blue-700)] underline"
+                    >
+                      {tV(`types.${v.type}` as never)}
+                    </Link>
+                    <span className="text-[#737373]">
+                      {formatDate(v.completedAt ?? v.scheduledFor, locale)}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2 text-[#525252]">
+                    <span>{tV(`states.${v.state}` as never)}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Card>
   );
 }
 
@@ -1240,7 +1445,7 @@ function CustomerContractsTab({ customerId }: Readonly<{ customerId: string }>) 
                   <td className="px-3 py-2">
                     <Link href={`/contracts/${c.id}` as never} className="font-mono text-xs text-[var(--brand-blue-700)] underline">
                       {c.contractNumber}
-                      {c.amendmentRevision > 0 ? ` (A${c.amendmentRevision})` : ""}
+                      {c.amendmentRevision > 0 ? ` · ${t("appendixBadge", { n: c.amendmentRevision })}` : ""}
                     </Link>
                   </td>
                   <td className="px-3 py-2">{t(`types.${c.type}`)}</td>

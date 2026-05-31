@@ -101,7 +101,7 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
 
       <section className="rounded-2xl border border-[#e5e5e5] bg-white p-5">
         <h1 className="text-lg font-semibold text-[#002A4D]">{eq.model.name}</h1>
-        <p className="text-xs text-[#737373]">{eq.model.modelCode}</p>
+        <p className="text-xs text-[#737373]">{eq.model.name}</p>
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("serial")}</dt>

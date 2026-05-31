@@ -11,15 +11,28 @@ import {
   equipmentListQuerySchema,
 } from "@/lib/validators/equipment";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const EQUIPMENT_SORT_MAP: SortMap<Prisma.EquipmentOrderByWithRelationInput> = {
+  serialNumber: (dir) => ({ serialNumber: dir }),
+  status: (dir) => ({ status: dir }),
+  installedAt: (dir) => ({ installedAt: dir }),
+  ownership: (dir) => ({ ownership: dir }),
+  customer: (dir) => ({ customer: { code: dir } }),
+  model: (dir) => ({ model: { modelCode: dir } }),
+  site: (dir) => ({ site: { name: dir } }),
+  createdAt: (dir) => ({ createdAt: dir }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
   query: equipmentListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, customerId, siteId, modelId, status, region, page, pageSize } =
+    const { q, customerId, siteId, modelId, status, region, sortBy, sortDir, page, pageSize } =
       query;
+    const orderBy = resolveOrderBy({ sortBy, sortDir }, EQUIPMENT_SORT_MAP, { createdAt: "desc" });
     const where: Prisma.EquipmentWhereInput = {};
     if (customerId) where.customerId = customerId;
     if (siteId) where.siteId = siteId;
@@ -44,7 +57,7 @@ export const GET = defineQuery({
       prisma.equipment.count({ where }),
       prisma.equipment.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {

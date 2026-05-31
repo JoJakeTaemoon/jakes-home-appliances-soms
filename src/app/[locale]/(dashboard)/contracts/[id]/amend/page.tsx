@@ -151,7 +151,7 @@ export default function AmendContractPage() {
                     }}
                   />
                   <span>
-                    {ce.equipment.model.modelCode} — {ce.equipment.model.name}
+                    {ce.equipment.model.name} — {ce.equipment.model.name}
                     {ce.equipment.serialNumber ? ` (${ce.equipment.serialNumber})` : ""}
                   </span>
                 </label>

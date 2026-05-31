@@ -29,12 +29,16 @@ interface EligiblePayment {
   id: string;
   customer: { code: string; name: string };
   actualAmount: string;
+  reconciledAt: string | null;
+  method: string;
+  reference?: string | null;
 }
 
 const PAGE_SIZE = 25;
 
 export default function TaxInvoicesListPage() {
   const t = useTranslations("taxInvoices");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const api = useApi();
   const { user } = useAuth();
@@ -56,15 +60,24 @@ export default function TaxInvoicesListPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSubmitting, setUploadSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "createdAt",
+    direction: "desc",
+  });
 
   const isManager = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<InvoiceRow[]>(
-        `/api/tax-invoices?page=${page}&pageSize=${PAGE_SIZE}`,
-      );
+      const qs = new URLSearchParams();
+      qs.set("page", String(page));
+      qs.set("pageSize", String(PAGE_SIZE));
+      if (sort) {
+        qs.set("sortBy", sort.column);
+        qs.set("sortDir", sort.direction);
+      }
+      const res = await api.get<InvoiceRow[]>(`/api/tax-invoices?${qs.toString()}`);
       setRows(res.data ?? []);
       setTotal(
         (res as unknown as { pagination?: { total?: number } }).pagination
@@ -73,11 +86,7 @@ export default function TaxInvoicesListPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, page]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  }, [api, page, sort]);
 
   const loadEligible = useCallback(async () => {
     try {
@@ -96,8 +105,19 @@ export default function TaxInvoicesListPage() {
     }
   }, [api]);
 
-  const openUpload = () => {
+  useEffect(() => {
+    load().catch(() => undefined);
+  }, [load]);
+
+  useEffect(() => {
+    // Surfacing the pending queue on mount + after any successful upload
+    // (which fires `load()` → bumps a new `page`-or-`sort` key).
+    loadEligible().catch(() => undefined);
+  }, [loadEligible, page]);
+
+  const openUpload = (paymentId?: string) => {
     setShowUpload(true);
+    setPickedPaymentId(paymentId ?? null);
     loadEligible().catch(() => undefined);
   };
 
@@ -141,17 +161,20 @@ export default function TaxInvoicesListPage() {
     {
       key: "invoiceNumber",
       header: t("tableInvoiceNo"),
+      sortKey: "invoiceNumber",
       cell: (r) => r.invoiceNumber ?? "—",
     },
     {
       key: "invoiceDate",
       header: t("tableInvoiceDate"),
+      sortKey: "invoiceDate",
       cell: (r) =>
         r.invoiceDate ? formatDate(r.invoiceDate, locale) : formatDate(r.createdAt, locale),
     },
     {
       key: "customer",
       header: t("tableCustomer"),
+      sortKey: "customer",
       cell: (r) => (
         <div>
           <div className="font-medium">{r.payment?.customer.name ?? "—"}</div>
@@ -200,9 +223,52 @@ export default function TaxInvoicesListPage() {
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("listTitle")}</h1>
         {isManager && (
-          <Button onClick={openUpload}>{t("newInvoice")}</Button>
+          <Button onClick={() => openUpload()}>{t("newInvoice")}</Button>
         )}
       </header>
+
+      {isManager && eligible.length > 0 && (
+        <section className="mb-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+          <header className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="text-sm font-semibold text-amber-900">
+              {t("pendingSectionTitle", { count: eligible.length })}
+            </h2>
+            <p className="text-xs text-amber-800">{t("pendingSectionHint")}</p>
+          </header>
+          <ul className="divide-y divide-amber-200 rounded-xl bg-white">
+            {eligible.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => openUpload(p.id)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-amber-50"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium text-[#262626]">{p.customer.name}</span>
+                    <span className="font-mono text-xs text-[#737373]">
+                      {p.customer.code}
+                      {p.reference ? ` · ${p.reference}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {p.reconciledAt && (
+                      <span className="text-xs text-[#737373]">
+                        {formatDate(p.reconciledAt, locale)}
+                      </span>
+                    )}
+                    <span className="font-semibold text-[#002A4D]">
+                      {formatVnd(p.actualAmount)}
+                    </span>
+                    <span className="rounded-md bg-amber-700 px-2 py-1 text-xs font-medium text-white">
+                      {t("pendingItemCta")}
+                    </span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="mb-3">
         <Input
@@ -218,6 +284,8 @@ export default function TaxInvoicesListPage() {
         rows={filteredRows}
         rowKey={(r) => r.id}
         isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
         emptyText={t("noInvoices")}
         footer={
           <Pagination
@@ -279,12 +347,37 @@ export default function TaxInvoicesListPage() {
             <label className="mb-1 block text-sm font-medium">
               {t("uploadFile")}
             </label>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add("border-[var(--brand-blue-500)]", "bg-[var(--brand-blue-50)]");
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove("border-[var(--brand-blue-500)]", "bg-[var(--brand-blue-50)]");
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove("border-[var(--brand-blue-500)]", "bg-[var(--brand-blue-50)]");
+                const f = e.dataTransfer.files?.[0];
+                if (f && f.type === "application/pdf") setUploadFile(f);
+              }}
+              className="block w-full cursor-pointer rounded-xl border-2 border-dashed border-[#d4d4d4] bg-[#fafafa] p-6 text-center transition-colors hover:border-[var(--brand-blue-500)] hover:bg-[var(--brand-blue-50)]"
+            >
+              <div className="text-sm font-medium text-[#262626]">
+                {uploadFile ? uploadFile.name : t("uploadPickFile")}
+              </div>
+              <div className="mt-1 text-xs text-[#737373]">
+                {uploadFile ? t("uploadFileSize", { kb: Math.round(uploadFile.size / 1024) }) : t("uploadDropHint")}
+              </div>
+            </button>
             <input
               ref={fileInputRef}
               type="file"
               accept="application/pdf"
               onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
-              className="block text-sm"
+              className="hidden"
             />
             <p className="mt-1 text-xs text-[#737373]">{t("uploadFileHint")}</p>
           </div>
@@ -303,7 +396,7 @@ export default function TaxInvoicesListPage() {
               onClick={() => setShowUpload(false)}
               disabled={uploadSubmitting}
             >
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button onClick={handleUpload} isLoading={uploadSubmitting}>
               {t("uploadSubmit")}

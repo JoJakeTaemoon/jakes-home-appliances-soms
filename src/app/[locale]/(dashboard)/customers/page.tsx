@@ -53,6 +53,10 @@ export default function CustomersPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "code",
+    direction: "asc",
+  });
 
   // Reset to page 1 when filters/search change.
   useEffect(() => {
@@ -69,6 +73,10 @@ export default function CustomersPage() {
         if (debouncedQ) qs.set("q", debouncedQ);
         if (type) qs.set("type", type);
         if (status) qs.set("status", status);
+        if (sort) {
+          qs.set("sortBy", sort.column);
+          qs.set("sortDir", sort.direction);
+        }
         qs.set("page", String(page));
         qs.set("pageSize", String(PAGE_SIZE));
         const res = await api.get<CustomerRow[]>(`/api/customers?${qs.toString()}`);
@@ -86,25 +94,28 @@ export default function CustomersPage() {
     return () => {
       cancelled = true;
     };
-  }, [api, debouncedQ, type, status, page]);
+  }, [api, debouncedQ, type, status, page, sort]);
 
   const columns = useMemo<Column<CustomerRow>[]>(
     () => [
       {
         key: "code",
         header: t("code"),
+        sortKey: "code",
         cell: (r) => <span className="font-mono text-xs text-[#525252]">{r.code}</span>,
         className: "w-28",
       },
       {
         key: "type",
         header: t("type"),
+        sortKey: "type",
         cell: (r) => <StatusBadge tone={customerTypeTone(r.type)}>{r.type}</StatusBadge>,
         className: "w-20",
       },
       {
         key: "name",
         header: t("name"),
+        sortKey: "name",
         cell: (r) => (
           <div className="flex flex-col">
             <span className="font-medium text-[#111111]">{r.name}</span>
@@ -137,6 +148,7 @@ export default function CustomersPage() {
       {
         key: "region",
         header: t("preferredRegion"),
+        sortKey: "preferredRegion",
         cell: (r) =>
           r.preferredRegion ?? <span className="text-xs text-[#a3a3a3]">—</span>,
         className: "w-32",
@@ -144,6 +156,7 @@ export default function CustomersPage() {
       {
         key: "status",
         header: t("status"),
+        sortKey: "status",
         cell: (r) => (
           <StatusBadge tone={customerStatusTone(r.status)}>{r.status}</StatusBadge>
         ),
@@ -170,6 +183,8 @@ export default function CustomersPage() {
         rows={rows}
         rowKey={(r) => r.id}
         isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
         emptyText={debouncedQ || type || status ? t("noResults") : t("noCustomers")}
         onRowClick={(r) => router.push(`/customers/${r.id}`)}
         toolbar={

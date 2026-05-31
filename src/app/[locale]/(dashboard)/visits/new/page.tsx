@@ -161,7 +161,7 @@ export default function NewVisitPage() {
             onChange={setEquipmentId}
             options={equipment.map((e) => ({
               value: e.id,
-              label: `${e.model.modelCode} · ${e.serialNumber ?? "—"}`,
+              label: `${e.model.name} · ${e.serialNumber ?? "—"}`,
               description: e.model.name,
             }))}
             placeholder={t("createForm.equipmentPick")}

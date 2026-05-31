@@ -112,7 +112,7 @@ export async function runRentalRenewalReminder(
     if (!contactId) continue;
 
     const equipmentList = c.equipment
-      .map((ce) => `${ce.equipment.model.name} (${ce.equipment.model.modelCode})`)
+      .map((ce) => `${ce.equipment.model.name} (${ce.equipment.model.name})`)
       .join(", ");
     const maintenanceFee = c.monthlyMaintenanceFee
       ? formatVnd(c.monthlyMaintenanceFee.toString())

@@ -9,19 +9,15 @@ function optStr(max: number) {
   }, z.string().max(max).optional());
 }
 
-const modelCodeRegex = /^[A-Z0-9][A-Z0-9-]{1,29}$/i;
-
 export const createEquipmentModelSchema = z.object({
-  modelCode: z.string().trim().regex(modelCodeRegex, "Model code must be 2-30 chars, letters/digits/dash"),
   name: z.string().trim().min(1).max(180),
   // Customer-facing display names (KO/VI/EN). When omitted, list views fall
-  // back to `modelCode` (the legacy single-language `name` stays around for
-  // older consumers only).
+  // back to the single-language `name`.
   displayNameKo: optStr(180),
   displayNameVi: optStr(180),
   displayNameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
-  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]),
+  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).nullable().optional(),
   // Reference to ProductCategory. Optional during rollout — when null, the
   // legacy `category` enum is the only classifier. New models should set both.
   categoryId: z.string().trim().min(1).nullable().optional(),
@@ -43,7 +39,6 @@ export const createEquipmentModelSchema = z.object({
 // un-soft-delete a retired model). Mirrors the createEquipmentModelSchema
 // shape but every field is .optional() and no defaults are applied.
 export const updateEquipmentModelSchema = z.object({
-  modelCode: z.string().trim().regex(modelCodeRegex, "Model code must be 2-30 chars, letters/digits/dash").optional(),
   name: z.string().trim().min(1).max(180).optional(),
   displayNameKo: optStr(180),
   displayNameVi: optStr(180),

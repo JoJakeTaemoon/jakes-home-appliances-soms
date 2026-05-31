@@ -35,7 +35,17 @@ import {
   uploadTaxInvoiceMetaSchema,
 } from "@/lib/validators/taxInvoice";
 import { uploadTaxInvoice } from "@/lib/tax-invoices/operations";
+import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+
+const TAX_INVOICE_SORT_MAP: SortMap<Prisma.TaxInvoiceOrderByWithRelationInput> = {
+  invoiceNumber: (dir) => ({ invoiceNumber: dir }),
+  invoiceDate: (dir) => ({ invoiceDate: dir }),
+  invoiceProvider: (dir) => ({ invoiceProvider: dir }),
+  emailedAt: (dir) => ({ emailedAt: dir }),
+  createdAt: (dir) => ({ createdAt: dir }),
+  customer: (dir) => ({ payment: { customer: { code: dir } } }),
+};
 
 export const GET = defineQuery({
   audience: "staff",
@@ -47,7 +57,8 @@ export const GET = defineQuery({
   query: listTaxInvoiceQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { customerId, paymentId, from, to, page, pageSize } = query;
+    const { customerId, paymentId, from, to, sortBy, sortDir, page, pageSize } = query;
+    const orderBy = resolveOrderBy({ sortBy, sortDir }, TAX_INVOICE_SORT_MAP, { createdAt: "desc" });
 
     const where: Prisma.TaxInvoiceWhereInput = {};
     if (paymentId) where.paymentId = paymentId;
@@ -62,7 +73,7 @@ export const GET = defineQuery({
       prisma.taxInvoice.count({ where }),
       prisma.taxInvoice.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {

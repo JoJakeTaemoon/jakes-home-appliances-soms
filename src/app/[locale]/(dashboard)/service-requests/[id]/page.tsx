@@ -250,7 +250,7 @@ export default function ServiceRequestDetailPage() {
             </Field>
             <Field label={t("labelEquipment")}>
               {data.equipment
-                ? `${data.equipment.model.modelCode} · ${data.equipment.model.name}`
+                ? `${data.equipment.model.name} · ${data.equipment.model.name}`
                 : "—"}
             </Field>
             {data.approvedPrice && (

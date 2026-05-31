@@ -60,7 +60,7 @@ export function PortalVisitsClient() {
                 </div>
                 <div className="text-xs text-[#737373]">
                   {v.equipment
-                    ? `${v.equipment.model.name} (${v.equipment.model.modelCode})`
+                    ? `${v.equipment.model.name} (${v.equipment.model.name})`
                     : "—"}
                 </div>
               </div>

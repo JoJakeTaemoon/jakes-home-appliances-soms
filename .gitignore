@@ -78,3 +78,6 @@ next-env.d.ts
 
 # CodeGraph local tool metadata (db + cache, per-machine)
 /.codegraph
+
+# Local PDF / scratch output (e.g. scripts/render-sample-contract.ts)
+/tmp

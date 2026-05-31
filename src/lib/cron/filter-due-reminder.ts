@@ -176,7 +176,7 @@ async function processOne(
           customerContactId: primary.id,
           vars: {
             name: eq.customer.name,
-            equipment: `${eq.model.name} (${eq.model.modelCode})`,
+            equipment: `${eq.model.name} (${eq.model.name})`,
             days: String(Math.max(daysUntilDue, 0)),
             date: formatDate(nextDue, "vi"),
             action_label: actionLabel,

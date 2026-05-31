@@ -61,6 +61,8 @@ export const equipmentListQuerySchema = z.object({
   modelId: z.string().trim().min(1).optional(),
   status: z.enum(["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"]).optional(),
   region: z.string().trim().max(60).optional(),
+  sortBy: z.string().trim().min(1).max(60).optional(),
+  sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(25),
 });

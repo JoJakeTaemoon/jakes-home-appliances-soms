@@ -192,7 +192,7 @@ function MobileVisitDetailContent() {
         <h2 className="text-sm font-medium text-[#737373]">{tv("equipment")}</h2>
         {data.equipment ? (
           <p className="mt-1 text-sm">
-            {data.equipment.model.modelCode} · {data.equipment.model.name}
+            {data.equipment.model.name} · {data.equipment.model.name}
             <br />
             <span className="font-mono text-xs text-[#737373]">
               {data.equipment.serialNumber ?? "—"}

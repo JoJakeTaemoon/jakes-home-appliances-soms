@@ -33,15 +33,16 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import prisma from "@/lib/prisma";
 import { NotFoundError } from "@/lib/api/error";
 import { registerFonts } from "@/lib/pdf/fonts";
-import { getHqPhone } from "@/lib/settings";
+import { getCompanyTaxInfo, getHqPhone } from "@/lib/settings";
 import type {
+  PdfCompanyInfo,
   PdfContractView,
   PdfCustomerSummary,
   PdfEquipmentLine,
   PdfLangPair,
   PdfRenderProps,
 } from "@/lib/pdf/types";
-import { splitLangPair } from "@/lib/pdf/types";
+import { langPairForContractParty, splitLangPair } from "@/lib/pdf/types";
 import { B2cSaleContract } from "@/lib/pdf/templates/b2c-sale-contract";
 import { B2cRentalContract } from "@/lib/pdf/templates/b2c-rental-contract";
 import { B2bContract } from "@/lib/pdf/templates/b2b-contract";
@@ -211,7 +212,7 @@ interface LoadedContract {
 
 async function loadContract(
   contractId: string,
-  langPair: PdfLangPair,
+  langPairOverride: PdfLangPair | undefined,
 ): Promise<LoadedContract> {
   const row = await prisma.contract.findUnique({
     where: { id: contractId },
@@ -244,6 +245,11 @@ async function loadContract(
     type: row.customer.type,
     shortcode: row.customer.shortcode,
     taxCode: row.customer.taxCode,
+    representativeName: row.customer.representativeName,
+    residency: row.customer.residency,
+    nationalId: row.customer.nationalId,
+    passportNumber: row.customer.passportNumber,
+    nationality: row.customer.nationality,
     address: row.customer.address,
     district: row.customer.district,
     city: row.customer.city,
@@ -279,7 +285,7 @@ async function loadContract(
 
   const equipment: PdfEquipmentLine[] = row.equipment.map((ce) => ({
     equipmentId: ce.equipmentId,
-    modelCode: ce.equipment.model.modelCode,
+    modelCode: ce.equipment.model.name,
     modelName: ce.equipment.model.name,
     serialNumber: ce.equipment.serialNumber,
     siteName: ce.equipment.site?.name ?? null,
@@ -296,12 +302,30 @@ async function loadContract(
   else if (row.type === "RENTAL") templateCode = "CONTRACT_B2C_RENTAL";
   else templateCode = "CONTRACT_B2C_SALE";
 
+  // Resolve final lang pair: explicit override > contract-party language.
+  const langPair: PdfLangPair =
+    langPairOverride ??
+    langPairForContractParty(customer.contractParty?.language ?? null);
+
+  const [companyTax, hqPhone] = await Promise.all([
+    getCompanyTaxInfo(),
+    getHqPhone(),
+  ]);
+  const company: PdfCompanyInfo = {
+    legalName: companyTax.legalName,
+    address: companyTax.address,
+    representativeName: companyTax.representativeName,
+    taxCode: companyTax.taxCode,
+  };
+
   const props: PdfRenderProps = {
     contract,
     customer,
     equipment,
     langPair,
     generatedAt: new Date(),
+    company,
+    hqPhone,
   };
 
   let element: React.ReactElement;
@@ -585,7 +609,7 @@ async function loadWorkConfirmation(
   const lead = visit.leadTechnician;
   const equipmentInfo = visit.equipment
     ? {
-        modelCode: visit.equipment.model.modelCode,
+        modelCode: visit.equipment.model.name,
         modelName: visit.equipment.model.name,
         serialNumber: visit.equipment.serialNumber,
       }
@@ -709,11 +733,14 @@ async function writeDocumentRow(input: DocumentWriteInput): Promise<string> {
 export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
   registerFonts();
   const now = new Date();
+  // Contract pages may opt out of an explicit langPair so the renderer can
+  // derive it from the contract party's preferred language. Other PDF kinds
+  // still default to "vi-ko" when no override is supplied.
   const langPair: PdfLangPair = req.langPair ?? "vi-ko";
 
   switch (req.kind) {
     case "CONTRACT": {
-      const loaded = await loadContract(req.refId, langPair);
+      const loaded = await loadContract(req.refId, req.langPair);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("CONTRACT", {

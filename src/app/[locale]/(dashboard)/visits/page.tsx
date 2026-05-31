@@ -31,23 +31,12 @@ interface VisitRow {
 
 const PAGE_SIZE = 25;
 
-function useDebounced<T>(value: T, ms = 300): T {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return v;
-}
-
 export default function VisitsListPage() {
   const t = useTranslations("visits");
   const locale = useLocale();
   const router = useRouter();
   const api = useApi();
 
-  const [q, setQ] = useState("");
-  const debouncedQ = useDebounced(q, 300);
   const [stateFilter, setStateFilter] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [from, setFrom] = useState("");
@@ -57,6 +46,10 @@ export default function VisitsListPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
+    column: "scheduledFor",
+    direction: "asc",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,11 +57,14 @@ export default function VisitsListPage() {
       const sp = new URLSearchParams();
       sp.set("page", String(page));
       sp.set("pageSize", String(PAGE_SIZE));
-      if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
       if (stateFilter) sp.set("state", stateFilter);
       if (typeFilter) sp.set("type", typeFilter);
       if (from) sp.set("from", new Date(from).toISOString());
       if (to) sp.set("to", new Date(to).toISOString());
+      if (sort) {
+        sp.set("sortBy", sort.column);
+        sp.set("sortDir", sort.direction);
+      }
       const res = await api.get<VisitRow[]>(`/api/visits?${sp.toString()}`);
       setRows(res.data);
       const pag = (res as { pagination?: { total: number } }).pagination;
@@ -76,7 +72,7 @@ export default function VisitsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [api, page, debouncedQ, stateFilter, typeFilter, from, to]);
+  }, [api, page, stateFilter, typeFilter, from, to, sort]);
 
   useEffect(() => {
     void load();
@@ -86,6 +82,7 @@ export default function VisitsListPage() {
     {
       key: "scheduledFor",
       header: t("scheduledFor"),
+      sortKey: "scheduledFor",
       cell: (r) => (
         <div className="flex flex-col">
           <span>{formatDate(r.scheduledFor, locale)}</span>
@@ -99,6 +96,7 @@ export default function VisitsListPage() {
     {
       key: "customer",
       header: t("customer"),
+      sortKey: "customer",
       cell: (r) => (
         <div className="flex flex-col">
           <span className="font-medium">{r.customer.name}</span>
@@ -106,11 +104,12 @@ export default function VisitsListPage() {
         </div>
       ),
     },
-    { key: "type", header: t("type"), cell: (r) => <VisitTypeBadge type={r.type} /> },
-    { key: "state", header: t("state"), cell: (r) => <VisitStateBadge state={r.state} /> },
+    { key: "type", header: t("type"), sortKey: "type", cell: (r) => <VisitTypeBadge type={r.type} /> },
+    { key: "state", header: t("state"), sortKey: "state", cell: (r) => <VisitStateBadge state={r.state} /> },
     {
       key: "tech",
       header: t("lead"),
+      sortKey: "technician",
       cell: (r) =>
         r.leadTechnician?.username ? (
           <span className="text-sm">{r.leadTechnician.username}</span>
@@ -124,7 +123,7 @@ export default function VisitsListPage() {
       cell: (r) =>
         r.equipment ? (
           <div className="flex flex-col">
-            <span className="font-mono text-xs">{r.equipment.model.modelCode}</span>
+            <span className="font-mono text-xs">{r.equipment.model.name}</span>
             <span className="text-xs text-[#737373]">{r.equipment.serialNumber ?? "—"}</span>
           </div>
         ) : (
@@ -148,14 +147,11 @@ export default function VisitsListPage() {
         rowKey={(r) => r.id}
         onRowClick={(r) => router.push(`/visits/${r.id}`)}
         isLoading={loading}
-        emptyText={debouncedQ || stateFilter || typeFilter ? t("noResults") : t("noVisits")}
+        sort={sort}
+        onSortChange={setSort}
+        emptyText={stateFilter || typeFilter ? t("noResults") : t("noVisits")}
         toolbar={
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-            <Input
-              placeholder={t("searchPlaceholder")}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <Combobox
               value={stateFilter}
               onChange={(v) => setStateFilter(v)}

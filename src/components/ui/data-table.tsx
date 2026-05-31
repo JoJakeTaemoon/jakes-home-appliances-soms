@@ -11,6 +11,13 @@ export interface Column<T> {
   /** Render the cell value. */
   cell: (row: T) => ReactNode;
   align?: "left" | "right" | "center";
+  /** Server-side sort key (sent as ?sortBy=…). Header becomes clickable when set. */
+  sortKey?: string;
+}
+
+export interface SortState {
+  column: string;
+  direction: "asc" | "desc";
 }
 
 interface Props<T> {
@@ -29,6 +36,10 @@ interface Props<T> {
   /** Sticky header. */
   stickyHeader?: boolean;
   className?: string;
+  /** Current sort state for the rendered table. */
+  sort?: SortState | null;
+  /** Called when the user clicks a sortable header. */
+  onSortChange?: (next: SortState) => void;
 }
 
 const ALIGN: Record<NonNullable<Column<unknown>["align"]>, string> = {
@@ -48,7 +59,17 @@ export function DataTable<T>({
   footer,
   stickyHeader = true,
   className,
+  sort,
+  onSortChange,
 }: Readonly<Props<T>>) {
+  const handleSort = (sortKey: string) => {
+    if (!onSortChange) return;
+    if (sort?.column === sortKey) {
+      onSortChange({ column: sortKey, direction: sort.direction === "asc" ? "desc" : "asc" });
+    } else {
+      onSortChange({ column: sortKey, direction: "asc" });
+    }
+  };
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {toolbar && <div className="flex flex-col gap-3">{toolbar}</div>}
@@ -63,19 +84,31 @@ export function DataTable<T>({
               )}
             >
               <tr>
-                {columns.map((c) => (
-                  <th
-                    key={c.key}
-                    scope="col"
-                    className={cn(
-                      "border-b border-[#e5e5e5] px-3 py-2.5 text-xs font-medium uppercase tracking-wider",
-                      ALIGN[c.align ?? "left"],
-                      c.className,
-                    )}
-                  >
-                    {c.header}
-                  </th>
-                ))}
+                {columns.map((c) => {
+                  const sortable = !!c.sortKey && !!onSortChange;
+                  const active = sortable && sort?.column === c.sortKey;
+                  const indicator = active ? (sort?.direction === "asc" ? " ▲" : " ▼") : sortable ? " ↕" : "";
+                  return (
+                    <th
+                      key={c.key}
+                      scope="col"
+                      onClick={sortable && c.sortKey ? () => handleSort(c.sortKey!) : undefined}
+                      className={cn(
+                        "border-b border-[#e5e5e5] px-3 py-2.5 text-xs font-medium uppercase tracking-wider",
+                        ALIGN[c.align ?? "left"],
+                        sortable && "cursor-pointer select-none hover:text-[#111111]",
+                        c.className,
+                      )}
+                    >
+                      {c.header}
+                      {sortable && (
+                        <span className={active ? "text-[var(--brand-blue-700)]" : "text-[#a3a3a3]"}>
+                          {indicator}
+                        </span>
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>

@@ -3,8 +3,8 @@ import type { PdfMessages } from "./ko";
 export const en: PdfMessages = {
   documentTitle: {
     SALE: "Delivery Note / Sales Receipt",
-    RENTAL_B2C: "Residential Water Purifier Rental Contract",
-    RENTAL_B2B: "Rental Contract (Business)",
+    RENTAL_B2C: "Rental Contract",
+    RENTAL_B2B: "Rental Contract",
     MAINTENANCE: "Maintenance Contract",
     APPENDIX: "Contract Appendix",
   },
@@ -45,6 +45,16 @@ export const en: PdfMessages = {
     signatureCompany: "SEOUL AQUA (Representative)",
     seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
     generatedAt: "Generated",
+    companyBlockTitle: "Issuing company",
+    companyLegalName: "Legal entity",
+    companyAddress: "Address",
+    companyRepresentative: "Representative",
+    companyTaxCode: "Tax code (MST)",
+    companyPhone: "Phone",
+    customerRepresentative: "Legal representative",
+    customerNationalId: "National ID (CCCD)",
+    customerPassport: "Passport number",
+    customerNationality: "Nationality",
     type: { SALE: "Sale", RENTAL: "Rental", MAINTENANCE: "Maintenance" },
   },
   clauses: {

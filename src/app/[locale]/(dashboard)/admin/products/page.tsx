@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 
 type ApiClient = ReturnType<typeof useApi>;
@@ -25,6 +25,16 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
 
 type Tab = "brands" | "categories" | "models" | "consumables" | "accessories" | "charges";
+
+/** Returns the row's display name in the current UI locale, with fallbacks. */
+function pickLocaleName(
+  row: { nameKo: string; nameVi: string; nameEn: string },
+  locale: string,
+): string {
+  if (locale === "ko") return row.nameKo || row.nameVi || row.nameEn;
+  if (locale === "en") return row.nameEn || row.nameVi || row.nameKo;
+  return row.nameVi || row.nameKo || row.nameEn;
+}
 
 interface BrandRow {
   id: string;
@@ -46,12 +56,11 @@ interface CategoryRow {
 
 interface ModelRow {
   id: string;
-  modelCode: string;
   name: string;
   displayNameKo: string | null;
   displayNameVi: string | null;
   displayNameEn: string | null;
-  category: string;
+  category: string | null;
   isActive: boolean;
   brand: { id: string; name: string } | null;
 }
@@ -67,7 +76,7 @@ interface ConsumableRow {
   cleanOnEveryVisit: boolean;
   retailPrice: string;
   isActive: boolean;
-  compatibleModels: { modelId: string; quantity: number; model: { modelCode: string; name: string } }[];
+  compatibleModels: { modelId: string; quantity: number; model: { name: string } }[];
 }
 
 interface AccessoryRow {
@@ -79,7 +88,7 @@ interface AccessoryRow {
   isMinorPart: boolean;
   retailPrice: string;
   isActive: boolean;
-  compatibleModels: { modelId: string; quantity: number; model: { modelCode: string; name: string } }[];
+  compatibleModels: { modelId: string; quantity: number; model: { name: string } }[];
 }
 
 interface ChargePolicyRow {
@@ -666,7 +675,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ModelRow | null>(null);
   const [deleting, setDeleting] = useState<ModelRow | null>(null);
-  const { sort, onClick } = useSort<"modelCode" | "name" | "brand" | "category" | "isActive">("modelCode");
+  const { sort, onClick } = useSort<"name" | "brand" | "category" | "isActive">("name");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -683,10 +692,9 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const sorted = useMemo(
     () =>
       sortRows(rows, sort, {
-        modelCode: (r) => r.modelCode,
         name: (r) => r.displayNameKo ?? r.name,
         brand: (r) => r.brand?.name ?? "",
-        category: (r) => r.category,
+        category: (r) => r.category ?? "",
         isActive: (r) => r.isActive,
       }),
     [rows, sort],
@@ -700,7 +708,6 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
-            <SortableTh column="modelCode" sort={sort} onClick={onClick}>{t("colCode")}</SortableTh>
             <SortableTh column="name" sort={sort} onClick={onClick}>{t("colNameKo")}</SortableTh>
             <SortableTh column="brand" sort={sort} onClick={onClick}>{t("colBrand")}</SortableTh>
             <SortableTh column="category" sort={sort} onClick={onClick}>{t("colCategory")}</SortableTh>
@@ -710,14 +717,13 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={6} className="p-4 text-center">...</td></tr>
+            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
-                <td className="p-2 font-mono text-sm">{r.modelCode}</td>
                 <td className="p-2">{r.displayNameKo ?? r.name}</td>
                 <td className="p-2 text-sm">{r.brand?.name ?? "—"}</td>
-                <td className="p-2">{r.category}</td>
+                <td className="p-2">{r.category ?? "—"}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
                   <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
@@ -748,13 +754,13 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             mode="edit"
             initial={{
               id: editing.id,
-              modelCode: editing.modelCode,
               name: editing.name,
               displayNameKo: editing.displayNameKo ?? "",
               displayNameVi: editing.displayNameVi ?? "",
               displayNameEn: editing.displayNameEn ?? "",
               brandId: editing.brand?.id ?? null,
-              category: editing.category as "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER",
+              category: (editing.category ?? null) as
+                | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
               isActive: editing.isActive,
             }}
             onDone={() => { setEditing(null); void load(); }}
@@ -804,6 +810,7 @@ function useModelOptions(api: ApiClient): ModelRow[] {
 // ───────────────────────────────────────────────────────────────────────────
 
 function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const locale = useLocale();
   const models = useModelOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -872,14 +879,14 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     () =>
       sortRows(rows, sort, {
         sku: (r) => r.sku,
-        nameVi: (r) => r.nameVi,
+        nameVi: (r) => pickLocaleName(r, locale),
         replaceEveryMonths: (r) => r.replaceEveryMonths ?? -1,
         cleanEveryMonths: (r) => r.cleanEveryMonths ?? -1,
         cleanOnEveryVisit: (r) => r.cleanOnEveryVisit,
         retailPrice: (r) => Number(r.retailPrice),
         isActive: (r) => r.isActive,
       }),
-    [rows, sort],
+    [rows, sort, locale],
   );
 
   return (
@@ -949,13 +956,13 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
-                <td className="p-2">{r.nameVi}</td>
+                <td className="p-2">{pickLocaleName(r, locale)}</td>
                 <td className="p-2 text-right">{r.replaceEveryMonths ?? t("cycleNone")}</td>
                 <td className="p-2 text-right">{r.cleanEveryMonths ?? t("cycleNone")}</td>
                 <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
                 <td className="p-2 text-xs">
-                  {r.compatibleModels.map((m) => `${m.model.modelCode}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
+                  {r.compatibleModels.map((m) => `${m.model.name}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
                 </td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
@@ -1088,6 +1095,7 @@ function ConsumableEditModal({
 // ───────────────────────────────────────────────────────────────────────────
 
 function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const locale = useLocale();
   const models = useModelOptions(api);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1142,12 +1150,12 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     () =>
       sortRows(rows, sort, {
         sku: (r) => r.sku,
-        nameVi: (r) => r.nameVi,
+        nameVi: (r) => pickLocaleName(r, locale),
         isMinorPart: (r) => r.isMinorPart,
         retailPrice: (r) => Number(r.retailPrice),
         isActive: (r) => r.isActive,
       }),
-    [rows, sort],
+    [rows, sort, locale],
   );
 
   return (
@@ -1209,10 +1217,10 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
-                <td className="p-2">{r.nameVi}</td>
+                <td className="p-2">{pickLocaleName(r, locale)}</td>
                 <td className="p-2 text-center">{r.isMinorPart ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
-                <td className="p-2 text-xs">{r.compatibleModels.map((m) => m.model.modelCode).join(", ") || "—"}</td>
+                <td className="p-2 text-xs">{r.compatibleModels.map((m) => m.model.name).join(", ") || "—"}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
                   <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
@@ -1430,7 +1438,7 @@ function CompatibilityPicker({
                 : "border-border bg-white text-text-secondary hover:border-brand-blue-200 hover:bg-surface-hover"
             }`}
           >
-            {m.modelCode}
+            {m.name}
           </button>
         );
       })}
