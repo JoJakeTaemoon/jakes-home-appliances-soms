@@ -6,7 +6,7 @@
  * DELETE /api/admin/notification-templates/:code?locale=vi
  *   → drop the override (revert to file default)
  *
- * Restricted to ADMIN.
+ * Restricted to ADMIN + MANAGER.
  */
 
 import { NextRequest } from "next/server";
@@ -45,7 +45,7 @@ export async function PUT(
   ctx: { params: Promise<{ code: string }> },
 ) {
   try {
-    const caller = await requireRole(request, "ADMIN");
+    const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const { code } = await ctx.params;
     if (!TEMPLATES[code]) {
       throw new ValidationError("Unknown template code");
@@ -113,7 +113,7 @@ export async function PATCH(
   ctx: { params: Promise<{ code: string }> },
 ) {
   try {
-    const caller = await requireRole(request, "ADMIN");
+    const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const { code } = await ctx.params;
     if (!TEMPLATES[code]) {
       throw new ValidationError("Unknown template code");
@@ -183,7 +183,7 @@ export async function DELETE(
   ctx: { params: Promise<{ code: string }> },
 ) {
   try {
-    const caller = await requireRole(request, "ADMIN");
+    const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const { code } = await ctx.params;
     const locale = parseLocale(request);
     const before = await prisma.notificationTemplate.findUnique({

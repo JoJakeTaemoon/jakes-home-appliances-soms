@@ -1287,13 +1287,16 @@
   },
   "admin": {
     "navTitle": "관리자",
-    "notificationTemplates": "알림 서식",
+    "notificationTemplates": {
+      "title": "알림 서식",
+      "adminRequired": "관리자 또는 매니저 권한이 필요합니다."
+    },
     "settings": "설정",
     "schedulerWeights": "스케줄러 가중치",
     "companyContact": {
       "title": "회사 정보",
       "description": "회사 전화번호, 법적 상호와 세무 정보를 관리합니다. 전화번호는 기사 모바일 앱의 「본사 호출」 버튼과 고객용 SMS·이메일에, 세무 정보는 계약서·세금계산서 생성에 사용됩니다. 변경사항은 60초 안에 반영됩니다.",
-      "adminRequired": "관리자 권한이 필요합니다.",
+      "adminRequired": "관리자 또는 매니저 권한이 필요합니다.",
       "loading": "불러오는 중...",
       "phoneSectionTitle": "본사 연락처",
       "phoneLabel": "본사 전화번호",

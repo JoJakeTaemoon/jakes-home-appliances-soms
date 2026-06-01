@@ -3,7 +3,7 @@
  * PUT  /api/admin/company-contact  → upsert HQ phone
  * PATCH /api/admin/company-contact → upsert tax info (legal block)
  *
- * ADMIN only. Writes SystemSetting rows keyed `company.hqPhone` and
+ * ADMIN + MANAGER. Writes SystemSetting rows keyed `company.hqPhone` and
  * `company.taxInfo`. PUT keeps a single-field payload for backward compat;
  * PATCH handles the new tax-info block (legalName / address /
  * representativeName / taxCode).
@@ -54,7 +54,8 @@ const taxInfoSchema = z.object({
 export const GET = defineQuery({
   audience: "staff",
   authorize: (auth) => {
-    if (auth.role !== "ADMIN") throw new ForbiddenError("Insufficient role");
+    if (auth.role !== "ADMIN" && auth.role !== "MANAGER")
+      throw new ForbiddenError("Insufficient role");
   },
   handler: async () => {
     const [hqPhone, taxInfo] = await Promise.all([
@@ -73,7 +74,7 @@ export const GET = defineQuery({
 
 export async function PUT(request: NextRequest) {
   try {
-    const caller = await requireRole(request, "ADMIN");
+    const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const parsed = phoneSchema.parse(await request.json());
     const before = await getHqPhone();
     await setHqPhone(parsed.hqPhone, caller.userId);
@@ -95,7 +96,7 @@ export async function PUT(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const caller = await requireRole(request, "ADMIN");
+    const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const parsed = taxInfoSchema.parse(await request.json());
     const before = await getCompanyTaxInfo();
     await setCompanyTaxInfo(parsed, caller.userId);

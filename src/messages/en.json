@@ -1372,13 +1372,16 @@
       "chargeHint": "When no row matches, the default rule applies — Rental is always free, Sale is free within warranty (else billed), Maintenance is free for consumables and minor accessories (else billed).",
       "notAllowed": "This page is restricted to Admin or Manager."
     },
-    "notificationTemplates": "Notification templates",
+    "notificationTemplates": {
+      "title": "Notification templates",
+      "adminRequired": "Admin or Manager role required."
+    },
     "settings": "Settings",
     "schedulerWeights": "Scheduler weights",
     "companyContact": {
       "title": "Company info",
       "description": "Manage the HQ phone number, legal entity name and tax info. The phone feeds the technician's \"Call HQ\" button and every customer SMS / email; the tax info is used when generating contracts and tax invoices. Changes apply within 60 seconds.",
-      "adminRequired": "Administrator role required.",
+      "adminRequired": "Admin or Manager role required.",
       "loading": "Loading…",
       "phoneSectionTitle": "HQ contact",
       "phoneLabel": "HQ phone number",

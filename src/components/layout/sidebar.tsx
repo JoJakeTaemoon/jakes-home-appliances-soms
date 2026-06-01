@@ -38,55 +38,56 @@ type LabelKey =
   | "products"
   | "auditLog";
 
+type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
+
+/**
+ * `roles` is the canonical visibility list per item. Items hide for any
+ * role that lacks page-level access — keep this list in sync with the
+ * page's actual auth guard so the sidebar never advertises a 403.
+ */
 interface NavItem {
   href: string;
   labelKey: LabelKey;
   Icon: typeof LayoutDashboard;
   disabled?: boolean;
+  roles: readonly RoleKey[];
 }
 
+const ALL_OFFICE_ROLES: readonly RoleKey[] = [
+  "ADMIN",
+  "MANAGER",
+  "STAFF",
+  "TECHNICIAN",
+];
+const ADMIN_MANAGER: readonly RoleKey[] = ["ADMIN", "MANAGER"];
+
 const navItems: NavItem[] = [
-  { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard },
-  { href: "/customers", labelKey: "customers", Icon: Users },
-  { href: "/equipment", labelKey: "equipment", Icon: Cpu },
-  { href: "/contracts", labelKey: "contracts", Icon: FileText },
-  { href: "/visits", labelKey: "visits", Icon: CalendarCheck },
-  { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox },
-  { href: "/payments", labelKey: "payments", Icon: Wallet },
-  { href: "/tax-invoices", labelKey: "taxInvoices", Icon: Receipt },
-  { href: "/reports", labelKey: "reports", Icon: BarChart3 },
+  { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard, roles: ALL_OFFICE_ROLES },
+  { href: "/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
+  { href: "/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
+  { href: "/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
+  { href: "/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
+  { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
+  { href: "/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
+  { href: "/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
+  { href: "/reports", labelKey: "reports", Icon: BarChart3, roles: ALL_OFFICE_ROLES },
 ];
 
 const adminNavItems: NavItem[] = [
-  {
-    href: "/reports/audit",
-    labelKey: "auditLog",
-    Icon: ScrollText,
-  },
-  {
-    href: "/admin/products",
-    labelKey: "products",
-    Icon: Package,
-  },
-  {
-    href: "/admin/users",
-    labelKey: "userManagement",
-    Icon: Users,
-  },
-  {
-    href: "/admin/company-contact",
-    labelKey: "companyContact",
-    Icon: Phone,
-  },
+  { href: "/reports/audit", labelKey: "auditLog", Icon: ScrollText, roles: ADMIN_MANAGER },
+  { href: "/admin/products", labelKey: "products", Icon: Package, roles: ADMIN_MANAGER },
+  { href: "/admin/users", labelKey: "userManagement", Icon: Users, roles: ADMIN_MANAGER },
+  { href: "/admin/company-contact", labelKey: "companyContact", Icon: Phone, roles: ADMIN_MANAGER },
 ];
 
 const adminSettingsItems: NavItem[] = [
-  {
-    href: "/admin/notification-templates",
-    labelKey: "notificationTemplates",
-    Icon: Settings,
-  },
+  { href: "/admin/notification-templates", labelKey: "notificationTemplates", Icon: Settings, roles: ADMIN_MANAGER },
 ];
+
+function visibleFor(items: readonly NavItem[], role: RoleKey | undefined): NavItem[] {
+  if (!role) return [];
+  return items.filter((it) => it.roles.includes(role));
+}
 
 function getInitials(name: string): string {
   if (!name) return "";
@@ -98,13 +99,18 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
-
 export function Sidebar() {
   const t = useTranslations("nav");
   const tRoles = useTranslations("roles");
   const { user } = useAuth();
   const pathname = usePathname();
+
+  const role = user?.role as RoleKey | undefined;
+  const visibleMain = visibleFor(navItems, role);
+  const visibleAdmin = visibleFor(adminNavItems, role);
+  const visibleAdminSettings = visibleFor(adminSettingsItems, role);
+  const showAdminSection =
+    visibleAdmin.length > 0 || visibleAdminSettings.length > 0;
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-[#e5e5e5] bg-white">
@@ -126,7 +132,7 @@ export function Sidebar() {
           {t("main")}
         </p>
         <ul className="space-y-0.5">
-          {navItems.map((item) => {
+          {visibleMain.map((item) => {
             const label = t(item.labelKey);
             const Icon = item.Icon;
             const active =
@@ -165,13 +171,13 @@ export function Sidebar() {
           })}
         </ul>
 
-        {(user?.role === "ADMIN" || user?.role === "MANAGER") && (
+        {showAdminSection && (
           <>
             <p className="mt-4 px-3 pb-2 text-xs font-medium uppercase tracking-wider text-[#a3a3a3]">
               {t("admin")}
             </p>
             <ul className="space-y-0.5">
-              {adminNavItems.map((item) => {
+              {visibleAdmin.map((item) => {
                 const Icon = item.Icon;
                 const active =
                   pathname === item.href ||
@@ -195,12 +201,14 @@ export function Sidebar() {
               })}
             </ul>
 
-            <div className="mt-2 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252]">
-              <Settings className="size-5 shrink-0" strokeWidth={1.5} />
-              <span>{t("settings")}</span>
-            </div>
+            {visibleAdminSettings.length > 0 && (
+              <div className="mt-2 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-normal text-[#525252]">
+                <Settings className="size-5 shrink-0" strokeWidth={1.5} />
+                <span>{t("settings")}</span>
+              </div>
+            )}
             <ul className="space-y-0.5">
-              {adminSettingsItems.map((item) => {
+              {visibleAdminSettings.map((item) => {
                 const Icon = item.Icon;
                 const active =
                   pathname === item.href ||
