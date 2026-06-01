@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { pickModelName } from "@/lib/products/name";
+import { useTranslations , useLocale} from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 
@@ -11,8 +12,10 @@ interface FilterEntry {
 }
 interface ModelInfo {
   id: string;
-  modelCode: string;
-  name: string;
+  modelCode: string | null;
+  nameKo: string | null;
+  nameVi: string | null;
+  nameEn: string | null;
   category: string;
   filterPolicy: { filters?: FilterEntry[] } | null;
 }
@@ -44,6 +47,7 @@ function computeNextFilterDates(
 interface Props { id: string }
 
 export function EquipmentDetailClient({ id }: Readonly<Props>) {
+  const locale = useLocale();
   const t = useTranslations("portal.equipmentDetail");
   const { accessToken } = useCustomerAuth();
   const router = useRouter();
@@ -100,8 +104,8 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
       </Link>
 
       <section className="rounded-2xl border border-[#e5e5e5] bg-white p-5">
-        <h1 className="text-lg font-semibold text-[#002A4D]">{eq.model.name}</h1>
-        <p className="text-xs text-[#737373]">{eq.model.name}</p>
+        <h1 className="text-lg font-semibold text-[#002A4D]">{pickModelName(eq.model, locale)}</h1>
+        <p className="text-xs text-[#737373]">{pickModelName(eq.model, locale)}</p>
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("serial")}</dt>

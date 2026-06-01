@@ -9,6 +9,17 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { Bi } from "./shared";
 import { splitLangPair, type PdfLangPair } from "@/lib/pdf/types";
+import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
+
+// Inline Hangul detector — picks Noto Sans KR for KO data values; default
+// Be Vietnam Pro handles VI diacritics + Latin out of the box. Kept local so
+// receipt.tsx doesn't need to depend on shared.tsx internals.
+const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
+function autoFont(s: string | null | undefined) {
+  return s && HANGUL_RE.test(s)
+    ? { fontFamily: PDF_FONT_FAMILY.ko }
+    : { fontFamily: PDF_DEFAULT_FAMILY };
+}
 
 export type ReceiptLocale = "ko" | "vi" | "en";
 
@@ -36,7 +47,9 @@ export interface ReceiptPayload {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, fontFamily: "Helvetica", color: "#111" },
+  // Default to Be Vietnam Pro so VI diacritics + Latin render correctly.
+  // Korean content gets bumped to Noto Sans KR per-field via `autoFont`.
+  page: { padding: 36, fontSize: 10, fontFamily: PDF_DEFAULT_FAMILY, color: "#111" },
   brand: {
     flexDirection: "row",
     alignItems: "center",
@@ -241,8 +254,8 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
           </View>
         </View>
 
-        <Text style={styles.docTitle}>{P.title}</Text>
-        <Text style={styles.docTitleSecondary}>{S.title}</Text>
+        <Text style={[styles.docTitle, autoFont(P.title)]}>{P.title}</Text>
+        <Text style={[styles.docTitleSecondary, autoFont(S.title)]}>{S.title}</Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
@@ -258,7 +271,7 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
         <View style={styles.card}>
           <View style={styles.row}>
             {biLabel("customer")}
-            <Text style={styles.value}>{payload.customerName}</Text>
+            <Text style={[styles.value, autoFont(payload.customerName)]}>{payload.customerName}</Text>
           </View>
           <View style={styles.row}>
             {biLabel("customerCode")}
@@ -273,13 +286,13 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
           {payload.address && (
             <View style={styles.row}>
               {biLabel("address")}
-              <Text style={styles.value}>{payload.address}</Text>
+              <Text style={[styles.value, autoFont(payload.address)]}>{payload.address}</Text>
             </View>
           )}
           {payload.contactName && (
             <View style={styles.row}>
               {biLabel("contact")}
-              <Text style={styles.value}>
+              <Text style={[styles.value, autoFont(payload.contactName)]}>
                 {payload.contactName}
                 {payload.contactPhone ? ` · ${payload.contactPhone}` : ""}
               </Text>
@@ -294,7 +307,7 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
           </View>
           <View style={styles.row}>
             {biLabel("collector")}
-            <Text style={styles.value}>{payload.collectorName}</Text>
+            <Text style={[styles.value, autoFont(payload.collectorName)]}>{payload.collectorName}</Text>
           </View>
           {payload.reference && (
             <View style={styles.row}>
@@ -318,26 +331,26 @@ export function Receipt({ payload }: Readonly<ReceiptProps>) {
             {formatVnd(payload.actualAmount)}
           </Text>
           {payload.carryoverAmount > 0 && (
-            <Text style={styles.carryover}>
+            <Text style={[styles.carryover, autoFont(`${P.carryover}${S.carryover}`)]}>
               {P.carryover} / {S.carryover}: {formatVnd(payload.carryoverAmount)}
             </Text>
           )}
         </View>
 
         {payload.notes && (
-          <Text style={styles.notes}>
+          <Text style={[styles.notes, autoFont(payload.notes)]}>
             {P.notes} / {S.notes}: {payload.notes}
           </Text>
         )}
 
         <View style={styles.signRow}>
           <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{P.signedCollector}</Text>
-            <Text style={styles.signLabelSecondary}>{S.signedCollector}</Text>
+            <Text style={[styles.signLabel, autoFont(P.signedCollector)]}>{P.signedCollector}</Text>
+            <Text style={[styles.signLabelSecondary, autoFont(S.signedCollector)]}>{S.signedCollector}</Text>
           </View>
           <View style={styles.signBox}>
-            <Text style={styles.signLabel}>{P.signedCustomer}</Text>
-            <Text style={styles.signLabelSecondary}>{S.signedCustomer}</Text>
+            <Text style={[styles.signLabel, autoFont(P.signedCustomer)]}>{P.signedCustomer}</Text>
+            <Text style={[styles.signLabelSecondary, autoFont(S.signedCustomer)]}>{S.signedCustomer}</Text>
           </View>
         </View>
 

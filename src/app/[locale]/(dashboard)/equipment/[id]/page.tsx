@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
@@ -26,8 +27,10 @@ interface EquipmentDetail {
   site: { id: string; name: string; address: string } | null;
   model: {
     id: string;
-    modelCode: string;
-    name: string;
+    modelCode: string | null;
+    nameKo: string | null;
+    nameVi: string | null;
+    nameEn: string | null;
     category: string;
     description: string | null;
     retailPrice: string | null;
@@ -114,7 +117,7 @@ export default function EquipmentDetailPage() {
             <StatusBadge tone={equipmentOwnershipTone(data.ownership)}>{data.ownership}</StatusBadge>
           </div>
           <h1 className="mt-1 text-2xl font-semibold text-[#002A4D]">
-            {data.model.name} — {data.model.name}
+            {pickModelName(data.model, locale)} — {pickModelName(data.model, locale)}
           </h1>
           <p className="text-xs text-[#737373]">
             <Link href={`/customers/${data.customer.id}`} className="underline">
@@ -157,7 +160,7 @@ export default function EquipmentDetailPage() {
           </h3>
           <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
           <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
-          <Row label={t("model")} value={`${data.model.name} — ${data.model.name}`} />
+          <Row label={t("model")} value={`${pickModelName(data.model, locale)} — ${pickModelName(data.model, locale)}`} />
           <Row label={t("ownership")} value={data.ownership} />
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">

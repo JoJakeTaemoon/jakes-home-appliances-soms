@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
@@ -22,7 +23,7 @@ interface EquipmentRow {
   id: string;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B" };
   site: { id: string; name: string; region: string | null } | null;
-  model: { id: string; modelCode: string; name: string };
+  model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   serialNumber: string | null;
   status: string;
   ownership: string;
@@ -118,8 +119,8 @@ export default function EquipmentPage() {
         sortKey: "model",
         cell: (r) => (
           <div className="flex flex-col">
-            <span className="font-mono text-xs">{r.model.name}</span>
-            <span className="text-xs text-[#737373]">{r.model.name}</span>
+            <span className="font-mono text-xs">{pickModelName(r.model, locale)}</span>
+            <span className="text-xs text-[#737373]">{pickModelName(r.model, locale)}</span>
           </div>
         ),
       },

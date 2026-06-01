@@ -94,8 +94,10 @@ interface EquipmentRow {
   siteId: string | null;
   installedAt: Date | null;
   model: {
-    name: string;
-    modelCode: string;
+    nameKo: string | null;
+    nameVi: string | null;
+    nameEn: string | null;
+    modelCode: string | null;
     consumables: {
       consumable: {
         id: string;
@@ -176,7 +178,7 @@ async function processOne(
           customerContactId: primary.id,
           vars: {
             name: eq.customer.name,
-            equipment: `${eq.model.name} (${eq.model.name})`,
+            equipment: `${eq.model.nameVi ?? eq.model.nameKo ?? eq.model.nameEn ?? eq.model.modelCode ?? ""} (${eq.model.modelCode ?? ""})`,
             days: String(Math.max(daysUntilDue, 0)),
             date: formatDate(nextDue, "vi"),
             action_label: actionLabel,
@@ -234,7 +236,9 @@ export async function runFilterDueReminder(
       installedAt: true,
       model: {
         select: {
-          name: true,
+          nameKo: true,
+          nameVi: true,
+          nameEn: true,
           modelCode: true,
           consumables: {
             select: {

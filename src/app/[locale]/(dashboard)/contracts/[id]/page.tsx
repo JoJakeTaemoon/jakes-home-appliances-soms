@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ interface ContractDetail {
     equipment: {
       id: string;
       serialNumber: string | null;
-      model: { id: string; modelCode: string; name: string; category: string };
+      model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
       site: { id: string; name: string } | null;
     };
   }>;
@@ -252,8 +253,8 @@ export default function ContractDetailPage() {
                     >
                       <td className="px-3 py-2">
                         <div className="flex flex-col">
-                          <span className="font-medium">{ce.equipment.model.name}</span>
-                          <span className="text-xs text-[#737373]">{ce.equipment.model.name}</span>
+                          <span className="font-medium">{pickModelName(ce.equipment.model, locale)}</span>
+                          <span className="text-xs text-[#737373]">{pickModelName(ce.equipment.model, locale)}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2 font-mono text-xs">{ce.equipment.serialNumber ?? "—"}</td>

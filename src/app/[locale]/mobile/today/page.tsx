@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { CashOnHandBadge } from "@/components/mobile/cash-on-hand-badge";
@@ -27,7 +28,7 @@ interface VisitCard {
   };
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   } | null;
 }
 
@@ -126,7 +127,7 @@ function VisitSection({
               </p>
               {v.equipment && (
                 <p className="text-xs text-[#737373]">
-                  {v.equipment.model.name}
+                  {pickModelName(v.equipment.model, locale)}
                   {v.equipment.serialNumber ? ` · ${v.equipment.serialNumber}` : ""}
                 </p>
               )}

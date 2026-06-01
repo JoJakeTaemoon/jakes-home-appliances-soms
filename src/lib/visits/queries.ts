@@ -47,7 +47,7 @@ export async function getVisitOr404(visitId: string) {
         select: {
           id: true,
           serialNumber: true,
-          model: { select: { id: true, modelCode: true, name: true, category: true } },
+          model: { select: { id: true, modelCode: true, nameKo: true, nameVi: true, nameEn: true, category: true } },
           site: { select: { id: true, name: true, region: true, address: true } },
         },
       },

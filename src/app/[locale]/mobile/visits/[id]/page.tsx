@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ interface VisitDetail {
   };
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
     site: { id: string; name: string } | null;
   } | null;
   leadTechnician: { username: string } | null;
@@ -192,7 +193,7 @@ function MobileVisitDetailContent() {
         <h2 className="text-sm font-medium text-[#737373]">{tv("equipment")}</h2>
         {data.equipment ? (
           <p className="mt-1 text-sm">
-            {data.equipment.model.name} · {data.equipment.model.name}
+            {pickModelName(data.equipment.model, locale)} · {pickModelName(data.equipment.model, locale)}
             <br />
             <span className="font-mono text-xs text-[#737373]">
               {data.equipment.serialNumber ?? "—"}

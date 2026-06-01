@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,6 @@ import {
   canManageEquipment,
 } from "@/lib/customers/access";
 import { formatDate } from "@/lib/format";
-import { useLocale } from "next-intl";
 
 interface CustomerDetail {
   id: string;
@@ -86,7 +86,7 @@ interface SiteRow {
 interface EquipmentRow {
   id: string;
   modelId: string;
-  model: { modelCode: string; name: string };
+  model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   siteId: string | null;
   site: { id: string; name: string } | null;
   serialNumber: string | null;
@@ -357,8 +357,8 @@ export default function CustomerDetailPage() {
                       >
                         <td className="px-3 py-2">
                           <div className="flex flex-col">
-                            <span className="font-medium">{e.model.name}</span>
-                            <span className="text-xs text-[#737373]">{e.model.name}</span>
+                            <span className="font-medium">{pickModelName(e.model, locale)}</span>
+                            <span className="text-xs text-[#737373]">{pickModelName(e.model, locale)}</span>
                           </div>
                         </td>
                         <td className="px-3 py-2 font-mono text-xs">{e.serialNumber ?? "—"}</td>
@@ -494,28 +494,58 @@ function Card({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  label,
+  value,
+  href,
+}: Readonly<{
+  label: string;
+  value: string | null | undefined;
+  href?: string;
+}>) {
+  const display = value ?? "—";
   return (
-    <div className="flex items-baseline justify-between gap-3 text-sm">
-      <span className="text-xs text-[#737373]">{label}</span>
-      <span className="text-[#111111]">{value ?? "—"}</span>
+    <div className="flex items-baseline gap-2 text-sm">
+      <span className="shrink-0 text-xs text-[#737373]">{label}</span>
+      {href && value ? (
+        <a
+          href={href}
+          className="truncate text-[#0C6BA8] hover:underline"
+        >
+          {display}
+        </a>
+      ) : (
+        <span className="truncate text-[#111111]">{display}</span>
+      )}
     </div>
   );
+}
+
+/**
+ * Language code → "<native-name> <flag>" — the contact's own language, not
+ * the viewer's locale, so the label always reads as the contact would read
+ * it themselves.
+ */
+function languageLabel(lang: "vi" | "ko" | "en"): string {
+  if (lang === "vi") return "Tiếng Việt 🇻🇳";
+  if (lang === "ko") return "한국어 🇰🇷";
+  return "English 🇺🇸";
 }
 
 function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[] }>) {
   const t = useTranslations("customers");
   const tEq = useTranslations("equipment");
+  const locale = useLocale();
   const grouped = useMemo(() => {
     const buckets = new Map<string, { modelCode: string; modelName: string; count: number }>();
     for (const e of equipment) {
-      const key = e.model.name;
-      const cur = buckets.get(key);
+      const name = pickModelName(e.model, locale);
+      const cur = buckets.get(name);
       if (cur) cur.count++;
-      else buckets.set(key, { modelCode: e.model.name, modelName: e.model.name, count: 1 });
+      else buckets.set(name, { modelCode: e.model.modelCode ?? name, modelName: name, count: 1 });
     }
     return Array.from(buckets.values()).sort((a, b) => b.count - a.count || a.modelCode.localeCompare(b.modelCode));
-  }, [equipment]);
+  }, [equipment, locale]);
 
   return (
     <Card label={`${t("tabs.equipment")} · ${equipment.length}`}>
@@ -735,9 +765,13 @@ function ContactsTab({
             <ContactActions contact={cp} customer={customer} role={role} reload={reload} />
           </div>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Field label={tc("phone")} value={cp.phone1} />
-            <Field label={tc("email")} value={cp.email} />
-            <Field label={tc("language")} value={cp.language.toUpperCase()} />
+            <Field label={tc("phone")} value={cp.phone1} href={`tel:${cp.phone1}`} />
+            <Field
+              label={tc("email")}
+              value={cp.email}
+              href={cp.email ? `mailto:${cp.email}` : undefined}
+            />
+            <Field label={tc("language")} value={languageLabel(cp.language)} />
           </div>
         </div>
       )}
@@ -764,9 +798,13 @@ function ContactsTab({
               <ContactActions contact={c} customer={customer} role={role} reload={reload} />
             </div>
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <Field label={tc("phone")} value={c.phone1} />
-              <Field label={tc("email")} value={c.email} />
-              <Field label={tc("language")} value={c.language.toUpperCase()} />
+              <Field label={tc("phone")} value={c.phone1} href={`tel:${c.phone1}`} />
+              <Field
+                label={tc("email")}
+                value={c.email}
+                href={c.email ? `mailto:${c.email}` : undefined}
+              />
+              <Field label={tc("language")} value={languageLabel(c.language)} />
             </div>
           </div>
         ))}
@@ -1477,7 +1515,7 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
     state: string;
     isPaid: boolean;
     submittedAt: string;
-    equipment: { id: string; model: { modelCode: string; name: string } } | null;
+    equipment: { id: string; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } } | null;
   };
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1532,7 +1570,7 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
               </td>
               <td className="px-3 py-2">{t(`types.${r.type}` as never)}</td>
               <td className="px-3 py-2">{t(`states.${r.state}` as never)}</td>
-              <td className="px-3 py-2">{r.isPaid ? t("yes") : t("no")}</td>
+              <td className="px-3 py-2">{r.isPaid ? t("isPaidYes") : t("isPaidNo")}</td>
               <td className="px-3 py-2">{formatDate(r.submittedAt, locale)}</td>
             </tr>
           ))}

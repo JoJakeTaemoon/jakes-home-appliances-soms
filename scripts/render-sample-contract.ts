@@ -106,16 +106,20 @@ async function main() {
     amendmentReason: contract.amendmentReason,
   };
 
-  const equipment: PdfEquipmentLine[] = contract.equipment.map((ce) => ({
-    equipmentId: ce.equipmentId,
-    modelCode: ce.equipment.model.name,
-    modelName: ce.equipment.model.name,
-    serialNumber: ce.equipment.serialNumber,
-    siteName: ce.equipment.site?.name ?? null,
-    unitPrice: ce.unitPrice ? Number(ce.unitPrice.toString()) : null,
-    quantity: ce.quantity,
-    notes: ce.notes,
-  }));
+  const equipment: PdfEquipmentLine[] = contract.equipment.map((ce) => {
+    const m = ce.equipment.model;
+    const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    return {
+      equipmentId: ce.equipmentId,
+      modelCode: m.modelCode ?? name,
+      modelName: name,
+      serialNumber: ce.equipment.serialNumber,
+      siteName: ce.equipment.site?.name ?? null,
+      unitPrice: ce.unitPrice ? Number(ce.unitPrice.toString()) : null,
+      quantity: ce.quantity,
+      notes: ce.notes,
+    };
+  });
 
   const tax = await getCompanyTaxInfo();
   const hqPhone = await getHqPhone();

@@ -2,8 +2,9 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -50,6 +51,7 @@ export default function NewContractPage() {
 }
 
 function NewContractPageInner() {
+  const locale = useLocale();
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -105,7 +107,7 @@ function NewContractPageInner() {
     try {
       const res = await api.get<Array<{
         id: string;
-        model: { modelCode: string; name: string };
+        model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
         serialNumber: string | null;
         siteId: string | null;
         site: { id: string; name: string } | null;
@@ -113,8 +115,8 @@ function NewContractPageInner() {
       setEquipment(
         res.data.map((e) => ({
           id: e.id,
-          modelCode: e.model.name,
-          modelName: e.model.name,
+          modelCode: pickModelName(e.model, locale),
+          modelName: pickModelName(e.model, locale),
           serialNumber: e.serialNumber,
           siteId: e.siteId,
           site: e.site,
@@ -690,9 +692,9 @@ function AddEquipmentQuickModal({
   interface ModelOpt {
     id: string;
     name: string;
-    displayNameKo: string | null;
-    displayNameVi: string | null;
-    displayNameEn: string | null;
+    nameKo: string | null;
+    nameVi: string | null;
+    nameEn: string | null;
   }
   interface SiteOpt {
     id: string;
@@ -793,7 +795,7 @@ function AddEquipmentQuickModal({
             onChange={setModelId}
             options={models.map((m) => ({
               value: m.id,
-              label: m.displayNameKo ?? m.displayNameVi ?? m.displayNameEn ?? m.name,
+              label: m.nameKo ?? m.nameVi ?? m.nameEn ?? m.name,
             }))}
             placeholder={t("model")}
             searchable

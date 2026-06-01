@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
@@ -18,7 +19,7 @@ interface VisitCard {
   customer: { code: string; name: string };
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   } | null;
 }
 
@@ -89,7 +90,7 @@ function MobileUpcomingContent() {
                         <VisitTypeBadge type={v.type} />
                         {v.equipment && (
                           <span className="font-mono text-xs text-[#737373]">
-                            {v.equipment.model.name}
+                            {pickModelName(v.equipment.model, locale)}
                           </span>
                         )}
                       </div>

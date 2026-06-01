@@ -89,7 +89,7 @@ describe("updateEquipmentModelSchema (red-team — mass-assignment via defaults)
     // model, putting it back on technician model lists and admin filters.
     const parsed = updateEquipmentModelSchema.parse({});
     expect(parsed.isActive).toBeUndefined();
-    expect(parsed.name).toBeUndefined();
+    expect(parsed.nameKo).toBeUndefined();
     expect(parsed.brandId).toBeUndefined();
   });
 
@@ -99,8 +99,8 @@ describe("updateEquipmentModelSchema (red-team — mass-assignment via defaults)
   });
 
   it("accepts a single-field name update", () => {
-    const parsed = updateEquipmentModelSchema.parse({ name: "Renamed model" });
-    expect(parsed.name).toBe("Renamed model");
+    const parsed = updateEquipmentModelSchema.parse({ nameKo: "Renamed model" });
+    expect(parsed.nameKo).toBe("Renamed model");
     expect(parsed.isActive).toBeUndefined();
   });
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { pickModelName } from "@/lib/products/name";
+import { useTranslations , useLocale} from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 
@@ -11,16 +12,12 @@ interface EquipmentRow {
   status: string;
   ownership: string;
   installedAt: string | null;
-  model: {
-    id: string;
-    modelCode: string;
-    name: string;
-    category: string;
-  };
+  model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
   site: { id: string; name: string } | null;
 }
 
 export function EquipmentListClient() {
+  const locale = useLocale();
   const t = useTranslations("portal.equipment");
   const { accessToken } = useCustomerAuth();
   const [rows, setRows] = useState<EquipmentRow[] | null>(null);
@@ -96,10 +93,10 @@ export function EquipmentListClient() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-[#002A4D]">
-                        {r.model.name}
+                        {pickModelName(r.model, locale)}
                       </div>
                       <div className="text-xs text-[#737373]">
-                        {r.model.name}
+                        {pickModelName(r.model, locale)}
                         {r.serialNumber ? ` · ${r.serialNumber}` : ""}
                       </div>
                     </div>

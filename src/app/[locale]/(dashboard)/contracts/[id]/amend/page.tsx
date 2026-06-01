@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -20,12 +21,13 @@ interface ContractRow {
   state: string;
   monthlyMaintenanceFee: string | null;
   customer: { id: string; type: "B2C" | "B2B"; code: string; name: string };
-  equipment: Array<{ equipmentId: string; equipment: { id: string; model: { modelCode: string; name: string }; serialNumber: string | null } }>;
+  equipment: Array<{ equipmentId: string; equipment: { id: string; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null }; serialNumber: string | null } }>;
 }
 
 export default function AmendContractPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
+  const locale = useLocale();
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -151,7 +153,7 @@ export default function AmendContractPage() {
                     }}
                   />
                   <span>
-                    {ce.equipment.model.name} — {ce.equipment.model.name}
+                    {pickModelName(ce.equipment.model, locale)} — {pickModelName(ce.equipment.model, locale)}
                     {ce.equipment.serialNumber ? ` (${ce.equipment.serialNumber})` : ""}
                   </span>
                 </label>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -23,11 +24,12 @@ interface SiteLite {
 interface EquipmentLite {
   id: string;
   serialNumber: string | null;
-  model: { modelCode: string; name: string };
+  model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   siteId?: string | null;
 }
 
 export default function NewVisitPage() {
+  const locale = useLocale();
   const t = useTranslations("visits");
   const router = useRouter();
   const api = useApi();
@@ -161,8 +163,8 @@ export default function NewVisitPage() {
             onChange={setEquipmentId}
             options={equipment.map((e) => ({
               value: e.id,
-              label: `${e.model.name} · ${e.serialNumber ?? "—"}`,
-              description: e.model.name,
+              label: `${pickModelName(e.model, locale)} · ${e.serialNumber ?? "—"}`,
+              description: pickModelName(e.model, locale),
             }))}
             placeholder={t("createForm.equipmentPick")}
             searchable

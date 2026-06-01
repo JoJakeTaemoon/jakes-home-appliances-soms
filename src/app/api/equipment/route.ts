@@ -48,7 +48,9 @@ export const GET = defineQuery({
             { customer: { code: { contains: q, mode: "insensitive" } } },
             { customer: { name: { contains: q, mode: "insensitive" } } },
             { model: { modelCode: { contains: q, mode: "insensitive" } } },
-            { model: { name: { contains: q, mode: "insensitive" } } },
+            { model: { nameKo: { contains: q, mode: "insensitive" } } },
+            { model: { nameVi: { contains: q, mode: "insensitive" } } },
+            { model: { nameEn: { contains: q, mode: "insensitive" } } },
           ],
         },
       ];
@@ -66,7 +68,7 @@ export const GET = defineQuery({
           },
           site: { select: { id: true, name: true, region: true } },
           model: {
-            select: { id: true, modelCode: true, name: true, category: true },
+            select: { id: true, modelCode: true, nameKo: true, nameVi: true, nameEn: true, category: true },
           },
         },
       }),

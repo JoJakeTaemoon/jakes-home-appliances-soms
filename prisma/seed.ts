@@ -171,283 +171,190 @@ async function main() {
   console.log(`  ✓ product categories (${catSeed.length})`);
 
   // ─── Equipment models ───────────────────────────────────────────────
-  // Each model is linked to a ProductCategory via categoryId AND keeps the
-  // legacy `category` enum during the gradual migration. The `filterPolicy`
-  // JSON is also retained as a fallback for code paths that haven't yet
-  // moved to the Consumable model.
-  const purifier = await prisma.equipmentModel.upsert({
-    where: { modelCode: "PTS-2100" },
-    update: {
-      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-      displayNameKo: "PTS-2100",
-      displayNameVi: "PTS-2100",
-      displayNameEn: "PTS-2100",
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-    },
-    create: {
-      modelCode: "PTS-2100",
-      name: "PTS-2100 Water Purifier",
-      displayNameKo: "PTS-2100",
-      displayNameVi: "PTS-2100",
-      displayNameEn: "PTS-2100",
-      brandId: seoulAquaBrand.id,
-      category: "WATER_PURIFIER",
-      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 8_500_000,
-      monthlyRentalPrice: 350_000,
-      monthlyMaintenancePrice: 120_000,
-      filterPolicy: {
-        filters: [
-          { type: "Sediment", replaceEveryDays: 90 },
-          { type: "Pre-Carbon", replaceEveryDays: 180 },
-          { type: "RO Membrane", replaceEveryDays: 730 },
-          { type: "Post-Carbon", replaceEveryDays: 365 },
-        ],
-      },
-    },
-  });
-  const purifierPro = await prisma.equipmentModel.upsert({
-    where: { modelCode: "PTS-3500" },
-    update: {
-      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-      displayNameKo: "PTS-3500",
-      displayNameVi: "PTS-3500",
-      displayNameEn: "PTS-3500",
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-    },
-    create: {
-      modelCode: "PTS-3500",
-      name: "PTS-3500 Hot/Cold Water Purifier",
-      displayNameKo: "PTS-3500",
-      displayNameVi: "PTS-3500",
-      displayNameEn: "PTS-3500",
-      brandId: seoulAquaBrand.id,
-      category: "WATER_PURIFIER",
-      categoryId: categoriesByCode.get("WATER_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 13_500_000,
-      monthlyRentalPrice: 520_000,
-      monthlyMaintenancePrice: 150_000,
-      filterPolicy: {
-        filters: [
-          { type: "Sediment", replaceEveryDays: 90 },
-          { type: "Pre-Carbon", replaceEveryDays: 180 },
-          { type: "RO Membrane", replaceEveryDays: 730 },
-          { type: "Post-Carbon", replaceEveryDays: 365 },
-        ],
-      },
-    },
-  });
-  const bidet = await prisma.equipmentModel.upsert({
-    where: { modelCode: "SA-J430" },
-    update: {
-      categoryId: categoriesByCode.get("BIDET")?.id,
-      brandId: seoulAquaBrand.id,
-      displayNameKo: "SA-J430",
-      displayNameVi: "SA-J430",
-      displayNameEn: "SA-J430",
-      inspectionEveryMonths: 6,
-      warrantyMonths: 12,
-    },
-    create: {
-      modelCode: "SA-J430",
-      name: "SA-J430 Smart Bidet",
-      displayNameKo: "SA-J430",
-      displayNameVi: "SA-J430",
-      displayNameEn: "SA-J430",
-      brandId: seoulAquaBrand.id,
-      category: "BIDET",
-      categoryId: categoriesByCode.get("BIDET")?.id,
-      inspectionEveryMonths: 6,
-      warrantyMonths: 12,
-      retailPrice: 12_000_000,
-      monthlyRentalPrice: 480_000,
-      monthlyMaintenancePrice: 80_000,
-      filterPolicy: {
-        filters: [{ type: "Water Filter", replaceEveryDays: 365 }],
-      },
-    },
-  });
-  const air = await prisma.equipmentModel.upsert({
-    where: { modelCode: "AC-700" },
-    update: {
-      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-      displayNameKo: "AC-700",
-      displayNameVi: "AC-700",
-      displayNameEn: "AC-700",
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-    },
-    create: {
-      modelCode: "AC-700",
-      name: "AC-700 Air Purifier",
-      displayNameKo: "AC-700",
-      displayNameVi: "AC-700",
-      displayNameEn: "AC-700",
-      brandId: seoulAquaBrand.id,
-      category: "AIR_PURIFIER",
-      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 6_000_000,
-      monthlyRentalPrice: 280_000,
-      monthlyMaintenancePrice: 100_000,
-      filterPolicy: {
-        filters: [
-          { type: "HEPA", replaceEveryDays: 365 },
-          { type: "Carbon", replaceEveryDays: 180 },
-        ],
-      },
-    },
-  });
+  // Data-driven from the "브랜드+제품군+모델명+제품명+필터+교체주기" PDF + the
+  // "정수기 부속품" PDF. Single source of truth for the catalog — to add a
+  // model, just append to `modelSeed`. Categories are looked up by code,
+  // brand by name. Legacy `category` enum is filled per category code
+  // mapping at the bottom so existing list filters keep working.
+  type ModelSeed = {
+    code: string;
+    name: string;
+    displayKo?: string;
+    displayVi?: string;
+    displayEn?: string;
+    brand: "Seoul Aqua" | "DEWBEL" | "FRELLE";
+    category: string;                // ProductCategory.code
+    inspectionEveryMonths?: number | null;
+    warrantyMonths?: number;
+    retailPrice?: number;
+    monthlyRentalPrice?: number;
+    monthlyMaintenancePrice?: number;
+  };
+  // EquipmentCategory enum mirror — legacy column. Anything not in the enum
+  // (DEHUMIDIFIER, ICE_MAKER, MICROBUBBLE_CLEANER, etc.) falls back to
+  // "OTHER" so existing filters don't break.
+  const legacyCategoryByCode: Record<string, "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "OTHER"> = {
+    WATER_PURIFIER: "WATER_PURIFIER",
+    HOT_COLD_PURIFIER: "WATER_PURIFIER",
+    RO_HOT_COLD_PURIFIER: "WATER_PURIFIER",
+    POWERLESS_PURIFIER: "WATER_PURIFIER",
+    BIDET: "BIDET",
+    MANUAL_BIDET: "BIDET",
+    AIR_PURIFIER: "AIR_PURIFIER",
+  };
 
-  // ─── Additional equipment models (representative slice of the PDF) ──
-  // Phase 2 seeds a representative model per new category so the catalog
-  // UI shows non-trivial data. The remaining ~50 PDF models can be added
-  // via the admin UI without further code changes.
-  const purifierRoTop = await prisma.equipmentModel.upsert({
-    where: { modelCode: "PTS-4000T" },
-    update: {
-      categoryId: categoriesByCode.get("HOT_COLD_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "PTS-4000T",
-      name: "PTS-4000T Hot/Cold Purifier",
-      displayNameKo: "PTS-4000T",
-      displayNameVi: "PTS-4000T",
-      displayNameEn: "PTS-4000T",
-      brandId: seoulAquaBrand.id,
-      category: "WATER_PURIFIER",
-      categoryId: categoriesByCode.get("HOT_COLD_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 16_500_000,
-      monthlyRentalPrice: 620_000,
-      monthlyMaintenancePrice: 180_000,
-    },
-  });
-  const purifierRoChp = await prisma.equipmentModel.upsert({
-    where: { modelCode: "CHP-590R" },
-    update: {
-      categoryId: categoriesByCode.get("RO_HOT_COLD_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "CHP-590R",
-      name: "CHP-590R RO Hot/Cold Purifier",
-      displayNameKo: "CHP-590R",
-      displayNameVi: "CHP-590R",
-      displayNameEn: "CHP-590R",
-      brandId: seoulAquaBrand.id,
-      category: "WATER_PURIFIER",
-      categoryId: categoriesByCode.get("RO_HOT_COLD_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 18_500_000,
-      monthlyRentalPrice: 720_000,
-      monthlyMaintenancePrice: 200_000,
-    },
-  });
-  const airCa5000 = await prisma.equipmentModel.upsert({
-    where: { modelCode: "CA-5000W" },
-    update: {
-      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "CA-5000W",
-      name: "CA-5000W Air Purifier",
-      displayNameKo: "CA-5000W",
-      displayNameVi: "CA-5000W",
-      displayNameEn: "CA-5000W",
-      brandId: seoulAquaBrand.id,
-      category: "AIR_PURIFIER",
-      categoryId: categoriesByCode.get("AIR_PURIFIER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 7_200_000,
-      monthlyRentalPrice: 320_000,
-      monthlyMaintenancePrice: 110_000,
-    },
-  });
-  const dehumDxth = await prisma.equipmentModel.upsert({
-    where: { modelCode: "DXTH120-NEK" },
-    update: {
-      categoryId: categoriesByCode.get("HOME_DEHUMIDIFIER")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "DXTH120-NEK",
-      name: "DXTH120-NEK Home Dehumidifier",
-      displayNameKo: "DXTH120-NEK",
-      displayNameVi: "DXTH120-NEK",
-      displayNameEn: "DXTH120-NEK",
-      brandId: seoulAquaBrand.id,
-      category: "OTHER",
-      categoryId: categoriesByCode.get("HOME_DEHUMIDIFIER")?.id,
-      inspectionEveryMonths: 3,
-      warrantyMonths: 12,
-      retailPrice: 5_400_000,
-    },
-  });
-  const iceFsm30 = await prisma.equipmentModel.upsert({
-    where: { modelCode: "FSM30" },
-    update: {
-      categoryId: categoriesByCode.get("ICE_MAKER")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "FSM30",
-      name: "FSM30 Ice Maker",
-      displayNameKo: "FSM30",
-      displayNameVi: "FSM30",
-      displayNameEn: "FSM30",
-      brandId: seoulAquaBrand.id,
-      category: "OTHER",
-      categoryId: categoriesByCode.get("ICE_MAKER")?.id,
-      inspectionEveryMonths: 1,
-      warrantyMonths: 12,
-      retailPrice: 22_000_000,
-      monthlyRentalPrice: 850_000,
-      monthlyMaintenancePrice: 250_000,
-    },
-  });
-  const bidetJ830 = await prisma.equipmentModel.upsert({
-    where: { modelCode: "SA-J830" },
-    update: {
-      categoryId: categoriesByCode.get("BIDET")?.id,
-      brandId: seoulAquaBrand.id,
-    },
-    create: {
-      modelCode: "SA-J830",
-      name: "SA-J830 Smart Bidet",
-      displayNameKo: "SA-J830",
-      displayNameVi: "SA-J830",
-      displayNameEn: "SA-J830",
-      brandId: seoulAquaBrand.id,
-      category: "BIDET",
-      categoryId: categoriesByCode.get("BIDET")?.id,
-      inspectionEveryMonths: 6,
-      warrantyMonths: 12,
-      retailPrice: 14_500_000,
-    },
-  });
+  const modelSeed: ModelSeed[] = [
+    // ── Air purifier — Seoul Aqua ────────────────────────────────────
+    { code: "CA-5000W", name: "CA-5000W Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 7_200_000, monthlyRentalPrice: 320_000, monthlyMaintenancePrice: 110_000 },
+    { code: "CA-7000WS/B", name: "CA-7000WS/B Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 9_800_000, monthlyRentalPrice: 380_000, monthlyMaintenancePrice: 130_000 },
+    { code: "AP-3008FH", name: "AP-3008FH Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "AP-400", name: "AP-400 Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "AD-1615A", name: "AD-1615A Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "FA31-202GY", name: "FA31-202GY Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "FA41-402GY", name: "FA41-402GY Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
 
-  console.log(`  ✓ equipment models (10)`);
+    // ── Home dehumidifier ────────────────────────────────────────────
+    { code: "DXTH120-NEK", name: "DXTH120-NEK Home Dehumidifier", brand: "Seoul Aqua", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3, retailPrice: 5_400_000 },
+    { code: "HM-914EC", name: "HM-914EC Home Dehumidifier", brand: "Seoul Aqua", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3 },
 
-  // ─── Consumables ─────────────────────────────────────────────────────
-  // RO membrane carries BOTH cycles (clean every 6mo, replace every 24mo)
-  // to exercise the dual-cycle code path. Pre-Carbon and Sediment are
-  // shared by both PTS-2100 and PTS-3500 (N:N compatibility).
+    // ── Industrial dehumidifier ──────────────────────────────────────
+    { code: "HDI-15000SW", name: "HDI-15000SW Industrial Dehumidifier", brand: "Seoul Aqua", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
+    { code: "HDI-25000SW", name: "HDI-25000SW Industrial Dehumidifier", brand: "Seoul Aqua", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
+
+    // ── Hot and cold water purifier (standard 4-filter set) ──────────
+    { code: "PTS-2100", name: "PTS-2100 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 8_500_000, monthlyRentalPrice: 350_000, monthlyMaintenancePrice: 120_000 },
+    { code: "PTS-2101", name: "PTS-2101 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2200", name: "PTS-2200 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2000", name: "PTS-2000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-3000", name: "PTS-3000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-3001", name: "PTS-3001 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-4000T", name: "PTS-4000T Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 16_500_000, monthlyRentalPrice: 620_000, monthlyMaintenancePrice: 180_000 },
+    { code: "PTS-4001T", name: "PTS-4001T Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PQ-800", name: "PQ-800 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KW-1500", name: "KW-1500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-1500", name: "KJ-1500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-2000", name: "KJ-2000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-2500", name: "KJ-2500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-3000", name: "KJ-3000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-4000", name: "KJ-4000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KG-5000", name: "KG-5000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-5000", name: "SA-5000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-7000", name: "SA-7000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-8000", name: "SA-8000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000", name: "VI-1000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000-04", name: "VI-1000-04 Hot/Cold Water Purifier (4-bay)", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000-08", name: "VI-1000-08 Hot/Cold Water Purifier (8-bay)", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KH-750", name: "KH-750 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-750", name: "KJ-750 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "P-3001", name: "P-3001 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+
+    // ── Hot and cold water purifier - RO type ────────────────────────
+    { code: "CHP-590R", name: "CHP-590R RO Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 18_500_000, monthlyRentalPrice: 720_000, monthlyMaintenancePrice: 200_000 },
+    { code: "CHP-671R", name: "CHP-671R RO Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2100-RO", name: "PTS-2100 (RO) Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+
+    // ── Powerless water purifier ─────────────────────────────────────
+    { code: "PTS-100W", name: "PTS-100W Powerless Water Purifier", brand: "Seoul Aqua", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
+    { code: "PTS-100H", name: "PTS-100H Powerless Water Purifier", brand: "Seoul Aqua", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
+
+    // ── Ice maker ────────────────────────────────────────────────────
+    { code: "FSM30",  name: "FSM30 Ice Maker",  brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1, retailPrice: 22_000_000, monthlyRentalPrice: 850_000, monthlyMaintenancePrice: 250_000 },
+    { code: "FSM100", name: "FSM100 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM150", name: "FSM150 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM200", name: "FSM200 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM300", name: "FSM300 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+
+    // ── Bidet (automatic) ────────────────────────────────────────────
+    { code: "SA-J430", name: "SA-J430 Smart Bidet", brand: "Seoul Aqua", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 12_000_000, monthlyRentalPrice: 480_000, monthlyMaintenancePrice: 80_000 },
+    { code: "SA-J830", name: "SA-J830 Smart Bidet", brand: "Seoul Aqua", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 14_500_000 },
+
+    // ── Non-powered manual bidet ─────────────────────────────────────
+    { code: "HB-220",   name: "HB-220 Manual Bidet",   brand: "Seoul Aqua", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
+    { code: "GBD-1800", name: "GBD-1800 Manual Bidet", brand: "Seoul Aqua", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
+
+    // ── Water dispenser ──────────────────────────────────────────────
+    { code: "PTS-700", name: "PTS-700 Water Dispenser", brand: "Seoul Aqua", category: "WATER_DISPENSER", inspectionEveryMonths: 6 },
+
+    // ── Micro bubble cleaner ─────────────────────────────────────────
+    { code: "FC-210G", name: "FC-210G Microbubble Cleaner", brand: "Seoul Aqua", category: "MICROBUBBLE_CLEANER", inspectionEveryMonths: 3 },
+
+    // ── Household water filter — DEWBELL ─────────────────────────────
+    { code: "AC-700-10IN", name: "AC-700 10IN Filter Housing", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "AC-700-20IN", name: "AC-700 20IN Filter Housing", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "JBS-CFCS",    name: "JBS + CFCS Combo Filter",     brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "JB-S",        name: "JB-S Filter",                 brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "CF-CS",       name: "CF-CS Filter",                brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "CF-CSP",      name: "CF-CSP Filter",               brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "UC-1",        name: "UC-1 Filter",                 brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "SC-RS",       name: "SC-RS Filter",                brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
+    { code: "SA-01",       name: "SA-01 Shower Head with PP Filter", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+    { code: "C101",        name: "Dewbell F15 — Shower Line",   brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 3 },
+    { code: "C105",        name: "Dewbell F15 — Wash Basin",    brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 3 },
+    { code: "C109",        name: "Dewbell F15 — Washing Machine", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 3 },
+    { code: "A507",        name: "Dewbell Kit Pro — Wash Basin", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 3 },
+    { code: "C213-WH-E",   name: "Dewbell Cookfil White",       brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 3 },
+
+    // ── Household water filter — FRELLE (Microbubble shower line) ────
+    { code: "PBK-35WH",    name: "Frelle Microbubble Shower Kit", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+    { code: "FBS-51WH",    name: "Frelle Microbubble Shower Head (White)", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+    { code: "FBS-51BL",    name: "Frelle Microbubble Shower Head (Black)", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+    { code: "FBS-51YL",    name: "Frelle Microbubble Shower Head (Yellow)", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+    { code: "FBS-51PK",    name: "Frelle Microbubble Shower Head (Pink)", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 2 },
+  ];
+
+  const modelByCode = new Map<string, { id: string; modelCode: string | null }>();
+  for (const m of modelSeed) {
+    const legacy = legacyCategoryByCode[m.category] ?? "OTHER";
+    const row = await prisma.equipmentModel.upsert({
+      where: { modelCode: m.code },
+      update: {
+        nameKo: m.displayKo ?? m.code,
+        nameVi: m.displayVi ?? m.code,
+        nameEn: m.displayEn ?? m.code,
+        brandId: brandsByName.get(m.brand)?.id,
+        categoryId: categoriesByCode.get(m.category)?.id,
+        category: legacy,
+        inspectionEveryMonths: m.inspectionEveryMonths ?? null,
+        warrantyMonths: m.warrantyMonths ?? 12,
+        ...(m.retailPrice != null ? { retailPrice: m.retailPrice } : {}),
+        ...(m.monthlyRentalPrice != null ? { monthlyRentalPrice: m.monthlyRentalPrice } : {}),
+        ...(m.monthlyMaintenancePrice != null ? { monthlyMaintenancePrice: m.monthlyMaintenancePrice } : {}),
+      },
+      create: {
+        modelCode: m.code,
+        nameKo: m.displayKo ?? m.code,
+        nameVi: m.displayVi ?? m.code,
+        nameEn: m.displayEn ?? m.code,
+        brandId: brandsByName.get(m.brand)?.id,
+        categoryId: categoriesByCode.get(m.category)?.id,
+        category: legacy,
+        inspectionEveryMonths: m.inspectionEveryMonths ?? null,
+        warrantyMonths: m.warrantyMonths ?? 12,
+        ...(m.retailPrice != null ? { retailPrice: m.retailPrice } : {}),
+        ...(m.monthlyRentalPrice != null ? { monthlyRentalPrice: m.monthlyRentalPrice } : {}),
+        ...(m.monthlyMaintenancePrice != null ? { monthlyMaintenancePrice: m.monthlyMaintenancePrice } : {}),
+      },
+    });
+    modelByCode.set(m.code, row);
+  }
+
+  // Downstream code (customer/contract/visit seeds) still references these
+  // aliases — keep them resolved from the map so the data-driven refactor is
+  // transparent to the rest of the file. PDF reclassifies AC-700 as a DEWBEL
+  // filter housing (not an air purifier) so legacy `air` now points at the
+  // next-best Seoul Aqua air purifier (CA-7000WS/B). PTS-3500 isn't in the
+  // PDF either — purifierPro maps to PTS-4000T (next tier).
+  const purifier    = modelByCode.get("PTS-2100")!;
+  const purifierPro = modelByCode.get("PTS-4000T")!;
+  const bidet       = modelByCode.get("SA-J430")!;
+  const air         = modelByCode.get("CA-7000WS/B")!;
+
+  console.log(`  ✓ equipment models (${modelSeed.length})`);
+
+  // ─── Consumables (filters / replaceable parts) ──────────────────────
+  // Data-driven from the "필터+교체주기" columns of the PDF.
+  // `compatibleModels` references model CODES (not ids); the loop below
+  // resolves them via modelByCode so additions stay one-line edits.
   type ConsumableSeed = {
     sku: string;
     nameKo: string;
@@ -457,95 +364,36 @@ async function main() {
     cleanEveryMonths: number | null;
     cleanOnEveryVisit?: boolean;
     retailPrice: number;
-    compatibleModels: { modelId: string; quantity: number }[];
+    compatibleModels: { modelCode: string; quantity: number }[];
   };
-  const purifierModelIds = [purifier.id, purifierPro.id];
-  const allPurifierIds = [purifier.id, purifierPro.id, purifierRoTop.id, purifierRoChp.id];
-  function withQty(ids: string[], quantity = 1) {
-    return ids.map((modelId) => ({ modelId, quantity }));
-  }
+
+  // Model-code groups for compatibility wiring. Single source of truth so
+  // adding a new water-purifier SKU automatically picks up the 4 standard
+  // filters and all common accessories.
+  const HCWP_STANDARD_CODES = [
+    "PTS-2100", "PTS-2101", "PTS-2200", "PTS-2000", "PTS-3000", "PTS-3001",
+    "PTS-4000T", "PTS-4001T",
+    "PQ-800", "KW-1500",
+    "KJ-1500", "KJ-2000", "KJ-2500", "KJ-3000", "KJ-4000",
+    "KG-5000",
+    "SA-5000", "SA-7000", "SA-8000",
+    "VI-1000", "VI-1000-04", "VI-1000-08",
+    "KH-750", "KJ-750",
+    "P-3001",
+  ];
+  const RO_CODES = ["CHP-590R", "CHP-671R", "PTS-2100-RO"];
+  const POWERLESS_CODES = ["PTS-100W", "PTS-100H"];
+  const ICE_SMALL_CODES = ["FSM30", "FSM100", "FSM150"];      // JB-S + CF-CS + UV LAMP
+  const ICE_LARGE_2X_CODES = ["FSM200"];                      // 4-filter purifier set × 2
+  const ICE_LARGE_4X_CODES = ["FSM300"];                      // 4-filter purifier set × 4
+  const BIDET_CODES = ["SA-J430", "SA-J830"];
+  const ALL_PURIFIER_CODES = [...HCWP_STANDARD_CODES, ...RO_CODES];
+
+  const withQty = (codes: string[], quantity = 1) =>
+    codes.map((modelCode) => ({ modelCode, quantity }));
+
   const consumableSeed: ConsumableSeed[] = [
-    {
-      sku: "FLT-SED-001",
-      nameKo: "세디먼트 필터",
-      nameVi: "Lõi lọc thô (Sediment)",
-      nameEn: "Sediment filter",
-      replaceEveryMonths: 3,
-      cleanEveryMonths: null,
-      retailPrice: 180_000,
-      compatibleModels: withQty(purifierModelIds),
-    },
-    {
-      sku: "FLT-PRE-001",
-      nameKo: "프리카본 필터",
-      nameVi: "Lõi lọc tiền carbon (Pre-Carbon)",
-      nameEn: "Pre-Carbon filter",
-      replaceEveryMonths: 6,
-      cleanEveryMonths: null,
-      retailPrice: 220_000,
-      compatibleModels: withQty(purifierModelIds),
-    },
-    {
-      sku: "FLT-RO-001",
-      nameKo: "RO 멤브레인",
-      nameVi: "Màng RO",
-      nameEn: "RO Membrane",
-      replaceEveryMonths: 24,
-      cleanEveryMonths: 6,
-      retailPrice: 650_000,
-      compatibleModels: withQty(purifierModelIds),
-    },
-    {
-      sku: "FLT-POST-001",
-      nameKo: "포스트카본 필터",
-      nameVi: "Lõi lọc hậu carbon (Post-Carbon)",
-      nameEn: "Post-Carbon filter",
-      replaceEveryMonths: 12,
-      cleanEveryMonths: null,
-      retailPrice: 240_000,
-      compatibleModels: withQty(purifierModelIds),
-    },
-    {
-      sku: "FLT-BIDET-001",
-      nameKo: "비데 워터필터",
-      nameVi: "Lõi lọc nước bồn cầu",
-      nameEn: "Bidet water filter",
-      replaceEveryMonths: 12,
-      cleanEveryMonths: null,
-      retailPrice: 280_000,
-      compatibleModels: withQty([bidet.id, bidetJ830.id]),
-    },
-    {
-      sku: "FLT-HEPA-001",
-      nameKo: "HEPA 필터",
-      nameVi: "Lõi HEPA",
-      nameEn: "HEPA filter",
-      replaceEveryMonths: 12,
-      cleanEveryMonths: null,
-      retailPrice: 420_000,
-      compatibleModels: withQty([air.id, airCa5000.id]),
-    },
-    {
-      sku: "FLT-CARB-001",
-      nameKo: "카본 필터(공기청정기)",
-      nameVi: "Lõi carbon (lọc khí)",
-      nameEn: "Carbon filter (air)",
-      replaceEveryMonths: 6,
-      cleanEveryMonths: null,
-      retailPrice: 180_000,
-      compatibleModels: withQty([air.id, airCa5000.id]),
-    },
-    {
-      sku: "FLT-AIR-PREFILTER",
-      nameKo: "공기청정기 프리필터",
-      nameVi: "Lõi lọc thô máy lọc khí",
-      nameEn: "Air pre-filter",
-      replaceEveryMonths: null,
-      cleanEveryMonths: 2,
-      retailPrice: 90_000,
-      compatibleModels: withQty([air.id, airCa5000.id]),
-    },
-    // PDF A.4 — water-purifier PRE-FILTER cleaned on EVERY periodic visit.
+    // ── Hot/Cold + RO purifier — PRE-FILTER (clean every visit) ──────
     {
       sku: "FLT-PURIFIER-PREFILTER",
       nameKo: "정수기 PRE-FILTER",
@@ -555,20 +403,141 @@ async function main() {
       cleanEveryMonths: null,
       cleanOnEveryVisit: true,
       retailPrice: 80_000,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
-    // Ice-maker JB-S filter, replaced every 6 months.
+
+    // ── HCWP standard 4-filter set (also used by FSM200/FSM300 ice makers) ──
+    {
+      sku: "FLT-SED-11",
+      nameKo: "세디먼트 필터 11\"",
+      nameVi: "Lõi lọc thô 11\" (Sediment)",
+      nameEn: "Sediment filter 11\"",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModels: [
+        ...withQty(HCWP_STANDARD_CODES, 1),
+        ...withQty(RO_CODES, 1),
+        ...withQty(ICE_LARGE_2X_CODES, 2),
+        ...withQty(ICE_LARGE_4X_CODES, 4),
+      ],
+    },
+    {
+      sku: "FLT-PRE-CARB-11",
+      nameKo: "프리카본 필터 11\"",
+      nameVi: "Lõi lọc tiền carbon 11\" (Pre-Carbon)",
+      nameEn: "Pre-Carbon filter 11\"",
+      replaceEveryMonths: 8,
+      cleanEveryMonths: null,
+      retailPrice: 220_000,
+      compatibleModels: [
+        ...withQty(HCWP_STANDARD_CODES, 1),
+        ...withQty(RO_CODES, 1),
+        ...withQty(ICE_LARGE_2X_CODES, 2),
+        ...withQty(ICE_LARGE_4X_CODES, 4),
+      ],
+    },
+    {
+      sku: "FLT-UF-11",
+      nameKo: "UF 필터 11\"",
+      nameVi: "Lõi UF 11\"",
+      nameEn: "UF filter 11\"",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 280_000,
+      compatibleModels: [
+        ...withQty(HCWP_STANDARD_CODES, 1),
+        ...withQty(ICE_LARGE_2X_CODES, 2),
+        ...withQty(ICE_LARGE_4X_CODES, 4),
+      ],
+    },
+    {
+      sku: "FLT-POST-CARB-11",
+      nameKo: "포스트카본 필터 11\"",
+      nameVi: "Lõi lọc hậu carbon 11\" (Post-Carbon)",
+      nameEn: "Post-Carbon filter 11\"",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 240_000,
+      compatibleModels: [
+        ...withQty(HCWP_STANDARD_CODES, 1),
+        ...withQty(RO_CODES, 1),
+        ...withQty(ICE_LARGE_2X_CODES, 2),
+        ...withQty(ICE_LARGE_4X_CODES, 4),
+      ],
+    },
+    {
+      sku: "FLT-RO-100GPD-11",
+      nameKo: "RO 멤브레인 100GPD 11\"",
+      nameVi: "Màng RO 100GPD 11\"",
+      nameEn: "RO 100GPD Membrane 11\"",
+      replaceEveryMonths: 18,
+      cleanEveryMonths: 6,
+      retailPrice: 650_000,
+      compatibleModels: withQty(RO_CODES, 1),
+    },
+
+    // ── Powerless purifier (9" set) ──────────────────────────────────
+    {
+      sku: "FLT-COMPOUND-9",
+      nameKo: "콤파운드 필터 9\"",
+      nameVi: "Lõi Compound 9\"",
+      nameEn: "Compound Filter 9\"",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 220_000,
+      compatibleModels: withQty(POWERLESS_CODES, 1),
+    },
+    {
+      sku: "FLT-UF-MEMB-9",
+      nameKo: "UF 멤브레인 9\"",
+      nameVi: "Màng UF 9\"",
+      nameEn: "UF Membrane 9\"",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 260_000,
+      compatibleModels: withQty(POWERLESS_CODES, 1),
+    },
+    {
+      sku: "FLT-POST-BLOCK-9",
+      nameKo: "포스트 블록 카본 9\"",
+      nameVi: "Carbon block hậu 9\"",
+      nameEn: "Post Block Carbon 9\"",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 230_000,
+      compatibleModels: withQty(POWERLESS_CODES, 1),
+    },
+
+    // ── Ice maker (small: FSM30/100/150) ─────────────────────────────
     {
       sku: "FLT-ICE-JBS",
       nameKo: "JB-S 필터(제빙기)",
       nameVi: "Lõi JB-S (máy làm đá)",
-      nameEn: "JB-S filter",
+      nameEn: "JB-S filter (ice maker)",
       replaceEveryMonths: 6,
       cleanEveryMonths: null,
       retailPrice: 320_000,
-      compatibleModels: withQty([iceFsm30.id]),
+      compatibleModels: [
+        ...withQty(ICE_SMALL_CODES, 1),
+        // Also used as a refill cartridge for the DEWBELL JBS+CFCS combo
+        // and the standalone JB-S filter housing.
+        ...withQty(["JBS-CFCS", "JB-S"], 1),
+      ],
     },
-    // Ice-maker UV lamp, 12-month replacement.
+    {
+      sku: "FLT-ICE-CFCS",
+      nameKo: "CF-CS 필터(제빙기)",
+      nameVi: "Lõi CF-CS (máy làm đá)",
+      nameEn: "CF-CS filter (ice maker)",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 280_000,
+      compatibleModels: [
+        ...withQty(ICE_SMALL_CODES, 1),
+        ...withQty(["JBS-CFCS", "CF-CS"], 1),
+      ],
+    },
     {
       sku: "FLT-ICE-UVLAMP",
       nameKo: "UV 램프(제빙기)",
@@ -577,7 +546,339 @@ async function main() {
       replaceEveryMonths: 12,
       cleanEveryMonths: null,
       retailPrice: 540_000,
-      compatibleModels: withQty([iceFsm30.id]),
+      compatibleModels: withQty(ICE_SMALL_CODES, 1),
+    },
+
+    // ── Bidet (SA-J430 / SA-J830) ────────────────────────────────────
+    {
+      sku: "FLT-BIDET-001",
+      nameKo: "비데 워터필터",
+      nameVi: "Lõi lọc nước bồn cầu",
+      nameEn: "Bidet water filter",
+      replaceEveryMonths: 2,
+      cleanEveryMonths: null,
+      retailPrice: 280_000,
+      compatibleModels: withQty(BIDET_CODES, 1),
+    },
+
+    // ── Microbubble cleaner FC-210G ──────────────────────────────────
+    {
+      sku: "FLT-MICRO-CFR20RC",
+      nameKo: "CFR-20RC 필터",
+      nameVi: "Lõi CFR-20RC",
+      nameEn: "CFR-20RC filter",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 220_000,
+      compatibleModels: withQty(["FC-210G"], 1),
+    },
+
+    // ── Air purifier — CA-5000W / AP-400 (standard 3-filter set) ─────
+    {
+      sku: "FLT-AIR-PREFILTER",
+      nameKo: "공기청정기 프리필터",
+      nameVi: "Lõi lọc thô máy lọc khí",
+      nameEn: "Air pre-filter",
+      replaceEveryMonths: null,
+      cleanEveryMonths: null,
+      cleanOnEveryVisit: true,
+      retailPrice: 90_000,
+      compatibleModels: withQty(["CA-5000W", "AP-400", "AD-1615A"], 1),
+    },
+    {
+      sku: "FLT-AIR-HEPA-6",
+      nameKo: "HEPA 필터 (공기청정기, 6개월)",
+      nameVi: "Lõi HEPA (lọc khí, 6 tháng)",
+      nameEn: "HEPA filter (air, 6 months)",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 420_000,
+      compatibleModels: withQty(["CA-5000W", "AP-400"], 1),
+    },
+    {
+      sku: "FLT-AIR-DEODORIZE-12",
+      nameKo: "탈취 필터 (공기청정기)",
+      nameVi: "Lõi khử mùi (lọc khí)",
+      nameEn: "Deodorizing filter (air)",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 380_000,
+      compatibleModels: withQty(["CA-5000W", "AP-400", "AD-1615A"], 1),
+    },
+
+    // ── Air purifier — CA-7000WS/B (SVC service kit) ─────────────────
+    {
+      sku: "FLT-AIR-SVC-PREMESH",
+      nameKo: "SVC Pre-Filter (Mesh)",
+      nameVi: "SVC Pre-Filter (Mesh)",
+      nameEn: "SVC Pre-Filter (Mesh)",
+      replaceEveryMonths: null,
+      cleanEveryMonths: 3,
+      retailPrice: 120_000,
+      compatibleModels: withQty(["CA-7000WS/B"], 1),
+    },
+    {
+      sku: "FLT-AIR-SVC-H13",
+      nameKo: "SVC FILTER SET (H13 HEPA)",
+      nameVi: "Bộ lọc SVC (H13 HEPA)",
+      nameEn: "SVC FILTER SET (H13 HEPA)",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 620_000,
+      compatibleModels: withQty(["CA-7000WS/B"], 1),
+    },
+
+    // ── Air purifier — AP-3008FH (double set, all qty 2) ─────────────
+    {
+      sku: "FLT-AIR-NON-WOWEN",
+      nameKo: "NON WOVEN 필터",
+      nameVi: "Lõi NON WOVEN",
+      nameEn: "NON WOVEN filter",
+      replaceEveryMonths: 4,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModels: withQty(["AP-3008FH"], 2),
+    },
+    {
+      sku: "FLT-AIR-OPTION",
+      nameKo: "OPTION 필터 (AP-3008FH)",
+      nameVi: "Lõi OPTION (AP-3008FH)",
+      nameEn: "OPTION filter (AP-3008FH)",
+      replaceEveryMonths: 4,
+      cleanEveryMonths: null,
+      retailPrice: 200_000,
+      compatibleModels: withQty(["AP-3008FH"], 2),
+    },
+    {
+      sku: "FLT-AIR-HEPA-12-AP3008",
+      nameKo: "HEPA 필터 (AP-3008FH, 12개월)",
+      nameVi: "Lõi HEPA (AP-3008FH, 12 tháng)",
+      nameEn: "HEPA filter (AP-3008FH, 12 months)",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 480_000,
+      compatibleModels: withQty(["AP-3008FH"], 2),
+    },
+    {
+      sku: "FLT-AIR-DEODORIZE-AP3008",
+      nameKo: "탈취 필터 (AP-3008FH)",
+      nameVi: "Lõi khử mùi (AP-3008FH)",
+      nameEn: "Deodorizing filter (AP-3008FH)",
+      replaceEveryMonths: 12,
+      cleanEveryMonths: null,
+      retailPrice: 420_000,
+      compatibleModels: withQty(["AP-3008FH"], 2),
+    },
+
+    // ── Air purifier — FA31-202GY / FA41-402GY (single 6-month filter) ──
+    {
+      sku: "FLT-AIR-CLEANER",
+      nameKo: "AIR CLEANER FILTER",
+      nameVi: "Lõi AIR CLEANER",
+      nameEn: "AIR CLEANER FILTER",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 320_000,
+      compatibleModels: withQty(["FA31-202GY", "FA41-402GY"], 1),
+    },
+
+    // ── Home + Industrial dehumidifier (PRE-FILTER only) ─────────────
+    {
+      sku: "FLT-DEHUM-PREFILTER",
+      nameKo: "제습기 PRE-FILTER",
+      nameVi: "Lõi PRE-FILTER (máy hút ẩm)",
+      nameEn: "PRE-FILTER (dehumidifier)",
+      replaceEveryMonths: null,
+      cleanEveryMonths: null,
+      cleanOnEveryVisit: true,
+      retailPrice: 95_000,
+      compatibleModels: withQty(["DXTH120-NEK", "HDI-15000SW", "HDI-25000SW"], 1),
+    },
+
+    // ── DEWBELL household filter — AC-700 10" set (PP/CTO/UFD) ───────
+    {
+      sku: "FLT-DEW-PP-10",
+      nameKo: "PP 10\" 필터",
+      nameVi: "Lõi PP 10\"",
+      nameEn: "PP 10\" filter",
+      replaceEveryMonths: 1,
+      cleanEveryMonths: null,
+      retailPrice: 75_000,
+      compatibleModels: withQty(["AC-700-10IN"], 1),
+    },
+    {
+      sku: "FLT-DEW-CTO-10",
+      nameKo: "CTO 10\" 필터",
+      nameVi: "Lõi CTO 10\"",
+      nameEn: "CTO 10\" filter",
+      replaceEveryMonths: 4,
+      cleanEveryMonths: null,
+      retailPrice: 110_000,
+      compatibleModels: withQty(["AC-700-10IN"], 1),
+    },
+    {
+      sku: "FLT-DEW-UFD-10",
+      nameKo: "UFD 10\" 필터",
+      nameVi: "Lõi UFD 10\"",
+      nameEn: "UFD 10\" filter",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 165_000,
+      compatibleModels: withQty(["AC-700-10IN"], 1),
+    },
+
+    // ── DEWBELL household filter — AC-700 20" set (PP/CTO/UFD) ───────
+    {
+      sku: "FLT-DEW-PP-20",
+      nameKo: "PP 20\" 필터",
+      nameVi: "Lõi PP 20\"",
+      nameEn: "PP 20\" filter",
+      replaceEveryMonths: 1,
+      cleanEveryMonths: null,
+      retailPrice: 120_000,
+      compatibleModels: withQty(["AC-700-20IN"], 1),
+    },
+    {
+      sku: "FLT-DEW-CTO-20",
+      nameKo: "CTO 20\" 필터",
+      nameVi: "Lõi CTO 20\"",
+      nameEn: "CTO 20\" filter",
+      replaceEveryMonths: 4,
+      cleanEveryMonths: null,
+      retailPrice: 165_000,
+      compatibleModels: withQty(["AC-700-20IN"], 1),
+    },
+    {
+      sku: "FLT-DEW-UFD-20",
+      nameKo: "UFD 20\" 필터",
+      nameVi: "Lõi UFD 20\"",
+      nameEn: "UFD 20\" filter",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 240_000,
+      compatibleModels: withQty(["AC-700-20IN"], 1),
+    },
+
+    // ── DEWBELL standalone household filters (CF-CSP / UC-1 / SC-RS) ──
+    {
+      sku: "FLT-DEW-CFCSP",
+      nameKo: "CF-CSP 카트리지",
+      nameVi: "Lõi CF-CSP",
+      nameEn: "CF-CSP cartridge",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModels: withQty(["CF-CSP"], 1),
+    },
+    {
+      sku: "FLT-DEW-UC1",
+      nameKo: "UC-1 카트리지",
+      nameVi: "Lõi UC-1",
+      nameEn: "UC-1 cartridge",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModels: withQty(["UC-1"], 1),
+    },
+    {
+      sku: "FLT-DEW-SCRS",
+      nameKo: "SC-RS 카트리지",
+      nameVi: "Lõi SC-RS",
+      nameEn: "SC-RS cartridge",
+      replaceEveryMonths: 6,
+      cleanEveryMonths: null,
+      retailPrice: 180_000,
+      compatibleModels: withQty(["SC-RS"], 1),
+    },
+
+    // ── DEWBELL F15 refills (C101 / C105 / C109 housings) ────────────
+    {
+      sku: "FLT-DEW-F15-ECON",
+      nameKo: "F15 리필 — 알뜰형",
+      nameVi: "Lõi F15 — loại tiết kiệm",
+      nameEn: "F15 Refill — Economy",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 65_000,
+      compatibleModels: withQty(["C101", "C105", "C109"], 1),
+    },
+    {
+      sku: "FLT-DEW-F15-PREMIUM",
+      nameKo: "F15 리필 — 고급형",
+      nameVi: "Lõi F15 — loại cao cấp",
+      nameEn: "F15 Refill — Premium",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 95_000,
+      compatibleModels: withQty(["C101", "C105", "C109"], 1),
+    },
+
+    // ── DEWBELL Kit Pro refill (A507 housing) ────────────────────────
+    {
+      sku: "FLT-DEW-KITPRO",
+      nameKo: "키트프로 리필",
+      nameVi: "Lõi Kit Pro",
+      nameEn: "Kit Pro refill",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 95_000,
+      compatibleModels: withQty(["A507"], 1),
+    },
+
+    // ── DEWBELL Cookfil refill (C213-WH-E housing) ───────────────────
+    {
+      sku: "FLT-DEW-COOKFIL",
+      nameKo: "쿡필 리필 (ACF)",
+      nameVi: "Lõi Cookfil (ACF)",
+      nameEn: "Cookfil refill (ACF)",
+      replaceEveryMonths: 3,
+      cleanEveryMonths: null,
+      retailPrice: 95_000,
+      compatibleModels: withQty(["C213-WH-E"], 1),
+    },
+
+    // ── DEWBELL SA-01 shower head refill ─────────────────────────────
+    {
+      sku: "FLT-DEW-SHOWER-PP",
+      nameKo: "샤워기헤드 PP 코튼 리필",
+      nameVi: "Lõi PP cotton (vòi sen)",
+      nameEn: "Shower head PP Cotton refill",
+      replaceEveryMonths: 2,
+      cleanEveryMonths: null,
+      retailPrice: 55_000,
+      compatibleModels: withQty(["SA-01"], 1),
+    },
+
+    // ── FRELLE microbubble shower refills ────────────────────────────
+    {
+      sku: "FLT-FRL-RUST",
+      nameKo: "프렐 녹물제거 리필",
+      nameVi: "Lõi PP loại bỏ gỉ sét (Frelle)",
+      nameEn: "Frelle rust-removal refill",
+      replaceEveryMonths: 2,
+      cleanEveryMonths: null,
+      retailPrice: 95_000,
+      compatibleModels: withQty(["FBS-51WH", "FBS-51BL", "FBS-51YL", "FBS-51PK"], 1),
+    },
+    {
+      sku: "FLT-FRL-CHLORINE",
+      nameKo: "프렐 항균 염소 필터",
+      nameVi: "Lõi khử clo (Frelle)",
+      nameEn: "Frelle chlorine-removal refill",
+      replaceEveryMonths: 2,
+      cleanEveryMonths: null,
+      retailPrice: 110_000,
+      compatibleModels: withQty(["FBS-51WH", "FBS-51BL", "FBS-51YL", "FBS-51PK"], 1),
+    },
+    {
+      sku: "FLT-FRL-BUBBLE-BOOSTER",
+      nameKo: "버블 부스터 녹물제거 필터",
+      nameVi: "Lõi mini Bubble Booster",
+      nameEn: "Bubble Booster filter",
+      replaceEveryMonths: 2,
+      cleanEveryMonths: null,
+      retailPrice: 85_000,
+      compatibleModels: withQty(["PBK-35WH"], 1),
     },
   ];
 
@@ -608,17 +909,24 @@ async function main() {
     // the seed declaration (small N, safe to nuke+recreate).
     await prisma.consumableOnModel.deleteMany({ where: { consumableId: row.id } });
     for (const m of c.compatibleModels) {
+      const model = modelByCode.get(m.modelCode);
+      if (!model) {
+        console.warn(`  ⚠ consumable ${c.sku}: skipping unknown model code "${m.modelCode}"`);
+        continue;
+      }
       await prisma.consumableOnModel.create({
-        data: { consumableId: row.id, modelId: m.modelId, quantity: m.quantity },
+        data: { consumableId: row.id, modelId: model.id, quantity: m.quantity },
       });
     }
   }
   console.log(`  ✓ consumables (${consumableSeed.length})`);
 
-  // ─── Accessories ─────────────────────────────────────────────────────
-  // PDF C.2 — minor parts (cocks, valves, hoses, fittings) stay free for
-  // MAINTENANCE customers; major parts (compressor, hot-water tank, PCB)
-  // are billed. Seeded mix demonstrates both branches of the default rule.
+  // ─── Accessories (parts / spare components) ─────────────────────────
+  // Data-driven from the "정수기 부속품" PDF — common parts are wired to
+  // ALL_PURIFIER_CODES (HCWP + RO); PTS-2100 / PTS-4000T-specific parts use
+  // their own model code groups. PDF C.2: minor parts (cocks, valves, hoses,
+  // fittings) stay free for MAINTENANCE customers; major parts (compressor,
+  // hot-water tank, PCB) are billed.
   type AccessorySeed = {
     sku: string;
     nameKo: string;
@@ -626,37 +934,17 @@ async function main() {
     nameEn: string;
     retailPrice: number;
     isMinorPart: boolean;
-    compatibleModels: { modelId: string; quantity: number }[];
+    compatibleModels: { modelCode: string; quantity: number }[];
   };
+
+  // Per-model accessory groups (PDF "정수기 부속품" lists PTS-2100 +
+  // PTS-4000T + PTS-4001T separately; the two PTS-4000T variants share
+  // the same accessory list).
+  const PTS_2100_ONLY = ["PTS-2100"];
+  const PTS_4000_FAMILY = ["PTS-4000T", "PTS-4001T"];
+
   const accessorySeed: AccessorySeed[] = [
-    {
-      sku: "ACC-MOUNT-001",
-      nameKo: "벽걸이 거치대",
-      nameVi: "Giá treo tường",
-      nameEn: "Wall mount",
-      retailPrice: 120_000,
-      isMinorPart: true,
-      compatibleModels: withQty(purifierModelIds),
-    },
-    {
-      sku: "ACC-ADAPTER-001",
-      nameKo: "전원 어댑터",
-      nameVi: "Bộ chuyển nguồn",
-      nameEn: "Power adapter",
-      retailPrice: 90_000,
-      isMinorPart: true,
-      compatibleModels: withQty([...purifierModelIds, bidet.id, air.id]),
-    },
-    {
-      sku: "ACC-HOSE-001",
-      nameKo: "급수 호스 (3m)",
-      nameVi: "Ống cấp nước (3m)",
-      nameEn: "Inlet hose (3m)",
-      retailPrice: 60_000,
-      isMinorPart: true,
-      compatibleModels: withQty([...purifierModelIds, bidet.id]),
-    },
-    // PDF "정수기 부속품" — common (all-purifier) small parts.
+    // ── 모든 정수기 공용 (PDF "모든 정수기 공용") — minor parts ───────
     {
       sku: "ACC-SHUTOFF-VALVE",
       nameKo: "아답터 (Water shut-off valve)",
@@ -664,7 +952,16 @@ async function main() {
       nameEn: "Water shut-off valve",
       retailPrice: 45_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-TUBING-6MM",
+      nameKo: "튜빙호스 6mm",
+      nameVi: "Ống nước phi 6mm",
+      nameEn: "6mm tubing hose",
+      retailPrice: 30_000,
+      isMinorPart: true,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
       sku: "ACC-FITTING-L14",
@@ -673,7 +970,7 @@ async function main() {
       nameEn: "L fitting 1/4\"",
       retailPrice: 18_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
       sku: "ACC-FITTING-T14",
@@ -682,7 +979,25 @@ async function main() {
       nameEn: "T fitting 1/4\"",
       retailPrice: 22_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-BIMETAL",
+      nameKo: "바이메탈 (Bi-Metal)",
+      nameVi: "Sò nóng",
+      nameEn: "Bi-Metal",
+      retailPrice: 95_000,
+      isMinorPart: true,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-INTER-VALVE-14",
+      nameKo: "중간밸브 1/4\"",
+      nameVi: "Van phi 6",
+      nameEn: "Intermediate valve 1/4\"",
+      retailPrice: 55_000,
+      isMinorPart: true,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
       sku: "ACC-FUSE-001",
@@ -691,7 +1006,7 @@ async function main() {
       nameEn: "Fuse",
       retailPrice: 12_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
       sku: "ACC-FLOAT-VALVE",
@@ -700,54 +1015,28 @@ async function main() {
       nameEn: "Floating valve",
       retailPrice: 95_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
-    },
-    {
-      sku: "ACC-COLD-TAP",
-      nameKo: "냉수코크",
-      nameVi: "Vòi nước lạnh",
-      nameEn: "Cold water tap",
-      retailPrice: 220_000,
-      isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
       sku: "ACC-HOT-TAP",
-      nameKo: "온수코크",
-      nameVi: "Vòi nước nóng",
-      nameEn: "Hot water tap",
+      nameKo: "온수코크 (Transparent Water Tap - Hot)",
+      nameVi: "Vòi nước nóng (loại thường)",
+      nameEn: "Transparent Water Tap (Hot)",
       retailPrice: 250_000,
       isMinorPart: true,
-      compatibleModels: withQty(allPurifierIds),
-    },
-    // PDF — major (billable for MAINTENANCE) parts.
-    {
-      sku: "ACC-COMPRESSOR",
-      nameKo: "콤프레샤",
-      nameVi: "Block làm lạnh",
-      nameEn: "Compressor",
-      retailPrice: 3_800_000,
-      isMinorPart: false,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
     {
-      sku: "ACC-HOT-TANK-3L",
-      nameKo: "3L 온수탱크 (PTS-2100)",
-      nameVi: "Bình nóng 3L (PTS-2100)",
-      nameEn: "3L Hot water tank (PTS-2100)",
-      retailPrice: 1_450_000,
-      isMinorPart: false,
-      compatibleModels: withQty([purifier.id]),
+      sku: "ACC-COLD-TAP",
+      nameKo: "냉수코크 (Transparent Water Tap - Cold)",
+      nameVi: "Vòi nước lạnh (loại thường)",
+      nameEn: "Transparent Water Tap (Cold)",
+      retailPrice: 220_000,
+      isMinorPart: true,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
     },
-    {
-      sku: "ACC-PCB-CLOCK",
-      nameKo: "PCB clock (PTS-4000T)",
-      nameVi: "Mạch điện đồng hồ (PTS-4000T)",
-      nameEn: "PCB clock (PTS-4000T)",
-      retailPrice: 1_200_000,
-      isMinorPart: false,
-      compatibleModels: withQty([purifierRoTop.id]),
-    },
+
+    // ── 모든 정수기 공용 — major (billable) parts ─────────────────────
     {
       sku: "ACC-COLD-TC",
       nameKo: "COLD TC (냉수 센서)",
@@ -755,7 +1044,184 @@ async function main() {
       nameEn: "COLD TC sensor",
       retailPrice: 380_000,
       isMinorPart: false,
-      compatibleModels: withQty(allPurifierIds),
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-COMPRESSOR",
+      nameKo: "콤프레샤",
+      nameVi: "Block làm lạnh",
+      nameEn: "Compressor",
+      retailPrice: 3_800_000,
+      isMinorPart: false,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-PTC-ORP",
+      nameKo: "PTC & ORP",
+      nameVi: "Role Block",
+      nameEn: "PTC & ORP",
+      retailPrice: 580_000,
+      isMinorPart: false,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+
+    // ── PTS-2100 전용 ────────────────────────────────────────────────
+    {
+      sku: "ACC-TANK-COVER-PTS2100",
+      nameKo: "탱크뚜껑 (PTS-2100)",
+      nameVi: "Nắp bồn nước (PTS-2100)",
+      nameEn: "Tank cover (PTS-2100)",
+      retailPrice: 220_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-HOT-TANK-3L-PTS2100",
+      nameKo: "3L 온수탱크 (PTS-2100)",
+      nameVi: "Bình nóng 3L (PTS-2100)",
+      nameEn: "3L Hot Water Tank (PTS-2100)",
+      retailPrice: 1_450_000,
+      isMinorPart: false,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-COLD-TANK-SILICON-PTS2100",
+      nameKo: "뚜껑 실리콘 (PTS-2100)",
+      nameVi: "Joăng silicon bồn lạnh (PTS-2100)",
+      nameEn: "COLD TANK SILICON (PTS-2100)",
+      retailPrice: 65_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-WATER-TRAY-SET-PTS2100",
+      nameKo: "WATER TRAY SET (PTS-2100)",
+      nameVi: "Bộ khay hứng nước (PTS-2100)",
+      nameEn: "Water Tray Set (PTS-2100)",
+      retailPrice: 180_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-WATER-TRAP-GRILL-PTS2100",
+      nameKo: "WATER TRAP GRILL (PTS-2100)",
+      nameVi: "Nắp khay hứng nước (PTS-2100)",
+      nameEn: "Water Trap Grill (PTS-2100)",
+      retailPrice: 60_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-TAP-COVER-PTS2100",
+      nameKo: "TAP COVER (PTS-2100)",
+      nameVi: "Nắp đậy vòi nước (PTS-2100)",
+      nameEn: "Tap Cover (PTS-2100)",
+      retailPrice: 110_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-COLD-TAP-PTS2100",
+      nameKo: "냉수코크 (PTS-2100)",
+      nameVi: "Vòi lạnh (PTS-2100)",
+      nameEn: "Cold water tap (PTS-2100)",
+      retailPrice: 240_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+    {
+      sku: "ACC-HOT-TAP-PTS2100",
+      nameKo: "온수코크 (PTS-2100)",
+      nameVi: "Vòi nóng (PTS-2100)",
+      nameEn: "Hot water tap (PTS-2100)",
+      retailPrice: 280_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_2100_ONLY),
+    },
+
+    // ── PTS-4000T / PTS-4001T 전용 ───────────────────────────────────
+    {
+      sku: "ACC-TAP-COVER-PTS4000",
+      nameKo: "TAP COVER (PTS-4000T/4001T)",
+      nameVi: "Nắp đậy vòi nước (PTS-4000T/4001T)",
+      nameEn: "Tap Cover (PTS-4000T/4001T)",
+      retailPrice: 130_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+    {
+      sku: "ACC-COLD-TAP-PTS4000",
+      nameKo: "냉수코크 (PTS-4000T/4001T)",
+      nameVi: "Vòi lạnh (PTS-4000T/4001T)",
+      nameEn: "Cold water tap (PTS-4000T/4001T)",
+      retailPrice: 260_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+    {
+      sku: "ACC-HOT-TAP-PTS4000",
+      nameKo: "온수코크 (PTS-4000T/4001T)",
+      nameVi: "Vòi nóng (PTS-4000T/4001T)",
+      nameEn: "Hot water tap (PTS-4000T/4001T)",
+      retailPrice: 300_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+    {
+      sku: "ACC-PCB-CLOCK-PTS4000",
+      nameKo: "PCB clock (PTS-4000T/4001T)",
+      nameVi: "Mạch điện đồng hồ (PTS-4000T/4001T)",
+      nameEn: "PCB clock (PTS-4000T/4001T)",
+      retailPrice: 1_200_000,
+      isMinorPart: false,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+    {
+      sku: "ACC-PCB-POWER-PTS4000",
+      nameKo: "PCB power (PTS-4000T/4001T)",
+      nameVi: "Mạch đèn báo (PTS-4000T/4001T)",
+      nameEn: "PCB power (PTS-4000T/4001T)",
+      retailPrice: 980_000,
+      isMinorPart: false,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+    {
+      sku: "ACC-COCK-BUTTON-PTS4000",
+      nameKo: "코크버튼 (PTS-4000T/4001T)",
+      nameVi: "Nút nhấn vòi nước (PTS-4000T/4001T)",
+      nameEn: "Cock button (PTS-4000T/4001T)",
+      retailPrice: 75_000,
+      isMinorPart: true,
+      compatibleModels: withQty(PTS_4000_FAMILY),
+    },
+
+    // ── Legacy accessories carried forward (mount / adapter / hose) ──
+    {
+      sku: "ACC-MOUNT-001",
+      nameKo: "벽걸이 거치대",
+      nameVi: "Giá treo tường",
+      nameEn: "Wall mount",
+      retailPrice: 120_000,
+      isMinorPart: true,
+      compatibleModels: withQty(ALL_PURIFIER_CODES),
+    },
+    {
+      sku: "ACC-ADAPTER-001",
+      nameKo: "전원 어댑터",
+      nameVi: "Bộ chuyển nguồn",
+      nameEn: "Power adapter",
+      retailPrice: 90_000,
+      isMinorPart: true,
+      compatibleModels: withQty([...ALL_PURIFIER_CODES, "SA-J430", "SA-J830", "CA-5000W", "CA-7000WS/B"]),
+    },
+    {
+      sku: "ACC-HOSE-001",
+      nameKo: "급수 호스 (3m)",
+      nameVi: "Ống cấp nước (3m)",
+      nameEn: "Inlet hose (3m)",
+      retailPrice: 60_000,
+      isMinorPart: true,
+      compatibleModels: withQty([...ALL_PURIFIER_CODES, "SA-J430", "SA-J830"]),
     },
   ];
 
@@ -780,8 +1246,13 @@ async function main() {
     });
     await prisma.accessoryOnModel.deleteMany({ where: { accessoryId: row.id } });
     for (const m of a.compatibleModels) {
+      const model = modelByCode.get(m.modelCode);
+      if (!model) {
+        console.warn(`  ⚠ accessory ${a.sku}: skipping unknown model code "${m.modelCode}"`);
+        continue;
+      }
       await prisma.accessoryOnModel.create({
-        data: { accessoryId: row.id, modelId: m.modelId, quantity: m.quantity },
+        data: { accessoryId: row.id, modelId: model.id, quantity: m.quantity },
       });
     }
   }
@@ -1800,7 +2271,33 @@ async function main() {
     }
   }
 
-  console.log(`  ✓ visits (6 anchor + ${bulkVisitCounter} bulk = ${6 + bulkVisitCounter} total across all VisitState values)`);
+  // ─── Daily SCHEDULED visits (today + next 30 days, one per day) ────────
+  // Gives the calendar / dashboard widgets a steady stream of upcoming work
+  // so cron jobs (D-1 reminder) + the today/upcoming mobile screens always
+  // have something to render in dev. Round-robins through bulk customers
+  // and the technician pool; alternates visit type day by day.
+  let dailyVisitCounter = 0;
+  for (let dayOff = 0; dayOff <= 30; dayOff++) {
+    const targetCustomer = bulkVisitPool[dailyVisitCounter % bulkVisitPool.length];
+    const techPick = techs[dailyVisitCounter % techs.length];
+    const vType = visitTypePool[dailyVisitCounter % visitTypePool.length];
+    // Spread starting hours 8–16 so the day-view doesn't look identical.
+    const hourBase = 8 + (dailyVisitCounter % 9);
+    const id = `seed-visit-daily-${String(dayOff).padStart(2, "0")}`;
+    await ensureVisit(id, {
+      customerId: targetCustomer.customerId,
+      type: vType,
+      state: "SCHEDULED",
+      scheduledFor: at(daysFromNow(dayOff), hourBase),
+      scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
+      leadTechnicianId: techPick.id,
+    });
+    dailyVisitCounter++;
+  }
+
+  console.log(
+    `  ✓ visits (6 anchor + ${bulkVisitCounter} bulk + ${dailyVisitCounter} daily = ${6 + bulkVisitCounter + dailyVisitCounter} total across all VisitState values)`,
+  );
 
   // ─── Payments (covering all states) ─────────────────────────────────
   async function ensurePayment(id: string, data: Parameters<typeof prisma.payment.create>[0]["data"]) {

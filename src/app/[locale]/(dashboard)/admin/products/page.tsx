@@ -10,9 +10,10 @@
  * volumes fit comfortably in memory).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { pickModelName } from "@/lib/products/name";
 
 type ApiClient = ReturnType<typeof useApi>;
 type Translate = ReturnType<typeof useTranslations>;
@@ -20,6 +21,7 @@ import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { Combobox } from "@/components/ui/combobox";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
@@ -56,10 +58,10 @@ interface CategoryRow {
 
 interface ModelRow {
   id: string;
-  name: string;
-  displayNameKo: string | null;
-  displayNameVi: string | null;
-  displayNameEn: string | null;
+  modelCode: string | null;
+  nameKo: string | null;
+  nameVi: string | null;
+  nameEn: string | null;
   category: string | null;
   isActive: boolean;
   brand: { id: string; name: string } | null;
@@ -76,7 +78,7 @@ interface ConsumableRow {
   cleanOnEveryVisit: boolean;
   retailPrice: string;
   isActive: boolean;
-  compatibleModels: { modelId: string; quantity: number; model: { name: string } }[];
+  compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
 
 interface AccessoryRow {
@@ -88,7 +90,7 @@ interface AccessoryRow {
   isMinorPart: boolean;
   retailPrice: string;
   isActive: boolean;
-  compatibleModels: { modelId: string; quantity: number; model: { name: string } }[];
+  compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
 
 interface ChargePolicyRow {
@@ -103,14 +105,112 @@ interface ChargePolicyRow {
   consumable: { sku: string; nameVi: string } | null;
 }
 
+interface ImportSummary {
+  rowsProcessed: number;
+  brandsCreated: number;
+  categoriesCreated: number;
+  modelsCreated: number;
+  consumablesCreated: number;
+  accessoriesCreated: number;
+  linksCreated: number;
+  duplicates: {
+    brands: number;
+    categories: number;
+    models: number;
+    consumables: number;
+    accessories: number;
+    links: number;
+  };
+  newItems: {
+    brands: string[];
+    categories: string[];
+    models: string[];
+    consumables: string[];
+    accessories: string[];
+  };
+  warnings: string[];
+}
+
+type ImportResult =
+  | { kind: "ok"; summary: ImportSummary }
+  | { kind: "error"; message: string; details?: string[] };
+
 export default function ProductCatalogPage() {
   const t = useTranslations("admin.products");
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const api = useApi();
   const [tab, setTab] = useState<Tab>("brands");
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const role = user?.role;
   const allowed = role === "ADMIN" || role === "MANAGER";
+
+  async function uploadCatalogCsv(file: File) {
+    if (!accessToken) return;
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/products/import-catalog", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const json = (await res.json().catch(() => null)) as
+        | { success: true; data: ImportSummary }
+        | { success: false; error?: { message?: string; issues?: { path: (string | number)[]; message: string }[] } }
+        | null;
+      if (!res.ok || !json || json.success === false) {
+        const err = !json || json.success === true
+          ? { message: `Upload failed (${res.status})`, issues: undefined }
+          : json.error ?? { message: "Upload failed" };
+        setImportResult({
+          kind: "error",
+          message: err.message ?? `Upload failed (${res.status})`,
+          details: err.issues?.map((i) => `${i.path.join(".")}: ${i.message}`),
+        });
+        return;
+      }
+      setImportResult({ kind: "ok", summary: json.data });
+    } catch (err) {
+      setImportResult({
+        kind: "error",
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function downloadCatalogCsv() {
+    if (!accessToken) return;
+    setExporting(true);
+    try {
+      const res = await fetch("/api/admin/products/export-catalog", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        alert(`Download failed (${res.status})`);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const filenameMatch = /filename="?([^"]+)"?/.exec(disposition);
+      a.download = filenameMatch?.[1] ?? "product-catalog.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!allowed) {
     return (
@@ -123,10 +223,43 @@ export default function ProductCatalogPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-sm text-gray-600 mt-1">{t("subtitle")}</p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm text-gray-600 mt-1">{t("subtitle")}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void uploadCatalogCsv(f);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+            isLoading={importing}
+          >
+            {t("uploadCatalogCsv")}
+          </Button>
+          <Button variant="secondary" onClick={downloadCatalogCsv} isLoading={exporting}>
+            {t("downloadCatalogCsv")}
+          </Button>
+        </div>
       </header>
+
+      {importResult && (
+        <ImportResultModal
+          result={importResult}
+          onClose={() => setImportResult(null)}
+          t={t}
+        />
+      )}
 
       <nav className="flex flex-wrap gap-1 border-b border-border">
         {(
@@ -170,6 +303,138 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   accessories: "tabAccessories",
   charges: "tabCharges",
 };
+
+/** Renders the result of a CSV catalog upload — either an error explanation
+ *  or a per-entity summary of new items + duplicate counts. */
+function ImportResultModal({
+  result,
+  onClose,
+  t,
+}: Readonly<{ result: ImportResult; onClose: () => void; t: Translate }>) {
+  if (result.kind === "error") {
+    return (
+      <Modal
+        open
+        onClose={onClose}
+        title={t("importErrorTitle")}
+        footer={<Button onClick={onClose}>{t("close")}</Button>}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-red-700">{result.message}</p>
+          {result.details && result.details.length > 0 && (
+            <ul className="list-disc pl-5 text-xs text-[#525252] space-y-1">
+              {result.details.map((d, i) => (
+                <li key={i}>{d}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Modal>
+    );
+  }
+  const s = result.summary;
+  const totalNew =
+    s.brandsCreated +
+    s.categoriesCreated +
+    s.modelsCreated +
+    s.consumablesCreated +
+    s.accessoriesCreated +
+    s.linksCreated;
+  const totalDup =
+    s.duplicates.brands +
+    s.duplicates.categories +
+    s.duplicates.models +
+    s.duplicates.consumables +
+    s.duplicates.accessories +
+    s.duplicates.links;
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("importDoneTitle")}
+      footer={<Button onClick={onClose}>{t("close")}</Button>}
+    >
+      <div className="space-y-4 text-sm">
+        <p className="text-[#525252]">
+          {t("importRowsProcessed", { n: s.rowsProcessed })}
+          {" · "}
+          {t("importTotals", { added: totalNew, dup: totalDup })}
+        </p>
+
+        <SummaryGrid s={s} t={t} />
+
+        <NewItemsList label={t("newBrands")} items={s.newItems.brands} />
+        <NewItemsList label={t("newCategories")} items={s.newItems.categories} />
+        <NewItemsList label={t("newModels")} items={s.newItems.models} />
+        <NewItemsList label={t("newConsumables")} items={s.newItems.consumables} />
+        <NewItemsList label={t("newAccessories")} items={s.newItems.accessories} />
+
+        {s.warnings.length > 0 && (
+          <div>
+            <div className="text-xs font-semibold text-amber-700">{t("importWarnings")}</div>
+            <ul className="list-disc pl-5 text-xs text-amber-800 space-y-1">
+              {s.warnings.slice(0, 20).map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+              {s.warnings.length > 20 && (
+                <li className="text-[#737373]">… +{s.warnings.length - 20}</li>
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function SummaryGrid({ s, t }: Readonly<{ s: ImportSummary; t: Translate }>) {
+  const cells: { label: string; created: number; dup: number }[] = [
+    { label: t("tabBrands"), created: s.brandsCreated, dup: s.duplicates.brands },
+    { label: t("tabCategories"), created: s.categoriesCreated, dup: s.duplicates.categories },
+    { label: t("tabModels"), created: s.modelsCreated, dup: s.duplicates.models },
+    { label: t("tabConsumables"), created: s.consumablesCreated, dup: s.duplicates.consumables },
+    { label: t("tabAccessories"), created: s.accessoriesCreated, dup: s.duplicates.accessories },
+    { label: t("compatibilityLinks"), created: s.linksCreated, dup: s.duplicates.links },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {cells.map((c) => (
+        <div key={c.label} className="rounded border border-border p-2">
+          <div className="text-xs text-[#737373]">{c.label}</div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-base font-semibold text-emerald-700">+{c.created}</span>
+            <span className="text-xs text-[#737373]">/ {c.dup} {t("importDup")}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NewItemsList({ label, items }: Readonly<{ label: string; items: string[] }>) {
+  if (items.length === 0) return null;
+  const cap = 30;
+  return (
+    <div>
+      <div className="text-xs font-semibold text-emerald-700">
+        {label} ({items.length})
+      </div>
+      <div className="mt-1 flex flex-wrap gap-1">
+        {items.slice(0, cap).map((it) => (
+          <span
+            key={it}
+            className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-900 border border-emerald-200"
+          >
+            {it}
+          </span>
+        ))}
+        {items.length > cap && (
+          <span className="text-xs text-[#737373]">… +{items.length - cap}</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Reusable helpers
@@ -670,11 +935,14 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
 // ───────────────────────────────────────────────────────────────────────────
 
 function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const locale = useLocale();
+  const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<ModelRow | null>(null);
   const [deleting, setDeleting] = useState<ModelRow | null>(null);
+  const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const { sort, onClick } = useSort<"name" | "brand" | "category" | "isActive">("name");
 
   const load = useCallback(async () => {
@@ -689,20 +957,37 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
 
   useEffect(() => { void load(); }, [load]);
 
+  const filtered = useMemo(
+    () => (brandFilter ? rows.filter((r) => r.brand?.id === brandFilter) : rows),
+    [rows, brandFilter],
+  );
+
   const sorted = useMemo(
     () =>
-      sortRows(rows, sort, {
-        name: (r) => r.displayNameKo ?? r.name,
+      sortRows(filtered, sort, {
+        name: (r) => pickModelName(r, locale),
         brand: (r) => r.brand?.name ?? "",
         category: (r) => r.category ?? "",
         isActive: (r) => r.isActive,
       }),
-    [rows, sort],
+    [filtered, sort],
   );
 
   return (
     <section className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="w-60">
+          <FormField label={t("colBrand")}>
+            <Combobox
+              value={brandFilter}
+              onChange={setBrandFilter}
+              options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              placeholder={t("filterAll")}
+              allowClear
+              ariaLabel={t("colBrand")}
+            />
+          </FormField>
+        </div>
         <Button onClick={() => setCreating(true)}>+ {t("addModel")}</Button>
       </div>
       <table className="w-full border border-border">
@@ -721,7 +1006,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
-                <td className="p-2">{r.displayNameKo ?? r.name}</td>
+                <td className="p-2">{pickModelName(r, locale)}</td>
                 <td className="p-2 text-sm">{r.brand?.name ?? "—"}</td>
                 <td className="p-2">{r.category ?? "—"}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
@@ -754,10 +1039,9 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             mode="edit"
             initial={{
               id: editing.id,
-              name: editing.name,
-              displayNameKo: editing.displayNameKo ?? "",
-              displayNameVi: editing.displayNameVi ?? "",
-              displayNameEn: editing.displayNameEn ?? "",
+              nameKo: editing.nameKo ?? "",
+              nameVi: editing.nameVi ?? "",
+              nameEn: editing.nameEn ?? "",
               brandId: editing.brand?.id ?? null,
               category: (editing.category ?? null) as
                 | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
@@ -771,7 +1055,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         <ConfirmDialog
           open
           title={t("deactivate")}
-          message={t("deactivateConfirm", { name: deleting.displayNameKo ?? deleting.name })}
+          message={t("deactivateConfirm", { name: pickModelName(deleting, locale) })}
           confirmLabel={t("deactivate")}
           cancelLabel={t("cancel")}
           variant="danger"
@@ -805,6 +1089,18 @@ function useModelOptions(api: ApiClient): ModelRow[] {
   return models;
 }
 
+/** Active brands, used to populate brand filter dropdowns. */
+function useBrandOptions(api: ApiClient): BrandRow[] {
+  const [brands, setBrands] = useState<BrandRow[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const res = await api.get<BrandRow[]>("/api/admin/products/brands?pageSize=100&isActive=true");
+      setBrands(res.data);
+    })();
+  }, [api]);
+  return brands;
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Consumables
 // ───────────────────────────────────────────────────────────────────────────
@@ -812,11 +1108,14 @@ function useModelOptions(api: ApiClient): ModelRow[] {
 function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
+  const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ConsumableRow | null>(null);
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
+  const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [modelFilter, setModelFilter] = useState<string | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -875,9 +1174,33 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     }
   }
 
+  // modelId → brandId, so the brand filter can narrow consumables by
+  // following each consumable's compatibleModels.
+  const modelToBrand = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const mo of models) m.set(mo.id, mo.brand?.id ?? null);
+    return m;
+  }, [models]);
+
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (modelFilter && !r.compatibleModels.some((cm) => cm.modelId === modelFilter)) return false;
+      if (brandFilter && !r.compatibleModels.some((cm) => modelToBrand.get(cm.modelId) === brandFilter)) return false;
+      return true;
+    });
+  }, [rows, brandFilter, modelFilter, modelToBrand]);
+
+  const modelDropdownOptions = useMemo(
+    () =>
+      models
+        .filter((m) => !brandFilter || m.brand?.id === brandFilter)
+        .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
+    [models, brandFilter],
+  );
+
   const sorted = useMemo(
     () =>
-      sortRows(rows, sort, {
+      sortRows(filtered, sort, {
         sku: (r) => r.sku,
         nameVi: (r) => pickLocaleName(r, locale),
         replaceEveryMonths: (r) => r.replaceEveryMonths ?? -1,
@@ -886,12 +1209,44 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         retailPrice: (r) => Number(r.retailPrice),
         isActive: (r) => r.isActive,
       }),
-    [rows, sort, locale],
+    [filtered, sort, locale],
   );
 
   return (
     <section className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-56">
+            <FormField label={t("filterByBrand")}>
+              <Combobox
+                value={brandFilter}
+                onChange={(v) => {
+                  setBrandFilter(v);
+                  // Drop a model filter that no longer matches the chosen brand.
+                  if (v && modelFilter && modelToBrand.get(modelFilter) !== v) {
+                    setModelFilter(null);
+                  }
+                }}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                placeholder={t("filterAll")}
+                allowClear
+                ariaLabel={t("filterByBrand")}
+              />
+            </FormField>
+          </div>
+          <div className="w-72">
+            <FormField label={t("filterByModel")}>
+              <Combobox
+                value={modelFilter}
+                onChange={setModelFilter}
+                options={modelDropdownOptions}
+                placeholder={t("filterAll")}
+                allowClear
+                ariaLabel={t("filterByModel")}
+              />
+            </FormField>
+          </div>
+        </div>
         <Button onClick={() => setShowForm((s) => !s)}>+ {t("addConsumable")}</Button>
       </div>
       {showForm && (
@@ -939,7 +1294,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         <thead className="bg-muted">
           <tr>
             <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
-            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
+            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
             <SortableTh column="replaceEveryMonths" sort={sort} onClick={onClick} align="right">{t("colReplaceCycle")}</SortableTh>
             <SortableTh column="cleanEveryMonths" sort={sort} onClick={onClick} align="right">{t("colCleanCycle")}</SortableTh>
             <SortableTh column="cleanOnEveryVisit" sort={sort} onClick={onClick} align="center">{t("colCleanOnVisit")}</SortableTh>
@@ -962,7 +1317,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
                 <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
                 <td className="p-2 text-xs">
-                  {r.compatibleModels.map((m) => `${m.model.name}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
+                  {r.compatibleModels.map((m) => `${pickModelName(m.model, locale)}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
                 </td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
@@ -1097,11 +1452,14 @@ function ConsumableEditModal({
 function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
+  const brands = useBrandOptions(api);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<AccessoryRow | null>(null);
   const [deleting, setDeleting] = useState<AccessoryRow | null>(null);
+  const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [modelFilter, setModelFilter] = useState<string | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -1146,21 +1504,76 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     }
   }
 
+  // modelId → brandId, so the brand filter can narrow accessories by
+  // following each accessory's compatibleModels.
+  const modelToBrand = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const mo of models) m.set(mo.id, mo.brand?.id ?? null);
+    return m;
+  }, [models]);
+
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (modelFilter && !r.compatibleModels.some((cm) => cm.modelId === modelFilter)) return false;
+      if (brandFilter && !r.compatibleModels.some((cm) => modelToBrand.get(cm.modelId) === brandFilter)) return false;
+      return true;
+    });
+  }, [rows, brandFilter, modelFilter, modelToBrand]);
+
+  const modelDropdownOptions = useMemo(
+    () =>
+      models
+        .filter((m) => !brandFilter || m.brand?.id === brandFilter)
+        .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
+    [models, brandFilter],
+  );
+
   const sorted = useMemo(
     () =>
-      sortRows(rows, sort, {
+      sortRows(filtered, sort, {
         sku: (r) => r.sku,
         nameVi: (r) => pickLocaleName(r, locale),
         isMinorPart: (r) => r.isMinorPart,
         retailPrice: (r) => Number(r.retailPrice),
         isActive: (r) => r.isActive,
       }),
-    [rows, sort, locale],
+    [filtered, sort, locale],
   );
 
   return (
     <section className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="w-56">
+            <FormField label={t("filterByBrand")}>
+              <Combobox
+                value={brandFilter}
+                onChange={(v) => {
+                  setBrandFilter(v);
+                  if (v && modelFilter && modelToBrand.get(modelFilter) !== v) {
+                    setModelFilter(null);
+                  }
+                }}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                placeholder={t("filterAll")}
+                allowClear
+                ariaLabel={t("filterByBrand")}
+              />
+            </FormField>
+          </div>
+          <div className="w-72">
+            <FormField label={t("filterByModel")}>
+              <Combobox
+                value={modelFilter}
+                onChange={setModelFilter}
+                options={modelDropdownOptions}
+                placeholder={t("filterAll")}
+                allowClear
+                ariaLabel={t("filterByModel")}
+              />
+            </FormField>
+          </div>
+        </div>
         <Button onClick={() => setShowForm((s) => !s)}>+ {t("addAccessory")}</Button>
       </div>
       {showForm && (
@@ -1202,7 +1615,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         <thead className="bg-muted">
           <tr>
             <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
-            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
+            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
             <SortableTh column="isMinorPart" sort={sort} onClick={onClick} align="center">{t("colMinorPart")}</SortableTh>
             <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
             <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
@@ -1220,7 +1633,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
                 <td className="p-2">{pickLocaleName(r, locale)}</td>
                 <td className="p-2 text-center">{r.isMinorPart ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
-                <td className="p-2 text-xs">{r.compatibleModels.map((m) => m.model.name).join(", ") || "—"}</td>
+                <td className="p-2 text-xs">{r.compatibleModels.map((m) => pickModelName(m.model, locale)).join(", ") || "—"}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
                   <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
@@ -1416,6 +1829,7 @@ function CompatibilityPicker({
   selected,
   onChange,
 }: Readonly<{ models: ModelRow[]; selected: string[]; onChange: (ids: string[]) => void }>) {
+  const locale = useLocale();
   const set = useMemo(() => new Set(selected), [selected]);
   function toggle(id: string) {
     const next = new Set(set);
@@ -1438,7 +1852,7 @@ function CompatibilityPicker({
                 : "border-border bg-white text-text-secondary hover:border-brand-blue-200 hover:bg-surface-hover"
             }`}
           >
-            {m.name}
+            {pickModelName(m, locale)}
           </button>
         );
       })}

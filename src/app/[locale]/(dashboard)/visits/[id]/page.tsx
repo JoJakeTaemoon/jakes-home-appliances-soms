@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ interface VisitDetail {
   equipment: {
     id: string;
     serialNumber: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
     site: { id: string; name: string } | null;
   } | null;
   leadTechnician: { id: string; username: string; phone: string | null } | null;
@@ -229,7 +230,7 @@ export default function VisitDetailPage() {
             </DetailCard>
             <DetailCard label={t("equipment")}>
               {data.equipment
-                ? `${data.equipment.model.name} · ${data.equipment.serialNumber ?? "—"}`
+                ? `${pickModelName(data.equipment.model, locale)} · ${data.equipment.serialNumber ?? "—"}`
                 : "—"}
             </DetailCard>
             <DetailCard label={t("site")}>

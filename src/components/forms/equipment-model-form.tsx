@@ -17,10 +17,9 @@ interface FilterRow {
 type CategoryValue = "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
 
 interface ModelInput {
-  name: string;
-  displayNameKo: string;
-  displayNameVi: string;
-  displayNameEn: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
   brandId: string | null;
   category: CategoryValue | null;
   description: string;
@@ -46,10 +45,9 @@ interface BrandOpt {
 }
 
 const EMPTY: ModelInput = {
-  name: "",
-  displayNameKo: "",
-  displayNameVi: "",
-  displayNameEn: "",
+  nameKo: "",
+  nameVi: "",
+  nameEn: "",
   brandId: null,
   category: null,
   description: "",
@@ -102,10 +100,9 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
     setErr(null);
     try {
       const payload = {
-        name: data.name,
-        displayNameKo: data.displayNameKo || undefined,
-        displayNameVi: data.displayNameVi || undefined,
-        displayNameEn: data.displayNameEn || undefined,
+        nameKo: data.nameKo || undefined,
+        nameVi: data.nameVi || undefined,
+        nameEn: data.nameEn || undefined,
         brandId: data.brandId,
         category: data.category ?? null,
         description: data.description || undefined,
@@ -143,9 +140,6 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
       </header>
 
       <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[#e5e5e5] bg-white p-6 sm:grid-cols-2">
-        <FormField label={t("name")} required>
-          <Input value={data.name} onChange={(e) => setField("name", e.target.value)} />
-        </FormField>
         <FormField label={t("brand")}>
           <Combobox
             value={data.brandId ?? ""}
@@ -155,14 +149,14 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
             allowClear
           />
         </FormField>
-        <FormField label={t("displayNameKo")}>
-          <Input value={data.displayNameKo} onChange={(e) => setField("displayNameKo", e.target.value)} placeholder="PTS-2100" />
+        <FormField label={t("nameKo")} required>
+          <Input value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="PTS-2100" />
         </FormField>
-        <FormField label={t("displayNameVi")}>
-          <Input value={data.displayNameVi} onChange={(e) => setField("displayNameVi", e.target.value)} placeholder="PTS-2100" />
+        <FormField label={t("nameVi")} required>
+          <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="PTS-2100" />
         </FormField>
-        <FormField label={t("displayNameEn")}>
-          <Input value={data.displayNameEn} onChange={(e) => setField("displayNameEn", e.target.value)} placeholder="PTS-2100" />
+        <FormField label={t("nameEn")} required>
+          <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="PTS-2100" />
         </FormField>
         <FormField label={t("inspectionEveryMonths")}>
           <Input
@@ -293,7 +287,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         <Button variant="ghost" onClick={() => finish()} disabled={busy}>
           {tc("cancel")}
         </Button>
-        <Button onClick={submit} isLoading={busy} disabled={!data.name}>
+        <Button onClick={submit} isLoading={busy} disabled={!data.nameKo && !data.nameVi && !data.nameEn}>
           {tc("save")}
         </Button>
       </div>

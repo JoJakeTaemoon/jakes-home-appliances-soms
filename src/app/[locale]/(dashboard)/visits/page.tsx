@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ interface VisitRow {
   equipment: {
     id: string;
     serialNumber: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   } | null;
 }
 
@@ -123,7 +124,7 @@ export default function VisitsListPage() {
       cell: (r) =>
         r.equipment ? (
           <div className="flex flex-col">
-            <span className="font-mono text-xs">{r.equipment.model.name}</span>
+            <span className="font-mono text-xs">{pickModelName(r.equipment.model, locale)}</span>
             <span className="text-xs text-[#737373]">{r.equipment.serialNumber ?? "—"}</span>
           </div>
         ) : (

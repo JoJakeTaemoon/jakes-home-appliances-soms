@@ -246,7 +246,9 @@ async function setupCustomer(opts: {
     update: {},
     create: {
       modelCode: "TEST-PHASE5-MODEL",
-      name: "Phase5 Test Model",
+      nameKo: "Phase5 Test Model",
+      nameVi: "Phase5 Test Model",
+      nameEn: "Phase5 Test Model",
       category: "WATER_PURIFIER",
     },
   });

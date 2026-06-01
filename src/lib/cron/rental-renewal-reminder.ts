@@ -86,7 +86,7 @@ export async function runRentalRenewalReminder(
       },
       equipment: {
         select: {
-          equipment: { select: { model: { select: { name: true, modelCode: true } } } },
+          equipment: { select: { model: { select: { nameKo: true, nameVi: true, nameEn: true, modelCode: true } } } },
         },
       },
     },
@@ -112,7 +112,11 @@ export async function runRentalRenewalReminder(
     if (!contactId) continue;
 
     const equipmentList = c.equipment
-      .map((ce) => `${ce.equipment.model.name} (${ce.equipment.model.name})`)
+      .map((ce) => {
+        const m = ce.equipment.model;
+        const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+        return `${name} (${m.modelCode ?? ""})`;
+      })
       .join(", ");
     const maintenanceFee = c.monthlyMaintenanceFee
       ? formatVnd(c.monthlyMaintenanceFee.toString())

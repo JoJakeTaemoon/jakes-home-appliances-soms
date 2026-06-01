@@ -24,7 +24,9 @@ export const GET = defineQuery({
           select: {
             id: true,
             modelCode: true,
-            name: true,
+            nameKo: true,
+            nameVi: true,
+            nameEn: true,
             category: true,
             filterPolicy: true,
           },
