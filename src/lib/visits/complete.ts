@@ -27,6 +27,7 @@ import {
 } from "@/lib/visits/state";
 import { completeSrFromVisit } from "@/lib/service-requests/operations";
 import { updateWithStateGuard } from "@/lib/db/state-guard";
+import { ValidationError } from "@/lib/api/error";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CompleteVisitInput } from "@/lib/validators/visit";
 
@@ -146,21 +147,61 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
     });
   }
 
+  // Effective charged (= invoiced) amount. If the technician overrode the
+  // pre-scheduled visit.expectedAmount on-site (extra parts, partial work,
+  // goodwill discount), input.chargedAmount carries the new value plus a
+  // mandatory reason. We persist the override on the visit + audit it.
+  const originalExpected = current.expectedAmount ?? 0;
+  const originalExpectedNum =
+    typeof originalExpected === "object"
+      ? Number(originalExpected.toString())
+      : Number(originalExpected);
+  let effectiveCharged = originalExpectedNum;
+  if (
+    input.chargedAmount !== undefined &&
+    input.chargedAmount !== null &&
+    input.chargedAmount !== originalExpectedNum
+  ) {
+    if (
+      !input.chargeOverrideReason ||
+      input.chargeOverrideReason.trim().length < 5
+    ) {
+      throw new ValidationError(
+        "chargeOverrideReason is required when chargedAmount differs from the visit's expectedAmount",
+      );
+    }
+    await prisma.visit.update({
+      where: { id: visitId },
+      data: { expectedAmount: input.chargedAmount },
+    });
+    effectiveCharged = input.chargedAmount;
+    await logAudit({
+      actorType: "USER",
+      actorId: actorUserId,
+      action: "VISIT_CHARGE_OVERRIDE",
+      entityType: "Visit",
+      entityId: visitId,
+      before: { expectedAmount: originalExpectedNum },
+      after: {
+        expectedAmount: input.chargedAmount,
+        reason: input.chargeOverrideReason,
+      },
+    });
+  }
+
   // Payment row (optional) — routes through the Payment ops module so the
-  // receipt email + audit log live in one place (UC-PY-01).
+  // receipt email + audit log live in one place (UC-PY-01). expectedAmount
+  // is the post-override charged amount so the receipt + carryover math
+  // are based on what the technician actually invoiced on-site.
   let paymentId: string | null = null;
   if (input.collectedAmount !== null && input.collectedAmount !== undefined) {
-    const expectedAmount = current.expectedAmount ?? 0;
-    const expectedNum =
-      typeof expectedAmount === "object"
-        ? Number(expectedAmount.toString())
-        : Number(expectedAmount);
     const collection = await recordCashCollection({
       visitId,
       customerId: current.customerId,
       collectedById: actorUserId,
       actualAmount: input.collectedAmount,
-      expectedAmount: expectedNum > 0 ? expectedNum : input.collectedAmount,
+      expectedAmount:
+        effectiveCharged > 0 ? effectiveCharged : input.collectedAmount,
       method: input.paymentMethod ?? "CASH",
     });
     paymentId = collection.paymentId;

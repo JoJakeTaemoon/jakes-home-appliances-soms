@@ -74,6 +74,10 @@ function CompleteWizard() {
   const [collectedAmount, setCollectedAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [expectedAmount, setExpectedAmount] = useState<number>(0);
+  // chargedAmount = 기사가 현장에서 결정한 실제 청구액. default = expectedAmount.
+  // 변경 시 chargeOverrideReason 필수.
+  const [chargedAmount, setChargedAmount] = useState<number>(0);
+  const [chargeOverrideReason, setChargeOverrideReason] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +93,7 @@ function CompleteWizard() {
       const exp = res.data.expectedAmount
         ? Number(res.data.expectedAmount)
         : 0;
+      setChargedAmount(exp);
       setExpectedAmount(exp);
       setCollectedAmount(exp);
     } catch {
@@ -217,9 +222,23 @@ function CompleteWizard() {
         takenAt: p.takenAt,
       })),
       customerSignaturePhotoStorageKey: signature.storageKey,
+      chargedAmount:
+        chargedAmount !== expectedAmount ? chargedAmount : undefined,
+      chargeOverrideReason:
+        chargedAmount !== expectedAmount
+          ? chargeOverrideReason.trim()
+          : undefined,
       collectedAmount: collectedAmount > 0 ? collectedAmount : null,
       paymentMethod: collectedAmount > 0 ? paymentMethod : undefined,
     };
+    if (
+      chargedAmount !== expectedAmount &&
+      chargeOverrideReason.trim().length < 5
+    ) {
+      setError(t("chargeOverrideReasonRequired"));
+      setSubmitting(false);
+      return;
+    }
     if (!online) {
       // Offline path — queue locally and bounce back to the visit detail.
       try {
@@ -458,6 +477,37 @@ function CompleteWizard() {
       {step === 4 && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-[#737373]">{t("collectedHint")}</p>
+          {/* chargedAmount = 청구 금액. 사전 예상값 prefill, 기사가 현장에서 수정 가능. */}
+          <FormField label={t("chargedAmount")}>
+            <NumberInput
+              value={chargedAmount}
+              onChange={setChargedAmount}
+              min={0}
+              allowDecimal={false}
+            />
+          </FormField>
+          {expectedAmount > 0 && chargedAmount !== expectedAmount && (
+            <>
+              <p className="text-xs text-amber-700">
+                {t("chargeOverrideHint", {
+                  original: expectedAmount.toLocaleString(),
+                })}
+              </p>
+              <FormField
+                label={t("chargeOverrideReason")}
+                required
+                htmlFor="charge-override-reason"
+              >
+                <Textarea
+                  id="charge-override-reason"
+                  value={chargeOverrideReason}
+                  onChange={(e) => setChargeOverrideReason(e.target.value)}
+                  rows={2}
+                  placeholder={t("chargeOverrideReasonPlaceholder")}
+                />
+              </FormField>
+            </>
+          )}
           <FormField label={t("collected")}>
             <NumberInput
               value={collectedAmount}
@@ -482,11 +532,11 @@ function CompleteWizard() {
               />
             </FormField>
           )}
-          {expectedAmount > 0 && (
+          {chargedAmount > 0 && (
             <p className="text-xs text-[#737373]">
-              Expected: {expectedAmount.toLocaleString()} VND
-              {expectedAmount !== collectedAmount &&
-                ` · Diff: ${(expectedAmount - collectedAmount).toLocaleString()} VND`}
+              Charged: {chargedAmount.toLocaleString()} VND
+              {chargedAmount !== collectedAmount &&
+                ` · Diff: ${(chargedAmount - collectedAmount).toLocaleString()} VND`}
             </p>
           )}
         </div>
