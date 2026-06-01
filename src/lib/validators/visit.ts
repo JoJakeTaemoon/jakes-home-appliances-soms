@@ -136,19 +136,55 @@ export const consumableLogEntrySchema = z.object({
   notes: z.string().trim().max(500).optional(),
 });
 
-export const completeVisitSchema = z.object({
-  findings: z.string().trim().min(1).max(4000),
-  partsReplaced: z
-    .array(z.string().trim().min(1).max(120))
-    .max(50)
-    .optional()
-    .default([]),
-  consumableLogs: z.array(consumableLogEntrySchema).max(50).optional().default([]),
-  photos: z.array(photoMetaSchema).max(40).optional().default([]),
-  customerSignaturePhotoStorageKey: z.string().trim().min(1).max(500),
-  collectedAmount: moneyOptional,
-  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CARD", "OTHER"]).optional(),
-});
+export const completeVisitSchema = z
+  .object({
+    findings: z.string().trim().min(1).max(4000),
+    partsReplaced: z
+      .array(z.string().trim().min(1).max(120))
+      .max(50)
+      .optional()
+      .default([]),
+    consumableLogs: z
+      .array(consumableLogEntrySchema)
+      .max(50)
+      .optional()
+      .default([]),
+    photos: z.array(photoMetaSchema).max(40).optional().default([]),
+    customerSignaturePhotoStorageKey: z.string().trim().min(1).max(500),
+    /**
+     * Charged (= invoiced) amount. Technician override of the
+     * pre-scheduled expectedAmount when the on-site work scope changed
+     * (extra parts, partial visit, free goodwill adjustment, etc).
+     * When omitted the original expectedAmount stands.
+     */
+    chargedAmount: moneyOptional,
+    /**
+     * Required when `chargedAmount` differs from the visit's original
+     * expectedAmount. Captured for audit log + dispute trail.
+     */
+    chargeOverrideReason: z.string().trim().min(5).max(500).optional(),
+    collectedAmount: moneyOptional,
+    paymentMethod: z
+      .enum(["CASH", "BANK_TRANSFER", "CARD", "OTHER"])
+      .optional(),
+  })
+  .superRefine((val, ctx) => {
+    // chargedAmount supplied without a reason is invalid — the workflow
+    // layer also re-checks against the original expectedAmount because
+    // the schema doesn't know that value.
+    if (
+      val.chargedAmount !== undefined &&
+      val.chargedAmount !== null &&
+      (!val.chargeOverrideReason || val.chargeOverrideReason.length < 5)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["chargeOverrideReason"],
+        message:
+          "chargeOverrideReason is required when chargedAmount differs from the original expectedAmount",
+      });
+    }
+  });
 
 export type ConsumableLogEntry = z.infer<typeof consumableLogEntrySchema>;
 
