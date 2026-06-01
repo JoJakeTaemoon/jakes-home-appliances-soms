@@ -20,7 +20,7 @@ export const GET = defineQuery({
           select: {
             id: true,
             serialNumber: true,
-            model: { select: { name: true, modelCode: true } },
+            model: { select: { nameKo: true, nameVi: true, nameEn: true, modelCode: true } },
           },
         },
         leadTechnician: { select: { id: true, username: true } },

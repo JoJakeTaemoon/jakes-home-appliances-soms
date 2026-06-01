@@ -359,12 +359,13 @@ model EquipmentModel {
   /// may leave it null. Kept on the table for back-compat with existing data.
   /// NULL is allowed (Postgres permits multiple NULL rows under @unique).
   modelCode           String?           @unique
-  name                String                   // user-facing display name
   // Customer-facing product names in KO/VI/EN. The model code itself
-  // stays single-language (alphanumeric/symbol).
-  displayNameKo       String?
-  displayNameVi       String?
-  displayNameEn       String?
+  // stays single-language (alphanumeric/symbol). The previous single-language
+  // `name` column was dropped — UI / API now picks the locale-appropriate
+  // value via `pickModelName(model, locale)` from `src/lib/products/name.ts`.
+  nameKo              String?
+  nameVi              String?
+  nameEn              String?
   brandId             String?
   brand               Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
   // Legacy enum classification — kept during the ProductCategory rollout so

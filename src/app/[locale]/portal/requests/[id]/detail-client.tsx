@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { pickModelName } from "@/lib/products/name";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
@@ -24,7 +25,7 @@ interface SrDetail {
     id: string;
     serialNumber: string | null;
     installedAt: string | null;
-    model: { modelCode: string; name: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
     site: { id: string; name: string } | null;
   } | null;
   visit: {
@@ -139,7 +140,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
         {sr.equipment && (
           <Row
             label={t("detailEquipment")}
-            value={`${sr.equipment.model.name} · ${sr.equipment.model.name}`}
+            value={`${pickModelName(sr.equipment.model, locale)} · ${pickModelName(sr.equipment.model, locale)}`}
           />
         )}
         {sr.approvedPrice && (

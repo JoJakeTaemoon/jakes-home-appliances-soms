@@ -295,7 +295,9 @@ describe("POST /api/visits", () => {
       update: {},
       create: {
         modelCode: "TEST-PHASE4-MODEL",
-        name: "Test",
+        nameKo: "Test",
+        nameVi: "Test",
+        nameEn: "Test",
         category: "WATER_PURIFIER",
       },
     });

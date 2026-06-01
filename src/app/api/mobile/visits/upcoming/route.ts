@@ -39,7 +39,7 @@ export const GET = defineQuery({
           select: {
             id: true,
             serialNumber: true,
-            model: { select: { modelCode: true, name: true } },
+            model: { select: { modelCode: true, nameKo: true, nameVi: true, nameEn: true } },
           },
         },
       },

@@ -10,8 +10,9 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -36,7 +37,7 @@ interface ContactOpt {
 interface EquipmentOpt {
   id: string;
   serialNumber: string | null;
-  model: { modelCode: string; name: string };
+  model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
 }
 
 type SrType = "INSPECTION" | "REPAIR" | "PART_REPLACEMENT" | "RELOCATION" | "OTHER";
@@ -44,6 +45,7 @@ type SrType = "INSPECTION" | "REPAIR" | "PART_REPLACEMENT" | "RELOCATION" | "OTH
 const SR_TYPES: SrType[] = ["INSPECTION", "REPAIR", "PART_REPLACEMENT", "RELOCATION", "OTHER"];
 
 export default function ServiceRequestNewPage() {
+  const locale = useLocale();
   const t = useTranslations("serviceRequests");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -175,7 +177,7 @@ export default function ServiceRequestNewPage() {
                 onChange={setEquipmentId}
                 options={equipment.map((e) => ({
                   value: e.id,
-                  label: `${e.model.name}${e.serialNumber ? ` / ${e.serialNumber}` : ""}`,
+                  label: `${pickModelName(e.model, locale)}${e.serialNumber ? ` / ${e.serialNumber}` : ""}`,
                 }))}
                 placeholder={t("equipmentPlaceholder")}
                 searchable={equipment.length > 5}

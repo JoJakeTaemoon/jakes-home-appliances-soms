@@ -308,10 +308,9 @@ async function main() {
     const row = await prisma.equipmentModel.upsert({
       where: { modelCode: m.code },
       update: {
-        name: m.name,
-        displayNameKo: m.displayKo ?? m.code,
-        displayNameVi: m.displayVi ?? m.code,
-        displayNameEn: m.displayEn ?? m.code,
+        nameKo: m.displayKo ?? m.code,
+        nameVi: m.displayVi ?? m.code,
+        nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
         categoryId: categoriesByCode.get(m.category)?.id,
         category: legacy,
@@ -323,10 +322,9 @@ async function main() {
       },
       create: {
         modelCode: m.code,
-        name: m.name,
-        displayNameKo: m.displayKo ?? m.code,
-        displayNameVi: m.displayVi ?? m.code,
-        displayNameEn: m.displayEn ?? m.code,
+        nameKo: m.displayKo ?? m.code,
+        nameVi: m.displayVi ?? m.code,
+        nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
         categoryId: categoriesByCode.get(m.category)?.id,
         category: legacy,

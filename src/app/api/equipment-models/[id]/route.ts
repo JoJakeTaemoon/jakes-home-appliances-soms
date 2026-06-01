@@ -66,10 +66,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const updated = await prisma.equipmentModel.update({
       where: { id },
       data: {
-        name: data.name,
-        displayNameKo: data.displayNameKo,
-        displayNameVi: data.displayNameVi,
-        displayNameEn: data.displayNameEn,
+        nameKo: data.nameKo,
+        nameVi: data.nameVi,
+        nameEn: data.nameEn,
         brandId: data.brandId,
         category: data.category,
         categoryId: data.categoryId,

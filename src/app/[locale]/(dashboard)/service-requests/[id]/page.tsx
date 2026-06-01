@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ interface SrDetail {
     id: string;
     serialNumber: string | null;
     installedAt: string | null;
-    model: { modelCode: string; name: string; category: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
     site: { id: string; name: string } | null;
     contracts: {
       contract: { id: string; contractNumber: string; type: string; state: string };
@@ -250,7 +251,7 @@ export default function ServiceRequestDetailPage() {
             </Field>
             <Field label={t("labelEquipment")}>
               {data.equipment
-                ? `${data.equipment.model.name} · ${data.equipment.model.name}`
+                ? `${pickModelName(data.equipment.model, locale)} · ${pickModelName(data.equipment.model, locale)}`
                 : "—"}
             </Field>
             {data.approvedPrice && (

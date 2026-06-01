@@ -25,7 +25,9 @@ export const GET = defineQuery({
     if (q) {
       where.OR = [
         { modelCode: { contains: q, mode: "insensitive" } },
-        { name: { contains: q, mode: "insensitive" } },
+        { nameKo: { contains: q, mode: "insensitive" } },
+        { nameVi: { contains: q, mode: "insensitive" } },
+        { nameEn: { contains: q, mode: "insensitive" } },
       ];
     }
     const [total, rows] = await Promise.all([
@@ -54,10 +56,9 @@ export const POST = defineMutation({
   handler: async ({ body }) => {
     return prisma.equipmentModel.create({
       data: {
-        name: body.name,
-        displayNameKo: body.displayNameKo ?? null,
-        displayNameVi: body.displayNameVi ?? null,
-        displayNameEn: body.displayNameEn ?? null,
+        nameKo: body.nameKo ?? null,
+        nameVi: body.nameVi ?? null,
+        nameEn: body.nameEn ?? null,
         brandId: body.brandId ?? null,
         category: body.category ?? null,
         categoryId: body.categoryId ?? null,

@@ -104,7 +104,9 @@ beforeAll(async () => {
     update: {},
     create: {
       modelCode: "TEST-PHASE2-MODEL",
-      name: "Phase 2 test model",
+      nameKo: "Phase 2 test model",
+      nameVi: "Phase 2 test model",
+      nameEn: "Phase 2 test model",
       category: "WATER_PURIFIER",
     },
   });

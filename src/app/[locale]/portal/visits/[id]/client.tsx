@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -16,7 +17,7 @@ interface VisitDetail {
   customerSignaturePhotoUrl: string | null;
   equipment: {
     serialNumber: string | null;
-    model: { name: string; modelCode: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   } | null;
   leadTechnician: { username: string } | null;
   documents: {
@@ -84,7 +85,7 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
             <>
               <dt className="text-[#737373]">Equipment</dt>
               <dd>
-                {data.equipment.model.name} ({data.equipment.model.name})
+                {pickModelName(data.equipment.model, locale)} ({pickModelName(data.equipment.model, locale)})
               </dd>
             </>
           )}

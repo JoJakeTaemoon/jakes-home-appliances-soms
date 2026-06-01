@@ -10,12 +10,11 @@ function optStr(max: number) {
 }
 
 export const createEquipmentModelSchema = z.object({
-  name: z.string().trim().min(1).max(180),
-  // Customer-facing display names (KO/VI/EN). When omitted, list views fall
-  // back to the single-language `name`.
-  displayNameKo: optStr(180),
-  displayNameVi: optStr(180),
-  displayNameEn: optStr(180),
+  // Customer-facing product names per locale. At least one of the three must
+  // be supplied — caller-side validation is enforced by `.superRefine` below.
+  nameKo: optStr(180),
+  nameVi: optStr(180),
+  nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).nullable().optional(),
   // Reference to ProductCategory. Optional during rollout — when null, the
@@ -32,6 +31,14 @@ export const createEquipmentModelSchema = z.object({
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),
   isActive: z.boolean().default(true),
+}).superRefine((v, ctx) => {
+  if (!v.nameKo && !v.nameVi && !v.nameEn) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["nameVi"],
+      message: "At least one of nameKo / nameVi / nameEn must be provided",
+    });
+  }
 });
 
 // Hand-built so `.partial()` doesn't carry `.default(true)` on isActive
@@ -39,10 +46,9 @@ export const createEquipmentModelSchema = z.object({
 // un-soft-delete a retired model). Mirrors the createEquipmentModelSchema
 // shape but every field is .optional() and no defaults are applied.
 export const updateEquipmentModelSchema = z.object({
-  name: z.string().trim().min(1).max(180).optional(),
-  displayNameKo: optStr(180),
-  displayNameVi: optStr(180),
-  displayNameEn: optStr(180),
+  nameKo: optStr(180),
+  nameVi: optStr(180),
+  nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
   categoryId: z.string().trim().min(1).nullable().optional(),

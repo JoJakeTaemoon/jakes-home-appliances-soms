@@ -283,16 +283,20 @@ async function loadContract(
     amendmentReason: row.amendmentReason,
   };
 
-  const equipment: PdfEquipmentLine[] = row.equipment.map((ce) => ({
-    equipmentId: ce.equipmentId,
-    modelCode: ce.equipment.model.name,
-    modelName: ce.equipment.model.name,
-    serialNumber: ce.equipment.serialNumber,
-    siteName: ce.equipment.site?.name ?? null,
-    unitPrice: decimalToNumber(ce.unitPrice),
-    quantity: ce.quantity,
-    notes: ce.notes,
-  }));
+  const equipment: PdfEquipmentLine[] = row.equipment.map((ce) => {
+    const m = ce.equipment.model;
+    const modelName = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    return {
+      equipmentId: ce.equipmentId,
+      modelCode: m.modelCode ?? modelName,
+      modelName,
+      serialNumber: ce.equipment.serialNumber,
+      siteName: ce.equipment.site?.name ?? null,
+      unitPrice: decimalToNumber(ce.unitPrice),
+      quantity: ce.quantity,
+      notes: ce.notes,
+    };
+  });
 
   const isAmendment = !!row.parentContractId;
   let templateCode: string;
@@ -608,11 +612,15 @@ async function loadWorkConfirmation(
 
   const lead = visit.leadTechnician;
   const equipmentInfo = visit.equipment
-    ? {
-        modelCode: visit.equipment.model.name,
-        modelName: visit.equipment.model.name,
-        serialNumber: visit.equipment.serialNumber,
-      }
+    ? (() => {
+        const m = visit.equipment.model;
+        const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+        return {
+          modelCode: m.modelCode ?? name,
+          modelName: name,
+          serialNumber: visit.equipment.serialNumber,
+        };
+      })()
     : null;
 
   const basePayload: Omit<WorkConfPayload, "langPair" | "generatedAt"> = {
