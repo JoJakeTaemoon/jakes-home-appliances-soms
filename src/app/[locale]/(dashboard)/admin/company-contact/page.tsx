@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Company info editor (ADMIN only).
+ * Company info editor (ADMIN + MANAGER).
  *
  * Two sections:
  *  - HQ phone number (legacy "company contact" — feeds {hq_phone} placeholder
@@ -69,10 +69,12 @@ export default function CompanyInfoPage() {
   }, [api]);
 
   useEffect(() => {
-    if (user?.role === "ADMIN") load().catch(() => undefined);
+    if (user?.role !== "ADMIN" && user?.role !== "MANAGER") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load().catch(() => undefined);
   }, [user?.role, load]);
 
-  if (user && user.role !== "ADMIN") {
+  if (user && user.role !== "ADMIN" && user.role !== "MANAGER") {
     return (
       <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-sm text-red-700">
         {t("adminRequired")}

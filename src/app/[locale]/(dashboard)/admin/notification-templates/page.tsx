@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * UC-AD-04 — DB-backed notification template editor (ADMIN only).
+ * UC-AD-04 — DB-backed notification template editor (ADMIN + MANAGER).
  *
  * Lists every (templateCode × locale) pair with its file-based default and
  * any active DB override. Click "Edit" to overwrite the body (and subject
@@ -61,7 +61,9 @@ export default function NotificationTemplatesPage() {
   }, [api]);
 
   useEffect(() => {
-    if (user?.role === "ADMIN") load().catch(() => undefined);
+    if (user?.role !== "ADMIN" && user?.role !== "MANAGER") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load().catch(() => undefined);
   }, [user?.role, load]);
 
   const visibleRows = useMemo(() => {
@@ -86,16 +88,16 @@ export default function NotificationTemplatesPage() {
   }, [rows, selectedCode, selectedLocale]);
 
   useEffect(() => {
-    if (selected) {
-      setEditBody(selected.overrideBody ?? selected.defaultBody);
-      setEditSubject(selected.overrideSubject ?? selected.defaultSubject ?? "");
-    }
+    if (!selected) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEditBody(selected.overrideBody ?? selected.defaultBody);
+    setEditSubject(selected.overrideSubject ?? selected.defaultSubject ?? "");
   }, [selected]);
 
-  if (user && user.role !== "ADMIN") {
+  if (user && user.role !== "ADMIN" && user.role !== "MANAGER") {
     return (
       <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-sm text-red-700">
-        Administrator role required.
+        {t("notificationTemplates.adminRequired")}
       </div>
     );
   }
@@ -140,7 +142,7 @@ export default function NotificationTemplatesPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">
-          {t("notificationTemplates")}
+          {t("notificationTemplates.title")}
         </h1>
         <div className="w-44">
           <Combobox

@@ -2,7 +2,7 @@
  * GET  /api/admin/notification-templates
  *   → list every (templateCode × locale) row with file default + DB override
  *
- * Restricted to ADMIN.
+ * Restricted to ADMIN + MANAGER.
  */
 
 import prisma from "@/lib/prisma";
@@ -35,7 +35,8 @@ interface TemplateRow {
 export const GET = defineQuery({
   audience: "staff",
   authorize: (auth) => {
-    if (auth.role !== "ADMIN") throw new ForbiddenError("Insufficient role");
+    if (auth.role !== "ADMIN" && auth.role !== "MANAGER")
+      throw new ForbiddenError("Insufficient role");
   },
   handler: async () => {
     const overrides = await prisma.notificationTemplate.findMany({

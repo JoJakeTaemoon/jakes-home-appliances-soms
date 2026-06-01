@@ -1372,13 +1372,16 @@
       "chargeHint": "Quy tắc mặc định — Cho thuê đều miễn phí, Bán: trong bảo hành miễn phí, ngoài bảo hành tính phí, Bảo trì: chỉ vật tư và phụ kiện nhỏ miễn phí. Bảng này chỉ liệt kê các ngoại lệ khác mặc định.",
       "notAllowed": "Chỉ Quản trị viên hoặc Quản lý mới truy cập được trang này."
     },
-    "notificationTemplates": "Mẫu thông báo",
+    "notificationTemplates": {
+      "title": "Mẫu thông báo",
+      "adminRequired": "Yêu cầu vai trò Quản trị viên hoặc Quản lý."
+    },
     "settings": "Cài đặt",
     "schedulerWeights": "Trọng số scheduler",
     "companyContact": {
       "title": "Thông tin công ty",
       "description": "Quản lý số điện thoại văn phòng, tên pháp nhân và thông tin thuế. SĐT dùng cho nút \"Gọi văn phòng\" của KTV và mọi SMS/email gửi KH; thông tin thuế dùng khi phát hành hợp đồng và hóa đơn GTGT. Có hiệu lực trong 60 giây.",
-      "adminRequired": "Yêu cầu vai trò quản trị viên.",
+      "adminRequired": "Yêu cầu vai trò Quản trị viên hoặc Quản lý.",
       "loading": "Đang tải…",
       "phoneSectionTitle": "Liên hệ văn phòng",
       "phoneLabel": "SĐT văn phòng",
