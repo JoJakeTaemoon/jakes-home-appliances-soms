@@ -619,7 +619,14 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical KR / VI / EN te
 
 ## Change log
 
-- **2026-05-26 (v0.4 latest)** — **Client answers applied** (50 questions, all answered; only A.5 filter compatibility data delivery pending 2026-05-29). Material additions:
+- **2026-06-01 (v0.5)** — Post-merge architecture updates from sprint Phase 4 work:
+  - **Audit log redesign** (PR #9 머지) — `/[locale]/reports/audit` 가 자연어 sentence + diff 표 + 민감 필드 redact (passwordHash/*Token/*Secret → `••••`). 권한 좁힘: ADMIN + MANAGER only (STAFF self-view 폐기). 사이드바 위치 Reports → Admin. 신규 lib: `src/lib/audit/{labels,field-labels,diff,redact,entity-resolver,value-format}.ts`. 자세히: `docs/AUDIT_LOG.md` (TODO 후속 작성).
+  - **Manager 권한 확장** (PR #10 머지) — `/admin/company-contact` + `/admin/notification-templates` 가 MANAGER 도 수정 가능. 사이드바가 `NavItem.roles` 기반 데이터 필터 — STAFF/TECHNICIAN 은 Admin 섹션 헤더 자체가 안 보임.
+  - **3-realm auth split phase 1** (PR #12 머지) — TECHNICIAN realm 을 office staff 와 완전 분리. 별도 JWT audience (`field`), 별도 cookies (`fieldAccessToken`/`fieldRefreshToken`), 별도 API (`/api/auth/field/*`), 별도 Provider (`FieldAuthProvider` + `soms_field_*` sessionStorage). 미들웨어 3-realm path × cookie 매트릭스. 같은 브라우저에서 office/field/customer 동시 로그인 가능. cross-realm 시도 시 409 ROLE_MISMATCH + suggestedUrl. 자세히: `docs/AUTH.md`. Phase 2 (URL prefix `/o/*` `/f/*` root, E2E ≥90%) follow-up PR 예정.
+  - **기사 청구금액 변경 flow** (PR #13 머지) — visit-complete 위자드에 `chargedAmount` + `chargeOverrideReason` 통합. 기사가 현장에서 expected ≠ actual 인 경우 청구액을 즉시 변경, 사유 (≥5 chars) 필수 (client/schema/workflow 3중 가드). `VISIT_CHARGE_OVERRIDE` audit. 영수증 PDF 는 새 chargedAmount 로 자동 재생성. B2B 세금계산서 reissue 는 office side follow-up.
+  - **영수증 PDF redesign** (PR #11 머지) — A4 한 장에 동일 영수증 2부 + 가운데 절취선. Payer/Payee 2-column grid. method 자연어 병기 (e.g. `은행 이체 / Chuyển khoản`). 금액 박스는 ₫ 단위만 표시 + 빈 underline (기사 손기입). taxCode + reference + "Số tiền đã thu" 행 제거. Page `wrap={false}` 로 A4 강제.
+
+- **2026-05-26 (v0.4)** — **Client answers applied** (50 questions, all answered; only A.5 filter compatibility data delivery pending 2026-05-29). Material additions:
   - §3.2 KH-code derivation rule (A.2: `8918` → `KH08918`)
   - §3.2.1 NEW Site model (A.4 + A.8) — Customer > Site > Equipment 3-level hierarchy
   - §3.3.1 Site-scoped OPS contacts; A.13 shared phone allowed; A.7 language fallback to Contract Party
