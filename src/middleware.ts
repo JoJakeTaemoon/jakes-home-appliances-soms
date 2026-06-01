@@ -5,7 +5,8 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createMiddleware(routing);
 
 // Public suffixes (no auth) — locale-stripped paths
-const PUBLIC_STAFF_SUFFIXES = ["/login", "/mobile/login"];
+const PUBLIC_OFFICE_SUFFIXES = ["/login"];
+const PUBLIC_FIELD_SUFFIXES = ["/mobile/login"];
 const PUBLIC_PORTAL_SUFFIXES = [
   "/portal/login",
   "/portal/forgot-password",
@@ -29,8 +30,18 @@ function isPublicPortalPath(stripped: string): boolean {
   );
 }
 
-function isPublicStaffPath(stripped: string): boolean {
-  return PUBLIC_STAFF_SUFFIXES.some(
+function isFieldPath(stripped: string): boolean {
+  return stripped === "/mobile" || stripped.startsWith("/mobile/");
+}
+
+function isPublicFieldPath(stripped: string): boolean {
+  return PUBLIC_FIELD_SUFFIXES.some(
+    (suffix) => stripped === suffix || stripped.startsWith(`${suffix}/`),
+  );
+}
+
+function isPublicOfficePath(stripped: string): boolean {
+  return PUBLIC_OFFICE_SUFFIXES.some(
     (suffix) => stripped === suffix || stripped.startsWith(`${suffix}/`),
   );
 }
@@ -43,32 +54,32 @@ function currentLocale(pathname: string): string {
   );
 }
 
-function isMobilePath(stripped: string): boolean {
-  return stripped === "/mobile" || stripped.startsWith("/mobile/");
-}
-
-/**
- * Build the redirect URL when a staff/technician hits a protected page
- * without a refresh cookie. Splits between mobile and office login routes.
- */
-function buildLoginRedirect(
+function buildOfficeLoginRedirect(
   request: NextRequest,
   stripped: string,
   locale: string,
 ): URL {
   const url = request.nextUrl.clone();
-  url.pathname = isMobilePath(stripped)
-    ? `/${locale}/mobile/login`
-    : `/${locale}/login`;
+  url.pathname = `/${locale}/login`;
   if (stripped !== "/" && stripped !== "/login") {
     url.searchParams.set("next", stripped);
   }
   return url;
 }
 
-/**
- * Portal-side redirect — mirrors the office helper but for customer auth.
- */
+function buildFieldLoginRedirect(
+  request: NextRequest,
+  stripped: string,
+  locale: string,
+): URL {
+  const url = request.nextUrl.clone();
+  url.pathname = `/${locale}/mobile/login`;
+  if (stripped !== "/mobile" && stripped !== "/mobile/login") {
+    url.searchParams.set("next", stripped);
+  }
+  return url;
+}
+
 function buildPortalLoginRedirect(
   request: NextRequest,
   stripped: string,
@@ -82,16 +93,30 @@ function buildPortalLoginRedirect(
   return url;
 }
 
+/**
+ * 3-realm middleware (steps 4-7 of the auth split).
+ *
+ *   Path under /[locale]/    | Realm    | Required cookie
+ *   --------------------------+----------+-----------------------
+ *   /portal/login + others    | (public) | —
+ *   /portal/*                 | customer | customerRefreshToken
+ *   /mobile/login             | (public) | —
+ *   /mobile/*                 | field    | fieldRefreshToken
+ *   /login                    | (public) | —
+ *   everything else           | office   | refreshToken (staff)
+ *
+ * Cookies are distinct names per realm so the three sessions can coexist
+ * in the same browser without colliding. Middleware only checks cookie
+ * presence; full audience verification happens in route handlers via the
+ * realm-bound hydrate helpers.
+ */
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 0. Skip Next.js internals and any path containing a dot.
   if (pathname.startsWith("/_next") || pathname.includes(".")) {
     return NextResponse.next();
   }
 
-  // 1. API routes pass through untouched — locale + auth happen inside the
-  //    route handlers (which know the difference between Bearer and cookie).
   if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
@@ -99,15 +124,10 @@ export default function middleware(request: NextRequest) {
   const stripped = stripLocale(pathname);
   const locale = currentLocale(pathname);
 
-  // 2a. Portal public pages — always reachable; intl handles locale prefix.
+  // Customer (portal) realm
   if (isPublicPortalPath(stripped)) {
     return intlMiddleware(request);
   }
-
-  // 2b. Portal protected pages — require customerRefreshToken cookie.
-  //     Customer + staff cookies are distinct names so they don't collide;
-  //     middleware just checks for the cookie's existence (full verify
-  //     happens inside route handlers via requireCustomerAuth).
   if (isPortalPath(stripped)) {
     if (!request.cookies.has("customerRefreshToken")) {
       return NextResponse.redirect(
@@ -117,14 +137,29 @@ export default function middleware(request: NextRequest) {
     return intlMiddleware(request);
   }
 
-  // 3. Staff public pages
-  if (isPublicStaffPath(stripped)) {
+  // Field (technician) realm — requires the field refresh cookie. An office
+  // staff cookie alone does NOT grant access; technicians must log in via
+  // /mobile/login to mint a field session.
+  if (isPublicFieldPath(stripped)) {
+    return intlMiddleware(request);
+  }
+  if (isFieldPath(stripped)) {
+    if (!request.cookies.has("fieldRefreshToken")) {
+      return NextResponse.redirect(
+        buildFieldLoginRedirect(request, stripped, locale),
+      );
+    }
     return intlMiddleware(request);
   }
 
-  // 4. Staff protected pages — require staff refreshToken cookie.
+  // Office (HQ) realm — everything else.
+  if (isPublicOfficePath(stripped)) {
+    return intlMiddleware(request);
+  }
   if (!request.cookies.has("refreshToken")) {
-    return NextResponse.redirect(buildLoginRedirect(request, stripped, locale));
+    return NextResponse.redirect(
+      buildOfficeLoginRedirect(request, stripped, locale),
+    );
   }
 
   return intlMiddleware(request);
