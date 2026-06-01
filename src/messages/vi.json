@@ -111,7 +111,8 @@
     "products": "Danh mục sản phẩm",
     "companyContact": "Thông tin công ty",
     "userManagement": "Quản lý người dùng",
-    "reports": "Báo cáo"
+    "reports": "Báo cáo",
+    "auditLog": "Nhật ký kiểm tra"
   },
   "dashboard": {
     "greeting": "Xin chào, {name}",
@@ -1078,12 +1079,30 @@
     "title": "Báo cáo",
     "description": "Thông tin vận hành và tài chính qua tất cả giai đoạn.",
     "cards": {
-      "daily-visits": { "title": "Lượt thăm theo ngày", "description": "Lịch hôm nay + theo KTV" },
-      "revenue": { "title": "Doanh thu", "description": "Doanh thu tháng + xu hướng 12 tháng" },
-      "technician-productivity": { "title": "Năng suất KTV", "description": "Số lượt hoàn tất + thời gian + bàn giao trễ" },
-      "aging": { "title": "Tuổi nợ", "description": "Công nợ theo khoảng quá hạn" },
-      "churn": { "title": "Khách rời", "description": "Khách bị deactive + lý do + giá trị mất" },
-      "audit": { "title": "Nhật ký kiểm toán", "description": "Tìm kiếm mọi thay đổi trạng thái" }
+      "daily-visits": {
+        "title": "Lượt thăm theo ngày",
+        "description": "Lịch hôm nay + theo KTV"
+      },
+      "revenue": {
+        "title": "Doanh thu",
+        "description": "Doanh thu tháng + xu hướng 12 tháng"
+      },
+      "technician-productivity": {
+        "title": "Năng suất KTV",
+        "description": "Số lượt hoàn tất + thời gian + bàn giao trễ"
+      },
+      "aging": {
+        "title": "Tuổi nợ",
+        "description": "Công nợ theo khoảng quá hạn"
+      },
+      "churn": {
+        "title": "Khách rời",
+        "description": "Khách bị deactive + lý do + giá trị mất"
+      },
+      "audit": {
+        "title": "Nhật ký kiểm toán",
+        "description": "Tìm kiếm mọi thay đổi trạng thái"
+      }
     },
     "daily": {
       "title": "Lượt thăm trong ngày",
@@ -1144,7 +1163,9 @@
         "15-30": "15-30 ngày",
         "30+": "Trên 30 ngày"
       },
-      "filters": { "all": "Tất cả" },
+      "filters": {
+        "all": "Tất cả"
+      },
       "columns": {
         "customer": "Khách hàng",
         "outstanding": "Còn nợ",
@@ -1175,35 +1196,93 @@
       }
     },
     "audit": {
-      "title": "Tìm kiếm audit log",
-      "description": "MANAGER+ xem tất cả; STAFF chỉ xem hành động của mình.",
+      "title": "Nhật ký kiểm tra",
+      "description": "Chỉ ADMIN / MANAGER. Tra cứu mọi thao tác đã ghi bằng ngôn ngữ tự nhiên.",
       "search": "Tìm",
-      "downloadCsv": "CSV",
+      "downloadCsv": "Tải CSV",
       "noResults": "Không có kết quả.",
-      "filters": {
-        "actorId": "Actor ID",
-        "entityType": "Loại entity",
-        "action": "Action",
-        "start": "Từ",
-        "end": "Đến",
-        "q": "Từ khóa",
-        "qPlaceholder": "Action / entityType / entityId"
-      },
-      "columns": {
-        "at": "Thời gian",
-        "actor": "Người thực hiện",
-        "action": "Action",
-        "entity": "Entity",
-        "ip": "IP"
-      },
+      "loading": "Đang tải…",
+      "adminOnly": "Nhật ký kiểm tra chỉ dành cho ADMIN và MANAGER.",
       "viewDetails": "Chi tiết",
-      "collapseDetails": "Ẩn",
-      "before": "Trước",
-      "after": "Sau",
-      "pageOf": "Trang {page}/{total}",
+      "closeDrawer": "Đóng",
       "rows": "dòng",
+      "pageOf": "Trang {page}/{total}",
       "prev": "Trước",
-      "next": "Sau"
+      "next": "Sau",
+      "unknownAction": "(chưa phân loại)",
+      "unknownActionTooltip": "Mã hành động chưa có trong danh mục. Cần bổ sung nhãn.",
+      "filters": {
+        "entityType": "Loại đối tượng",
+        "action": "Hành động",
+        "actor": "Người thực hiện",
+        "actorPlaceholder": "Tìm theo tên đăng nhập/ID",
+        "rangeStart": "Từ",
+        "rangeEnd": "Đến",
+        "q": "Từ khoá",
+        "qPlaceholder": "Tìm tự do theo hành động/đối tượng",
+        "reset": "Đặt lại",
+        "all": "Tất cả"
+      },
+      "roleBadge": {
+        "ADMIN": "Quản trị",
+        "MANAGER": "Quản lý",
+        "STAFF": "Nhân viên",
+        "TECHNICIAN": "Kỹ thuật viên",
+        "CUSTOMER": "Khách hàng",
+        "SYSTEM": "Hệ thống"
+      },
+      "actor": {
+        "system": "Hệ thống",
+        "anonymousCustomer": "Khách hàng (cổng)"
+      },
+      "details": {
+        "metadata": "Siêu dữ liệu",
+        "time": "Thời gian",
+        "ip": "Địa chỉ IP",
+        "userAgent": "User agent",
+        "technical": "Thông tin kỹ thuật",
+        "showTechnical": "Hiện thông tin kỹ thuật",
+        "hideTechnical": "Ẩn thông tin kỹ thuật",
+        "rawAction": "Mã hành động gốc",
+        "rawEntityType": "Loại đối tượng",
+        "rawEntityId": "ID đối tượng",
+        "rawBefore": "Trước (raw, đã che một phần)",
+        "rawAfter": "Sau (raw, đã che một phần)"
+      },
+      "diff": {
+        "field": "Trường",
+        "before": "Trước",
+        "after": "Sau",
+        "createdHeader": "Vừa tạo mới",
+        "deletedHeader": "Đã xoá",
+        "noChanges": "Không có thay đổi cấp trường."
+      },
+      "sentence": {
+        "noEntity": "{actor} {verb}",
+        "withEntity": "{actor} {verb} {entity}"
+      },
+      "entityTypes": {
+        "Customer": "Khách hàng",
+        "Site": "Địa điểm",
+        "CustomerContact": "Liên hệ khách hàng",
+        "Contract": "Hợp đồng",
+        "Visit": "Lượt thăm",
+        "ServiceRequest": "Yêu cầu dịch vụ",
+        "Payment": "Khoản thu",
+        "TaxInvoice": "Hoá đơn GTGT",
+        "User": "Người dùng",
+        "Equipment": "Thiết bị",
+        "EquipmentModel": "Mẫu thiết bị",
+        "Brand": "Thương hiệu",
+        "ProductCategory": "Danh mục",
+        "Consumable": "Vật tư tiêu hao",
+        "Accessory": "Phụ kiện",
+        "ChargePolicy": "Chính sách giá",
+        "NotificationTemplate": "Mẫu thông báo",
+        "NotificationLog": "Nhật ký thông báo",
+        "ScheduledJob": "Tác vụ định kỳ",
+        "SystemSetting": "Cấu hình hệ thống"
+      }
     }
   },
   "admin": {
