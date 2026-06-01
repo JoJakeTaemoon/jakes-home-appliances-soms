@@ -1,28 +1,43 @@
 /**
  * JWT signing + verification using jose (Edge-compatible).
  *
- * Two audiences:
- *   - `aud='staff'`    — User accounts (ADMIN / MANAGER / STAFF / TECHNICIAN)
- *   - `aud='customer'` — CustomerContact portal accounts
+ * Three audiences:
+ *   - `aud='staff'`    — Office HQ staff (ADMIN / MANAGER / STAFF). The legacy
+ *                       name `staff` is kept for backward-compat during the
+ *                       3-realm migration; it will be renamed to `office` in
+ *                       a follow-up commit once the page tree + middleware
+ *                       are also moved.
+ *   - `aud='field'`    — Field technicians (TECHNICIAN). Mobile-first realm.
+ *   - `aud='customer'` — CustomerContact portal accounts.
  *
  * Access tokens use JWT_SECRET, refresh tokens use REFRESH_SECRET. Keeping
  * the secrets separate means a leaked access token cannot be used to forge
  * a refresh and vice-versa.
  *
  * TTLs (per CLAUDE.md / SPEC):
- *   - Staff    : access 15min, refresh 7d
- *   - Customer : access 15min, refresh 30d
+ *   - Staff (office) : access 15min, refresh 7d
+ *   - Field          : access 15min, refresh 7d
+ *   - Customer       : access 15min, refresh 30d
  */
 
 import { SignJWT, jwtVerify } from "jose";
 
-export type JwtAudience = "staff" | "customer";
+export type JwtAudience = "staff" | "field" | "customer";
 
 export interface StaffJwtPayload {
   sub: string;            // User.id
   username: string;
-  role: string;           // StaffRole
+  role: string;           // StaffRole — ADMIN | MANAGER | STAFF
   aud: "staff";
+  iat?: number;
+  exp?: number;
+}
+
+export interface FieldJwtPayload {
+  sub: string;            // User.id
+  username: string;
+  role: string;           // StaffRole — TECHNICIAN only
+  aud: "field";
   iat?: number;
   exp?: number;
 }
@@ -36,7 +51,10 @@ export interface CustomerJwtPayload {
   exp?: number;
 }
 
-export type AnyJwtPayload = StaffJwtPayload | CustomerJwtPayload;
+export type AnyJwtPayload =
+  | StaffJwtPayload
+  | FieldJwtPayload
+  | CustomerJwtPayload;
 
 // ── secret helpers ─────────────────────────────────────────────────────
 
@@ -67,6 +85,8 @@ async function importHmacKey(raw: Uint8Array): Promise<CryptoKey> {
 
 export const STAFF_ACCESS_TTL = "15m";
 export const STAFF_REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
+export const FIELD_ACCESS_TTL = "15m";
+export const FIELD_REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
 export const CUSTOMER_ACCESS_TTL = "15m";
 export const CUSTOMER_REFRESH_TTL_SECONDS = 30 * 24 * 60 * 60;    // 30 days
 
@@ -84,6 +104,21 @@ export async function signStaffAccessToken(payload: {
     .setAudience("staff")
     .setIssuedAt()
     .setExpirationTime(STAFF_ACCESS_TTL)
+    .sign(key);
+}
+
+export async function signFieldAccessToken(payload: {
+  userId: string;
+  username: string;
+  role: string;
+}): Promise<string> {
+  const key = await importHmacKey(getSecret("access"));
+  return new SignJWT({ username: payload.username, role: payload.role })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.userId)
+    .setAudience("field")
+    .setIssuedAt()
+    .setExpirationTime(FIELD_ACCESS_TTL)
     .sign(key);
 }
 
@@ -105,10 +140,15 @@ export async function signCustomerAccessToken(payload: {
     .sign(key);
 }
 
+type PayloadByAudience<A extends JwtAudience> =
+  A extends "staff" ? StaffJwtPayload :
+  A extends "field" ? FieldJwtPayload :
+  CustomerJwtPayload;
+
 export async function verifyAccessToken<A extends JwtAudience>(
   token: string,
   audience: A,
-): Promise<A extends "staff" ? StaffJwtPayload : CustomerJwtPayload> {
+): Promise<PayloadByAudience<A>> {
   const key = await importHmacKey(getSecret("access"));
   const { payload } = await jwtVerify(token, key, { audience });
 
@@ -120,7 +160,17 @@ export async function verifyAccessToken<A extends JwtAudience>(
       aud: "staff",
       iat: payload.iat,
       exp: payload.exp,
-    } as A extends "staff" ? StaffJwtPayload : CustomerJwtPayload;
+    } as PayloadByAudience<A>;
+  }
+  if (audience === "field") {
+    return {
+      sub: payload.sub as string,
+      username: payload.username as string,
+      role: payload.role as string,
+      aud: "field",
+      iat: payload.iat,
+      exp: payload.exp,
+    } as PayloadByAudience<A>;
   }
   return {
     sub: payload.sub as string,
@@ -129,7 +179,7 @@ export async function verifyAccessToken<A extends JwtAudience>(
     aud: "customer",
     iat: payload.iat,
     exp: payload.exp,
-  } as A extends "staff" ? StaffJwtPayload : CustomerJwtPayload;
+  } as PayloadByAudience<A>;
 }
 
 // ── Refresh tokens ─────────────────────────────────────────────────────
@@ -149,6 +199,20 @@ export async function signStaffRefreshToken(payload: {
     .setAudience("staff")
     .setIssuedAt()
     .setExpirationTime(`${STAFF_REFRESH_TTL_SECONDS}s`)
+    .sign(key);
+}
+
+export async function signFieldRefreshToken(payload: {
+  userId: string;
+  sessionId: string;
+}): Promise<string> {
+  const key = await importHmacKey(getSecret("refresh"));
+  return new SignJWT({ sid: payload.sessionId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.userId)
+    .setAudience("field")
+    .setIssuedAt()
+    .setExpirationTime(`${FIELD_REFRESH_TTL_SECONDS}s`)
     .sign(key);
 }
 
