@@ -848,6 +848,8 @@
     "loginSubmit": "Đăng nhập",
     "loginSubmitting": "Đang đăng nhập...",
     "loginError": "Đăng nhập không hợp lệ",
+    "loginRoleMismatchOffice": "Nhân viên văn phòng vui lòng đăng nhập tại trang đăng nhập văn phòng.",
+    "loginRoleMismatchGoOffice": "Đến đăng nhập văn phòng →",
     "forgotPassword": "Quên mật khẩu?",
     "logout": "Đăng xuất",
     "tabs": {

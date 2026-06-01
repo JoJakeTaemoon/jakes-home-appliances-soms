@@ -848,6 +848,8 @@
     "loginSubmit": "Sign in",
     "loginSubmitting": "Signing in...",
     "loginError": "Invalid sign-in",
+    "loginRoleMismatchOffice": "Office staff must log in from the office login page.",
+    "loginRoleMismatchGoOffice": "Go to office login →",
     "forgotPassword": "Forgot password?",
     "logout": "Sign out",
     "tabs": {

@@ -3,33 +3,54 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
-import { useAuth } from "@/providers/auth-provider";
+import {
+  useFieldAuth,
+  FieldLoginError,
+} from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
+interface RoleMismatch {
+  url: string;
+}
+
 export default function MobileLoginPage() {
   const t = useTranslations("mobile");
   const router = useRouter();
-  const { login } = useAuth();
+  const { login } = useFieldAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mismatch, setMismatch] = useState<RoleMismatch | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setMismatch(null);
     setSubmitting(true);
     try {
       await login(identifier, password);
       router.replace("/mobile/today");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("loginError"));
+      if (err instanceof FieldLoginError && err.code === "ROLE_MISMATCH" && err.suggestedUrl) {
+        setMismatch({ url: err.suggestedUrl });
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : t("loginError"));
+      }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const goToSuggested = () => {
+    if (!mismatch) return;
+    const url = new URL(mismatch.url, globalThis.location.origin);
+    if (identifier) url.searchParams.set("phone", identifier);
+    globalThis.location.assign(url.toString());
   };
 
   return (
@@ -63,6 +84,18 @@ export default function MobileLoginPage() {
             />
           </FormField>
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {mismatch && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <p className="mb-2">{t("loginRoleMismatchOffice")}</p>
+              <button
+                type="button"
+                onClick={goToSuggested}
+                className="font-medium text-[var(--brand-blue-700)] underline"
+              >
+                {t("loginRoleMismatchGoOffice")}
+              </button>
+            </div>
+          )}
           <Button type="submit" fullWidth disabled={submitting}>
             {submitting ? t("loginSubmitting") : t("loginSubmit")}
           </Button>

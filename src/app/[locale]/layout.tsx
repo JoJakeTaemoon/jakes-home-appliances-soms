@@ -4,6 +4,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 import { routing, type Locale } from "@/i18n/routing";
 import { AuthProvider } from "@/providers/auth-provider";
+import { FieldAuthProvider } from "@/providers/field-auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { LangSyncer } from "@/components/layout/lang-syncer";
 import { MockSmsLogger } from "@/components/dev/mock-sms-logger";
@@ -29,9 +30,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
     <NextIntlClientProvider locale={locale} messages={messages}>
       <QueryProvider>
         <AuthProvider>
-          <LangSyncer />
-          {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
-          {children}
+          <FieldAuthProvider>
+            <LangSyncer />
+            {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
+            {children}
+          </FieldAuthProvider>
         </AuthProvider>
       </QueryProvider>
     </NextIntlClientProvider>
