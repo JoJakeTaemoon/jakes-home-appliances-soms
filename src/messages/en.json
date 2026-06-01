@@ -111,7 +111,8 @@
     "products": "Product catalog",
     "companyContact": "Company info",
     "userManagement": "User Management",
-    "reports": "Reports"
+    "reports": "Reports",
+    "auditLog": "Audit log"
   },
   "dashboard": {
     "greeting": "Hello, {name}",
@@ -1162,7 +1163,9 @@
         "15-30": "15-30 days",
         "30+": "30+ days"
       },
-      "filters": { "all": "All" },
+      "filters": {
+        "all": "All"
+      },
       "columns": {
         "customer": "Customer",
         "outstanding": "Outstanding",
@@ -1193,35 +1196,93 @@
       }
     },
     "audit": {
-      "title": "Audit log search",
-      "description": "MANAGER+ sees all actions; STAFF sees their own.",
+      "title": "Audit log",
+      "description": "Admin / Manager only. Search every recorded action in plain language.",
       "search": "Search",
-      "downloadCsv": "CSV",
-      "noResults": "No audit rows match.",
+      "downloadCsv": "Download CSV",
+      "noResults": "No results.",
+      "loading": "Loading…",
+      "adminOnly": "Audit log is restricted to ADMIN and MANAGER.",
+      "viewDetails": "View details",
+      "closeDrawer": "Close",
+      "rows": "rows",
+      "pageOf": "Page {page} of {total}",
+      "prev": "Previous",
+      "next": "Next",
+      "unknownAction": "(uncatalogued)",
+      "unknownActionTooltip": "This action code is not in the catalog. Please add a label.",
       "filters": {
-        "actorId": "Actor ID",
         "entityType": "Entity type",
         "action": "Action",
-        "start": "From",
-        "end": "To",
-        "q": "Search text",
-        "qPlaceholder": "Action / entityType / entityId"
-      },
-      "columns": {
-        "at": "When",
         "actor": "Actor",
-        "action": "Action",
-        "entity": "Entity",
-        "ip": "IP"
+        "actorPlaceholder": "Search by username/ID",
+        "rangeStart": "From",
+        "rangeEnd": "To",
+        "q": "Keyword",
+        "qPlaceholder": "Free-text search across action/entity",
+        "reset": "Reset",
+        "all": "All"
       },
-      "viewDetails": "Details",
-      "collapseDetails": "Hide",
-      "before": "Before",
-      "after": "After",
-      "pageOf": "Page {page} of {total}",
-      "rows": "rows",
-      "prev": "Prev",
-      "next": "Next"
+      "roleBadge": {
+        "ADMIN": "Admin",
+        "MANAGER": "Manager",
+        "STAFF": "Staff",
+        "TECHNICIAN": "Technician",
+        "CUSTOMER": "Customer",
+        "SYSTEM": "System"
+      },
+      "actor": {
+        "system": "System",
+        "anonymousCustomer": "Customer (portal)"
+      },
+      "details": {
+        "metadata": "Metadata",
+        "time": "Time",
+        "ip": "IP address",
+        "userAgent": "User agent",
+        "technical": "Technical info",
+        "showTechnical": "Show technical info",
+        "hideTechnical": "Hide technical info",
+        "rawAction": "Raw action code",
+        "rawEntityType": "Entity type",
+        "rawEntityId": "Entity ID",
+        "rawBefore": "Before (raw, partially masked)",
+        "rawAfter": "After (raw, partially masked)"
+      },
+      "diff": {
+        "field": "Field",
+        "before": "Before",
+        "after": "After",
+        "createdHeader": "Newly created",
+        "deletedHeader": "Deleted",
+        "noChanges": "No field-level changes."
+      },
+      "sentence": {
+        "noEntity": "{actor} {verb}",
+        "withEntity": "{actor} {verb} {entity}"
+      },
+      "entityTypes": {
+        "Customer": "Customer",
+        "Site": "Site",
+        "CustomerContact": "Customer contact",
+        "Contract": "Contract",
+        "Visit": "Visit",
+        "ServiceRequest": "Service request",
+        "Payment": "Payment",
+        "TaxInvoice": "Tax invoice",
+        "User": "User",
+        "Equipment": "Equipment",
+        "EquipmentModel": "Equipment model",
+        "Brand": "Brand",
+        "ProductCategory": "Product category",
+        "Consumable": "Consumable",
+        "Accessory": "Accessory",
+        "ChargePolicy": "Charge policy",
+        "NotificationTemplate": "Notification template",
+        "NotificationLog": "Notification log",
+        "ScheduledJob": "Scheduled job",
+        "SystemSetting": "System setting"
+      }
     }
   },
   "admin": {

@@ -111,7 +111,8 @@
     "products": "제품 카탈로그",
     "companyContact": "회사 정보",
     "userManagement": "사용자 관리",
-    "reports": "보고서"
+    "reports": "보고서",
+    "auditLog": "감사 로그"
   },
   "dashboard": {
     "greeting": "{name}님, 안녕하세요",
@@ -1078,12 +1079,30 @@
     "title": "보고서",
     "description": "전체 단계 운영 및 재무 인사이트.",
     "cards": {
-      "daily-visits": { "title": "일별 방문", "description": "오늘의 일정 + 기사별 요약" },
-      "revenue": { "title": "매출", "description": "월별 매출 + 12개월 추이" },
-      "technician-productivity": { "title": "기사 생산성", "description": "완료 건수, 평균 소요, 인계 지연" },
-      "aging": { "title": "미수금 연령", "description": "연체 구간별 미수금" },
-      "churn": { "title": "고객 이탈", "description": "이탈 고객 + 사유 + 월 매출 손실" },
-      "audit": { "title": "감사 로그", "description": "모든 상태 변경 검색" }
+      "daily-visits": {
+        "title": "일별 방문",
+        "description": "오늘의 일정 + 기사별 요약"
+      },
+      "revenue": {
+        "title": "매출",
+        "description": "월별 매출 + 12개월 추이"
+      },
+      "technician-productivity": {
+        "title": "기사 생산성",
+        "description": "완료 건수, 평균 소요, 인계 지연"
+      },
+      "aging": {
+        "title": "미수금 연령",
+        "description": "연체 구간별 미수금"
+      },
+      "churn": {
+        "title": "고객 이탈",
+        "description": "이탈 고객 + 사유 + 월 매출 손실"
+      },
+      "audit": {
+        "title": "감사 로그",
+        "description": "모든 상태 변경 검색"
+      }
     },
     "daily": {
       "title": "일별 방문 요약",
@@ -1144,7 +1163,9 @@
         "15-30": "15-30일",
         "30+": "30일 초과"
       },
-      "filters": { "all": "전체" },
+      "filters": {
+        "all": "전체"
+      },
       "columns": {
         "customer": "고객",
         "outstanding": "미수금",
@@ -1175,35 +1196,93 @@
       }
     },
     "audit": {
-      "title": "감사 로그 검색",
-      "description": "매니저 이상은 전체, STAFF는 자신의 활동만 확인.",
+      "title": "감사 로그",
+      "description": "관리자(ADMIN/MANAGER) 전용. 시스템에서 발생한 모든 작업을 자연어로 검색·확인합니다.",
       "search": "검색",
-      "downloadCsv": "CSV",
+      "downloadCsv": "CSV 내려받기",
       "noResults": "결과가 없습니다.",
+      "loading": "불러오는 중...",
+      "adminOnly": "감사 로그는 관리자(ADMIN/MANAGER) 전용입니다.",
+      "viewDetails": "자세히",
+      "closeDrawer": "닫기",
+      "rows": "건",
+      "pageOf": "{page}/{total} 페이지",
+      "prev": "이전",
+      "next": "다음",
+      "unknownAction": "(미등록)",
+      "unknownActionTooltip": "카탈로그에 없는 액션 코드입니다. 라벨 추가가 필요합니다.",
       "filters": {
-        "actorId": "수행자 ID",
         "entityType": "엔티티 유형",
         "action": "액션",
-        "start": "시작",
-        "end": "종료",
-        "q": "키워드",
-        "qPlaceholder": "Action / entityType / entityId"
-      },
-      "columns": {
-        "at": "시각",
         "actor": "수행자",
-        "action": "액션",
-        "entity": "엔티티",
-        "ip": "IP"
+        "actorPlaceholder": "사용자명/ID로 검색",
+        "rangeStart": "시작",
+        "rangeEnd": "종료",
+        "q": "키워드",
+        "qPlaceholder": "액션·엔티티 자유 검색",
+        "reset": "초기화",
+        "all": "전체"
       },
-      "viewDetails": "상세",
-      "collapseDetails": "접기",
-      "before": "이전",
-      "after": "이후",
-      "pageOf": "{page}/{total} 페이지",
-      "rows": "건",
-      "prev": "이전",
-      "next": "다음"
+      "roleBadge": {
+        "ADMIN": "관리자",
+        "MANAGER": "매니저",
+        "STAFF": "직원",
+        "TECHNICIAN": "기사",
+        "CUSTOMER": "고객",
+        "SYSTEM": "시스템"
+      },
+      "actor": {
+        "system": "시스템",
+        "anonymousCustomer": "고객 (포털)"
+      },
+      "details": {
+        "metadata": "메타데이터",
+        "time": "시각",
+        "ip": "IP 주소",
+        "userAgent": "사용자 에이전트",
+        "technical": "기술 정보",
+        "showTechnical": "기술 정보 펼치기",
+        "hideTechnical": "기술 정보 접기",
+        "rawAction": "원본 액션 코드",
+        "rawEntityType": "엔티티 유형",
+        "rawEntityId": "엔티티 ID",
+        "rawBefore": "이전 (raw, 일부 마스킹)",
+        "rawAfter": "이후 (raw, 일부 마스킹)"
+      },
+      "diff": {
+        "field": "필드",
+        "before": "이전",
+        "after": "이후",
+        "createdHeader": "신규 생성됨",
+        "deletedHeader": "삭제됨",
+        "noChanges": "변경된 필드가 없습니다."
+      },
+      "sentence": {
+        "noEntity": "{actor}님이 {verb}",
+        "withEntity": "{actor}님이 {entity}{verb}"
+      },
+      "entityTypes": {
+        "Customer": "고객",
+        "Site": "사이트",
+        "CustomerContact": "고객 연락처",
+        "Contract": "계약",
+        "Visit": "방문",
+        "ServiceRequest": "서비스 요청",
+        "Payment": "수금",
+        "TaxInvoice": "세금계산서",
+        "User": "사용자",
+        "Equipment": "장비",
+        "EquipmentModel": "장비 모델",
+        "Brand": "브랜드",
+        "ProductCategory": "제품 카테고리",
+        "Consumable": "소모품",
+        "Accessory": "액세서리",
+        "ChargePolicy": "과금 정책",
+        "NotificationTemplate": "알림 서식",
+        "NotificationLog": "알림 로그",
+        "ScheduledJob": "예약 작업",
+        "SystemSetting": "시스템 설정"
+      }
     }
   },
   "admin": {

@@ -17,6 +17,7 @@ import {
   Settings,
   Phone,
   Package,
+  ScrollText,
 } from "lucide-react";
 
 type LabelKey =
@@ -34,7 +35,8 @@ type LabelKey =
   | "settings"
   | "notificationTemplates"
   | "companyContact"
-  | "products";
+  | "products"
+  | "auditLog";
 
 interface NavItem {
   href: string;
@@ -56,6 +58,11 @@ const navItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
+  {
+    href: "/reports/audit",
+    labelKey: "auditLog",
+    Icon: ScrollText,
+  },
   {
     href: "/admin/products",
     labelKey: "products",

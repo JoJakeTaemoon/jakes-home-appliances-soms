@@ -1,5 +1,9 @@
 /**
  * Audit log search filter assembly test.
+ *
+ * NOTE: `forceActorId` was removed when audit log access was narrowed to
+ * ADMIN/MANAGER only. We assert that the field is no longer honoured and
+ * that the route includes `actorUser.role` (so the UI can show role badges).
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
@@ -41,18 +45,6 @@ describe("searchAuditLog", () => {
     expect(call.take).toBe(25);
   });
 
-  it("forceActorId overrides actorId filter", async () => {
-    await searchAuditLog({
-      actorId: "u1",
-      page: 1,
-      pageSize: 10,
-      forceActorId: "self-staff",
-    });
-    const call = (prisma.auditLog.findMany as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
-    expect(call.where.actorId).toBe("self-staff");
-  });
-
   it("builds OR clause for free-text q", async () => {
     await searchAuditLog({
       q: "user_create",
@@ -72,5 +64,39 @@ describe("searchAuditLog", () => {
     const call = (prisma.auditLog.findMany as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
     expect(call.take).toBe(200);
+  });
+
+  it("includes actorUser.role in the Prisma include so UI can render role badges", async () => {
+    await searchAuditLog({ page: 1, pageSize: 10 });
+    const call = (prisma.auditLog.findMany as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(call.include).toBeDefined();
+    expect(call.include.actorUser).toBeDefined();
+    expect(call.include.actorUser.select).toMatchObject({
+      id: true,
+      username: true,
+      role: true,
+    });
+  });
+
+  it("exposes actorRole on each row", async () => {
+    (prisma.auditLog.findMany as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      {
+        id: "a1",
+        at: new Date("2026-05-26T00:00:00Z"),
+        actorType: "USER",
+        actorId: "u1",
+        action: "CUSTOMER_UPDATE",
+        entityType: "Customer",
+        entityId: "c1",
+        ipAddress: null,
+        userAgent: null,
+        before: null,
+        after: null,
+        actorUser: { id: "u1", username: "admin", role: "ADMIN" },
+      },
+    ]);
+    const result = await searchAuditLog({ page: 1, pageSize: 10 });
+    expect(result.rows[0]).toHaveProperty("actorRole", "ADMIN");
   });
 });

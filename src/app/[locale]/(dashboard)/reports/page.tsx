@@ -8,7 +8,6 @@ import {
   Users,
   Wallet,
   UserX,
-  FileSearch,
 } from "lucide-react";
 
 type CardKey =
@@ -16,8 +15,7 @@ type CardKey =
   | "revenue"
   | "technician-productivity"
   | "aging"
-  | "churn"
-  | "audit";
+  | "churn";
 
 interface ReportCard {
   key: CardKey;
@@ -35,7 +33,6 @@ const CARDS: ReportCard[] = [
   },
   { key: "aging", href: "/reports/aging", Icon: Wallet },
   { key: "churn", href: "/reports/churn", Icon: UserX },
-  { key: "audit", href: "/reports/audit", Icon: FileSearch },
 ];
 
 export default function ReportsIndexPage() {

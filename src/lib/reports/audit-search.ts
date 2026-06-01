@@ -1,9 +1,11 @@
 /**
  * Audit log search (UC-RP-06).
  *
- * MANAGER+ sees everything; STAFF sees only their own AuditLog rows.
+ * Access is **ADMIN / MANAGER only** — STAFF self-scope was removed.
+ *
  * Filters: actorId, entityType, action, date range, free-text (matches
- * action ∥ entityType ∥ entityId ∥ stringified before/after). Paginated.
+ * action ∥ entityType ∥ entityId). Paginated. Rows include the actor's
+ * role so the UI can show role badges without a second round-trip.
  */
 
 import prisma from "@/lib/prisma";
@@ -18,8 +20,6 @@ export interface AuditSearchInput {
   q?: string | null;
   page: number;
   pageSize: number;
-  /** Restrict to this actorId regardless of `actorId` filter (STAFF self-scope). */
-  forceActorId?: string | null;
 }
 
 export interface AuditSearchRow {
@@ -28,6 +28,7 @@ export interface AuditSearchRow {
   actorType: string;
   actorId: string | null;
   actorName: string | null;
+  actorRole: string | null;
   action: string;
   entityType: string;
   entityId: string | null;
@@ -48,11 +49,7 @@ export async function searchAuditLog(
   input: AuditSearchInput,
 ): Promise<AuditSearchResult> {
   const where: Prisma.AuditLogWhereInput = {};
-  if (input.forceActorId) {
-    where.actorId = input.forceActorId;
-  } else if (input.actorId) {
-    where.actorId = input.actorId;
-  }
+  if (input.actorId) where.actorId = input.actorId;
   if (input.entityType) where.entityType = input.entityType;
   if (input.action) where.action = input.action;
   if (input.start || input.end) {
@@ -80,7 +77,7 @@ export async function searchAuditLog(
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
-        actorUser: { select: { id: true, username: true } },
+        actorUser: { select: { id: true, username: true, role: true } },
       },
     }),
     prisma.auditLog.count({ where }),
@@ -93,6 +90,7 @@ export async function searchAuditLog(
       actorType: r.actorType,
       actorId: r.actorId ?? null,
       actorName: r.actorUser?.username ?? null,
+      actorRole: r.actorUser?.role ?? null,
       action: r.action,
       entityType: r.entityType,
       entityId: r.entityId ?? null,
