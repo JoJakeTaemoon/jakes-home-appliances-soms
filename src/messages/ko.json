@@ -848,6 +848,8 @@
     "loginSubmit": "로그인",
     "loginSubmitting": "로그인 중...",
     "loginError": "로그인 실패",
+    "loginRoleMismatchOffice": "본사 직원은 본사 직원 로그인 페이지에서 로그인해야 합니다.",
+    "loginRoleMismatchGoOffice": "본사 직원 로그인으로 이동 →",
     "forgotPassword": "비밀번호 찾기",
     "logout": "로그아웃",
     "tabs": {
