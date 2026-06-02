@@ -49,6 +49,7 @@ export function NewRequestClient() {
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
   const [type, setType] = useState<SrType | null>(null);
   const [description, setDescription] = useState("");
+  const [preferredVisitAt, setPreferredVisitAt] = useState("");
   const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [uploading, setUploading] = useState(false);
   const [tmpId] = useState(() => randomTmpId());
@@ -140,6 +141,9 @@ export function NewRequestClient() {
           equipmentId,
           type,
           description: description.trim(),
+          preferredVisitAt: preferredVisitAt
+            ? new Date(preferredVisitAt).toISOString()
+            : undefined,
           attachments: attachments.map((a) => ({
             storageKey: a.storageKey,
             filename: a.filename,
@@ -307,20 +311,38 @@ export function NewRequestClient() {
       )}
 
       {step === 3 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-[#262626]">
-            {t("stepDescription")}
-          </h2>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={t("descriptionPlaceholder")}
-            rows={6}
-            className="w-full rounded-md border border-[#e5e5e5] bg-white p-3 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
-          />
-          <p className="text-xs text-[#a3a3a3]">
-            {description.trim().length}/4000
-          </p>
+        <section className="space-y-4">
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-[#262626]">
+              {t("stepDescription")}
+            </h2>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("descriptionPlaceholder")}
+              rows={6}
+              className="w-full rounded-md border border-[#e5e5e5] bg-white p-3 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
+            />
+            <p className="text-xs text-[#a3a3a3]">
+              {description.trim().length}/4000
+            </p>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-[#262626]">
+              {t("preferredVisitAt")}
+            </h2>
+            <input
+              type="datetime-local"
+              lang={locale}
+              value={preferredVisitAt}
+              onChange={(e) => setPreferredVisitAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full rounded-md border border-[#e5e5e5] bg-white p-3 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
+            />
+            <p className="text-xs text-[#a3a3a3]">
+              {t("preferredVisitAtHint")}
+            </p>
+          </div>
         </section>
       )}
 
@@ -385,6 +407,14 @@ export function NewRequestClient() {
                 : "—"
             } />
             <Row label={t("detailType")} value={type ? t(`types.${type}` as never) : "—"} />
+            <Row
+              label={t("preferredVisitAt")}
+              value={
+                preferredVisitAt
+                  ? new Date(preferredVisitAt).toLocaleString(locale)
+                  : "—"
+              }
+            />
             <div>
               <span className="text-xs text-[#737373]">{t("detailDescription")}</span>
               <p className="mt-1 whitespace-pre-wrap text-sm text-[#262626]">

@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { NumberInput } from "@/components/ui/number-input";
+import { Combobox } from "@/components/ui/combobox";
 import {
   SrStateBadge,
   SrTypeBadge,
@@ -31,6 +32,7 @@ interface SrDetail {
   rejectionReason: string | null;
   approvedPrice: string | null;
   approvedDate: string | null;
+  preferredVisitAt: string | null;
   submittedAt: string;
   attachments: unknown;
   customer: {
@@ -41,6 +43,14 @@ interface SrDetail {
     address: string | null;
     district: string | null;
     city: string | null;
+    contacts: {
+      id: string;
+      name: string;
+      phone1: string;
+      role: string;
+      scope: string;
+      isPrimary: boolean;
+    }[];
   };
   contact: {
     id: string;
@@ -101,9 +111,44 @@ export default function ServiceRequestDetailPage() {
   const [price, setPrice] = useState<number>(0);
   const [approvedDate, setApprovedDate] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
-  const [leadId, setLeadId] = useState("");
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [approveNotes, setApproveNotes] = useState("");
   const [approveError, setApproveError] = useState<string | null>(null);
   const [approveSubmitting, setApproveSubmitting] = useState(false);
+
+  // Seed approve-modal defaults whenever it opens:
+  // - approvedDate → today (yyyy-mm-dd)
+  // - scheduledFor → customer's preferred visit time, falling back to "today
+  //   at 09:00" so the office still has a sensible starting value.
+  const handleOpenApprove = () => {
+    const now = new Date();
+    setApprovedDate(now.toISOString().slice(0, 10));
+    if (data?.preferredVisitAt) {
+      const d = new Date(data.preferredVisitAt);
+      const tzOffsetMs = d.getTimezoneOffset() * 60_000;
+      setScheduledFor(new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16));
+    } else {
+      const d = new Date(now);
+      d.setHours(9, 0, 0, 0);
+      const tzOffsetMs = d.getTimezoneOffset() * 60_000;
+      setScheduledFor(new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16));
+    }
+    setApproveError(null);
+    setShowApprove(true);
+  };
+
+  // The "Operations contact" the office should call to negotiate the
+  // visit slot. Primary OPS first (we already ordered server-side);
+  // fall back to the submitter contact when no OPS_CONTACT exists.
+  const opsContact =
+    data?.customer.contacts.find((c) => c.isPrimary) ??
+    data?.customer.contacts[0] ??
+    null;
+
+  const techsQuery = useApiQuery<
+    { id: string; username: string; preferredRegion: string | null }[]
+  >(showApprove ? `/api/users?role=TECHNICIAN&pageSize=100` : null);
+  const techs = techsQuery.data ?? [];
 
   // Reject modal state
   const [rejectReason, setRejectReason] = useState("");
@@ -121,7 +166,17 @@ export default function ServiceRequestDetailPage() {
   };
 
   async function doApprove() {
-    if (!Number.isFinite(price) || price <= 0 || !approvedDate) return;
+    // Visible validation — previously this early-returned silently and
+    // also rejected 0, so a manager couldn't waive the fee. 0 is a valid
+    // "free service" outcome (the server schema already allows it).
+    if (!Number.isFinite(price) || price < 0) {
+      setApproveError(t("approveErrorPrice"));
+      return;
+    }
+    if (!approvedDate) {
+      setApproveError(t("approveErrorDate"));
+      return;
+    }
     setApproveSubmitting(true);
     setApproveError(null);
     try {
@@ -130,8 +185,10 @@ export default function ServiceRequestDetailPage() {
         approvedDate: new Date(approvedDate).toISOString(),
         scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : undefined,
         leadTechnicianId: leadId || undefined,
+        notes: approveNotes.trim() || undefined,
       });
       setShowApprove(false);
+      setApproveNotes("");
       await reload();
     } catch (err) {
       setApproveError(err instanceof Error ? err.message : t("approveError"));
@@ -209,17 +266,38 @@ export default function ServiceRequestDetailPage() {
           ← {t("title")}
         </button>
 
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold text-[#002A4D]">
-            {t("detailTitle", { code: data.code })}
-          </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <SrTypeBadge type={data.type} />
-            <SrStateBadge state={data.state} />
-            <StatusBadge tone={data.isPaid ? "warning" : "success"}>
-              {data.isPaid ? t("yes") : t("no")} · {t("isPaid")}
-            </StatusBadge>
+        <header className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold text-[#002A4D]">
+              {t("detailTitle", { code: data.code })}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <SrTypeBadge type={data.type} />
+              <SrStateBadge state={data.state} />
+              <StatusBadge tone={data.isPaid ? "warning" : "success"}>
+                {data.isPaid ? t("yes") : t("no")} · {t("isPaid")}
+              </StatusBadge>
+            </div>
           </div>
+          {(canApprove || canReject || canCancel) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {canApprove && (
+                <Button onClick={handleOpenApprove}>
+                  {t("actionApprove")}
+                </Button>
+              )}
+              {canReject && (
+                <Button variant="outline" onClick={() => setShowReject(true)}>
+                  {t("actionReject")}
+                </Button>
+              )}
+              {canCancel && (
+                <Button variant="ghost" onClick={() => setShowCancel(true)}>
+                  {t("actionCancel")}
+                </Button>
+              )}
+            </div>
+          )}
         </header>
 
         <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
@@ -241,11 +319,27 @@ export default function ServiceRequestDetailPage() {
             <Field label={t("labelSubmittedAt")}>
               {formatDateTime(data.submittedAt, locale)}
             </Field>
+            <Field label={t("preferredVisitAt")}>
+              {data.preferredVisitAt
+                ? formatDateTime(data.preferredVisitAt, locale)
+                : t("preferredVisitAtNone")}
+            </Field>
             <Field label={t("labelEquipment")}>
               {data.equipment
                 ? `${pickModelName(data.equipment.model, locale)} · ${pickModelName(data.equipment.model, locale)}`
                 : "—"}
             </Field>
+            {opsContact && (
+              <Field label={t("approveOpsContact")}>
+                {opsContact.name} ·{" "}
+                <a
+                  href={`tel:${opsContact.phone1}`}
+                  className="text-[var(--brand-blue-700)] underline-offset-2 hover:underline"
+                >
+                  {opsContact.phone1}
+                </a>
+              </Field>
+            )}
             {data.approvedPrice && (
               <Field label={t("labelApprovedPrice")}>
                 {formatVnd(data.approvedPrice)}
@@ -346,32 +440,6 @@ export default function ServiceRequestDetailPage() {
             </div>
           </section>
         )}
-
-        <div className="space-y-2">
-          {canApprove && (
-            <Button onClick={() => setShowApprove(true)} className="w-full">
-              {t("actionApprove")}
-            </Button>
-          )}
-          {canReject && (
-            <Button
-              variant="outline"
-              onClick={() => setShowReject(true)}
-              className="w-full"
-            >
-              {t("actionReject")}
-            </Button>
-          )}
-          {canCancel && (
-            <Button
-              variant="ghost"
-              onClick={() => setShowCancel(true)}
-              className="w-full"
-            >
-              {t("actionCancel")}
-            </Button>
-          )}
-        </div>
       </aside>
 
       {/* Approve modal */}
@@ -392,12 +460,72 @@ export default function ServiceRequestDetailPage() {
       >
         <div className="space-y-3">
           <p className="text-xs text-[#525252]">{t("approveSubtitle")}</p>
-          <FormField label={t("approvePrice")}>
-            <NumberInput
-              value={price}
-              onChange={setPrice}
-              min={0}
-            />
+
+          {/* Read-only context the office reviewer needs at hand */}
+          <section className="space-y-2 rounded-lg border border-[#e5e5e5] bg-[#fafafa] p-3 text-xs">
+            <div>
+              <span className="text-[#737373]">{t("labelType")}</span>
+              <span className="ml-2 font-medium text-[#262626]">
+                {t(`types.${data.type}` as never)}
+              </span>
+            </div>
+            <div>
+              <span className="text-[#737373]">{t("preferredVisitAt")}</span>
+              <span className="ml-2 font-medium text-[#262626]">
+                {data.preferredVisitAt
+                  ? formatDateTime(data.preferredVisitAt, locale)
+                  : t("preferredVisitAtNone")}
+              </span>
+            </div>
+            <div>
+              <span className="text-[#737373]">{t("approveOpsContact")}</span>
+              <span className="ml-2 font-medium text-[#262626]">
+                {opsContact
+                  ? `${opsContact.name} · `
+                  : ""}
+                {opsContact ? (
+                  <a
+                    href={`tel:${opsContact.phone1}`}
+                    className="text-[var(--brand-blue-700)] underline-offset-2 hover:underline"
+                  >
+                    {opsContact.phone1}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </span>
+            </div>
+            <div>
+              <span className="block text-[#737373]">
+                {t("panelDescription")}
+              </span>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[#262626]">
+                {data.description}
+              </p>
+            </div>
+          </section>
+
+          <FormField
+            label={t("approvePrice")}
+            hint={price === 0 ? t("approvePriceFreeHint") : t("approvePriceHint")}
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <NumberInput value={price} onChange={setPrice} min={0} />
+              </div>
+              <button
+                type="button"
+                onClick={() => setPrice(0)}
+                className={[
+                  "h-10 rounded-md border px-3 text-xs font-medium transition-colors",
+                  price === 0
+                    ? "border-[var(--brand-blue-500)] bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]"
+                    : "border-[#e5e5e5] bg-white text-[#525252] hover:border-[#a3a3a3]",
+                ].join(" ")}
+              >
+                {t("approvePriceFreeButton")}
+              </button>
+            </div>
           </FormField>
           <FormField label={t("approveDate")}>
             <Input
@@ -406,7 +534,14 @@ export default function ServiceRequestDetailPage() {
               onChange={(e) => setApprovedDate(e.target.value)}
             />
           </FormField>
-          <FormField label={t("approveScheduledFor")}>
+          <FormField
+            label={t("approveScheduledFor")}
+            hint={
+              data.preferredVisitAt
+                ? t("approveScheduledForHint")
+                : undefined
+            }
+          >
             <Input
               type="datetime-local"
               value={scheduledFor}
@@ -414,10 +549,31 @@ export default function ServiceRequestDetailPage() {
             />
           </FormField>
           <FormField label={t("approveLead")} hint={t("approveLeadHint")}>
-            <Input
+            <Combobox
               value={leadId}
-              onChange={(e) => setLeadId(e.target.value)}
-              placeholder="user-id"
+              onChange={setLeadId}
+              options={techs.map((u) => ({
+                value: u.id,
+                label: u.username,
+                description: u.preferredRegion ?? undefined,
+              }))}
+              placeholder={
+                techsQuery.isLoading ? tCommon("loading") : t("approveLead")
+              }
+              searchable
+              emptyText={tCommon("noData")}
+            />
+          </FormField>
+          <FormField
+            label={t("approveNotes")}
+            hint={t("approveNotesHint")}
+          >
+            <textarea
+              value={approveNotes}
+              onChange={(e) => setApproveNotes(e.target.value)}
+              rows={3}
+              placeholder={t("approveNotesPlaceholder")}
+              className="w-full rounded-md border border-[#e5e5e5] bg-white p-2 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
             />
           </FormField>
           {approveError && (

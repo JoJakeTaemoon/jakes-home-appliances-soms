@@ -677,6 +677,10 @@ model ServiceRequest {
   state         ServiceRequestState @default(PENDING_REVIEW)
   description   String
   attachments   Json?               // [{ url, filename, type }]
+  // Customer's preferred visit time captured at submission. Office uses
+  // it to pre-fill the approval modal's scheduledFor and to know when to
+  // call the customer to negotiate a different slot.
+  preferredVisitAt DateTime?
   approvedPrice Decimal?            @db.Decimal(14, 2)
   approvedDate  DateTime?
   rejectionReason String?
