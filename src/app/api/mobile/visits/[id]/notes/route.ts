@@ -15,7 +15,7 @@ import { addNotesSchema } from "@/lib/validators/visit";
 const paramsSchema = z.object({ id: z.string() });
 
 export const POST = defineMutation({
-  audience: "staff",
+  audience: "field",
   authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");

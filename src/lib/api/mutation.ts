@@ -24,6 +24,8 @@ import type { NextRequest } from "next/server";
 import type { ZodIssue, ZodTypeAny, z } from "zod";
 import { requireAuth } from "@/lib/auth/guards";
 import type { AuthenticatedStaff } from "@/lib/auth/guards";
+import { requireFieldAuth } from "@/lib/auth/field-guards";
+import type { AuthenticatedField } from "@/lib/auth/field-guards";
 import { requireCustomerAuth } from "@/lib/auth/customer-guards";
 import type { AuthenticatedCustomer } from "@/lib/auth/customer-guards";
 import {
@@ -36,7 +38,7 @@ import { logAudit } from "@/lib/audit";
 
 // ─── Public types ────────────────────────────────────────────────────────
 
-export type Audience = "staff" | "customer";
+export type Audience = "staff" | "field" | "customer";
 
 /** Subset of NextRequest's `RouteContext`. Params are always async in app router. */
 export interface RouteContext {
@@ -60,7 +62,9 @@ export interface QueryContext<TAuth, TParams, TQuery> {
 
 export type AudiencedAuth<A extends Audience> = A extends "customer"
   ? AuthenticatedCustomer
-  : AuthenticatedStaff;
+  : A extends "field"
+    ? AuthenticatedField
+    : AuthenticatedStaff;
 
 /** Audit-row config. Replaces inline `logAudit({...})` calls in route handlers. */
 export interface MutationAuditConfig<TCtx, TResult> {
@@ -164,6 +168,20 @@ export type RouteHandler = (
 
 // ─── Implementation ──────────────────────────────────────────────────────
 
+/**
+ * Dispatch to the correct realm guard. Each realm reads its own cookie
+ * (and verifies a realm-bound JWT `aud` claim), so a token minted for one
+ * realm cannot satisfy another.
+ */
+function authenticateForAudience(
+  audience: Audience,
+  request: NextRequest,
+): Promise<AuthenticatedStaff | AuthenticatedField | AuthenticatedCustomer> {
+  if (audience === "customer") return requireCustomerAuth(request);
+  if (audience === "field") return requireFieldAuth(request);
+  return requireAuth(request);
+}
+
 export function defineMutation<
   A extends Audience,
   BodySchema extends ZodTypeAny | undefined = undefined,
@@ -176,10 +194,12 @@ export function defineMutation<
   type TParams = InferZodOrUnknown<ParamsSchema>;
   return async (request, routeCtx) => {
     try {
-      // 1. Authenticate.
-      const auth = (await (config.audience === "customer"
-        ? requireCustomerAuth(request)
-        : requireAuth(request))) as AudiencedAuth<A>;
+      // 1. Authenticate. Each realm reads its own cookie + verifies a
+      //    realm-bound JWT audience claim; mismatched tokens fail closed.
+      const auth = (await authenticateForAudience(
+        config.audience,
+        request,
+      )) as AudiencedAuth<A>;
 
       // 2. Authorize.
       if (config.authorize) await config.authorize(auth);
@@ -260,9 +280,10 @@ export function defineQuery<
   type TQuery = InferZod<QuerySchema>;
   return async (request, routeCtx) => {
     try {
-      const auth = (await (config.audience === "customer"
-        ? requireCustomerAuth(request)
-        : requireAuth(request))) as AudiencedAuth<A>;
+      const auth = (await authenticateForAudience(
+        config.audience,
+        request,
+      )) as AudiencedAuth<A>;
 
       if (config.authorize) await config.authorize(auth);
 

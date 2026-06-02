@@ -18,7 +18,7 @@ import { suggestConsumablesForVisit } from "@/lib/visits/suggest";
 const paramsSchema = z.object({ id: z.string() });
 
 export const GET = defineQuery({
-  audience: "staff",
+  audience: "field",
   authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");

@@ -8,7 +8,7 @@ import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 
 export const GET = defineQuery({
-  audience: "staff",
+  audience: "field",
   authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");
