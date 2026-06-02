@@ -115,7 +115,7 @@
     "auditLog": "감사 로그"
   },
   "dashboard": {
-    "greeting": "{name}님, 안녕하세요",
+    "greeting": "대시보드",
     "todaySummary": "오늘의 요약",
     "noUpcomingVisits": "예정된 방문이 없습니다",
     "phasePlaceholder": "Phase 1 — 인증 기초 작업이 완료되었습니다. 추가 기능은 다음 단계에서 제공됩니다.",
@@ -1321,7 +1321,7 @@
     },
     "products": {
       "title": "제품 카탈로그",
-      "subtitle": "제품군, 모델, 부속품, 소모품의 마스터 데이터를 관리합니다. 제품군과 부속품/소모품은 KO/VI/EN 3개 언어로 기록되며, 모델명은 원본 그대로 유지됩니다.",
+      "subtitle": "브랜드, 제품군, 모델, 부속·소모품의 마스터 데이터.",
       "tabBrands": "브랜드",
       "tabCategories": "제품군",
       "tabModels": "모델",

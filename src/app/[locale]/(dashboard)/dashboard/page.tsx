@@ -28,10 +28,13 @@ interface DashboardSummary {
   openServiceRequests: { count: number; recent: OpenServiceRequest[] };
 }
 
+// Only "danger" earns a colored border — that's an actionable alert
+// (stale handovers, etc). info + success use the neutral border so the
+// KPI strip doesn't read as a decorative card mosaic. Color = signal.
 const WIDGET_TONE_BORDER: Record<string, string> = {
   danger: "border-red-500",
-  info: "border-[var(--brand-blue-500)]",
-  success: "border-emerald-500",
+  info: "border-[#e5e5e5]",
+  success: "border-[#e5e5e5]",
 };
 
 function Widget({
@@ -62,7 +65,7 @@ function Widget({
     </div>
   );
   return href ? (
-    <Link href={href} className="block h-full">
+    <Link href={href} className="block h-full no-underline">
       {inner}
     </Link>
   ) : (
@@ -102,14 +105,13 @@ export default function DashboardPage() {
     }
   }, [load, user?.role]);
 
-  const name = user?.username ?? "";
   const role = user?.role ? tRoles(user.role as RoleKey) : "";
 
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-[#002A4D]">
-          {t("greeting", { name })}
+          {t("greeting")}
         </h1>
         {role && (
           <p className="mt-1 text-sm text-[#525252]">

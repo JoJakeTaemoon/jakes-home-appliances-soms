@@ -115,7 +115,7 @@
     "auditLog": "Audit log"
   },
   "dashboard": {
-    "greeting": "Hello, {name}",
+    "greeting": "Dashboard",
     "todaySummary": "Today's summary",
     "noUpcomingVisits": "No upcoming visits",
     "phasePlaceholder": "Phase 1 — Auth foundation is complete. More features will arrive in later phases.",
@@ -1298,7 +1298,7 @@
     "navTitle": "Admin",
     "products": {
       "title": "Product catalog",
-      "subtitle": "Manage master data for product categories, models, accessories and consumables. Categories and accessories/consumables are stored in KO/VI/EN; model names stay as-is.",
+      "subtitle": "Brand, category, model, accessory, and consumable master data.",
       "tabBrands": "Brands",
       "tabCategories": "Categories",
       "tabModels": "Models",
