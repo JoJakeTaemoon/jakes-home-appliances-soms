@@ -45,8 +45,35 @@ interface PortalPayments {
 interface PortalSr {
   id: string;
   code: string;
+  type: string;
   state: string;
   submittedAt: string;
+}
+
+interface PortalEquipment {
+  id: string;
+  installedAt: string | null;
+  model: {
+    filterPolicy: { filters?: { type: string; replaceEveryDays: number }[] } | null;
+  };
+}
+
+// "Open" visit states — the ones the customer expects to see a date for
+// in the "next visit" / "next filter replacement" tile. A visit that is
+// SUGGESTED (not yet confirmed by office) is still a meaningful "next"
+// date for them, and SCHEDULED visits whose clock time has already
+// passed today still count until they are explicitly marked completed.
+const OPEN_VISIT_STATES = new Set([
+  "SUGGESTED",
+  "SCHEDULED",
+  "IN_PROGRESS",
+  "RESCHEDULED",
+]);
+
+function startOfTodayMs(): number {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
 }
 
 export function DashboardClient() {
@@ -70,6 +97,13 @@ export function DashboardClient() {
   const recentSr = useApiQuery<PortalSr[]>(
     "/api/portal/service-requests?pageSize=5",
   );
+  // Equipment list is the fallback source for the "next filter
+  // replacement" tile when there is no SCHEDULED FILTER_REPLACEMENT
+  // visit yet — we then compute the next due date from the model's
+  // filterPolicy (same logic as the equipment detail page).
+  const equipment = useApiQuery<{ equipment: PortalEquipment[] } | PortalEquipment[]>(
+    "/api/portal/equipment",
+  );
 
   const upcomingVisitDate = useMemo(() => {
     const list = visits.data ?? [];
@@ -78,9 +112,13 @@ export function DashboardClient() {
     // a string label, not a hook ordering decision, so re-running on render
     // is harmless. Locally suppressed instead of plumbing a "now" tick.
     // eslint-disable-next-line react-hooks/purity
-    const now = Date.now();
+    const todayMs = startOfTodayMs();
     const future = list
-      .filter((v) => v.state === "SCHEDULED" && new Date(v.scheduledFor).getTime() > now)
+      .filter(
+        (v) =>
+          OPEN_VISIT_STATES.has(v.state) &&
+          new Date(v.scheduledFor).getTime() >= todayMs,
+      )
       .sort(
         (a, b) =>
           new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
@@ -91,20 +129,46 @@ export function DashboardClient() {
   const nextFilterDate = useMemo(() => {
     const list = visits.data ?? [];
     // eslint-disable-next-line react-hooks/purity
-    const now = Date.now();
+    const todayMs = startOfTodayMs();
+    // First choice: an open FILTER_REPLACEMENT visit that's actually
+    // on the schedule.
     const future = list
       .filter(
         (v) =>
           v.type === "FILTER_REPLACEMENT" &&
-          v.state === "SCHEDULED" &&
-          new Date(v.scheduledFor).getTime() > now,
+          OPEN_VISIT_STATES.has(v.state) &&
+          new Date(v.scheduledFor).getTime() >= todayMs,
       )
       .sort(
         (a, b) =>
           new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
       );
-    return future[0]?.scheduledFor ?? null;
-  }, [visits.data]);
+    if (future[0]) return future[0].scheduledFor;
+
+    // Fallback: derive from equipment filterPolicy (installedAt +
+    // replaceEveryDays) — same math as the equipment detail page. This
+    // covers the common case of a customer who has equipment installed
+    // but no future filter visit scheduled yet.
+    const eqList: PortalEquipment[] = (() => {
+      const d = equipment.data;
+      if (Array.isArray(d)) return d;
+      if (d && Array.isArray(d.equipment)) return d.equipment;
+      return [];
+    })();
+    let earliest: number | null = null;
+    for (const e of eqList) {
+      if (!e.installedAt) continue;
+      const installed = new Date(e.installedAt).getTime();
+      if (Number.isNaN(installed)) continue;
+      const filters = e.model.filterPolicy?.filters ?? [];
+      for (const f of filters) {
+        const due = installed + f.replaceEveryDays * 24 * 60 * 60 * 1000;
+        if (due < todayMs) continue;
+        if (earliest === null || due < earliest) earliest = due;
+      }
+    }
+    return earliest === null ? null : new Date(earliest).toISOString();
+  }, [visits.data, equipment.data]);
 
   const pendingSrCount = pendingSr.data?.length ?? 0;
 
@@ -173,9 +237,13 @@ function RecentActivity({
   const t = useTranslations("portal.dashboard");
   const tv = useTranslations("visits.types");
   const ts = useTranslations("visits.states");
+  const trt = useTranslations("serviceRequests.types");
   const trs = useTranslations("serviceRequests.states");
   // Recent visits: completed visits sorted by completedAt desc; if no
   // completedAt fall back to scheduledFor. Cap at 5 each then merge.
+  // Title leads with the activity kind ("방문" / "요청") so the customer
+  // can tell at a glance whether it was a tech visit or a request they
+  // submitted; the type and code are appended for context.
   const recentVisits = [...visits]
     .filter((v) => v.completedAt || v.state === "SCHEDULED")
     .sort((a, b) => {
@@ -188,7 +256,7 @@ function RecentActivity({
       kind: "visit",
       at: v.completedAt ?? v.scheduledFor,
       href: `/visits/${v.id}`,
-      title: tv(v.type as never),
+      title: `${t("activityVisit")} · ${tv(v.type as never)}`,
       subtitle: ts(v.state as never),
     }));
   const recentSrs = [...srs]
@@ -201,8 +269,8 @@ function RecentActivity({
       kind: "sr",
       at: s.submittedAt,
       href: `/requests/${s.id}`,
-      title: s.code,
-      subtitle: trs(s.state as never),
+      title: `${t("activityRequest")} · ${trt(s.type as never)}`,
+      subtitle: `${s.code} · ${trs(s.state as never)}`,
     }));
   const merged = [...recentVisits, ...recentSrs]
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())

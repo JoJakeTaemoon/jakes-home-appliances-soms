@@ -519,7 +519,9 @@
       "outstanding": "미수금",
       "nextFilter": "다음 필터 교체",
       "recentActivity": "최근 활동",
-      "noActivity": "아직 활동이 없습니다."
+      "noActivity": "아직 활동이 없습니다.",
+      "activityVisit": "방문",
+      "activityRequest": "요청"
     },
     "equipment": {
       "title": "장비",

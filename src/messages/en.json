@@ -519,7 +519,9 @@
       "outstanding": "Outstanding",
       "nextFilter": "Next filter change",
       "recentActivity": "Recent activity",
-      "noActivity": "No recent activity."
+      "noActivity": "No recent activity.",
+      "activityVisit": "Visit",
+      "activityRequest": "Request"
     },
     "equipment": {
       "title": "Equipment",

@@ -519,7 +519,9 @@
       "outstanding": "Công nợ",
       "nextFilter": "Thay lõi kế tiếp",
       "recentActivity": "Hoạt động gần đây",
-      "noActivity": "Chưa có hoạt động."
+      "noActivity": "Chưa có hoạt động.",
+      "activityVisit": "Lượt thăm",
+      "activityRequest": "Yêu cầu"
     },
     "equipment": {
       "title": "Thiết bị",
