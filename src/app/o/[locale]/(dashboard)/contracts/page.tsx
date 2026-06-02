@@ -54,6 +54,33 @@ export default function ContractsPage() {
   const [startDateTo, setStartDateTo] = useState("");
 
   const [page, setPage] = useState(1);
+
+  // Filter setters that also reset to page 1 so a filter change while on
+  // page N doesn't request a stale paginated slice.
+  const onQ = (v: string) => {
+    setQ(v);
+    setPage(1);
+  };
+  const onTypeFilter = (v: "SALE" | "RENTAL" | "MAINTENANCE" | null) => {
+    setTypeFilter(v);
+    setPage(1);
+  };
+  const onStateFilter = (v: string | null) => {
+    setStateFilter(v);
+    setPage(1);
+  };
+  const onCustomerTypeFilter = (v: "B2C" | "B2B" | null) => {
+    setCustomerTypeFilter(v);
+    setPage(1);
+  };
+  const onStartDateFrom = (v: string) => {
+    setStartDateFrom(v);
+    setPage(1);
+  };
+  const onStartDateTo = (v: string) => {
+    setStartDateTo(v);
+    setPage(1);
+  };
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "createdAt",
     direction: "desc",
@@ -200,14 +227,14 @@ export default function ContractsPage() {
               <Input
                 placeholder={t("searchPlaceholder")}
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => onQ(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#525252]">
               {t("filterType")}
               <Combobox
                 value={typeFilter}
-                onChange={(v) => setTypeFilter((v as "SALE" | "RENTAL" | "MAINTENANCE" | null) ?? null)}
+                onChange={(v) => onTypeFilter((v as "SALE" | "RENTAL" | "MAINTENANCE" | null) ?? null)}
                 options={[
                   { value: "SALE", label: t("types.SALE") },
                   { value: "RENTAL", label: t("types.RENTAL") },
@@ -221,7 +248,7 @@ export default function ContractsPage() {
               {t("filterCustomerType")}
               <Combobox
                 value={customerTypeFilter}
-                onChange={(v) => setCustomerTypeFilter((v as "B2C" | "B2B" | null) ?? null)}
+                onChange={(v) => onCustomerTypeFilter((v as "B2C" | "B2B" | null) ?? null)}
                 options={[
                   { value: "B2C", label: "B2C" },
                   { value: "B2B", label: "B2B" },
@@ -234,7 +261,7 @@ export default function ContractsPage() {
               {t("filterState")}
               <Combobox
                 value={stateFilter}
-                onChange={(v) => setStateFilter(v)}
+                onChange={onStateFilter}
                 options={[
                   { value: "DRAFT", label: t("states.DRAFT") },
                   { value: "PENDING_SIGNATURE", label: t("states.PENDING_SIGNATURE") },
@@ -253,7 +280,7 @@ export default function ContractsPage() {
               <Input
                 type="date"
                 value={startDateFrom}
-                onChange={(e) => setStartDateFrom(e.target.value)}
+                onChange={(e) => onStartDateFrom(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#525252]">
@@ -261,7 +288,7 @@ export default function ContractsPage() {
               <Input
                 type="date"
                 value={startDateTo}
-                onChange={(e) => setStartDateTo(e.target.value)}
+                onChange={(e) => onStartDateTo(e.target.value)}
               />
             </label>
           </div>

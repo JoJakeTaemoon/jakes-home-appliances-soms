@@ -241,9 +241,12 @@ function NewContractPageInner() {
       {showNewCustomer && (
         <NewCustomerQuickModal
           onClose={() => setShowNewCustomer(false)}
-          onCreated={(created) => {
-            // Refetch the customer list so the new row appears, then select it.
-            void customersQuery.refetch();
+          onCreated={async (created) => {
+            // Await refetch so `customers` includes the new row BEFORE we
+            // select it — otherwise `customer = customers.find(...)`
+            // returns null and Step 2 (equipment picker) silently shows
+            // "no customer" until the in-flight refetch resolves.
+            await customersQuery.refetch();
             setCustomerId(created.id);
             setLines([]);
             setShowNewCustomer(false);

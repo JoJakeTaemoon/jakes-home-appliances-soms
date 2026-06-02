@@ -56,6 +56,29 @@ export default function ServiceRequestsListPage() {
   const [paidFilter, setPaidFilter] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
+
+  // Reset to page 1 whenever a filter changes so the query doesn't
+  // request page=3 of a freshly filtered result set.
+  const onQ = (v: string) => {
+    setQ(v);
+    setPage(1);
+  };
+  const onTab = (v: "pending" | "all") => {
+    setTab(v);
+    setPage(1);
+  };
+  const onStateFilter = (v: string | null) => {
+    setStateFilter(v);
+    setPage(1);
+  };
+  const onTypeFilter = (v: string | null) => {
+    setTypeFilter(v);
+    setPage(1);
+  };
+  const onPaidFilter = (v: string | null) => {
+    setPaidFilter(v);
+    setPage(1);
+  };
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "submittedAt",
     direction: "desc",
@@ -160,10 +183,7 @@ export default function ServiceRequestsListPage() {
             <button
               key={k}
               type="button"
-              onClick={() => {
-                setTab(k);
-                setPage(1);
-              }}
+              onClick={() => onTab(k)}
               className={[
                 "px-4 py-2 text-sm font-medium outline-none transition-colors",
                 active
@@ -195,12 +215,12 @@ export default function ServiceRequestsListPage() {
             <Input
               placeholder={t("searchPlaceholder")}
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => onQ(e.target.value)}
             />
             {tab === "all" && (
               <Combobox
                 value={stateFilter}
-                onChange={(v) => setStateFilter(v)}
+                onChange={onStateFilter}
                 options={[
                   { value: "PENDING_REVIEW", label: t("states.PENDING_REVIEW") },
                   { value: "APPROVED", label: t("states.APPROVED") },
@@ -215,7 +235,7 @@ export default function ServiceRequestsListPage() {
             )}
             <Combobox
               value={typeFilter}
-              onChange={(v) => setTypeFilter(v)}
+              onChange={onTypeFilter}
               options={[
                 { value: "INSPECTION", label: t("types.INSPECTION") },
                 { value: "REPAIR", label: t("types.REPAIR") },
@@ -228,7 +248,7 @@ export default function ServiceRequestsListPage() {
             />
             <Combobox
               value={paidFilter}
-              onChange={(v) => setPaidFilter(v)}
+              onChange={onPaidFilter}
               options={[
                 { value: "true", label: t("filterPaidPaid") },
                 { value: "false", label: t("filterPaidFree") },

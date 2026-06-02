@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,12 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const query = useApiQuery<{ messages: SrMessage[] }>(
-    srId ? `/api/service-requests/${srId}/messages` : null,
-    { refetchInterval: 30_000 },
-  );
+  const queryUrl = srId ? `/api/service-requests/${srId}/messages` : null;
+  const query = useApiQuery<{ messages: SrMessage[] }>(queryUrl, {
+    refetchInterval: 30_000,
+  });
   const messages = query.data?.messages ?? [];
+  const qc = useQueryClient();
 
   const send = async () => {
     const trimmed = body.trim();
@@ -39,12 +41,17 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
     setSending(true);
     setError(null);
     try {
-      await api.post<{ messages: SrMessage[] }>(
+      const env = (await api.post<{ messages: SrMessage[] }>(
         `/api/service-requests/${srId}/messages`,
         { body: trimmed },
-      );
-      await query.refetch();
+      )) as unknown as { data: { messages: SrMessage[] } };
+      // Inject POST response into cache so the new message shows up
+      // immediately without the refetch flash.
+      if (queryUrl && Array.isArray(env.data?.messages)) {
+        qc.setQueryData([queryUrl], { messages: env.data.messages });
+      }
       setBody("");
+      query.refetch().catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 import { useApiQuery } from "@/lib/api/hooks";
 
@@ -34,11 +35,14 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
   // Polls every 30s so customer sees new office replies without refresh.
-  const query = useApiQuery<{ messages: SrMessage[] }>(
-    srId ? `/api/portal/service-requests/${srId}/messages` : null,
-    { refetchInterval: 30_000 },
-  );
+  const queryUrl = srId
+    ? `/api/portal/service-requests/${srId}/messages`
+    : null;
+  const query = useApiQuery<{ messages: SrMessage[] }>(queryUrl, {
+    refetchInterval: 30_000,
+  });
   const messages = query.data?.messages ?? [];
+  const qc = useQueryClient();
 
   const send = async () => {
     const trimmed = body.trim();
@@ -56,10 +60,15 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
       if (!res.ok || !json.success) {
         throw new Error(json?.error?.message ?? "Failed");
       }
-      // The POST response includes the updated message list; bake it in
-      // via a refetch so the query cache stays the single source of truth.
-      await query.refetch();
+      // The POST response already contains the new message list. Inject
+      // it into the query cache immediately so the UI shows the message
+      // without a flash, then fire-and-forget a refetch as a consistency
+      // check.
+      if (queryUrl && Array.isArray(json.data?.messages)) {
+        qc.setQueryData([queryUrl], { messages: json.data.messages });
+      }
       setBody("");
+      query.refetch().catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

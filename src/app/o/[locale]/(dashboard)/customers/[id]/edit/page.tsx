@@ -52,15 +52,19 @@ export default function EditCustomerPage() {
     setBusy(true);
     setErr(null);
     try {
+      // For nullable string fields, treat both "" (user cleared the input)
+      // and null as "no value" so the PATCH doesn't send an empty string
+      // where the DB column is nullable. `name` is required and stays as-is.
+      const orEmpty = (v: string | null | undefined) => v || undefined;
       await api.patch(`/api/customers/${id}`, {
         name: data.name,
-        shortcode: data.shortcode ?? undefined,
-        taxCode: data.taxCode ?? undefined,
-        address: data.address ?? undefined,
-        district: data.district ?? undefined,
-        city: data.city ?? undefined,
-        preferredRegion: data.preferredRegion ?? undefined,
-        notes: data.notes ?? undefined,
+        shortcode: orEmpty(data.shortcode),
+        taxCode: orEmpty(data.taxCode),
+        address: orEmpty(data.address),
+        district: orEmpty(data.district),
+        city: orEmpty(data.city),
+        preferredRegion: orEmpty(data.preferredRegion),
+        notes: orEmpty(data.notes),
       });
       router.push(`/o/customers/${id}`);
     } catch (e) {
