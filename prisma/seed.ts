@@ -39,6 +39,44 @@ function at(date: Date, hour: number, minute = 0): Date {
   return d;
 }
 
+// Filenames in public/sample-images. The seed routes "site photos" for
+// every COMPLETED visit through pickSamplePhotos(visitId, completedAt)
+// so the customer portal visit-detail page always has something to
+// render in the photos grid even before a real technician upload.
+const SAMPLE_IMAGE_FILES = [
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.jpg",
+  "5.jpg",
+  "6.jpg",
+  "7.jpg",
+  "8.jpg",
+] as const;
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (const c of s) h = (h * 31 + (c.codePointAt(0) ?? 0)) >>> 0;
+  return h;
+}
+
+function pickSamplePhotos(
+  visitId: string,
+  completedAt: Date,
+): { url: string; takenAt: string }[] {
+  const h = hashStr(visitId);
+  const n = SAMPLE_IMAGE_FILES.length;
+  const a = h % n;
+  // (a + 1 + extra) % n keeps b distinct from a.
+  const b = (a + 1 + (Math.floor(h / n) % (n - 1))) % n;
+  const before = new Date(completedAt.getTime() - 15 * 60 * 1000).toISOString();
+  const after = new Date(completedAt.getTime() - 5 * 60 * 1000).toISOString();
+  return [
+    { url: `/sample-images/${SAMPLE_IMAGE_FILES[a]}`, takenAt: before },
+    { url: `/sample-images/${SAMPLE_IMAGE_FILES[b]}`, takenAt: after },
+  ];
+}
+
 async function main() {
   console.log("Seeding...");
 
@@ -2167,6 +2205,7 @@ async function main() {
   }
 
   // Past completed periodic inspection (KH00001).
+  const seedVisit001CompletedAt = at(daysFromNow(-30), 11, 0);
   const vCompleted = await ensureVisitWithPhotos("seed-visit-001", {
     customerId: b2c.id,
     equipmentId: b2c.equipment[0].id,
@@ -2177,25 +2216,9 @@ async function main() {
     leadTechnicianId: tech1.id,
     findings: "Đã vệ sinh máy, thay lõi Sediment. Máy hoạt động tốt.",
     startedAt: at(daysFromNow(-30), 10, 15),
-    completedAt: at(daysFromNow(-30), 11, 0),
+    completedAt: seedVisit001CompletedAt,
     partsReplaced: { parts: [{ type: "Sediment", qty: 1 }] },
-    // Two placeholder field photos so the customer portal visit detail
-    // has something to render in the "현장 사진" section. picsum.photos
-    // serves stable images per seed string so the IDs are reproducible
-    // across re-seeds. In production these come from the technician's
-    // visit-complete upload flow.
-    photos: [
-      {
-        url: "https://picsum.photos/seed/seed-visit-001-before/800/600",
-        takenAt: at(daysFromNow(-30), 10, 20).toISOString(),
-        caption: "Tình trạng trước bảo trì",
-      },
-      {
-        url: "https://picsum.photos/seed/seed-visit-001-after/800/600",
-        takenAt: at(daysFromNow(-30), 10, 55).toISOString(),
-        caption: "Sau khi thay lõi và vệ sinh",
-      },
-    ],
+    photos: pickSamplePhotos("seed-visit-001", seedVisit001CompletedAt),
   });
 
   // Today — SCHEDULED periodic inspection (KH00010), tech1 lead + collaborator.
@@ -2261,7 +2284,8 @@ async function main() {
   });
 
   // Completed inspection tied to a completed service request (KH00003).
-  const vCompleted2 = await ensureVisit("seed-visit-006", {
+  const seedVisit006CompletedAt = at(daysFromNow(-10), 13, 45);
+  const vCompleted2 = await ensureVisitWithPhotos("seed-visit-006", {
     customerId: b2c2.id,
     equipmentId: b2c2.equipment[0].id,
     type: "PERIODIC_INSPECTION",
@@ -2270,8 +2294,9 @@ async function main() {
     leadTechnicianId: tech2.id,
     findings: "Kiểm tra định kỳ, không có vấn đề.",
     startedAt: at(daysFromNow(-10), 13, 5),
-    completedAt: at(daysFromNow(-10), 13, 45),
+    completedAt: seedVisit006CompletedAt,
     serviceRequestId: serviceRequests["SR-00005"].id,
+    photos: pickSamplePhotos("seed-visit-006", seedVisit006CompletedAt),
   });
 
   // ─── Bulk visits per state (~50 total, ~7 per VisitState) ──────────────
@@ -2354,9 +2379,11 @@ async function main() {
       };
 
       if (bucket.state === "COMPLETED") {
+        const completedAt = at(daysFromNow(dayOff), hourBase + 1, 0);
         baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
-        baseData.completedAt = at(daysFromNow(dayOff), hourBase + 1, 0);
+        baseData.completedAt = completedAt;
         baseData.findings = `Bulk seed visit #${bulkVisitCounter} — ${vType.toLowerCase()} completed.`;
+        baseData.photos = pickSamplePhotos(id, completedAt);
       } else if (bucket.state === "IN_PROGRESS") {
         baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
       } else if (bucket.state === "FAILED_NO_SHOW") {
@@ -2367,7 +2394,11 @@ async function main() {
         baseData.failureReason = "Khách hủy do thay đổi kế hoạch.";
       }
 
-      await ensureVisit(id, baseData);
+      if (bucket.state === "COMPLETED") {
+        await ensureVisitWithPhotos(id, baseData);
+      } else {
+        await ensureVisit(id, baseData);
+      }
     }
   }
 
@@ -2398,11 +2429,15 @@ async function main() {
       leadTechnicianId: techPick.id,
     };
     if (isPast) {
+      const completedAt = at(daysFromNow(dayOff), hourBase + 1, 5);
       data.startedAt = at(daysFromNow(dayOff), hourBase, 10);
-      data.completedAt = at(daysFromNow(dayOff), hourBase + 1, 5);
+      data.completedAt = completedAt;
       data.findings = `Daily seed visit (${dayOff}) — ${vType.toLowerCase()} completed.`;
+      data.photos = pickSamplePhotos(id, completedAt);
+      await ensureVisitWithPhotos(id, data);
+    } else {
+      await ensureVisit(id, data);
     }
-    await ensureVisit(id, data);
     dailyVisitCounter++;
   }
 
