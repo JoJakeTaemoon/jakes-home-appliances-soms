@@ -47,7 +47,39 @@ export async function getVisitOr404(visitId: string) {
         select: {
           id: true,
           serialNumber: true,
-          model: { select: { id: true, modelCode: true, nameKo: true, nameVi: true, nameEn: true, category: true } },
+          installedAt: true,
+          model: {
+            select: {
+              id: true,
+              modelCode: true,
+              nameKo: true,
+              nameVi: true,
+              nameEn: true,
+              category: true,
+              // Filters / consumables compatible with this model — drives
+              // the technician-facing "scope of work" section so the field
+              // visit detail can show "replace pre-filter / clean post
+              // carbon / etc." right next to the equipment block.
+              consumables: {
+                select: {
+                  quantity: true,
+                  consumable: {
+                    select: {
+                      id: true,
+                      sku: true,
+                      nameKo: true,
+                      nameVi: true,
+                      nameEn: true,
+                      replaceEveryMonths: true,
+                      cleanEveryMonths: true,
+                      cleanOnEveryVisit: true,
+                      isActive: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           site: { select: { id: true, name: true, region: true, address: true } },
         },
       },
