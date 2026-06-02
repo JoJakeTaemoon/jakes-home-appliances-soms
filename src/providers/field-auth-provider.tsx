@@ -235,3 +235,8 @@ export function useFieldAuth() {
   }
   return ctx;
 }
+
+/** Non-throwing variant — see `useOptionalAuth` in auth-provider for rationale. */
+export function useOptionalFieldAuth() {
+  return useContext(FieldAuthContext) ?? null;
+}

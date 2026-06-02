@@ -1,4 +1,4 @@
-import { redirect } from "@/i18n/navigation";
+import { redirect } from "@/i18n/redirect";
 import type { Locale } from "@/i18n/routing";
 
 interface Props {

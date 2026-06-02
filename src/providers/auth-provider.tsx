@@ -207,3 +207,12 @@ export function useAuth() {
   }
   return ctx;
 }
+
+/**
+ * Non-throwing variant. Returns `null` when used outside the office
+ * AuthProvider — useful for cross-realm helpers like `useApi()` that
+ * need to pick whichever realm's access token is currently mounted.
+ */
+export function useOptionalAuth() {
+  return useContext(AuthContext) ?? null;
+}
