@@ -42,6 +42,50 @@ interface PageEnvelope<T> {
 type ApiUrl = string | null | undefined;
 
 /**
+ * Known sensitive query-string keys whose VALUES we redact in the queryKey.
+ * The actual fetch URL still carries the real value — only the cache key
+ * (which is exposed in React Query devtools and is forwarded by some error-
+ * reporting tools) is sanitised. Match is case-insensitive and substring-
+ * based on the key name so `phone`, `phone1`, `customerPhone`, `email`,
+ * `email_2`, `taxCode`, etc. are all covered.
+ */
+const SENSITIVE_KEY_NEEDLES = [
+  "phone",
+  "email",
+  "password",
+  "token",
+  "secret",
+  "taxcode",
+  "idnumber",
+  "passport",
+];
+
+/**
+ * Replace VALUES of any sensitive query-string key in `url` with `***`.
+ * Preserves the path + key names so the prefix-match invalidate predicate
+ * (`/api/customers` matches `/api/customers?phone=***&page=1`) still works.
+ * Returns the input unchanged when there is no query string.
+ */
+function redactPiiInUrl(url: string): string {
+  const qIdx = url.indexOf("?");
+  if (qIdx < 0) return url;
+  const head = url.slice(0, qIdx);
+  const tail = url.slice(qIdx + 1);
+  const redacted = tail
+    .split("&")
+    .map((pair) => {
+      const eqIdx = pair.indexOf("=");
+      if (eqIdx < 0) return pair;
+      const rawKey = pair.slice(0, eqIdx);
+      const keyLower = rawKey.toLowerCase();
+      const isSensitive = SENSITIVE_KEY_NEEDLES.some((n) => keyLower.includes(n));
+      return isSensitive ? `${rawKey}=***` : pair;
+    })
+    .join("&");
+  return `${head}?${redacted}`;
+}
+
+/**
  * GET a JSON envelope and return its `.data` field. Pass `null`/`undefined`
  * as the url to keep the query disabled (e.g. waiting for an id param).
  */
@@ -57,7 +101,7 @@ export function useApiQuery<T>(
   return useQuery<T, ApiClientError, T, readonly [string]>({
     ...options,
     enabled,
-    queryKey: [url ?? ""] as const,
+    queryKey: [url ? redactPiiInUrl(url) : ""] as const,
     queryFn: async () => {
       const env = await api.get<T>(url as string);
       return (env as unknown as PageEnvelope<T>).data;
@@ -91,7 +135,7 @@ export function useApiPageQuery<T>(
   >({
     ...options,
     enabled,
-    queryKey: [url ?? ""] as const,
+    queryKey: [url ? redactPiiInUrl(url) : ""] as const,
     queryFn: async () => {
       const env = await api.get<T>(url as string);
       return env as unknown as PageEnvelope<T>;
