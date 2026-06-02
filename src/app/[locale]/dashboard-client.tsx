@@ -40,11 +40,6 @@ interface PortalPayments {
   outstanding: number;
 }
 
-interface PortalSrListResponse {
-  data: unknown[];
-  pagination: { total: number };
-}
-
 export function DashboardClient() {
   const t = useTranslations("portal.dashboard");
   const locale = useLocale();
@@ -52,8 +47,12 @@ export function DashboardClient() {
 
   const payments = useApiQuery<PortalPayments>("/api/portal/payments");
   const visits = useApiQuery<PortalVisit[]>("/api/portal/visits");
-  const pendingSr = useApiQuery<PortalSrListResponse>(
-    "/api/portal/service-requests?state=PENDING_REVIEW&pageSize=1",
+  // useApiQuery strips the paginatedResponse envelope down to `data` (the
+  // row array), so we cannot read `pagination.total` here. The widget
+  // shows raw count, and 500 is the API's pageSize ceiling — customers
+  // with more than 500 simultaneous pending requests is unrealistic.
+  const pendingSr = useApiQuery<unknown[]>(
+    "/api/portal/service-requests?state=PENDING_REVIEW&pageSize=500",
   );
 
   const upcomingVisitDate = useMemo(() => {
@@ -91,7 +90,7 @@ export function DashboardClient() {
     return future[0]?.scheduledFor ?? null;
   }, [visits.data]);
 
-  const pendingSrCount = pendingSr.data?.pagination.total ?? 0;
+  const pendingSrCount = pendingSr.data?.length ?? 0;
 
   return (
     <div className="space-y-4">
