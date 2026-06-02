@@ -1,10 +1,13 @@
-import { redirect } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
 
-export default async function MobileIndexPage({
+/**
+ * Index of the field (mobile) group — send the technician straight to
+ * the "today" queue.
+ */
+export default async function FieldIndexPage({
   params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+}: Readonly<{ params: Promise<{ locale: string }> }>) {
   const { locale } = await params;
-  redirect(`/${locale}/f/today`);
+  redirect({ href: "/f/today", locale: locale as Locale });
 }

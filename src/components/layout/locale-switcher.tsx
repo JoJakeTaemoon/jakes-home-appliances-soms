@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useLocale } from "next-intl";
-import { useRouter, usePathname } from "@/i18n/navigation";
+import { useRouter, usePathname, getPathname } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
 import { ChevronDown, Globe } from "lucide-react";
 
 const locales = [
@@ -30,8 +31,8 @@ export function LocaleSwitcher() {
 
   const currentLocale = locales.find((l) => l.value === locale);
 
-  const handleLocaleChange = (newLocale: string) => {
-    router.replace({ pathname }, { locale: newLocale });
+  const handleLocaleChange = (newLocale: Locale) => {
+    router.replace(getPathname({ href: pathname, locale: newLocale }));
     setOpen(false);
   };
 
