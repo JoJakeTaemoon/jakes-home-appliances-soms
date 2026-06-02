@@ -27,7 +27,6 @@ function ErrorIcon() {
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
-  const tCommon = useTranslations("common");
   const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -148,10 +147,6 @@ export function LoginForm() {
           {t("forgotPassword")}
         </Link>
       </div>
-
-      <p className="mt-4 text-center text-xs text-[#737373]">
-        {tCommon("welcome")} · Seoul Aqua
-      </p>
     </form>
   );
 }

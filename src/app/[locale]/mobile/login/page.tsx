@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
 import {
@@ -54,20 +55,31 @@ export default function MobileLoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f7f8fb] px-4 py-8">
-      <div className="w-full max-w-sm rounded-xl border border-[#e5e5e5] bg-white p-6 shadow-sm">
-        <header className="mb-5 text-center">
-          <h1 className="text-xl font-semibold text-[#002A4D]">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#FAF6EF] px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex flex-col items-center">
+          <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+            <Image
+              src="/logo/seoul-aqua-logo.jpg"
+              alt="Seoul Aqua"
+              width={64}
+              height={64}
+              priority
+            />
+          </div>
+          <h1 className="text-2xl font-semibold text-[#002A4D]">
             {t("loginTitle")}
           </h1>
-          <p className="mt-1 text-sm text-[#737373]">{t("loginSubtitle")}</p>
-        </header>
+          <p className="mt-1 text-sm text-[#525252]">{t("loginSubtitle")}</p>
+        </div>
+        <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-[0_4px_12px_rgba(0,113,189,0.06)]">
         <form onSubmit={submit} className="flex flex-col gap-3">
           <FormField label={t("loginPhone")} required htmlFor="identifier">
             <Input
               id="identifier"
               autoComplete="username"
               inputMode="tel"
+              placeholder={t("loginPhonePlaceholder")}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               required
@@ -78,6 +90,7 @@ export default function MobileLoginPage() {
               id="password"
               type="password"
               autoComplete="current-password"
+              placeholder={t("loginPasswordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -108,6 +121,7 @@ export default function MobileLoginPage() {
             </Link>
           </div>
         </form>
+        </div>
       </div>
 
       <div className="mt-6 flex justify-center">
