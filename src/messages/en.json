@@ -647,8 +647,12 @@
       "saveError": "Could not save. Try again."
     },
     "contacts": {
-      "title": "Company contacts",
+      "title": "Contacts",
+      "titleB2B": "Company contacts",
+      "titleB2C": "My contacts",
       "addContact": "+ Add contact",
+      "addContactB2B": "+ Add staff member",
+      "addContactB2C": "+ Add family contact",
       "createComingSoon": "Create / edit contacts via the office (portal support lands in a future phase).",
       "loading": "Loading...",
       "loadError": "Could not load contacts.",
@@ -1533,6 +1537,7 @@
     "placeholder": "Type a message…",
     "noMessages": "No messages yet.",
     "you": "You",
-    "office": "Office"
+    "office": "Office",
+    "readOnly": "This request is completed; no further messages can be sent."
   }
 }

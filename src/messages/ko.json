@@ -647,8 +647,12 @@
       "saveError": "저장에 실패했습니다. 다시 시도하세요."
     },
     "contacts": {
-      "title": "회사 연락처",
+      "title": "연락처",
+      "titleB2B": "회사 연락처",
+      "titleB2C": "내 연락처",
       "addContact": "+ 연락처 추가",
+      "addContactB2B": "+ 직원 추가",
+      "addContactB2C": "+ 가족 연락처 추가",
       "createComingSoon": "연락처 생성/수정은 사무실 통해 가능합니다 (이후 단계에서 포털 지원 예정).",
       "loading": "불러오는 중...",
       "loadError": "연락처를 불러오지 못했습니다.",
@@ -1533,6 +1537,7 @@
     "placeholder": "메시지를 입력하세요…",
     "noMessages": "메시지가 없습니다.",
     "you": "고객",
-    "office": "사무실"
+    "office": "사무실",
+    "readOnly": "이 요청은 완료되어 더 이상 메시지를 보낼 수 없습니다."
   }
 }
