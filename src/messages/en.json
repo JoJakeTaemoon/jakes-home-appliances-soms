@@ -121,7 +121,6 @@
     "loading": "Loading…",
     "todaySummary": "Today's summary",
     "noUpcomingVisits": "No upcoming visits",
-    "phasePlaceholder": "Phase 1 — Auth foundation is complete. More features will arrive in later phases.",
     "todayVisits": "Today's visits",
     "todayVisitsAll": "All states",
     "pendingHandover": "Pending cash handover",
@@ -204,7 +203,7 @@
     "reactivateConfirm": "Reactivate {code} ({name})? Equipment status will NOT be automatically restored — review each item separately.",
     "addContact": "Add contact",
     "editContact": "Edit contact",
-    "contactWarning": "Editing the Contract Party affects existing contracts. Outstanding contracts may need to be reissued (Phase 3).",
+    "contactWarning": "Editing the Contract Party affects existing contracts. Outstanding contracts may need to be reissued.",
     "deleteContact": "Disable contact",
     "deleteContactConfirm": "Disable {name}? The record stays for history but portal login will be turned off.",
     "primaryToggle": "Mark as primary OPS contact",
@@ -453,7 +452,7 @@
     "amended": "Amendment applied",
     "renewed": "Renewal draft created",
     "pdfRegenerated": "Contract PDF re-rendered",
-    "emailQueued": "Email queued (mock — Phase 3.5 will send for real)"
+    "emailQueued": "Email queued for delivery."
   },
   "portal": {
     "logout": "Log out",
@@ -519,10 +518,6 @@
       "pendingRequests": "Pending requests",
       "outstanding": "Outstanding",
       "nextFilter": "Next filter change",
-      "phase4": "(Coming in Phase 4)",
-      "phase5": "(Coming in Phase 5)",
-      "phase6": "(Coming in Phase 6)",
-      "comingSoon": "(Coming soon)",
       "recentActivity": "Recent activity",
       "noActivity": "No recent activity."
     },
@@ -545,8 +540,7 @@
       "nextFilters": "Filter schedule"
     },
     "visits": {
-      "title": "Visits",
-      "comingSoon": "Visit scheduling lands in Phase 4."
+      "title": "Visits"
     },
     "requests": {
       "title": "Service requests",

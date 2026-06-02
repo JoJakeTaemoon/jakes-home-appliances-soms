@@ -121,7 +121,6 @@
     "loading": "불러오는 중...",
     "todaySummary": "오늘의 요약",
     "noUpcomingVisits": "예정된 방문이 없습니다",
-    "phasePlaceholder": "Phase 1 — 인증 기초 작업이 완료되었습니다. 추가 기능은 다음 단계에서 제공됩니다.",
     "todayVisits": "오늘의 방문",
     "todayVisitsAll": "전체 상태",
     "pendingHandover": "현금 인계 대기",
@@ -204,7 +203,7 @@
     "reactivateConfirm": "{code} ({name})을(를) 재활성화하시겠습니까? 장비 상태는 자동으로 복원되지 않습니다 — 각각 검토하세요.",
     "addContact": "담당자 추가",
     "editContact": "담당자 수정",
-    "contactWarning": "계약 주체를 변경하면 기존 계약에 영향을 미칩니다. 진행 중인 계약은 재발급이 필요할 수 있습니다 (Phase 3).",
+    "contactWarning": "계약 주체를 변경하면 기존 계약에 영향을 미칩니다. 진행 중인 계약은 재발급이 필요할 수 있습니다.",
     "deleteContact": "담당자 비활성화",
     "deleteContactConfirm": "{name}을(를) 비활성화하시겠습니까? 이력은 유지되지만 포털 로그인은 차단됩니다.",
     "primaryToggle": "주 운영 담당자로 지정",
@@ -453,7 +452,7 @@
     "amended": "수정이 반영되었습니다",
     "renewed": "갱신 초안이 생성되었습니다",
     "pdfRegenerated": "PDF가 재생성되었습니다",
-    "emailQueued": "이메일이 대기열에 추가되었습니다 (Mock — Phase 3.5에서 실제 발송)"
+    "emailQueued": "이메일이 발송 대기열에 추가되었습니다."
   },
   "portal": {
     "logout": "로그아웃",
@@ -519,10 +518,6 @@
       "pendingRequests": "대기 요청",
       "outstanding": "미수금",
       "nextFilter": "다음 필터 교체",
-      "phase4": "(곧 출시 — Phase 4)",
-      "phase5": "(곧 출시 — Phase 5)",
-      "phase6": "(곧 출시 — Phase 6)",
-      "comingSoon": "(개발 중)",
       "recentActivity": "최근 활동",
       "noActivity": "아직 활동이 없습니다."
     },
@@ -545,8 +540,7 @@
       "nextFilters": "필터 교체 일정"
     },
     "visits": {
-      "title": "방문",
-      "comingSoon": "방문 일정은 Phase 4에서 제공됩니다."
+      "title": "방문"
     },
     "requests": {
       "title": "서비스 요청",

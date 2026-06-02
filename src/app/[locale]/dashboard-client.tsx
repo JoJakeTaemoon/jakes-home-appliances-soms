@@ -33,10 +33,16 @@ function StatCard({
 interface PortalVisit {
   scheduledFor: string;
   state: string;
+  type: string;
 }
 
 interface PortalPayments {
   outstanding: number;
+}
+
+interface PortalSrListResponse {
+  data: unknown[];
+  pagination: { total: number };
 }
 
 export function DashboardClient() {
@@ -46,6 +52,9 @@ export function DashboardClient() {
 
   const payments = useApiQuery<PortalPayments>("/api/portal/payments");
   const visits = useApiQuery<PortalVisit[]>("/api/portal/visits");
+  const pendingSr = useApiQuery<PortalSrListResponse>(
+    "/api/portal/service-requests?state=PENDING_REVIEW&pageSize=1",
+  );
 
   const upcomingVisitDate = useMemo(() => {
     const list = visits.data ?? [];
@@ -63,6 +72,26 @@ export function DashboardClient() {
       );
     return future[0]?.scheduledFor ?? null;
   }, [visits.data]);
+
+  const nextFilterDate = useMemo(() => {
+    const list = visits.data ?? [];
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    const future = list
+      .filter(
+        (v) =>
+          v.type === "FILTER_REPLACEMENT" &&
+          v.state === "SCHEDULED" &&
+          new Date(v.scheduledFor).getTime() > now,
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
+      );
+    return future[0]?.scheduledFor ?? null;
+  }, [visits.data]);
+
+  const pendingSrCount = pendingSr.data?.pagination.total ?? 0;
 
   return (
     <div className="space-y-4">
@@ -97,8 +126,7 @@ export function DashboardClient() {
         />
         <StatCard
           label={t("pendingRequests")}
-          value="—"
-          hint={t("phase5")}
+          value={pendingSr.data ? String(pendingSrCount) : "—"}
           href="/requests"
         />
         <StatCard
@@ -110,8 +138,7 @@ export function DashboardClient() {
         />
         <StatCard
           label={t("nextFilter")}
-          value="—"
-          hint={t("comingSoon")}
+          value={nextFilterDate ? formatDate(nextFilterDate, locale) : "—"}
           href="/equipment"
         />
       </div>

@@ -121,7 +121,6 @@
     "loading": "Đang tải...",
     "todaySummary": "Tổng quan hôm nay",
     "noUpcomingVisits": "Không có lượt thăm nào sắp tới",
-    "phasePlaceholder": "Phase 1 — Nền tảng xác thực đã hoàn thành. Các tính năng bổ sung sẽ có ở các phase tiếp theo.",
     "todayVisits": "Lượt thăm hôm nay",
     "todayVisitsAll": "Tất cả trạng thái",
     "pendingHandover": "Chờ bàn giao tiền",
@@ -204,7 +203,7 @@
     "reactivateConfirm": "Kích hoạt lại {code} ({name})? Trạng thái thiết bị KHÔNG được khôi phục tự động — vui lòng kiểm tra từng mục.",
     "addContact": "Thêm liên hệ",
     "editContact": "Sửa liên hệ",
-    "contactWarning": "Việc thay đổi bên ký hợp đồng ảnh hưởng đến hợp đồng hiện có. Hợp đồng đang mở có thể cần phát hành lại (Phase 3).",
+    "contactWarning": "Việc thay đổi bên ký hợp đồng ảnh hưởng đến hợp đồng hiện có. Hợp đồng đang mở có thể cần phát hành lại.",
     "deleteContact": "Vô hiệu hóa liên hệ",
     "deleteContactConfirm": "Vô hiệu hóa {name}? Bản ghi được giữ lại nhưng đăng nhập cổng khách hàng sẽ bị tắt.",
     "primaryToggle": "Đánh dấu là liên hệ vận hành chính",
@@ -453,7 +452,7 @@
     "amended": "Đã áp dụng sửa đổi",
     "renewed": "Đã tạo bản gia hạn nháp",
     "pdfRegenerated": "Đã tạo lại PDF hợp đồng",
-    "emailQueued": "Email đã được xếp hàng (mock — Phase 3.5 sẽ gửi thật)"
+    "emailQueued": "Email đã được xếp hàng gửi."
   },
   "portal": {
     "logout": "Đăng xuất",
@@ -519,10 +518,6 @@
       "pendingRequests": "Yêu cầu chờ",
       "outstanding": "Công nợ",
       "nextFilter": "Thay lõi kế tiếp",
-      "phase4": "(Sắp ra mắt — Phase 4)",
-      "phase5": "(Sắp ra mắt — Phase 5)",
-      "phase6": "(Sắp ra mắt — Phase 6)",
-      "comingSoon": "(Đang phát triển)",
       "recentActivity": "Hoạt động gần đây",
       "noActivity": "Chưa có hoạt động."
     },
@@ -545,8 +540,7 @@
       "nextFilters": "Lịch thay lõi"
     },
     "visits": {
-      "title": "Lịch hẹn",
-      "comingSoon": "Lịch hẹn sẽ có ở Phase 4."
+      "title": "Lịch hẹn"
     },
     "requests": {
       "title": "Yêu cầu dịch vụ",
