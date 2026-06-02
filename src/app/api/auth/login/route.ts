@@ -1,15 +1,19 @@
 /**
  * POST /api/auth/login
  *
- * Verifies username + password, mints a staff access + refresh token,
+ * Verifies username + password, mints an office access + refresh token,
  * writes a Session row, sets cookies, and returns the access token in
  * the body for the React Query client to hold in memory.
  *
- * Implements UC-AU-01 (staff login + lockout) and UC-AU-03 (technician
- * login — same endpoint, role determines later routing).
+ * Cross-realm enforcement: this realm accepts ADMIN / MANAGER / STAFF
+ * only. A TECHNICIAN who lands here gets a 409 ROLE_MISMATCH with a
+ * suggestedUrl pointing at the field login so the form can route the
+ * user without a retype. Mirrors `/api/auth/field/login`.
+ *
+ * Implements UC-AU-01 (office login + lockout).
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
 import { verifyPassword } from "@/lib/auth/password";
@@ -31,6 +35,21 @@ function clientIp(req: NextRequest): string | null {
     req.headers.get("x-real-ip") ||
     null
   );
+}
+
+// docs/URL_SCHEME.md §2.2: field login is `/f/login` (en silent),
+// `/f/ko/login`, `/f/vi/login`. Locale-after-group, en omitted.
+const FIELD_LOGIN_URL_BY_LOCALE: Record<string, string> = {
+  en: "/f/login",
+  ko: "/f/ko/login",
+  vi: "/f/vi/login",
+};
+
+function suggestedFieldUrl(req: NextRequest): string {
+  const referer = req.headers.get("referer") ?? "";
+  const m = /\/(ko|vi|en)\b/.exec(referer);
+  const locale = m?.[1] ?? "en";
+  return FIELD_LOGIN_URL_BY_LOCALE[locale] ?? "/f/login";
 }
 
 export async function POST(request: NextRequest) {
@@ -229,6 +248,35 @@ export async function POST(request: NextRequest) {
         "Invalid credentials",
         401,
         "INVALID_CREDENTIALS",
+      );
+    }
+
+    // ── role gate ──────────────────────────────────────────────────
+    // Credentials are valid but this realm only accepts office staff
+    // (ADMIN / MANAGER / STAFF). TECHNICIAN belongs to the field realm
+    // and gets a 409 + suggested redirect so the form can offer a
+    // single-click jump without a credential retype.
+    if (user.role === "TECHNICIAN") {
+      await logAudit({
+        actorType: "SYSTEM",
+        actorId: user.id,
+        action: "LOGIN_FAILED",
+        entityType: "User",
+        entityId: user.id,
+        after: { realm: "office", reason: "ROLE_MISMATCH", actualRole: user.role },
+        request,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: "This page is for office staff only",
+            code: "ROLE_MISMATCH",
+            suggestedRealm: "field",
+            suggestedUrl: suggestedFieldUrl(request),
+          },
+        },
+        { status: 409 },
       );
     }
 
