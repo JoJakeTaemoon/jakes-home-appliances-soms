@@ -8,8 +8,9 @@
  * cache); saving here invalidates the cache.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -25,28 +26,56 @@ interface Resp {
   defaults: Weights;
 }
 
+interface SliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}
+
+function Slider({ label, value, min, max, onChange, hint }: Readonly<SliderProps>) {
+  return (
+    <FormField label={label}>
+      <div className="flex items-center gap-3">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="flex-1 accent-[var(--brand-blue-500)]"
+        />
+        <span className="w-12 text-right text-sm tabular-nums">{value}</span>
+      </div>
+      {hint && <p className="mt-1 text-[11px] text-[#737373]">{hint}</p>}
+    </FormField>
+  );
+}
+
 export default function SchedulerWeightsPage() {
   const { user } = useAuth();
   const api = useApi();
-  const [data, setData] = useState<Resp | null>(null);
-  const [draft, setDraft] = useState<Weights | null>(null);
+  const query = useApiQuery<Resp>(
+    user?.role === "ADMIN" ? `/api/admin/scheduler-weights` : null,
+  );
+  const data = query.data ?? null;
+  const [draftOverride, setDraftOverride] = useState<Weights | null>(null);
+  const draft = draftOverride ?? data?.current ?? null;
+  const setDraft = (next: Weights) => setDraftOverride(next);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const error =
+    serverError ??
+    (query.error instanceof Error ? query.error.message : null);
+  const setError = setServerError;
   const [saved, setSaved] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get<Resp>(`/api/admin/scheduler-weights`);
-      setData(res.data);
-      setDraft(res.data.current);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (user?.role === "ADMIN") load().catch(() => undefined);
-  }, [user?.role, load]);
+  const load = async () => {
+    await query.refetch();
+    setDraftOverride(null);
+  };
 
   if (user && user.role !== "ADMIN") {
     return (
@@ -77,37 +106,6 @@ export default function SchedulerWeightsPage() {
   const reset = () => {
     setDraft(data.defaults);
   };
-
-  const Slider = ({
-    label,
-    value,
-    min,
-    max,
-    onChange,
-    hint,
-  }: {
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (v: number) => void;
-    hint?: string;
-  }) => (
-    <FormField label={label}>
-      <div className="flex items-center gap-3">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 accent-[var(--brand-blue-500)]"
-        />
-        <span className="w-12 text-right text-sm tabular-nums">{value}</span>
-      </div>
-      {hint && <p className="mt-1 text-[11px] text-[#737373]">{hint}</p>}
-    </FormField>
-  );
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">

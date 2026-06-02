@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
+import { useApiQuery } from "@/lib/api/hooks";
 
 interface Me {
   name: string;
@@ -13,47 +14,56 @@ interface Me {
   emailOptOut: boolean;
 }
 
+interface MeResponse {
+  contact: {
+    name: string;
+    email: string | null;
+    language: "ko" | "vi" | "en";
+    smsOptOut: boolean | null;
+    emailOptOut: boolean | null;
+  };
+}
+
 export function SettingsClient() {
   const t = useTranslations("portal.settings");
   const { accessToken, contact, refresh } = useCustomerAuth();
 
-  const [me, setMe] = useState<Me | null>(null);
+  const meQuery = useApiQuery<MeResponse>(
+    accessToken ? "/api/portal/auth/me" : null,
+  );
+
+  // Initial state mirrors the contact prop; the /me query then enriches it
+  // with the opt-out flags once it resolves. User edits are tracked as
+  // overrides on top, so refetching does not clobber in-flight typing.
+  const baseline = useMemo<Me | null>(() => {
+    if (!contact) return null;
+    const c = meQuery.data?.contact;
+    return {
+      name: c?.name ?? contact.name,
+      email: c?.email ?? contact.email,
+      language: c?.language ?? contact.language,
+      smsOptOut: !!c?.smsOptOut,
+      emailOptOut: !!c?.emailOptOut,
+    };
+  }, [contact, meQuery.data]);
+
+  const [overrides, setOverrides] = useState<Partial<Me>>({});
+  const me = useMemo<Me | null>(
+    () => (baseline ? { ...baseline, ...overrides } : null),
+    [baseline, overrides],
+  );
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!accessToken || !contact) return;
-    setMe({
-      name: contact.name,
-      email: contact.email,
-      language: contact.language,
-      smsOptOut: false,
-      emailOptOut: false,
-    });
-    // Refresh from /me to get smsOptOut/emailOptOut accurately.
-    fetch("/api/portal/auth/me", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success) {
-          const c = json.data.contact;
-          setMe({
-            name: c.name,
-            email: c.email,
-            language: c.language,
-            smsOptOut: !!c.smsOptOut,
-            emailOptOut: !!c.emailOptOut,
-          });
-        }
-      });
-  }, [accessToken, contact]);
-
   if (!me || !contact) {
     return <p className="py-6 text-center text-sm text-[#737373]">{t("loading")}</p>;
   }
+
+  const update = (patch: Partial<Me>) => {
+    setOverrides((prev) => ({ ...prev, ...patch }));
+  };
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +92,7 @@ export function SettingsClient() {
         return;
       }
       setSaved(true);
+      setOverrides({});
       await refresh();
     } finally {
       setSaving(false);
@@ -116,7 +127,7 @@ export function SettingsClient() {
             id="name"
             type="text"
             value={me.name}
-            onChange={(e) => setMe({ ...me, name: e.target.value })}
+            onChange={(e) => update({ name: e.target.value })}
             className="block w-full rounded-md border border-[#e5e5e5] bg-white px-3 h-10 text-sm text-[#000000] outline-none hover:border-[#a3a3a3] focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
           />
         </div>
@@ -128,7 +139,7 @@ export function SettingsClient() {
             id="email"
             type="email"
             value={me.email ?? ""}
-            onChange={(e) => setMe({ ...me, email: e.target.value || null })}
+            onChange={(e) => update({ email: e.target.value || null })}
             className="block w-full rounded-md border border-[#e5e5e5] bg-white px-3 h-10 text-sm text-[#000000] outline-none hover:border-[#a3a3a3] focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
           />
         </div>
@@ -139,7 +150,7 @@ export function SettingsClient() {
           <select
             id="language"
             value={me.language}
-            onChange={(e) => setMe({ ...me, language: e.target.value as Me["language"] })}
+            onChange={(e) => update({ language: e.target.value as Me["language"] })}
             className="block w-full rounded-md border border-[#e5e5e5] bg-white px-3 h-10 text-sm text-[#000000] outline-none hover:border-[#a3a3a3] focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
           >
             <option value="vi">Tiếng Việt</option>
@@ -158,7 +169,7 @@ export function SettingsClient() {
           <input
             type="checkbox"
             checked={me.smsOptOut}
-            onChange={(e) => setMe({ ...me, smsOptOut: e.target.checked })}
+            onChange={(e) => update({ smsOptOut: e.target.checked })}
             className="mt-0.5 size-4 rounded border-[#a3a3a3] text-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
           />
           <span className="text-sm text-[#262626]">{t("smsOptOut")}</span>
@@ -167,7 +178,7 @@ export function SettingsClient() {
           <input
             type="checkbox"
             checked={me.emailOptOut}
-            onChange={(e) => setMe({ ...me, emailOptOut: e.target.checked })}
+            onChange={(e) => update({ emailOptOut: e.target.checked })}
             className="mt-0.5 size-4 rounded border-[#a3a3a3] text-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]"
           />
           <span className="text-sm text-[#262626]">{t("emailOptOut")}</span>

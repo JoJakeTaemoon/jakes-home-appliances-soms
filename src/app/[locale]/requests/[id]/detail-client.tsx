@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { pickModelName } from "@/lib/products/name";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
+import { useApiQuery } from "@/lib/api/hooks";
 import { SrStateBadge, SrTypeBadge } from "@/components/service-requests/sr-state-badge";
 import { Modal } from "@/components/ui/modal";
 import { formatDateTime } from "@/lib/format";
@@ -43,34 +44,16 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
   const locale = useLocale();
   const router = useRouter();
   const { accessToken } = useCustomerAuth();
-  const [sr, setSr] = useState<SrDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const srQuery = useApiQuery<SrDetail>(
+    accessToken ? `/api/portal/service-requests/${id}` : null,
+  );
+  const sr = srQuery.data ?? null;
+  const error = srQuery.error ? t("loadError") : null;
+
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    if (!accessToken) return;
-    try {
-      const res = await fetch(`/api/portal/service-requests/${id}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "include",
-      });
-      const json = await res.json();
-      if (!json.success) {
-        setError(json?.error?.message ?? t("loadError"));
-        return;
-      }
-      setSr(json.data as SrDetail);
-    } catch {
-      setError(t("loadError"));
-    }
-  }, [accessToken, id, t]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function confirmCancel() {
     setCancelling(true);
@@ -91,7 +74,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
         return;
       }
       setShowCancel(false);
-      await load();
+      await srQuery.refetch();
     } catch {
       setCancelError(t("cancelError"));
     } finally {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
 import { Button } from "@/components/ui/button";
@@ -54,41 +55,42 @@ export default function EquipmentDetailPage() {
   const id = params?.id ?? "";
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
-  const router = useRouter();
   const locale = useLocale();
   const api = useApi();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [data, setData] = useState<EquipmentDetail | null>(null);
-  const [sites, setSites] = useState<{ id: string; name: string }[]>([]);
-  const [models, setModels] = useState<{ id: string; modelCode: string; name: string }[]>([]);
-  const [busy, setBusy] = useState(false);
+  const detailQuery = useApiQuery<EquipmentDetail>(
+    id ? `/api/equipment/${id}` : null,
+  );
+  const data = detailQuery.data ?? null;
 
+  const sitesQuery = useApiQuery<{ id: string; name: string }[]>(
+    data && data.customer.type === "B2B"
+      ? `/api/customers/${data.customer.id}/sites`
+      : null,
+  );
+  const sites = sitesQuery.data ?? [];
+
+  const modelsQuery = useApiQuery<
+    { id: string; modelCode: string; name: string }[]
+  >("/api/equipment-models?pageSize=200");
+  const models = modelsQuery.data ?? [];
+
+  const [busy, setBusy] = useState(false);
   const [showRelocate, setShowRelocate] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const [confirmTerminate, setConfirmTerminate] = useState(false);
   const [confirmReactivate, setConfirmReactivate] = useState(false);
 
-  const load = useCallback(async () => {
-    const res = await api.get<EquipmentDetail>(`/api/equipment/${id}`);
-    setData(res.data);
-    if (res.data.customer.type === "B2B") {
-      const sRes = await api.get<{ id: string; name: string }[]>(
-        `/api/customers/${res.data.customer.id}/sites`,
-      );
-      setSites(sRes.data);
-    }
-    const mRes = await api.get<{ id: string; modelCode: string; name: string }[]>(
-      "/api/equipment-models?pageSize=200",
-    );
-    setModels(mRes.data);
-  }, [api, id]);
-
-  useEffect(() => {
-    if (id) void load();
-  }, [id, load]);
+  const load = async () => {
+    await Promise.all([
+      detailQuery.refetch(),
+      sitesQuery.refetch(),
+      modelsQuery.refetch(),
+    ]);
+  };
 
   async function changeStatus(status: string, reason?: string) {
     setBusy(true);
@@ -433,25 +435,11 @@ interface EquipmentContractRow {
 function EquipmentContractsList({ equipmentId }: Readonly<{ equipmentId: string }>) {
   const t = useTranslations("contracts");
   const locale = useLocale();
-  const api = useApi();
-  const [rows, setRows] = useState<EquipmentContractRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    api
-      .get<{ contracts: EquipmentContractRow[] }>(`/api/equipment/${equipmentId}`)
-      .then((res) => {
-        if (!cancelled) setRows(res.data.contracts ?? []);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, equipmentId]);
+  const query = useApiQuery<{ contracts: EquipmentContractRow[] }>(
+    `/api/equipment/${equipmentId}`,
+  );
+  const rows = query.data?.contracts ?? [];
+  const loading = query.isLoading;
 
   if (loading) return null;
   if (rows.length === 0) return null;

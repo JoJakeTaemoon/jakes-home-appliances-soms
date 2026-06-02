@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 // useLayoutEffect on client (runs before paint), useEffect on server (avoids SSR warning)
 const useIsomorphicLayoutEffect =
@@ -82,6 +83,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!user && !!accessToken;
 
@@ -130,8 +132,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       setUser(null);
       setAccessToken(null);
       cacheAuth(null, null);
+      // Drop ALL cached TanStack Query data so the next user on this
+      // device cannot see the previous user's office data until the
+      // staleTime window expires.
+      queryClient.clear();
     }
-  }, []);
+  }, [queryClient]);
 
   const refresh = useCallback(async () => {
     try {
@@ -174,7 +180,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     } else {
       refresh().finally(() => setIsLoading(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Silent refresh every 12 minutes (access TTL is 15min).

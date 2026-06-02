@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
 import { formatDate } from "@/lib/format";
@@ -34,29 +33,14 @@ export default function MobileUpcomingPage() {
 function MobileUpcomingContent() {
   const t = useTranslations("mobile");
   const locale = useLocale();
-  const api = useApi();
-  const [grouped, setGrouped] = useState<Record<string, VisitCard[]>>({});
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<{
+    grouped: Record<string, VisitCard[]>;
+    total: number;
+  }>(`/api/mobile/visits/upcoming`);
+  const grouped = query.data?.grouped ?? {};
+  const total = query.data?.total ?? 0;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<{ grouped: Record<string, VisitCard[]>; total: number }>(
-        `/api/mobile/visits/upcoming`,
-      );
-      setGrouped(res.data.grouped ?? {});
-      setTotal(res.data.total ?? 0);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
 
   return (
     <div className="flex flex-col gap-4">

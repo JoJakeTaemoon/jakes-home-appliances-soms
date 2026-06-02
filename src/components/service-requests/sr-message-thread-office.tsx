@@ -5,9 +5,11 @@
  * endpoint `/api/service-requests/:id/messages`.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 
@@ -22,26 +24,16 @@ interface SrMessage {
 export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
   const t = useTranslations("portalThread");
   const api = useApi();
-  const [messages, setMessages] = useState<SrMessage[]>([]);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get<{ messages: SrMessage[] }>(
-        `/api/service-requests/${srId}/messages`,
-      );
-      setMessages(res.data.messages ?? []);
-    } catch {
-      /* ignore */
-    }
-  }, [api, srId]);
-  useEffect(() => {
-    load();
-    const tick = window.setInterval(load, 30_000);
-    return () => window.clearInterval(tick);
-  }, [load]);
+  const queryUrl = srId ? `/api/service-requests/${srId}/messages` : null;
+  const query = useApiQuery<{ messages: SrMessage[] }>(queryUrl, {
+    refetchInterval: 30_000,
+  });
+  const messages = query.data?.messages ?? [];
+  const qc = useQueryClient();
 
   const send = async () => {
     const trimmed = body.trim();
@@ -49,11 +41,16 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
     setSending(true);
     setError(null);
     try {
-      const res = await api.post<{ messages: SrMessage[] }>(
+      const env = (await api.post<{ messages: SrMessage[] }>(
         `/api/service-requests/${srId}/messages`,
         { body: trimmed },
-      );
-      setMessages(res.data.messages ?? []);
+      )) as unknown as { data: { messages: SrMessage[] } };
+      // Inject POST response (server-authoritative list) so the new
+      // message renders without a refetch flash. The 30s poll handles
+      // drift from concurrent writes by other office users.
+      if (queryUrl && Array.isArray(env.data?.messages)) {
+        qc.setQueryData([queryUrl], { messages: env.data.messages });
+      }
       setBody("");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

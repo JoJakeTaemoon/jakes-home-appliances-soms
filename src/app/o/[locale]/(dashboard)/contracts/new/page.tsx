@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
@@ -22,8 +23,6 @@ interface CustomerOption {
   type: "B2C" | "B2B";
   shortcode: string | null;
 }
-
-interface SiteOption { id: string; name: string }
 
 interface EquipmentOption {
   id: string;
@@ -60,10 +59,8 @@ function NewContractPageInner() {
   const preselectCustomer = sp?.get("customerId") ?? null;
 
   const [step, setStep] = useState(1);
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [customerId, setCustomerId] = useState<string | null>(preselectCustomer);
   const [type, setType] = useState<ContractType | null>(null);
-  const [equipment, setEquipment] = useState<EquipmentOption[]>([]);
   const [lines, setLines] = useState<EquipmentLine[]>([]);
   const [monthlyFee, setMonthlyFee] = useState<number | null>(null);
   const [termMonths, setTermMonths] = useState<number>(36);
@@ -71,65 +68,58 @@ function NewContractPageInner() {
   const [startDate, setStartDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [showAddEquipment, setShowAddEquipment] = useState(false);
 
-  const customer = useMemo(() => customers.find((c) => c.id === customerId) ?? null, [customers, customerId]);
+  const customersQuery = useApiQuery<CustomerOption[]>(
+    "/api/customers?pageSize=200&status=ACTIVE",
+  );
+  const customers = useMemo(
+    () => customersQuery.data ?? [],
+    [customersQuery.data],
+  );
+  const loadingCustomers = customersQuery.isLoading;
 
-  // Load customer list once.
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingCustomers(true);
-    api
-      .get<CustomerOption[]>("/api/customers?pageSize=200&status=ACTIVE")
-      .then((res) => {
-        if (!cancelled) setCustomers(res.data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingCustomers(false);
-      });
-    return () => {
-      cancelled = true;
+  const customer = useMemo(
+    () => customers.find((c) => c.id === customerId) ?? null,
+    [customers, customerId],
+  );
+
+  interface EquipmentApiRow {
+    id: string;
+    model: {
+      modelCode: string | null;
+      nameKo: string | null;
+      nameVi: string | null;
+      nameEn: string | null;
     };
-  }, [api]);
-
-  // Load equipment for current customer.
-  const loadEquipment = useCallback(async () => {
-    if (!customerId) {
-      setEquipment([]);
-      return;
-    }
-    setLoadingEquipment(true);
-    try {
-      const res = await api.get<Array<{
-        id: string;
-        model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
-        serialNumber: string | null;
-        siteId: string | null;
-        site: { id: string; name: string } | null;
-      }>>(`/api/equipment?customerId=${customerId}&status=ACTIVE&pageSize=200`);
-      setEquipment(
-        res.data.map((e) => ({
-          id: e.id,
-          modelCode: pickModelName(e.model, locale),
-          modelName: pickModelName(e.model, locale),
-          serialNumber: e.serialNumber,
-          siteId: e.siteId,
-          site: e.site,
-        })),
-      );
-    } finally {
-      setLoadingEquipment(false);
-    }
-  }, [api, customerId]);
-
-  useEffect(() => {
-    void loadEquipment();
-  }, [loadEquipment]);
+    serialNumber: string | null;
+    siteId: string | null;
+    site: { id: string; name: string } | null;
+  }
+  const equipmentQuery = useApiQuery<EquipmentApiRow[]>(
+    customerId
+      ? `/api/equipment?customerId=${customerId}&status=ACTIVE&pageSize=200`
+      : null,
+  );
+  const equipment = useMemo<EquipmentOption[]>(
+    () =>
+      (equipmentQuery.data ?? []).map((e) => ({
+        id: e.id,
+        modelCode: pickModelName(e.model, locale),
+        modelName: pickModelName(e.model, locale),
+        serialNumber: e.serialNumber,
+        siteId: e.siteId,
+        site: e.site,
+      })),
+    [equipmentQuery.data, locale],
+  );
+  const loadingEquipment = equipmentQuery.isLoading;
+  const loadEquipment = async () => {
+    await equipmentQuery.refetch();
+  };
 
   function addLine(equipmentId: string) {
     setLines((prev) =>
@@ -251,8 +241,12 @@ function NewContractPageInner() {
       {showNewCustomer && (
         <NewCustomerQuickModal
           onClose={() => setShowNewCustomer(false)}
-          onCreated={(created) => {
-            setCustomers((prev) => [created, ...prev]);
+          onCreated={async (created) => {
+            // Await refetch so `customers` includes the new row BEFORE we
+            // select it — otherwise `customer = customers.find(...)`
+            // returns null and Step 2 (equipment picker) silently shows
+            // "no customer" until the in-flight refetch resolves.
+            await customersQuery.refetch();
             setCustomerId(created.id);
             setLines([]);
             setShowNewCustomer(false);
@@ -701,8 +695,6 @@ function AddEquipmentQuickModal({
     name: string;
   }
 
-  const [models, setModels] = useState<ModelOpt[]>([]);
-  const [sites, setSites] = useState<SiteOpt[]>([]);
   const [modelId, setModelId] = useState<string | null>(null);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState("");
@@ -713,41 +705,15 @@ function AddEquipmentQuickModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await api.get<ModelOpt[]>(
-          "/api/equipment-models?pageSize=200&isActive=true",
-        );
-        if (!cancelled) setModels(res.data ?? []);
-      } catch {
-        if (!cancelled) setModels([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [api]);
+  const modelsQuery = useApiQuery<ModelOpt[]>(
+    "/api/equipment-models?pageSize=200&isActive=true",
+  );
+  const models = modelsQuery.data ?? [];
 
-  useEffect(() => {
-    if (customerType !== "B2B") {
-      setSites([]);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await api.get<SiteOpt[]>(`/api/customers/${customerId}/sites`);
-        if (!cancelled) setSites(res.data ?? []);
-      } catch {
-        if (!cancelled) setSites([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId, customerType]);
+  const sitesQuery = useApiQuery<SiteOpt[]>(
+    customerType === "B2B" ? `/api/customers/${customerId}/sites` : null,
+  );
+  const sites = sitesQuery.data ?? [];
 
   async function submit() {
     if (!modelId) return;

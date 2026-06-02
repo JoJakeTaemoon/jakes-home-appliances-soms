@@ -4,7 +4,7 @@
  * UC-RP-04 — A/R aging.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   PieChart,
@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Link } from "@/i18n/navigation";
 import { formatVnd } from "@/lib/format";
 
@@ -48,23 +48,10 @@ const BUCKET_COLORS: Record<Bucket, string> = {
 
 export default function AgingReportPage() {
   const t = useTranslations("reports.aging");
-  const api = useApi();
-  const [data, setData] = useState<AgingResp | null>(null);
-  const [loading, setLoading] = useState(false);
+  const query = useApiQuery<AgingResp>(`/api/reports/aging`);
+  const data = query.data ?? null;
+  const loading = query.isLoading;
   const [filter, setFilter] = useState<Bucket | "all">("all");
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<AgingResp>(`/api/reports/aging`);
-      setData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
 
   const pieData = (["current", "1-7", "8-14", "15-30", "30+"] as Bucket[]).map(
     (b) => ({

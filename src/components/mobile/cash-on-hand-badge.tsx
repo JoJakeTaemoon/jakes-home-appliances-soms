@@ -53,7 +53,10 @@ export function CashOnHandBadge() {
       ? "border-amber-500 bg-amber-50 text-amber-800"
       : "border-[var(--brand-blue-500)] bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]";
 
-  // Deadline = oldest collection + 48h, formatted as locale time
+  // Deadline = oldest collection + 48h, formatted as locale time. The
+  // badge is intended to show "the deadline as of right now"; recomputing
+  // on render is desired (see react-hooks/purity disable below).
+  // eslint-disable-next-line react-hooks/purity
   const deadline = new Date(Date.now() + (48 - hours) * 60 * 60 * 1000);
   const deadlineStr = deadline.toLocaleString(undefined, {
     month: "2-digit",

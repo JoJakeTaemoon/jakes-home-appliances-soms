@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
@@ -27,25 +28,25 @@ export default function RenewContractPage() {
   const router = useRouter();
   const api = useApi();
 
-  const [contract, setContract] = useState<ContractRow | null>(null);
-  const [monthlyFee, setMonthlyFee] = useState<number>(0);
-  const [term, setTerm] = useState<number>(12);
+  const contractQuery = useApiQuery<ContractRow>(
+    id ? `/api/contracts/${id}` : null,
+  );
+  const contract = contractQuery.data ?? null;
+
+  const [monthlyFeeOverride, setMonthlyFeeOverride] = useState<number | null>(null);
+  const [termOverride, setTermOverride] = useState<number | null>(null);
   const [newType, setNewType] = useState<"RENTAL" | "MAINTENANCE">("MAINTENANCE");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const res = await api.get<ContractRow>(`/api/contracts/${id}`);
-    setContract(res.data);
-    if (res.data.monthlyMaintenanceFee !== null) setMonthlyFee(Number(res.data.monthlyMaintenanceFee));
-    if (res.data.termMonths !== null) setTerm(res.data.termMonths);
-    if (res.data.type === "RENTAL") setNewType("MAINTENANCE");
-    else if (res.data.type === "MAINTENANCE") setNewType("MAINTENANCE");
-  }, [api, id]);
-
-  useEffect(() => {
-    if (id) void load();
-  }, [id, load]);
+  const monthlyFee =
+    monthlyFeeOverride ??
+    (contract?.monthlyMaintenanceFee !== null && contract?.monthlyMaintenanceFee !== undefined
+      ? Number(contract.monthlyMaintenanceFee)
+      : 0);
+  const term = termOverride ?? contract?.termMonths ?? 12;
+  const setMonthlyFee = (v: number) => setMonthlyFeeOverride(v);
+  const setTerm = (v: number) => setTermOverride(v);
 
   if (!contract) return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
 

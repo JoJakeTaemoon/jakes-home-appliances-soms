@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,6 @@ export default function ContractsPage() {
   const t = useTranslations("contracts");
   const router = useRouter();
   const locale = useLocale();
-  const api = useApi();
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebounced(q, 300);
@@ -54,44 +53,73 @@ export default function ContractsPage() {
   const [startDateFrom, setStartDateFrom] = useState("");
   const [startDateTo, setStartDateTo] = useState("");
 
-  const [rows, setRows] = useState<ContractRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+
+  // Filter setters that also reset to page 1 so a filter change while on
+  // page N doesn't request a stale paginated slice.
+  const onQ = (v: string) => {
+    setQ(v);
+    setPage(1);
+  };
+  const onTypeFilter = (v: "SALE" | "RENTAL" | "MAINTENANCE" | null) => {
+    setTypeFilter(v);
+    setPage(1);
+  };
+  const onStateFilter = (v: string | null) => {
+    setStateFilter(v);
+    setPage(1);
+  };
+  const onCustomerTypeFilter = (v: "B2C" | "B2B" | null) => {
+    setCustomerTypeFilter(v);
+    setPage(1);
+  };
+  const onStartDateFrom = (v: string) => {
+    setStartDateFrom(v);
+    setPage(1);
+  };
+  const onStartDateTo = (v: string) => {
+    setStartDateTo(v);
+    setPage(1);
+  };
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "createdAt",
     direction: "desc",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      sp.set("page", String(page));
-      sp.set("pageSize", String(PAGE_SIZE));
-      if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
-      if (typeFilter) sp.set("type", typeFilter);
-      if (stateFilter) sp.set("state", stateFilter);
-      if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
-      if (startDateFrom) sp.set("startDateFrom", new Date(startDateFrom).toISOString());
-      if (startDateTo) sp.set("startDateTo", new Date(`${startDateTo}T23:59:59`).toISOString());
-      if (sort) {
-        sp.set("sortBy", sort.column);
-        sp.set("sortDir", sort.direction);
-      }
-
-      const res = await api.get<ContractRow[]>(`/api/contracts?${sp.toString()}`);
-      setRows(res.data);
-      const pag = (res as { pagination?: { total: number } }).pagination;
-      setTotal(pag?.total ?? res.data.length);
-    } finally {
-      setLoading(false);
+  const url = useMemo(() => {
+    const sp = new URLSearchParams();
+    sp.set("page", String(page));
+    sp.set("pageSize", String(PAGE_SIZE));
+    if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
+    if (typeFilter) sp.set("type", typeFilter);
+    if (stateFilter) sp.set("state", stateFilter);
+    if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
+    if (startDateFrom)
+      sp.set("startDateFrom", new Date(startDateFrom).toISOString());
+    if (startDateTo)
+      sp.set("startDateTo", new Date(`${startDateTo}T23:59:59`).toISOString());
+    if (sort) {
+      sp.set("sortBy", sort.column);
+      sp.set("sortDir", sort.direction);
     }
-  }, [api, page, debouncedQ, typeFilter, stateFilter, customerTypeFilter, startDateFrom, startDateTo, sort]);
+    return `/api/contracts?${sp.toString()}`;
+  }, [
+    page,
+    debouncedQ,
+    typeFilter,
+    stateFilter,
+    customerTypeFilter,
+    startDateFrom,
+    startDateTo,
+    sort,
+  ]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const query = useApiPageQuery<ContractRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total =
+    (query.data?.pagination as { total?: number } | undefined)?.total ??
+    rows.length;
+  const loading = query.isLoading;
 
   // Compute renewal-due threshold (60 days from today).
   const renewalThreshold = new Date();
@@ -199,14 +227,14 @@ export default function ContractsPage() {
               <Input
                 placeholder={t("searchPlaceholder")}
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => onQ(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#525252]">
               {t("filterType")}
               <Combobox
                 value={typeFilter}
-                onChange={(v) => setTypeFilter((v as "SALE" | "RENTAL" | "MAINTENANCE" | null) ?? null)}
+                onChange={(v) => onTypeFilter((v as "SALE" | "RENTAL" | "MAINTENANCE" | null) ?? null)}
                 options={[
                   { value: "SALE", label: t("types.SALE") },
                   { value: "RENTAL", label: t("types.RENTAL") },
@@ -220,7 +248,7 @@ export default function ContractsPage() {
               {t("filterCustomerType")}
               <Combobox
                 value={customerTypeFilter}
-                onChange={(v) => setCustomerTypeFilter((v as "B2C" | "B2B" | null) ?? null)}
+                onChange={(v) => onCustomerTypeFilter((v as "B2C" | "B2B" | null) ?? null)}
                 options={[
                   { value: "B2C", label: "B2C" },
                   { value: "B2B", label: "B2B" },
@@ -233,7 +261,7 @@ export default function ContractsPage() {
               {t("filterState")}
               <Combobox
                 value={stateFilter}
-                onChange={(v) => setStateFilter(v)}
+                onChange={onStateFilter}
                 options={[
                   { value: "DRAFT", label: t("states.DRAFT") },
                   { value: "PENDING_SIGNATURE", label: t("states.PENDING_SIGNATURE") },
@@ -252,7 +280,7 @@ export default function ContractsPage() {
               <Input
                 type="date"
                 value={startDateFrom}
-                onChange={(e) => setStartDateFrom(e.target.value)}
+                onChange={(e) => onStartDateFrom(e.target.value)}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[#525252]">
@@ -260,7 +288,7 @@ export default function ContractsPage() {
               <Input
                 type="date"
                 value={startDateTo}
-                onChange={(e) => setStartDateTo(e.target.value)}
+                onChange={(e) => onStartDateTo(e.target.value)}
               />
             </label>
           </div>

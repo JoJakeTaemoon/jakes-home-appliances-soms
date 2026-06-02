@@ -4,7 +4,7 @@
  * UC-RP-05 — Customer churn (quarterly).
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   BarChart,
@@ -15,7 +15,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Link } from "@/i18n/navigation";
 import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
@@ -43,27 +43,15 @@ interface ChurnResp {
 
 export default function ChurnReportPage() {
   const t = useTranslations("reports.churn");
-  const api = useApi();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getUTCFullYear());
   const [quarter, setQuarter] = useState<number>(
     Math.floor(now.getUTCMonth() / 3) + 1,
   );
-  const [data, setData] = useState<ChurnResp | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get<ChurnResp>(
-        `/api/reports/churn?year=${year}&quarter=${quarter}`,
-      );
-      setData(res.data);
-    } catch {
-      setData(null);
-    }
-  }, [api, year, quarter]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiQuery<ChurnResp>(
+    `/api/reports/churn?year=${year}&quarter=${quarter}`,
+  );
+  const data = query.data ?? null;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,8 @@ export default function NewVisitPage() {
   const router = useRouter();
   const api = useApi();
 
-  const [customers, setCustomers] = useState<CustomerLite[]>([]);
   const [customerId, setCustomerId] = useState<string | null>(null);
-  const [sites, setSites] = useState<SiteLite[]>([]);
   const [siteId, setSiteId] = useState<string | null>(null);
-  const [equipment, setEquipment] = useState<EquipmentLite[]>([]);
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
   const [type, setType] = useState<string>("PERIODIC_INSPECTION");
   const [scheduledFor, setScheduledFor] = useState<string>("");
@@ -47,45 +45,27 @@ export default function NewVisitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load customers (paginated; first 100 is enough for picker — search via combobox).
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get<CustomerLite[]>("/api/customers?pageSize=100")
-      .then((res) => {
-        if (!cancelled) setCustomers(res.data);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [api]);
+  const customersQuery = useApiQuery<CustomerLite[]>(
+    "/api/customers?pageSize=100",
+  );
+  const customers = useMemo(() => customersQuery.data ?? [], [customersQuery.data]);
+  const customerSitesQuery = useApiQuery<{ sites: SiteLite[] }>(
+    customerId ? `/api/customers/${customerId}` : null,
+  );
+  const customerEquipmentQuery = useApiQuery<EquipmentLite[]>(
+    customerId
+      ? `/api/equipment?customerId=${customerId}&pageSize=100`
+      : null,
+  );
+  const sites = customerSitesQuery.data?.sites ?? [];
+  const equipment = customerEquipmentQuery.data ?? [];
 
-  // Load sites + equipment when customer changes.
-  useEffect(() => {
-    if (!customerId) {
-      setSites([]);
-      setEquipment([]);
-      setSiteId(null);
-      setEquipmentId(null);
-      return;
-    }
-    let cancelled = false;
-    Promise.all([
-      api.get<{ sites: SiteLite[] }>(`/api/customers/${customerId}`),
-      api.get<EquipmentLite[]>(`/api/equipment?customerId=${customerId}&pageSize=100`),
-    ])
-      .then(([cRes, eRes]) => {
-        if (cancelled) return;
-        const customer = cRes.data as unknown as { sites: SiteLite[] };
-        setSites(customer?.sites ?? []);
-        setEquipment(eRes.data);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId]);
+  // Reset child selections when customer changes — wrap setCustomerId.
+  const onCustomerChange = (id: string | null) => {
+    setCustomerId(id);
+    setSiteId(null);
+    setEquipmentId(null);
+  };
 
   const customerOptions: ComboboxOption[] = useMemo(
     () =>
@@ -138,7 +118,7 @@ export default function NewVisitPage() {
         <FormField label={t("createForm.customer")} required>
           <Combobox
             value={customerId}
-            onChange={setCustomerId}
+            onChange={onCustomerChange}
             options={customerOptions}
             placeholder={t("createForm.customerPick")}
             searchable

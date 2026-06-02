@@ -8,9 +8,11 @@
  * (action='SR_MESSAGE') — no new schema table.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
+import { useApiQuery } from "@/lib/api/hooks";
 
 interface SrMessage {
   id: string;
@@ -23,7 +25,6 @@ interface SrMessage {
 export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
   const t = useTranslations("portalThread");
   const { accessToken } = useCustomerAuth();
-  const [messages, setMessages] = useState<SrMessage[]>([]);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,28 +34,15 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
   };
   if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/portal/service-requests/${srId}/messages`, {
-        method: "GET",
-        credentials: "include",
-        headers,
-      });
-      const json = await res.json();
-      if (json?.success && Array.isArray(json.data?.messages)) {
-        setMessages(json.data.messages);
-      }
-    } catch {
-      /* keep stale snapshot */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [srId, accessToken]);
-
-  useEffect(() => {
-    load();
-    const tick = window.setInterval(load, 30_000);
-    return () => window.clearInterval(tick);
-  }, [load]);
+  // Polls every 30s so customer sees new office replies without refresh.
+  const queryUrl = srId
+    ? `/api/portal/service-requests/${srId}/messages`
+    : null;
+  const query = useApiQuery<{ messages: SrMessage[] }>(queryUrl, {
+    refetchInterval: 30_000,
+  });
+  const messages = query.data?.messages ?? [];
+  const qc = useQueryClient();
 
   const send = async () => {
     const trimmed = body.trim();
@@ -72,7 +60,13 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
       if (!res.ok || !json.success) {
         throw new Error(json?.error?.message ?? "Failed");
       }
-      setMessages(json.data.messages ?? []);
+      // The POST response already contains the authoritative message
+      // list (server reads after the INSERT commit). Inject it into the
+      // query cache so the UI updates without a refetch flash; the 30s
+      // poll handles drift from concurrent writes by other contacts.
+      if (queryUrl && Array.isArray(json.data?.messages)) {
+        qc.setQueryData([queryUrl], { messages: json.data.messages });
+      }
       setBody("");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

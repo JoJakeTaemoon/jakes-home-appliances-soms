@@ -36,7 +36,7 @@ const ring: MockDispatchEvent[] = [];
 // reload would create a fresh emitter and existing browser tabs would
 // silently fall off.
 declare global {
-  // eslint-disable-next-line no-var
+
   var __SA_MOCK_BUS__: EventEmitter | undefined;
 }
 

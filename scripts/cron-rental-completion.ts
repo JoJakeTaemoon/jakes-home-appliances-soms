@@ -14,7 +14,7 @@ async function main() {
   const start = Date.now();
   const summary = await runRentalCompletionCheck();
   const elapsedMs = Date.now() - start;
-  // eslint-disable-next-line no-console
+
   console.log(
     JSON.stringify(
       {
@@ -31,7 +31,7 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((err) => {
-    // eslint-disable-next-line no-console
+
     console.error("[cron-rental-completion] failed:", err);
     process.exit(1);
   });

@@ -9,7 +9,8 @@
  * or walked into the office.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
@@ -51,57 +52,32 @@ export default function ServiceRequestNewPage() {
   const router = useRouter();
   const api = useApi();
 
-  const [customers, setCustomers] = useState<CustomerOpt[]>([]);
-  const [customerId, setCustomerId] = useState<string | null>(null);
-
-  const [contacts, setContacts] = useState<ContactOpt[]>([]);
+  const [customerId, setCustomerIdRaw] = useState<string | null>(null);
   const [contactId, setContactId] = useState<string | null>(null);
-
-  const [equipment, setEquipment] = useState<EquipmentOpt[]>([]);
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
-
   const [type, setType] = useState<SrType>("INSPECTION");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Load active customers once; combobox handles in-list search.
-  useEffect(() => {
-    void (async () => {
-      try {
-        const res = await api.get<CustomerOpt[]>(`/api/customers?pageSize=500&status=ACTIVE`);
-        setCustomers(res.data);
-      } catch {
-        setCustomers([]);
-      }
-    })();
-  }, [api]);
+  const customersQuery = useApiQuery<CustomerOpt[]>(
+    `/api/customers?pageSize=500&status=ACTIVE`,
+  );
+  const customers = customersQuery.data ?? [];
 
-  // When a customer is picked, load their contacts + equipment.
-  const loadCustomerScoped = useCallback(async (id: string) => {
-    try {
-      const detail = await api.get<{
-        contacts: ContactOpt[];
-        equipment: EquipmentOpt[];
-      }>(`/api/customers/${id}`);
-      setContacts(detail.data.contacts ?? []);
-      setEquipment(detail.data.equipment ?? []);
-    } catch {
-      setContacts([]);
-      setEquipment([]);
-    }
-  }, [api]);
+  const customerDetailQuery = useApiQuery<{
+    contacts: ContactOpt[];
+    equipment: EquipmentOpt[];
+  }>(customerId ? `/api/customers/${customerId}` : null);
+  const contacts = customerDetailQuery.data?.contacts ?? [];
+  const equipment = customerDetailQuery.data?.equipment ?? [];
 
-  useEffect(() => {
-    if (customerId) {
-      void loadCustomerScoped(customerId);
-      setContactId(null);
-      setEquipmentId(null);
-    } else {
-      setContacts([]);
-      setEquipment([]);
-    }
-  }, [customerId, loadCustomerScoped]);
+  // Clear contact/equipment picks when the customer changes.
+  const setCustomerId = (id: string | null) => {
+    setCustomerIdRaw(id);
+    setContactId(null);
+    setEquipmentId(null);
+  };
 
   async function submit() {
     if (!customerId) return;

@@ -9,7 +9,7 @@
  * login — same endpoint, role determines later routing).
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators/auth";
 import { verifyPassword } from "@/lib/auth/password";
@@ -83,13 +83,24 @@ export async function POST(request: NextRequest) {
       lockedUntil: Date | null;
     };
     let user: UserRecord | null = null;
+    let ambiguousUsername = false;
     if (username) {
-      // username is no longer @unique (it's a display label). Use findFirst
-      // so the back-compat path still resolves the first matching row.
-      user = (await prisma.user.findFirst({
+      // username is no longer @unique (it's a display label) — phone is the
+      // canonical login key. We still accept username for back-compat, but
+      // fail-closed if more than one row matches so an attacker can't
+      // authenticate as an arbitrary staff member that happens to share a
+      // label. Both branches return the generic INVALID_CREDENTIALS error so
+      // we don't leak whether the ambiguity exists.
+      const matches = (await prisma.user.findMany({
         where: { username },
         select: userSelect,
-      })) as UserRecord | null;
+        take: 2,
+      })) as UserRecord[];
+      if (matches.length > 1) {
+        ambiguousUsername = true;
+      } else if (matches.length === 1) {
+        user = matches[0];
+      }
     } else if (normalizedPhone) {
       user = (await prisma.user.findUnique({
         where: { phone: normalizedPhone },
@@ -100,8 +111,9 @@ export async function POST(request: NextRequest) {
     // Identifier used downstream for LoginAttempt / audit trail.
     const identifier = username ?? normalizedPhone ?? "(unknown)";
 
-    // Unknown username/phone path — record attempt for forensics but use a
-    // generic error so we don't leak existence of accounts.
+    // Unknown username/phone OR ambiguous username — record attempt for
+    // forensics but return the same generic error in both cases so we don't
+    // leak whether the username is unknown vs. shared.
     if (!user) {
       await recordLoginAttempt({
         username: identifier,
@@ -113,7 +125,10 @@ export async function POST(request: NextRequest) {
         actorType: "SYSTEM",
         action: "LOGIN_FAILED",
         entityType: "User",
-        after: { identifier, reason: "UNKNOWN_USERNAME" },
+        after: {
+          identifier,
+          reason: ambiguousUsername ? "AMBIGUOUS_USERNAME" : "UNKNOWN_USERNAME",
+        },
         request,
       });
       return errorResponse(

@@ -57,7 +57,7 @@ export async function prepareRenewal(
   // we don't collide on the unique contractNumber index.
   let newCode = baseCode;
   let renewalSuffix = 0;
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     const collision = await prisma.contract.findUnique({
       where: { contractNumber: newCode },

@@ -570,6 +570,10 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   }, [api]);
 
   useEffect(() => {
+    // Brands tab loads its own list on mount and after mutations. The page
+    // is too coupled (delete/edit modals share the load() handle) to migrate
+    // to useApiQuery in this pass — tracked for a future follow-up.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -755,6 +759,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     }
   }, [api]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   async function submitCreate() {
@@ -955,6 +960,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     }
   }, [api]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   const filtered = useMemo(
@@ -970,7 +976,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         category: (r) => r.category ?? "",
         isActive: (r) => r.isActive,
       }),
-    [filtered, sort],
+    [filtered, sort, locale],
   );
 
   return (
@@ -1140,6 +1146,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     }
   }, [api]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   async function submitCreate() {
@@ -1195,7 +1202,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       models
         .filter((m) => !brandFilter || m.brand?.id === brandFilter)
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
-    [models, brandFilter],
+    [models, brandFilter, locale],
   );
 
   const sorted = useMemo(
@@ -1482,6 +1489,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     }
   }, [api]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   async function submitCreate() {
@@ -1525,7 +1533,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       models
         .filter((m) => !brandFilter || m.brand?.id === brandFilter)
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
-    [models, brandFilter],
+    [models, brandFilter, locale],
   );
 
   const sorted = useMemo(

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,59 +42,53 @@ export default function CustomersPage() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const router = useRouter();
-  const api = useApi();
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebounced(q, 300);
   const [type, setType] = useState<"B2C" | "B2B" | null>(null);
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "PROSPECT" | null>(null);
   const [page, setPage] = useState(1);
-  const [rows, setRows] = useState<CustomerRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "code",
     direction: "asc",
   });
 
-  // Reset to page 1 when filters/search change.
-  useEffect(() => {
+  // Reset to page 1 when any filter changes. Folded into the filter
+  // setters via wrapper handlers so we don't need a useEffect that
+  // setStates from another setState (set-state-in-effect rule).
+  const onQ = (v: string) => {
+    setQ(v);
     setPage(1);
-  }, [debouncedQ, type, status]);
+  };
+  const onType = (v: "B2C" | "B2B" | null) => {
+    setType(v);
+    setPage(1);
+  };
+  const onStatus = (v: "ACTIVE" | "INACTIVE" | "PROSPECT" | null) => {
+    setStatus(v);
+    setPage(1);
+  };
 
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      setLoading(true);
-      setError(null);
-      try {
-        const qs = new URLSearchParams();
-        if (debouncedQ) qs.set("q", debouncedQ);
-        if (type) qs.set("type", type);
-        if (status) qs.set("status", status);
-        if (sort) {
-          qs.set("sortBy", sort.column);
-          qs.set("sortDir", sort.direction);
-        }
-        qs.set("page", String(page));
-        qs.set("pageSize", String(PAGE_SIZE));
-        const res = await api.get<CustomerRow[]>(`/api/customers?${qs.toString()}`);
-        if (cancelled) return;
-        setRows(res.data);
-        const pag = (res as unknown as { pagination?: { total: number } }).pagination;
-        setTotal(pag?.total ?? res.data.length);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const url = useMemo(() => {
+    const qs = new URLSearchParams();
+    if (debouncedQ) qs.set("q", debouncedQ);
+    if (type) qs.set("type", type);
+    if (status) qs.set("status", status);
+    if (sort) {
+      qs.set("sortBy", sort.column);
+      qs.set("sortDir", sort.direction);
     }
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, debouncedQ, type, status, page, sort]);
+    qs.set("page", String(page));
+    qs.set("pageSize", String(PAGE_SIZE));
+    return `/api/customers?${qs.toString()}`;
+  }, [debouncedQ, type, status, page, sort]);
+
+  const query = useApiPageQuery<CustomerRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total = (query.data?.pagination as { total?: number } | undefined)?.total ?? rows.length;
+  const loading = query.isLoading;
+  const error =
+    query.error instanceof Error ? query.error.message : null;
 
   const columns = useMemo<Column<CustomerRow>[]>(
     () => [
@@ -192,14 +186,14 @@ export default function CustomersPage() {
             <div className="flex-1">
               <Input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => onQ(e.target.value)}
                 placeholder={t("searchPlaceholder")}
               />
             </div>
             <div className="w-full sm:w-44">
               <Combobox
                 value={type}
-                onChange={(v) => setType(v as "B2C" | "B2B" | null)}
+                onChange={(v) => onType(v as "B2C" | "B2B" | null)}
                 options={[
                   { value: "B2C", label: "B2C" },
                   { value: "B2B", label: "B2B" },
@@ -212,7 +206,7 @@ export default function CustomersPage() {
               <Combobox
                 value={status}
                 onChange={(v) =>
-                  setStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)
+                  onStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)
                 }
                 options={[
                   { value: "ACTIVE", label: "ACTIVE" },

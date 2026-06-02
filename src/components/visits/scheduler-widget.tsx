@@ -10,9 +10,10 @@
  * Pulls candidates from GET /api/visits/recommend.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -58,9 +59,6 @@ export function SchedulerWidget({
 }: Readonly<Props>) {
   const t = useTranslations("visits");
   const api = useApi();
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [allTechs, setAllTechs] = useState<TechOption[]>([]);
-  const [loading, setLoading] = useState(false);
   const [pickedLead, setPickedLead] = useState<string | null>(
     leadTechnicianId,
   );
@@ -70,41 +68,27 @@ export function SchedulerWidget({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadRecommendations = useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams({
-        customerId,
-        scheduledFor,
-        maxResults: "3",
-      });
-      if (siteId) sp.set("siteId", siteId);
-      const res = await api.get<Candidate[]>(
-        `/api/visits/recommend?${sp.toString()}`,
-      );
-      setCandidates(res.data);
-    } catch {
-      setCandidates([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, customerId, siteId, scheduledFor]);
+  const enabled = state === "SUGGESTED" || state === "SCHEDULED";
+  const recommendUrl = useMemo(() => {
+    const sp = new URLSearchParams({
+      customerId,
+      scheduledFor,
+      maxResults: "3",
+    });
+    if (siteId) sp.set("siteId", siteId);
+    return `/api/visits/recommend?${sp.toString()}`;
+  }, [customerId, scheduledFor, siteId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (state === "SUGGESTED" || state === "SCHEDULED") {
-      loadRecommendations().catch(() => undefined);
-      api
-        .get<TechOption[]>(`/api/users?role=TECHNICIAN&pageSize=100`)
-        .then((res) => {
-          if (!cancelled) setAllTechs(res.data);
-        })
-        .catch(() => undefined);
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [api, state, loadRecommendations]);
+  const candidatesQuery = useApiQuery<Candidate[]>(
+    enabled ? recommendUrl : null,
+  );
+  const candidates = candidatesQuery.data ?? [];
+  const loading = candidatesQuery.isLoading;
+
+  const techsQuery = useApiQuery<TechOption[]>(
+    enabled ? `/api/users?role=TECHNICIAN&pageSize=100` : null,
+  );
+  const allTechs = techsQuery.data ?? [];
 
   const confirm = async () => {
     if (!pickedLead) return;

@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { CashOnHandBadge } from "@/components/mobile/cash-on-hand-badge";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
@@ -43,29 +42,13 @@ export default function MobileTodayPage() {
 function MobileTodayContent() {
   const t = useTranslations("mobile");
   const locale = useLocale();
-  const api = useApi();
-  const [lead, setLead] = useState<VisitCard[]>([]);
-  const [collab, setCollab] = useState<VisitCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<{ lead: VisitCard[]; collaborator: VisitCard[] }>(
+    `/api/mobile/visits/today`,
+  );
+  const lead = query.data?.lead ?? [];
+  const collab = query.data?.collaborator ?? [];
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<{ lead: VisitCard[]; collaborator: VisitCard[] }>(
-        `/api/mobile/visits/today`,
-      );
-      setLead(res.data.lead ?? []);
-      setCollab(res.data.collaborator ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) {
+  if (query.isLoading) {
     return <p className="text-sm text-[#737373]">Loading…</p>;
   }
 

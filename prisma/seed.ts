@@ -136,7 +136,6 @@ async function main() {
     });
     brandsByName.set(b.name, row);
   }
-  const seoulAquaBrand = brandsByName.get("Seoul Aqua")!;
   console.log(`  ✓ brands (${brandSeed.length})`);
 
   // ─── Product categories (multilingual) ──────────────────────────────

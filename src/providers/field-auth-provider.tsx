@@ -19,6 +19,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { clearAll as clearOfflineQueue } from "@/lib/offline/queue";
 
 const useIsomorphicLayoutEffect =
   globalThis.window === undefined ? useEffect : useLayoutEffect;
@@ -104,6 +106,7 @@ export function FieldAuthProvider({
   const [user, setUser] = useState<FieldAuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!user && !!accessToken;
 
@@ -157,8 +160,16 @@ export function FieldAuthProvider({
       setUser(null);
       setAccessToken(null);
       cacheAuth(null, null);
+      // Drop the TanStack Query cache so the next technician who picks
+      // up the shared tablet cannot read the previous tech's visits /
+      // customers until staleTime expires.
+      queryClient.clear();
+      // Wipe the Dexie offline queue + cached-visit snapshots — those
+      // hold mutation payloads (VISIT_COMPLETE / VISIT_NOTES / PHOTO)
+      // and visit detail copies that survive logout otherwise.
+      clearOfflineQueue().catch(() => undefined);
     }
-  }, []);
+  }, [queryClient]);
 
   const refresh = useCallback(async () => {
     try {

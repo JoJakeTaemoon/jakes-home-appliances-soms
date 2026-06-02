@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -40,16 +40,11 @@ export default function TaxInvoicesListPage() {
   const t = useTranslations("taxInvoices");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const api = useApi();
   const { user } = useAuth();
 
-  const [rows, setRows] = useState<InvoiceRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showUpload, setShowUpload] = useState(false);
-  const [eligible, setEligible] = useState<EligiblePayment[]>([]);
   const [pickedPaymentId, setPickedPaymentId] = useState<string | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(
@@ -67,53 +62,42 @@ export default function TaxInvoicesListPage() {
 
   const isManager = user?.role === "ADMIN" || user?.role === "MANAGER";
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const qs = new URLSearchParams();
-      qs.set("page", String(page));
-      qs.set("pageSize", String(PAGE_SIZE));
-      if (sort) {
-        qs.set("sortBy", sort.column);
-        qs.set("sortDir", sort.direction);
-      }
-      const res = await api.get<InvoiceRow[]>(`/api/tax-invoices?${qs.toString()}`);
-      setRows(res.data ?? []);
-      setTotal(
-        (res as unknown as { pagination?: { total?: number } }).pagination
-          ?.total ?? 0,
-      );
-    } finally {
-      setLoading(false);
+  const listUrl = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set("page", String(page));
+    qs.set("pageSize", String(PAGE_SIZE));
+    if (sort) {
+      qs.set("sortBy", sort.column);
+      qs.set("sortDir", sort.direction);
     }
-  }, [api, page, sort]);
+    return `/api/tax-invoices?${qs.toString()}`;
+  }, [page, sort]);
 
-  const loadEligible = useCallback(async () => {
-    try {
-      const res = await api.get<EligiblePayment[]>(
-        `/api/payments?state=RECONCILED&pageSize=50`,
-      );
-      // Filter to B2B customers + payments without a tax invoice
-      const list = (res.data ?? []).filter(
-        (p: unknown) =>
-          (p as { customer?: { type?: string } }).customer?.type === "B2B" &&
-          !(p as { taxInvoice?: unknown }).taxInvoice,
-      ) as unknown as EligiblePayment[];
-      setEligible(list);
-    } catch {
-      setEligible([]);
-    }
-  }, [api]);
+  const listQuery = useApiPageQuery<InvoiceRow[]>(listUrl);
+  const rows = listQuery.data?.data ?? [];
+  const total =
+    (listQuery.data?.pagination as { total?: number } | undefined)?.total ?? 0;
+  const loading = listQuery.isLoading;
+  const load = async () => {
+    await listQuery.refetch();
+  };
 
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  useEffect(() => {
-    // Surfacing the pending queue on mount + after any successful upload
-    // (which fires `load()` → bumps a new `page`-or-`sort` key).
-    loadEligible().catch(() => undefined);
-  }, [loadEligible, page]);
+  // Eligible-payments query — re-fetched whenever the list page resets,
+  // since uploads bump the page key as well as create a new invoice row.
+  const eligibleQuery = useApiPageQuery<EligiblePayment[]>(
+    `/api/payments?state=RECONCILED&pageSize=50&_p=${page}`,
+  );
+  const eligible = useMemo<EligiblePayment[]>(() => {
+    const list = eligibleQuery.data?.data ?? [];
+    return (list as unknown[]).filter(
+      (p) =>
+        (p as { customer?: { type?: string } }).customer?.type === "B2B" &&
+        !(p as { taxInvoice?: unknown }).taxInvoice,
+    ) as EligiblePayment[];
+  }, [eligibleQuery.data]);
+  const loadEligible = async () => {
+    await eligibleQuery.refetch();
+  };
 
   const openUpload = (paymentId?: string) => {
     setShowUpload(true);

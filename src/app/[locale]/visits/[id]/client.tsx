@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
 
@@ -32,27 +31,10 @@ interface VisitDetail {
 export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
   const t = useTranslations("portalExtra.visits");
   const locale = useLocale();
-  const api = useApi();
-  const [data, setData] = useState<VisitDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<VisitDetail>(`/api/portal/visits/${id}`);
+  const data = query.data;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<VisitDetail>(`/api/portal/visits/${id}`);
-      setData(res.data);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
   if (!data) return <p className="text-sm text-[#737373]">{t("loadError")}</p>;
 
   const wc = data.documents.find((d) => d.kind === "WORK_CONFIRMATION" || d.kind === "PERIODIC_INSPECTION");
