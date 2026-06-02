@@ -40,7 +40,7 @@ export default function TaxInvoicesListPage() {
   const t = useTranslations("taxInvoices");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -106,8 +106,20 @@ export default function TaxInvoicesListPage() {
   };
 
   const handleUpload = async () => {
-    if (!pickedPaymentId || !uploadFile || !invoiceNumber.trim()) {
-      setUploadError(t("uploadError"));
+    if (!pickedPaymentId) {
+      setUploadError(t("uploadPickPaymentHint"));
+      return;
+    }
+    if (!uploadFile) {
+      setUploadError(t("uploadPickFile"));
+      return;
+    }
+    if (!invoiceNumber.trim()) {
+      setUploadError(t("uploadInvoiceNumber"));
+      return;
+    }
+    if (!invoiceDate) {
+      setUploadError(t("uploadInvoiceDate"));
       return;
     }
     setUploadError(null);
@@ -116,17 +128,27 @@ export default function TaxInvoicesListPage() {
       const form = new FormData();
       form.set("file", uploadFile);
       form.set("paymentId", pickedPaymentId);
-      form.set("invoiceNumber", invoiceNumber);
+      form.set("invoiceNumber", invoiceNumber.trim());
       form.set("invoiceDate", invoiceDate);
       if (notes) form.set("notes", notes);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
       const res = await fetch("/api/tax-invoices", {
         method: "POST",
         body: form,
         credentials: "include",
+        headers,
       });
-      const json = await res.json();
+      let json: { success?: boolean; error?: { message?: string } } | null = null;
+      try {
+        json = await res.json();
+      } catch {
+        /* non-JSON response — fall through */
+      }
       if (!res.ok || !json?.success) {
-        throw new Error(json?.error?.message ?? "Upload failed");
+        throw new Error(
+          json?.error?.message ?? `${t("uploadError")} (HTTP ${res.status})`,
+        );
       }
       setShowUpload(false);
       setPickedPaymentId(null);
