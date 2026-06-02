@@ -32,6 +32,7 @@ function StatCard({
 
 interface PortalVisit {
   id: string;
+  equipmentId: string | null;
   scheduledFor: string;
   completedAt: string | null;
   state: string;
@@ -50,12 +51,31 @@ interface PortalSr {
   submittedAt: string;
 }
 
+interface PortalConsumable {
+  id: string;
+  sku: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+  replaceEveryMonths: number | null;
+  isActive: boolean;
+}
 interface PortalEquipment {
   id: string;
   installedAt: string | null;
   model: {
     filterPolicy: { filters?: { type: string; replaceEveryDays: number }[] } | null;
+    consumables?: { quantity: number; consumable: PortalConsumable }[];
   };
+}
+
+function pickConsumableName(
+  c: PortalConsumable,
+  locale: string,
+): string {
+  if (locale === "ko") return c.nameKo;
+  if (locale === "en") return c.nameEn;
+  return c.nameVi;
 }
 
 // "Open" visit states — the ones the customer expects to see a date for
@@ -126,12 +146,16 @@ export function DashboardClient() {
     return future[0]?.scheduledFor ?? null;
   }, [visits.data]);
 
-  const nextFilterDate = useMemo(() => {
+  const nextFilter = useMemo<{ date: string; name: string } | null>(() => {
     const list = visits.data ?? [];
     // eslint-disable-next-line react-hooks/purity
     const todayMs = startOfTodayMs();
-    // First choice: an open FILTER_REPLACEMENT visit that's actually
-    // on the schedule.
+    const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
+
+    // First choice: an open FILTER_REPLACEMENT visit on the schedule —
+    // the customer's date is whatever the office confirmed. We don't
+    // know which filter without joining VisitConsumableLog, so leave
+    // the name blank when sourced from a visit.
     const future = list
       .filter(
         (v) =>
@@ -143,32 +167,62 @@ export function DashboardClient() {
         (a, b) =>
           new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
       );
-    if (future[0]) return future[0].scheduledFor;
+    if (future[0]) return { date: future[0].scheduledFor, name: "" };
 
-    // Fallback: derive from equipment filterPolicy (installedAt +
-    // replaceEveryDays) — same math as the equipment detail page. This
-    // covers the common case of a customer who has equipment installed
-    // but no future filter visit scheduled yet.
+    // Fallback: derive from the model's Consumable catalog. For each
+    // equipment + consumable pair we advance the cycle from the
+    // baseline (the later of installedAt and the last completed
+    // filter-touching visit on this equipment) until we land past
+    // today; that's the next real-world due date for that filter.
     const eqList: PortalEquipment[] = (() => {
       const d = equipment.data;
       if (Array.isArray(d)) return d;
       if (d && Array.isArray(d.equipment)) return d.equipment;
       return [];
     })();
-    let earliest: number | null = null;
+    // Last completed FILTER_REPLACEMENT / PERIODIC_INSPECTION visit
+    // per equipment — this is the customer's true cycle baseline.
+    const lastTouchByEq = new Map<string, number>();
+    for (const v of list) {
+      if (!v.equipmentId) continue;
+      if (v.state !== "COMPLETED") continue;
+      if (v.type !== "FILTER_REPLACEMENT" && v.type !== "PERIODIC_INSPECTION")
+        continue;
+      const at = v.completedAt
+        ? new Date(v.completedAt).getTime()
+        : new Date(v.scheduledFor).getTime();
+      const prev = lastTouchByEq.get(v.equipmentId);
+      if (prev === undefined || at > prev) lastTouchByEq.set(v.equipmentId, at);
+    }
+
+    let earliest: { due: number; name: string } | null = null;
     for (const e of eqList) {
       if (!e.installedAt) continue;
       const installed = new Date(e.installedAt).getTime();
       if (Number.isNaN(installed)) continue;
-      const filters = e.model.filterPolicy?.filters ?? [];
-      for (const f of filters) {
-        const due = installed + f.replaceEveryDays * 24 * 60 * 60 * 1000;
-        if (due < todayMs) continue;
-        if (earliest === null || due < earliest) earliest = due;
+      const baseline = Math.max(installed, lastTouchByEq.get(e.id) ?? 0);
+      const items = e.model.consumables ?? [];
+      for (const c of items) {
+        if (!c.consumable.isActive) continue;
+        const cycleMonths = c.consumable.replaceEveryMonths;
+        if (!cycleMonths || cycleMonths <= 0) continue;
+        const cycleMs = cycleMonths * MS_PER_MONTH;
+        let due = baseline + cycleMs;
+        while (due < todayMs) due += cycleMs;
+        if (earliest === null || due < earliest.due) {
+          earliest = {
+            due,
+            name: pickConsumableName(c.consumable, locale),
+          };
+        }
       }
     }
-    return earliest === null ? null : new Date(earliest).toISOString();
-  }, [visits.data, equipment.data]);
+    if (earliest === null) return null;
+    return {
+      date: new Date(earliest.due).toISOString(),
+      name: earliest.name,
+    };
+  }, [visits.data, equipment.data, locale]);
 
   const pendingSrCount = pendingSr.data?.length ?? 0;
 
@@ -191,7 +245,8 @@ export function DashboardClient() {
         />
         <StatCard
           label={t("nextFilter")}
-          value={nextFilterDate ? formatDate(nextFilterDate, locale) : "—"}
+          value={nextFilter ? formatDate(nextFilter.date, locale) : "—"}
+          hint={nextFilter?.name || undefined}
           href="/equipment"
         />
         <StatCard
