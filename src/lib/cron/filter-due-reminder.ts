@@ -183,7 +183,7 @@ async function processOne(
             date: formatDate(nextDue, "vi"),
             action_label: actionLabel,
             part_name: localizedConsumableName(c, primary.language),
-            url: "/portal/equipment",
+            url: "/equipment",
           },
           actorType: "SYSTEM",
         });

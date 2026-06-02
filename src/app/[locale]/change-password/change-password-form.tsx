@@ -49,7 +49,7 @@ export function ChangePasswordForm() {
       }
       setSuccess(true);
       await refresh();
-      setTimeout(() => router.replace("/portal"), 800);
+      setTimeout(() => router.replace("/"), 800);
     } finally {
       setSubmitting(false);
     }

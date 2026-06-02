@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import { LogOut, Calendar, Clock4, User } from "lucide-react";
 import { ServiceWorkerRegister } from "@/components/mobile/sw-register";
 import { OfflineIndicator } from "@/components/mobile/offline-indicator";
@@ -18,7 +18,7 @@ const TABS: Array<{ key: TabKey; href: string; Icon: typeof Calendar }> = [
 export function MobileShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const t = useTranslations("mobile");
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout } = useFieldAuth();
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#f7f8fb]">

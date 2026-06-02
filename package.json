@@ -23,7 +23,10 @@
         "db:seed:dev": "dotenv -e .env.dev -- npx prisma db seed",
         "db:reset": "npx prisma migrate deploy && npx prisma generate && npx tsx prisma/reset.ts && npx prisma db seed",
         "db:reset:dev": "dotenv -e .env.dev -o -- npx prisma migrate deploy && npx prisma generate && dotenv -e .env.dev -o -- npx tsx prisma/reset.ts && dotenv -e .env.dev -o -- npx prisma db seed",
-        "vercel:deploy": "bash scripts/vercel-deploy.sh"
+        "vercel:deploy": "bash scripts/vercel-deploy.sh",
+        "manuals:pdf": "npx tsx scripts/manuals/build-pdf.ts",
+        "manuals:screenshots": "npx tsx scripts/manuals/capture-screenshots.ts",
+        "manuals:all": "npm run manuals:screenshots && npm run manuals:pdf"
     },
     "dependencies": {
         "@base-ui/react": "^1.3.0",
@@ -69,6 +72,7 @@
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
         "@types/bcryptjs": "^2.4.6",
+        "@types/markdown-it": "^14.1.2",
         "@types/node": "^20",
         "@types/pg": "^8.20.0",
         "@types/react": "^19",
@@ -81,6 +85,7 @@
         "fake-indexeddb": "^6.2.5",
         "happy-dom": "^20.8.9",
         "jsdom": "^29.0.1",
+        "markdown-it": "^14.2.0",
         "tailwindcss": "^4",
         "tsx": "^4.21.0",
         "typescript": "^5",

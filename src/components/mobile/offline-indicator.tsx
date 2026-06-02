@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import {
   useFlushOnReconnect,
   listPending,
@@ -21,7 +21,7 @@ import type { PendingAction } from "@/lib/offline/db";
  */
 export function OfflineIndicator() {
   const t = useTranslations("mobile.offline");
-  const { accessToken } = useAuth();
+  const { accessToken } = useFieldAuth();
   const sender = buildSender(() => accessToken);
   const { online, flushNow } = useFlushOnReconnect(sender);
   const [queued, setQueued] = useState<PendingAction[]>([]);

@@ -132,7 +132,7 @@ export async function runRentalRenewalReminder(
           days: String(daysOut),
           equipment_list: equipmentList || "—",
           maintenance_fee: maintenanceFee,
-          url: "/portal/equipment",
+          url: "/equipment",
           hq_phone: "+84-28-1234-5678",
         },
         actorType: "SYSTEM",

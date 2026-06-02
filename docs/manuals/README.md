@@ -1,34 +1,38 @@
 # Seoul Aqua SOMS — User Manuals
 
-End-user manuals organized by role and language.
+End-user manuals organized by **user group** and language.
 
-## Status (2026-06-01)
+## Coverage (2026-06-02)
 
-| Role | ko | en | vi |
+| User Group | Korean (ko) | Vietnamese (vi) | English |
 |---|---|---|---|
-| Admin | ✅ `ko/admin.md` | ⏳ TODO | ⏳ TODO |
-| Manager | ✅ `ko/manager.md` | ⏳ TODO | ⏳ TODO |
-| Staff | ✅ `ko/staff.md` | ⏳ TODO | ⏳ TODO |
-| Technician | ✅ `ko/technician.md` | ⏳ TODO | ⏳ TODO |
-| Customer | ✅ `ko/customer.md` | ⏳ TODO | ⏳ TODO |
+| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1491 lines) | ✅ [`vi/office.md`](vi/office.md) (1491 lines) | — (not in v1 scope) |
+| **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) (989 lines) | ✅ [`vi/field.md`](vi/field.md) (989 lines) | — |
+| **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) (1083 lines) | ✅ [`vi/customer.md`](vi/customer.md) (1083 lines) | — |
 
-**en / vi mirrors are deferred** to a follow-up PR — this initial set was written in Korean only to keep the doc PR within a manageable scope. Once the ko base manuals are reviewed and any structural revisions land, en + vi translations follow.
+Each manual covers the workflow overview (taken from [HOW_TO_USE.md](../HOW_TO_USE.md)) **plus** every screen and every common scenario for that user group.
 
-## Coverage
+## Generated PDFs
 
-These manuals reflect the 2026-06-01 sprint (PR #9–#13):
+Same content rendered as pageless PDFs (single long page per document, optimized for on-screen reading) under [`pdf/`](pdf/):
 
-- **PR #9** — Humanize audit log (Admin/Manager only) → `admin.md` §3, `manager.md` §3
-- **PR #10** — Manager权한 확장 + 사이드바 role filter → `admin.md` §4, `manager.md` §2, `staff.md` §2
-- **PR #11** — Receipt PDF dual-copy + tear line + ₫ blank-fill → `technician.md` §3, `customer.md` §4
-- **PR #12** — 3-realm auth (TECHNICIAN field cookie 분리) → `technician.md` §1, `customer.md` §1
-- **PR #13** — Technician charge-override on visit-complete → `technician.md` §3, `manager.md` §4
+- `pdf/office-ko.pdf` / `pdf/office-vi.pdf`
+- `pdf/field-ko.pdf` / `pdf/field-vi.pdf`
+- `pdf/customer-ko.pdf` / `pdf/customer-vi.pdf`
 
-Base coverage (pre-2026-06-01) for unchanged features (customer list, contract workflow, equipment install, payment reconcile, etc.) is **not yet written** — these initial manuals focus on the new/changed features for stakeholder review. The base content will be back-filled in a follow-up phase.
+## Screenshots
 
-## Cross-references
+UI screenshots used in the manuals live under [`screenshots/`](screenshots/) — one folder per user group (`office/`, `field/`, `customer/`). The screenshot pipeline is in `scripts/manuals/capture-screenshots.ts` and runs against a dev server with seeded data.
 
-- `docs/AUTH.md` — 3-realm architecture deep dive
-- `docs/SPEC.md` §change log — release-by-release decision trail
-- `docs/PROCESS_NOTES.md` — distilled business processes
-- `.claude/skills/DESIGN.md` — design system reference
+## Structure
+
+- **Office manual** — Desktop-first. Sections cover login, customers, contracts, visits, service requests, payments, tax invoices, reports/audit, and system administration. Permission differences (ADMIN / MANAGER / STAFF) are highlighted throughout.
+- **Field manual** — Mobile-first. Covers technician daily routine, the 6-step visit completion wizard, photo and signature capture, on-site payment collection, cash handover, and shared-tablet security.
+- **Customer manual** — Mobile-first. Covers portal login, home screen, equipment, visit history, service requests, payments and transfers, tax invoices (B2B), contact management (CONTRACT_PARTY only), and safe usage rules.
+
+## Reference (workflow docs)
+
+The companion workflow references in `docs/`:
+
+- [`USER_WORKFLOWS.md`](../USER_WORKFLOWS.md) — Technical workflow reference in English (43 Mermaid diagrams)
+- [`HOW_TO_USE.md`](../HOW_TO_USE.md) — Plain-language scenario guide in Korean (12 diagrams)
