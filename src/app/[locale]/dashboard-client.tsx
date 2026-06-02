@@ -31,13 +31,22 @@ function StatCard({
 }
 
 interface PortalVisit {
+  id: string;
   scheduledFor: string;
+  completedAt: string | null;
   state: string;
   type: string;
 }
 
 interface PortalPayments {
   outstanding: number;
+}
+
+interface PortalSr {
+  id: string;
+  code: string;
+  state: string;
+  submittedAt: string;
 }
 
 export function DashboardClient() {
@@ -53,6 +62,13 @@ export function DashboardClient() {
   // with more than 500 simultaneous pending requests is unrealistic.
   const pendingSr = useApiQuery<unknown[]>(
     "/api/portal/service-requests?state=PENDING_REVIEW&pageSize=500",
+  );
+  // Recent activity timeline: just the 5 most recently submitted SRs,
+  // regardless of state. Combined with the visits feed below this gives
+  // the customer a "what happened recently" view without needing a new
+  // dedicated endpoint.
+  const recentSr = useApiQuery<PortalSr[]>(
+    "/api/portal/service-requests?pageSize=5",
   );
 
   const upcomingVisitDate = useMemo(() => {
@@ -99,20 +115,6 @@ export function DashboardClient() {
           {t("welcome", { name: contact?.name ?? "" })}
         </h1>
         <p className="mt-1 text-sm text-[#525252]">{t("welcomeBody")}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span className="text-[#737373]">{t("loginId")}: </span>
-            <span className="font-medium text-[#262626]">
-              {contact?.phone1 ?? ""}
-            </span>
-          </div>
-          <div>
-            <span className="text-[#737373]">{t("language")}: </span>
-            <span className="font-medium text-[#262626]">
-              {contact?.language ?? ""}
-            </span>
-          </div>
-        </div>
       </section>
 
       <div className="grid grid-cols-2 gap-3">
@@ -122,6 +124,11 @@ export function DashboardClient() {
             upcomingVisitDate ? formatDate(upcomingVisitDate, locale) : "—"
           }
           href="/visits"
+        />
+        <StatCard
+          label={t("nextFilter")}
+          value={nextFilterDate ? formatDate(nextFilterDate, locale) : "—"}
+          href="/equipment"
         />
         <StatCard
           label={t("pendingRequests")}
@@ -135,19 +142,103 @@ export function DashboardClient() {
           }
           href="/payments"
         />
-        <StatCard
-          label={t("nextFilter")}
-          value={nextFilterDate ? formatDate(nextFilterDate, locale) : "—"}
-          href="/equipment"
-        />
       </div>
 
-      <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-[#737373]">
-          {t("recentActivity")}
-        </h2>
-        <p className="text-sm text-[#525252]">{t("noActivity")}</p>
-      </section>
+      <RecentActivity
+        visits={visits.data ?? []}
+        srs={recentSr.data ?? []}
+        locale={locale}
+      />
     </div>
+  );
+}
+
+interface ActivityItem {
+  kind: "visit" | "sr";
+  at: string;
+  href: string;
+  title: string;
+  subtitle: string;
+}
+
+function RecentActivity({
+  visits,
+  srs,
+  locale,
+}: Readonly<{
+  visits: PortalVisit[];
+  srs: PortalSr[];
+  locale: string;
+}>) {
+  const t = useTranslations("portal.dashboard");
+  const tv = useTranslations("visits.types");
+  const ts = useTranslations("visits.states");
+  const trs = useTranslations("serviceRequests.states");
+  // Recent visits: completed visits sorted by completedAt desc; if no
+  // completedAt fall back to scheduledFor. Cap at 5 each then merge.
+  const recentVisits = [...visits]
+    .filter((v) => v.completedAt || v.state === "SCHEDULED")
+    .sort((a, b) => {
+      const ad = a.completedAt ?? a.scheduledFor;
+      const bd = b.completedAt ?? b.scheduledFor;
+      return new Date(bd).getTime() - new Date(ad).getTime();
+    })
+    .slice(0, 5)
+    .map<ActivityItem>((v) => ({
+      kind: "visit",
+      at: v.completedAt ?? v.scheduledFor,
+      href: `/visits/${v.id}`,
+      title: tv(v.type as never),
+      subtitle: ts(v.state as never),
+    }));
+  const recentSrs = [...srs]
+    .sort(
+      (a, b) =>
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+    )
+    .slice(0, 5)
+    .map<ActivityItem>((s) => ({
+      kind: "sr",
+      at: s.submittedAt,
+      href: `/requests/${s.id}`,
+      title: s.code,
+      subtitle: trs(s.state as never),
+    }));
+  const merged = [...recentVisits, ...recentSrs]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 5);
+
+  return (
+    <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#737373]">
+        {t("recentActivity")}
+      </h2>
+      {merged.length === 0 ? (
+        <p className="text-sm text-[#525252]">{t("noActivity")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {merged.map((a) => (
+            <li key={`${a.kind}-${a.href}`}>
+              <Link
+                href={a.href}
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-[#f5f5f5]"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-[#262626]">
+                    {a.title}
+                  </div>
+                  <div className="truncate text-xs text-[#737373]">
+                    {a.subtitle}
+                  </div>
+                </div>
+                <span className="shrink-0 text-xs text-[#737373]">
+                  {formatDate(a.at, locale)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

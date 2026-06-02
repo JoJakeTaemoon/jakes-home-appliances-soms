@@ -537,7 +537,13 @@
       "ownership": "Sở hữu",
       "installedAt": "Ngày lắp đặt",
       "site": "Cơ sở",
-      "nextFilters": "Lịch thay lõi"
+      "nextFilters": "Lịch thay lõi",
+      "visitHistory": "Lịch sử thăm",
+      "visitHistoryEmpty": "Chưa có lịch sử thăm cho thiết bị này.",
+      "action": {
+        "REPLACE": "Thay",
+        "CLEAN": "Vệ sinh"
+      }
     },
     "visits": {
       "title": "Lịch hẹn"
@@ -1111,9 +1117,12 @@
       "loadError": "Không tải được lịch sử lượt thăm.",
       "noVisits": "Chưa có lượt thăm nào.",
       "viewPdf": "Tải phiếu công việc",
+      "loading": "Đang tải...",
       "completed": "Hoàn tất",
-      "scheduled": "Đã đặt lịch",
-      "technician": "Kỹ thuật viên"
+      "scheduled": "Ngày hẹn",
+      "technician": "Kỹ thuật viên",
+      "equipment": "Thiết bị",
+      "findings": "Nội dung công việc"
     },
     "payments": {
       "title": "Thanh toán",

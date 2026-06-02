@@ -537,7 +537,13 @@
       "ownership": "Ownership",
       "installedAt": "Installed",
       "site": "Site",
-      "nextFilters": "Filter schedule"
+      "nextFilters": "Filter schedule",
+      "visitHistory": "Visit history",
+      "visitHistoryEmpty": "No visit history for this equipment yet.",
+      "action": {
+        "REPLACE": "Replace",
+        "CLEAN": "Clean"
+      }
     },
     "visits": {
       "title": "Visits"
@@ -1111,9 +1117,12 @@
       "loadError": "Could not load visits.",
       "noVisits": "No visits yet.",
       "viewPdf": "Download work confirmation",
+      "loading": "Loading…",
       "completed": "Completed",
       "scheduled": "Scheduled",
-      "technician": "Technician"
+      "technician": "Technician",
+      "equipment": "Equipment",
+      "findings": "Findings"
     },
     "payments": {
       "title": "Payments",

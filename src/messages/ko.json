@@ -537,7 +537,13 @@
       "ownership": "소유",
       "installedAt": "설치일",
       "site": "사이트",
-      "nextFilters": "필터 교체 일정"
+      "nextFilters": "필터 교체 일정",
+      "visitHistory": "방문 내역",
+      "visitHistoryEmpty": "이 장비와 관련된 방문 내역이 아직 없습니다.",
+      "action": {
+        "REPLACE": "교체",
+        "CLEAN": "청소"
+      }
     },
     "visits": {
       "title": "방문"
@@ -1111,9 +1117,12 @@
       "loadError": "방문 이력을 불러오지 못했습니다.",
       "noVisits": "방문 이력이 없습니다.",
       "viewPdf": "작업확인서 다운로드",
+      "loading": "불러오는 중...",
       "completed": "완료",
-      "scheduled": "예정",
-      "technician": "기사"
+      "scheduled": "예정일",
+      "technician": "기사",
+      "equipment": "장비",
+      "findings": "작업 내용"
     },
     "payments": {
       "title": "결제",
