@@ -35,7 +35,7 @@ export function PortalVisitsClient() {
       {rows.map((v) => (
         <li key={v.id}>
           <Link
-            href={`/portal/visits/${v.id}`}
+            href={`/visits/${v.id}`}
             className="block rounded-2xl border border-[#e5e5e5] bg-white p-3 hover:border-[var(--brand-blue-500)]"
           >
             <div className="flex items-center justify-between">
