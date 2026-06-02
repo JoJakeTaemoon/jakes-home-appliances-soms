@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
@@ -13,6 +14,7 @@ import {
   VisitStateBadge,
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
+import { VisitsCalendarView } from "@/components/visits/visits-calendar-view";
 import { formatDate } from "@/lib/format";
 
 interface VisitRow {
@@ -31,8 +33,88 @@ interface VisitRow {
 }
 
 const PAGE_SIZE = 25;
+type ViewMode = "calendar" | "list";
 
 export default function VisitsListPage() {
+  const t = useTranslations("visits");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Calendar is the default view. `?view=list` survives reloads + bookmarks
+  // so a user who prefers the spreadsheet view doesn't have to re-toggle.
+  const initialView: ViewMode =
+    searchParams.get("view") === "list" ? "list" : "calendar";
+  const [view, setView] = useState<ViewMode>(initialView);
+  useEffect(() => {
+    const current = searchParams.get("view");
+    if (view === "list" && current !== "list") {
+      router.replace("/o/visits?view=list");
+    } else if (view === "calendar" && current === "list") {
+      router.replace("/o/visits");
+    }
+  }, [view, searchParams, router]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
+        <div className="flex items-center gap-2">
+          <ViewToggle value={view} onChange={setView} />
+          <Link href="/o/visits/new">
+            <Button>{t("newVisit")}</Button>
+          </Link>
+        </div>
+      </header>
+
+      {view === "calendar" ? <VisitsCalendarView /> : <ListView />}
+    </div>
+  );
+}
+
+function ViewToggle({
+  value,
+  onChange,
+}: Readonly<{ value: ViewMode; onChange: (v: ViewMode) => void }>) {
+  const t = useTranslations("visits");
+  return (
+    <div
+      role="tablist"
+      aria-label={t("viewCalendar")}
+      className="inline-flex rounded-md border border-[#e5e5e5] bg-white p-0.5"
+    >
+      <button
+        role="tab"
+        type="button"
+        aria-selected={value === "calendar"}
+        onClick={() => onChange("calendar")}
+        className={[
+          "h-8 rounded px-3 text-xs font-medium transition-colors",
+          value === "calendar"
+            ? "bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]"
+            : "text-[#737373] hover:text-[#262626]",
+        ].join(" ")}
+      >
+        {t("viewCalendar")}
+      </button>
+      <button
+        role="tab"
+        type="button"
+        aria-selected={value === "list"}
+        onClick={() => onChange("list")}
+        className={[
+          "h-8 rounded px-3 text-xs font-medium transition-colors",
+          value === "list"
+            ? "bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]"
+            : "text-[#737373] hover:text-[#262626]",
+        ].join(" ")}
+      >
+        {t("viewList")}
+      </button>
+    </div>
+  );
+}
+
+function ListView() {
   const t = useTranslations("visits");
   const locale = useLocale();
   const router = useRouter();
@@ -123,63 +205,54 @@ export default function VisitsListPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
-        <Link href="/o/visits/new">
-          <Button>{t("newVisit")}</Button>
-        </Link>
-      </header>
-
-      <DataTable
-        columns={columns}
-        rows={rows}
-        rowKey={(r) => r.id}
-        onRowClick={(r) => router.push(`/o/visits/${r.id}`)}
-        isLoading={loading}
-        sort={sort}
-        onSortChange={setSort}
-        emptyText={stateFilter || typeFilter ? t("noResults") : t("noVisits")}
-        toolbar={
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <Combobox
-              value={stateFilter}
-              onChange={(v) => setStateFilter(v)}
-              options={[
-                { value: "SUGGESTED", label: t("states.SUGGESTED") },
-                { value: "SCHEDULED", label: t("states.SCHEDULED") },
-                { value: "IN_PROGRESS", label: t("states.IN_PROGRESS") },
-                { value: "COMPLETED", label: t("states.COMPLETED") },
-                { value: "FAILED_NO_SHOW", label: t("states.FAILED_NO_SHOW") },
-                { value: "RESCHEDULED", label: t("states.RESCHEDULED") },
-                { value: "CANCELLED", label: t("states.CANCELLED") },
-              ]}
-              placeholder={t("filterState")}
-              searchable={false}
-            />
-            <Combobox
-              value={typeFilter}
-              onChange={(v) => setTypeFilter(v)}
-              options={[
-                { value: "INSTALLATION", label: t("types.INSTALLATION") },
-                { value: "PERIODIC_INSPECTION", label: t("types.PERIODIC_INSPECTION") },
-                { value: "REPAIR", label: t("types.REPAIR") },
-                { value: "FILTER_REPLACEMENT", label: t("types.FILTER_REPLACEMENT") },
-                { value: "RELOCATION", label: t("types.RELOCATION") },
-                { value: "PAYMENT_COLLECTION", label: t("types.PAYMENT_COLLECTION") },
-                { value: "OTHER", label: t("types.OTHER") },
-              ]}
-              placeholder={t("filterType")}
-              searchable={false}
-            />
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
-        }
-        footer={
-          <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
-        }
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      rows={rows}
+      rowKey={(r) => r.id}
+      onRowClick={(r) => router.push(`/o/visits/${r.id}`)}
+      isLoading={loading}
+      sort={sort}
+      onSortChange={setSort}
+      emptyText={stateFilter || typeFilter ? t("noResults") : t("noVisits")}
+      toolbar={
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <Combobox
+            value={stateFilter}
+            onChange={(v) => setStateFilter(v)}
+            options={[
+              { value: "SUGGESTED", label: t("states.SUGGESTED") },
+              { value: "SCHEDULED", label: t("states.SCHEDULED") },
+              { value: "IN_PROGRESS", label: t("states.IN_PROGRESS") },
+              { value: "COMPLETED", label: t("states.COMPLETED") },
+              { value: "FAILED_NO_SHOW", label: t("states.FAILED_NO_SHOW") },
+              { value: "RESCHEDULED", label: t("states.RESCHEDULED") },
+              { value: "CANCELLED", label: t("states.CANCELLED") },
+            ]}
+            placeholder={t("filterState")}
+            searchable={false}
+          />
+          <Combobox
+            value={typeFilter}
+            onChange={(v) => setTypeFilter(v)}
+            options={[
+              { value: "INSTALLATION", label: t("types.INSTALLATION") },
+              { value: "PERIODIC_INSPECTION", label: t("types.PERIODIC_INSPECTION") },
+              { value: "REPAIR", label: t("types.REPAIR") },
+              { value: "FILTER_REPLACEMENT", label: t("types.FILTER_REPLACEMENT") },
+              { value: "RELOCATION", label: t("types.RELOCATION") },
+              { value: "PAYMENT_COLLECTION", label: t("types.PAYMENT_COLLECTION") },
+              { value: "OTHER", label: t("types.OTHER") },
+            ]}
+            placeholder={t("filterType")}
+            searchable={false}
+          />
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </div>
+      }
+      footer={
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+      }
+    />
   );
 }

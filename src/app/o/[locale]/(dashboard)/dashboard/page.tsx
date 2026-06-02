@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
-import { useApiQuery } from "@/lib/api/hooks";
+import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
 import { formatDate, formatVnd } from "@/lib/format";
+import { VisitStateBadge } from "@/components/visits/visit-state-badge";
+import { pickModelName } from "@/lib/products/name";
 
 type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
 
@@ -15,6 +18,26 @@ interface OpenServiceRequest {
   state: string;
   submittedAt: string;
   customer: { id: string; code: string; name: string };
+}
+
+interface TodayVisitRow {
+  id: string;
+  state: string;
+  type: string;
+  scheduledFor: string;
+  scheduledWindow: string | null;
+  customer: { id: string; code: string; name: string; type: string };
+  leadTechnician: { id: string; username: string } | null;
+  equipment: {
+    id: string;
+    serialNumber: string | null;
+    model: {
+      modelCode: string | null;
+      nameKo: string | null;
+      nameVi: string | null;
+      nameEn: string | null;
+    };
+  } | null;
 }
 
 interface DashboardSummary {
@@ -85,6 +108,30 @@ export default function DashboardPage() {
   );
   const summary = query.data ?? null;
   const loading = query.isLoading;
+
+  // Today's visits — actual list under "오늘의 요약". The dashboard's KPI
+  // strip at the top shows just the count; this section wants the list.
+  // Build the URL once per render to keep the React Query key stable; we
+  // anchor the date at the user's local midnight so refresh-at-23:59 still
+  // shows "today" not "tomorrow".
+  const todayVisitsUrl = useMemo(() => {
+    if (!user?.role || user.role === "TECHNICIAN") return null;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const sp = new URLSearchParams({
+      from: start.toISOString(),
+      to: end.toISOString(),
+      sortBy: "scheduledFor",
+      sortDir: "asc",
+      pageSize: "20",
+    });
+    return `/api/visits?${sp.toString()}`;
+  }, [user?.role]);
+  const todayVisitsQuery = useApiPageQuery<TodayVisitRow[]>(todayVisitsUrl);
+  const todayVisits = todayVisitsQuery.data?.data ?? [];
+  const todayVisitsLoading = todayVisitsQuery.isLoading;
 
   const role = user?.role ? tRoles(user.role as RoleKey) : "";
 
@@ -221,12 +268,67 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
-        <h2 className="mb-2 text-base font-semibold text-[#000000]">
-          {t("todaySummary")}
-        </h2>
-        <p className="text-sm text-[#737373]">{t("noUpcomingVisits")}</p>
-      </section>
+      {user?.role && user.role !== "TECHNICIAN" && (
+        <section className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+          <header className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="text-base font-semibold text-[#000000]">
+              {t("todaySummary")}
+            </h2>
+            <Link
+              href="/o/visits"
+              className="text-xs font-medium text-[var(--brand-blue-700)] hover:underline"
+            >
+              {t("openSrCta")}
+            </Link>
+          </header>
+          {todayVisitsLoading ? (
+            <p className="text-sm text-[#737373]">{t("loading")}</p>
+          ) : todayVisits.length === 0 ? (
+            <p className="text-sm text-[#737373]">{t("noUpcomingVisits")}</p>
+          ) : (
+            <ul className="divide-y divide-[#f0f0f0]">
+              {todayVisits.map((v) => {
+                const time = v.scheduledFor.slice(11, 16);
+                const equipmentLabel = v.equipment
+                  ? pickModelName(v.equipment.model, locale)
+                  : null;
+                return (
+                  <li key={v.id}>
+                    <Link
+                      href={`/o/visits/${v.id}` as never}
+                      className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-[#fafafa]"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sm font-semibold text-[var(--brand-blue-700)]">
+                          {time}
+                        </span>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-[#262626]">
+                            {v.customer.name}{" "}
+                            <span className="text-[#a3a3a3]">
+                              · {v.customer.code}
+                            </span>
+                          </span>
+                          <span className="text-xs text-[#737373]">
+                            {equipmentLabel ?? "—"}
+                            {v.leadTechnician
+                              ? ` · ${v.leadTechnician.username}`
+                              : ""}
+                            {v.scheduledWindow
+                              ? ` · ${v.scheduledWindow}`
+                              : ""}
+                          </span>
+                        </div>
+                      </div>
+                      <VisitStateBadge state={v.state} />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }
