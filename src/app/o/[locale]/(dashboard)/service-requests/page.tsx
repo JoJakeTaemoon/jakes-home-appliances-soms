@@ -15,6 +15,7 @@ import {
 } from "@/components/service-requests/sr-state-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/format";
+import { MessageSquareDot } from "lucide-react";
 
 interface SrRow {
   id: string;
@@ -23,6 +24,7 @@ interface SrRow {
   state: string;
   isPaid: boolean;
   submittedAt: string;
+  hasUnreadCustomerMessage: boolean;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B" };
   equipment: {
     id: string;
@@ -116,7 +118,16 @@ export default function ServiceRequestsListPage() {
       header: t("code"),
       sortKey: "code",
       cell: (r) => (
-        <span className="font-mono text-xs text-[#262626]">{r.code}</span>
+        <div className="flex items-center gap-1.5">
+          {r.hasUnreadCustomerMessage && (
+            <MessageSquareDot
+              className="size-4 shrink-0 text-[#dc2626]"
+              strokeWidth={2}
+              aria-label={t("unreadMessage")}
+            />
+          )}
+          <span className="font-mono text-xs text-[#262626]">{r.code}</span>
+        </div>
       ),
     },
     {
