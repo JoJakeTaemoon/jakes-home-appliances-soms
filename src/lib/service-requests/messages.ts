@@ -23,6 +23,7 @@ export interface SrMessage {
 interface AuditAfter {
   message?: string;
   authorName?: string;
+  actorContactId?: string | null;
 }
 
 export async function listSrMessages(srId: string): Promise<SrMessage[]> {
@@ -61,15 +62,22 @@ export interface AppendInput {
 export async function appendSrMessage(input: AppendInput): Promise<void> {
   const body = input.body.trim();
   if (body.length === 0) throw new Error("Empty message");
+  // AuditLog.actorId has an FK to User.id. Customer messages carry a
+  // CustomerContact.id, not a User.id, so passing it would trip a
+  // Foreign-key constraint violation (P2003). We keep the contact id
+  // in `after.actorContactId` for traceability and null out the FK
+  // column. listSrMessages already falls back to after.authorName.
+  const isCustomer = input.author === "CUSTOMER";
   await logAudit({
-    actorType: input.author === "CUSTOMER" ? "CUSTOMER" : "USER",
-    actorId: input.actorId,
+    actorType: isCustomer ? "CUSTOMER" : "USER",
+    actorId: isCustomer ? null : input.actorId,
     action: "SR_MESSAGE",
     entityType: "ServiceRequest",
     entityId: input.srId,
     after: {
       message: body,
       authorName: input.authorName,
+      actorContactId: isCustomer ? input.actorId : null,
     },
     request: input.request ?? null,
   });
