@@ -2299,6 +2299,46 @@ async function main() {
     photos: pickSamplePhotos("seed-visit-006", seedVisit006CompletedAt),
   });
 
+  // ─── Unread customer SR messages ──────────────────────────────────────
+  // SR messages live on AuditLog (action='SR_MESSAGE'). Seeds two
+  // unanswered customer messages on KH00001's SRs — sr.lastOfficeReadAt
+  // is null on freshly inserted rows, so anything with at > NULL counts
+  // as unread for the office. Lights up the office SR list red-dot,
+  // the sidebar "new customer messages" badge, and the SR detail
+  // "읽음" button so they're all visible in dev without first
+  // logging in as the customer and typing.
+  const unreadSeedMessages = [
+    {
+      srId: serviceRequests["SR-00001"].id,
+      at: at(daysFromNow(-1), 9, 30),
+      authorName: "Nguyễn Thị Lan",
+      body: "Cho em hỏi đã có lịch kiểm tra chưa ạ? Máy vẫn chảy yếu.",
+    },
+    {
+      srId: serviceRequests["SR-00002"].id,
+      at: at(daysFromNow(0), 8, 15),
+      authorName: "Nguyễn Thị Lan",
+      body: "Sáng nay tiếng kêu càng to hơn. Mong các anh đến sớm giúp.",
+    },
+  ];
+  for (const m of unreadSeedMessages) {
+    await prisma.auditLog.create({
+      data: {
+        actorType: "CUSTOMER",
+        actorId: null,
+        action: "SR_MESSAGE",
+        entityType: "ServiceRequest",
+        entityId: m.srId,
+        at: m.at,
+        after: {
+          message: m.body,
+          authorName: m.authorName,
+          actorContactId: b2cPrimaryContact.id,
+        },
+      },
+    });
+  }
+
   // ─── Bulk visits per state (~50 total, ~7 per VisitState) ──────────────
   // Seeds enough volume for filter / dashboard widgets to surface meaningful
   // numbers in dev. Reuses bulk B2C/B2B customers + tech pool above.
