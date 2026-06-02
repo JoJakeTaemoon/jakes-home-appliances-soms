@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import { useRouter } from "@/i18n/navigation";
 
-const AUTH_FLAG = "soms_auth";
+const AUTH_FLAG = "soms_field_auth";
 
 function useHydrated() {
   return useSyncExternalStore(
@@ -21,7 +21,7 @@ function useHydrated() {
 export function TechnicianAuthGuard({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user } = useFieldAuth();
   const router = useRouter();
   const hydrated = useHydrated();
 

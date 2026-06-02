@@ -57,7 +57,7 @@ export function LoginForm() {
       // Allow only same-origin paths. `startsWith("/")` alone would let
       // through `//evil.com` (protocol-relative URL), which router.replace
       // resolves as a cross-origin redirect — a classic open redirect.
-      const safeNext = next && /^\/(?!\/)/.test(next) ? next : "/dashboard";
+      const safeNext = next && /^\/(?!\/)/.test(next) ? next : "/o/dashboard";
       router.replace(safeNext);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "UNKNOWN";

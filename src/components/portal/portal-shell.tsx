@@ -14,7 +14,7 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { href: "/portal", labelKey: "dashboard", icon: "🏠" },
+  { href: "/", labelKey: "dashboard", icon: "🏠" },
   { href: "/equipment", labelKey: "equipment", icon: "💧" },
   { href: "/visits", labelKey: "visits", icon: "📅" },
   { href: "/requests", labelKey: "requests", icon: "📨" },
@@ -73,8 +73,8 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
       <nav className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-[#e5e5e5] bg-white sm:mx-auto sm:max-w-2xl">
         {TABS.map((tab) => {
           const active =
-            tab.href === "/portal"
-              ? pathname === "/portal"
+            tab.href === "/"
+              ? pathname === "/"
               : pathname?.startsWith(tab.href);
           return (
             <button

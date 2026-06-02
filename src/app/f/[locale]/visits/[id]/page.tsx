@@ -7,7 +7,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import {
@@ -76,7 +76,7 @@ function MobileVisitDetailContent() {
   const locale = useLocale();
   const router = useRouter();
   const api = useApi();
-  const { user } = useAuth();
+  const { user } = useFieldAuth();
   const query = useApiQuery<VisitDetail>(id ? `/api/mobile/visits/${id}` : null);
   const data = query.data;
   const error =

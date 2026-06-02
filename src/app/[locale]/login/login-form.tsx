@@ -44,7 +44,10 @@ export function PortalLoginForm() {
         return;
       }
       const next = searchParams.get("next");
-      router.replace(next?.startsWith("/portal") ? next : "/portal");
+      // Allow only same-origin paths (strict: leading "/" followed by NON-"/"
+      // rejects protocol-relative URLs like //evil.com).
+      const safeNext = next && /^\/(?!\/)/.test(next) ? next : "/";
+      router.replace(safeNext);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "UNKNOWN";
       switch (code) {

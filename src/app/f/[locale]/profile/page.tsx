@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 
@@ -16,7 +16,7 @@ export default function MobileProfilePage() {
 function MobileProfileContent() {
   const t = useTranslations("mobile.profile");
   const tm = useTranslations("mobile");
-  const { user, logout } = useAuth();
+  const { user, logout } = useFieldAuth();
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-[#002A4D]">{t("title")}</h1>
