@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 import { useApiQuery } from "@/lib/api/hooks";
-import { formatVnd, formatDate } from "@/lib/format";
+import { formatVnd, formatDate, formatWeekday } from "@/lib/format";
 
 function StatCard({
   label,
@@ -18,16 +18,25 @@ function StatCard({
   hint?: string;
   href?: string;
 }>) {
+  // The hint row always renders (non-breaking space when absent) so
+  // tiles in the same grid row keep identical heights regardless of
+  // whether some have a hint and others don't.
   const inner = (
-    <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-[0_1px_4px_rgba(0,113,189,0.04)] transition-colors hover:border-[var(--brand-blue-500)]">
+    <div className="flex h-full flex-col rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-[0_1px_4px_rgba(0,113,189,0.04)] transition-colors hover:border-[var(--brand-blue-500)]">
       <div className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
         {label}
       </div>
       <div className="text-2xl font-semibold text-[#002A4D]">{value}</div>
-      {hint && <div className="mt-1 text-xs text-[#525252]">{hint}</div>}
+      <div className="mt-1 text-xs text-[#525252]">{hint || " "}</div>
     </div>
   );
-  return href ? <Link href={href}>{inner}</Link> : inner;
+  return href ? (
+    <Link href={href} className="block h-full">
+      {inner}
+    </Link>
+  ) : (
+    inner
+  );
 }
 
 interface PortalVisit {
@@ -239,13 +248,19 @@ export function DashboardClient() {
         <StatCard
           label={t("nextVisit")}
           value={
-            upcomingVisitDate ? formatDate(upcomingVisitDate, locale) : "—"
+            upcomingVisitDate
+              ? `${formatDate(upcomingVisitDate, locale)} (${formatWeekday(upcomingVisitDate, locale)})`
+              : "—"
           }
           href="/visits"
         />
         <StatCard
           label={t("nextFilter")}
-          value={nextFilter ? formatDate(nextFilter.date, locale) : "—"}
+          value={
+            nextFilter
+              ? `${formatDate(nextFilter.date, locale)} (${formatWeekday(nextFilter.date, locale)})`
+              : "—"
+          }
           hint={nextFilter?.name || undefined}
           href="/equipment"
         />
