@@ -115,7 +115,7 @@
     "auditLog": "Nhật ký kiểm tra"
   },
   "dashboard": {
-    "greeting": "Xin chào, {name}",
+    "greeting": "Bảng điều khiển",
     "todaySummary": "Tổng quan hôm nay",
     "noUpcomingVisits": "Không có lượt thăm nào sắp tới",
     "phasePlaceholder": "Phase 1 — Nền tảng xác thực đã hoàn thành. Các tính năng bổ sung sẽ có ở các phase tiếp theo.",
@@ -1298,7 +1298,7 @@
     "navTitle": "Quản trị",
     "products": {
       "title": "Danh mục sản phẩm",
-      "subtitle": "Quản lý dữ liệu gốc của loại sản phẩm, model, phụ kiện và vật tư tiêu hao. Loại sản phẩm và phụ kiện/vật tư được ghi bằng 3 ngôn ngữ KO/VI/EN; tên model giữ nguyên dạng gốc.",
+      "subtitle": "Dữ liệu gốc cho thương hiệu, loại, model, phụ kiện và vật tư tiêu hao.",
       "tabBrands": "Thương hiệu",
       "tabCategories": "Loại sản phẩm",
       "tabModels": "Model",
