@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { useFieldAuth } from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { NumberInput } from "@/components/ui/number-input";
@@ -28,6 +27,17 @@ interface PhotoState extends UploadResp {
   takenAt: string;
 }
 
+/**
+ * A photo the technician has picked but not yet uploaded. We hold the
+ * raw File + a blob URL for the in-card preview, so they can review +
+ * remove individual shots before sending them to the server.
+ */
+interface PendingPhoto {
+  localId: string;
+  file: File;
+  previewUrl: string;
+}
+
 interface SuggestionResp {
   consumableId: string;
   sku: string;
@@ -39,6 +49,22 @@ interface SuggestionResp {
   nextDueAt: string;
   daysUntilDue: number;
   cycleMonths: number;
+}
+
+interface PartCatalogItem {
+  id: string;
+  sku: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+  kind: "CONSUMABLE" | "ACCESSORY";
+  retailPrice: string;
+}
+
+function pickPartName(p: PartCatalogItem, locale: string): string {
+  if (locale === "ko") return p.nameKo;
+  if (locale === "en") return p.nameEn;
+  return p.nameVi;
 }
 
 function suggestionKey(s: { consumableId: string; action: string }): string {
@@ -81,15 +107,17 @@ function CompleteWizard() {
   const id = params?.id ?? "";
   const t = useTranslations("mobile.complete");
   const tm = useTranslations("mobile");
+  const tc = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const api = useApi();
   const { accessToken } = useFieldAuth();
 
   const [step, setStep] = useState(1);
   const [findings, setFindings] = useState("");
-  const [partInput, setPartInput] = useState("");
   const [parts, setParts] = useState<string[]>([]);
   const [photos, setPhotos] = useState<PhotoState[]>([]);
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [signature, setSignature] = useState<PhotoState | null>(null);
   // Amounts are seeded from the visit's expectedAmount via useApiQuery.
   // Overrides are user-typed values; null = "use the server's expected".
@@ -111,6 +139,23 @@ function CompleteWizard() {
   const [error, setError] = useState<string | null>(null);
   const [queuedForSync, setQueuedForSync] = useState(false);
   const online = useOnlineStatus();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  // Track whether step 2's auto-open already fired once. Re-firing on
+  // every step change would feel hostile (e.g. user clicks Back from
+  // step 3 to step 2 and the picker pops again).
+  const photoAutoOpenedRef = useRef(false);
+
+  // Auto-open the gallery/camera picker the first time the technician
+  // lands on step 2 — saves a tap on the data-entry-heavy field flow.
+  // Browsers only honour the programmatic .click() because we're still
+  // inside the React commit triggered by the user's tap on "Next".
+  useEffect(() => {
+    if (step !== 2) return;
+    if (photoAutoOpenedRef.current) return;
+    if (photos.length > 0) return;
+    photoAutoOpenedRef.current = true;
+    photoInputRef.current?.click();
+  }, [step, photos.length]);
 
   // Wizard form values (expectedAmount, suggestion list) are frozen for
   // the duration of the completion flow: if the technician taps away to
@@ -125,6 +170,18 @@ function CompleteWizard() {
   const suggestionsQuery = useApiQuery<{ recommendations: SuggestionResp[] }>(
     id ? `/api/mobile/visits/${id}/suggest-consumables` : null,
     { staleTime: Infinity, refetchOnWindowFocus: false },
+  );
+  // Catalog of every active consumable + accessory — powers the parts
+  // dropdown so the technician can pick by SKU/name instead of typing
+  // free-text. The Combobox falls back to a "Add <typed>" row for the
+  // off-catalog case (custom-made replacement, customer-supplied part).
+  const partsCatalogQuery = useApiQuery<PartCatalogItem[]>(
+    `/api/mobile/parts`,
+    { staleTime: Infinity, refetchOnWindowFocus: false },
+  );
+  const partsCatalog = useMemo(
+    () => partsCatalogQuery.data ?? [],
+    [partsCatalogQuery.data],
   );
   const expectedAmount = visitQuery.data?.expectedAmount
     ? Number(visitQuery.data.expectedAmount)
@@ -171,28 +228,66 @@ function CompleteWizard() {
     return json.data as UploadResp;
   };
 
-  const handlePhotoInput = async (
+  // Step 2 is now staged: picking a photo only buffers it locally so the
+  // technician can review/remove before committing. Upload happens when
+  // they tap the explicit "업로드" button below.
+  const handlePhotoInput = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    setError(null);
+    const additions: PendingPhoto[] = files.map((file) => ({
+      localId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPendingPhotos((prev) => [...prev, ...additions]);
+    e.target.value = "";
+  };
+
+  const removePendingPhoto = (localId: string) => {
+    setPendingPhotos((prev) => {
+      const removed = prev.find((p) => p.localId === localId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((p) => p.localId !== localId);
+    });
+  };
+
+  const uploadPendingPhotos = async () => {
+    if (pendingPhotos.length === 0) return;
     setUploading(true);
     setError(null);
     try {
-      const resp = await upload(file);
-      if (resp) {
-        setPhotos((prev) => [
-          ...prev,
-          { ...resp, takenAt: new Date().toISOString() },
-        ]);
+      for (const pending of pendingPhotos) {
+        const resp = await upload(pending.file);
+        if (resp) {
+          setPhotos((prev) => [
+            ...prev,
+            { ...resp, takenAt: new Date().toISOString() },
+          ]);
+          URL.revokeObjectURL(pending.previewUrl);
+          setPendingPhotos((prev) =>
+            prev.filter((p) => p.localId !== pending.localId),
+          );
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
+
+  // Free any unreleased blob URLs when the wizard unmounts (e.g.
+  // technician hits back/cancel on the device).
+  useEffect(() => {
+    return () => {
+      for (const p of pendingPhotos) URL.revokeObjectURL(p.previewUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only on unmount
+  }, []);
 
   const handleSignatureInput = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -212,13 +307,6 @@ function CompleteWizard() {
     }
   };
 
-  const addPart = () => {
-    const v = partInput.trim();
-    if (!v) return;
-    if (parts.includes(v)) return;
-    setParts([...parts, v]);
-    setPartInput("");
-  };
 
   const submit = async () => {
     setError(null);
@@ -377,23 +465,38 @@ function CompleteWizard() {
               </div>
             </FormField>
           )}
-          <FormField label={t("partsReplaced")}>
-            <div className="flex gap-2">
-              <Input
-                value={partInput}
-                onChange={(e) => setPartInput(e.target.value)}
-                placeholder={t("partsAddPlaceholder")}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addPart();
-                  }
-                }}
-              />
-              <Button onClick={addPart} variant="secondary">
-                +
-              </Button>
-            </div>
+          <FormField label={t("partsReplaced")} hint={t("partsHint")}>
+            <Combobox
+              value={null}
+              onChange={(v) => {
+                if (!v) return;
+                const item = partsCatalog.find((p) => p.id === v);
+                const label = item ? `${pickPartName(item, locale)} (${item.sku})` : v;
+                if (!parts.includes(label)) setParts([...parts, label]);
+              }}
+              onCreate={(typed) => {
+                if (!parts.includes(typed)) setParts([...parts, typed]);
+              }}
+              allowCreate
+              createLabel={(q) => t("partsAddCustom", { name: q })}
+              options={partsCatalog.map((p) => ({
+                value: p.id,
+                label: `${pickPartName(p, locale)} (${p.sku})`,
+                description:
+                  p.kind === "CONSUMABLE"
+                    ? t("partKindConsumable")
+                    : t("partKindAccessory"),
+              }))}
+              placeholder={
+                partsCatalogQuery.isLoading
+                  ? tc("loading")
+                  : t("partsPickPlaceholder")
+              }
+              searchPlaceholder={t("partsSearchPlaceholder")}
+              emptyText={t("partsEmpty")}
+              allowClear={false}
+              searchable
+            />
           </FormField>
           {parts.length > 0 && (
             <ul className="flex flex-wrap gap-2">
@@ -421,35 +524,131 @@ function CompleteWizard() {
       {step === 2 && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-[#737373]">{t("photosHint")}</p>
-          <label className="block">
-            <span className="sr-only">{tm("actions.addPhoto")}</span>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handlePhotoInput}
-              className="block w-full text-sm"
-            />
-          </label>
-          {uploading && <p className="text-xs text-[#737373]">{t("uploading")}</p>}
-          <ul className="grid grid-cols-3 gap-2">
-            {photos.map((p, i) => (
-              <li
-                key={p.storageKey}
-                className="relative aspect-square overflow-hidden rounded-md border border-[#e5e5e5] bg-[#fafafa]"
+          {/*
+            Hidden multi-file input. The auto-open effect above clicks it
+            once on first arrival; the visible button below re-triggers it
+            whenever the picker was dismissed or the technician wants to
+            add more shots later.
+          */}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotoInput}
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            disabled={uploading}
+            onClick={() => photoInputRef.current?.click()}
+          >
+            {photos.length === 0 && pendingPhotos.length === 0
+              ? tm("actions.addPhoto")
+              : t("addMorePhotos")}
+          </Button>
+          {uploading && (
+            <p className="text-xs text-[#737373]">{t("uploading")}</p>
+          )}
+
+          {/*
+            Pending (not-yet-uploaded) shots — vertical stack of larger
+            thumbnails so the technician can review the framing before
+            committing bandwidth on a slow site link. Tapping the row or
+            the × removes it without ever hitting the server.
+          */}
+          {pendingPhotos.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-[#525252]">
+                {t("photosPendingTitle", { count: pendingPhotos.length })}
+              </p>
+              <ul className="flex flex-col gap-2">
+                {pendingPhotos.map((p) => (
+                  <li
+                    key={p.localId}
+                    className="flex items-center gap-3 rounded-md border border-amber-200 bg-amber-50 p-2"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, no optimisation needed */}
+                    <img
+                      src={p.previewUrl}
+                      alt=""
+                      className="size-20 shrink-0 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[#262626]">
+                        {p.file.name || t("photosUntitled")}
+                      </p>
+                      <p className="text-xs text-amber-700">
+                        {t("photosPendingBadge")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removePendingPhoto(p.localId)}
+                      disabled={uploading}
+                      aria-label={t("removePhoto")}
+                      className="rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white hover:bg-black disabled:opacity-50"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                onClick={uploadPendingPhotos}
+                disabled={uploading}
+                isLoading={uploading}
+                fullWidth
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, no optimisation needed */}
-                <img src={p.url} alt="" className="size-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setPhotos(photos.filter((_, idx) => idx !== i))}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white"
-                >
-                  {t("removePhoto")}
-                </button>
-              </li>
-            ))}
-          </ul>
+                {t("photosConfirmUpload", { count: pendingPhotos.length })}
+              </Button>
+            </div>
+          )}
+
+          {/* Already-uploaded shots — same vertical layout for visual
+              consistency with the pending list. */}
+          {photos.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-[#525252]">
+                {t("photosUploadedTitle", { count: photos.length })}
+              </p>
+              <ul className="flex flex-col gap-2">
+                {photos.map((p, i) => (
+                  <li
+                    key={p.storageKey}
+                    className="flex items-center gap-3 rounded-md border border-[#e5e5e5] bg-white p-2"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, no optimisation needed */}
+                    <img
+                      src={p.url}
+                      alt=""
+                      className="size-20 shrink-0 rounded-md object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-emerald-700">
+                        {t("photosUploadedBadge")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPhotos(photos.filter((_, idx) => idx !== i))
+                      }
+                      aria-label={t("removePhoto")}
+                      className="rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white hover:bg-black"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -594,7 +793,19 @@ function CompleteWizard() {
           </Button>
         )}
         {step < 5 ? (
-          <Button onClick={() => setStep(step + 1)} fullWidth>
+          <Button
+            onClick={() => {
+              // Block step 2 → 3 while photos are picked-but-not-uploaded.
+              // Otherwise the chosen shots would be discarded silently.
+              if (step === 2 && pendingPhotos.length > 0) {
+                setError(t("photosPendingBlock"));
+                return;
+              }
+              setError(null);
+              setStep(step + 1);
+            }}
+            fullWidth
+          >
             {t("next")}
           </Button>
         ) : (
