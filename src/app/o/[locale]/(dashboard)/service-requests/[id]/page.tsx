@@ -83,6 +83,7 @@ interface SrDetail {
     at: string;
     after: unknown;
   }>;
+  hasUnreadCustomerMessage: boolean;
 }
 
 export default function ServiceRequestDetailPage() {
@@ -415,7 +416,13 @@ export default function ServiceRequestDetailPage() {
           </ul>
         </section>
 
-        <SrMessageThreadOffice srId={data.id} />
+        <SrMessageThreadOffice
+          srId={data.id}
+          hasUnread={data.hasUnreadCustomerMessage}
+          onMarkedRead={async () => {
+            await query.refetch();
+          }}
+        />
       </div>
 
       <aside className="space-y-3">

@@ -21,11 +21,20 @@ interface SrMessage {
   body: string;
 }
 
-export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
+export function SrMessageThreadOffice({
+  srId,
+  hasUnread = false,
+  onMarkedRead,
+}: Readonly<{
+  srId: string;
+  hasUnread?: boolean;
+  onMarkedRead?: () => void | Promise<void>;
+}>) {
   const t = useTranslations("portalThread");
   const api = useApi();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [marking, setMarking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const queryUrl = srId ? `/api/service-requests/${srId}/messages` : null;
@@ -59,9 +68,34 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
     }
   };
 
+  const markAsRead = async () => {
+    setMarking(true);
+    setError(null);
+    try {
+      await api.post(`/api/service-requests/${srId}/mark-read`, {});
+      if (onMarkedRead) await onMarkedRead();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setMarking(false);
+    }
+  };
+
   return (
     <section className="space-y-2 rounded-2xl border border-[#e5e5e5] bg-white p-4">
-      <h2 className="text-sm font-semibold text-[#002A4D]">{t("title")}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-[#002A4D]">{t("title")}</h2>
+        {hasUnread && (
+          <Button
+            onClick={markAsRead}
+            disabled={marking}
+            size="sm"
+            variant="outline"
+          >
+            {marking ? "…" : t("markRead")}
+          </Button>
+        )}
+      </div>
       {messages.length === 0 ? (
         <p className="text-sm text-[#737373]">{t("noMessages")}</p>
       ) : (
