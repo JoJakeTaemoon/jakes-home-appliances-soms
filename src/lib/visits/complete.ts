@@ -109,6 +109,17 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   });
   if (!current) throw new Error("Visit not found");
 
+  // Defense in depth: the API route already gates on lead-technician access
+  // via VisitWorkflow.access.canComplete, but the workflow layer re-checks so
+  // any future caller (cron job, admin override, internal RPC) that bypasses
+  // the route still trips the guard. Only the lead technician collects
+  // payment and signs off — collaborators cannot complete on behalf.
+  if (current.leadTechnicianId !== actorUserId) {
+    throw new ValidationError(
+      "Only the lead technician can complete this visit",
+    );
+  }
+
   const plan = planVisitTransition(
     current.state as VisitState,
     "COMPLETED",
@@ -117,8 +128,32 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   const photosJson = buildPhotosJson(input);
   const partsJson = buildPartsJson(input);
 
+  // Effective charged (= invoiced) amount. If the technician overrode the
+  // pre-scheduled visit.expectedAmount on-site (extra parts, partial work,
+  // goodwill discount), input.chargedAmount carries the new value plus a
+  // mandatory reason. We fold the override into the state-guarded write so a
+  // racing double-submit cannot leave the visit in COMPLETED state with a
+  // half-applied override; we compare via toString() (not Number()) so a
+  // future Decimal precision shift can't silently equate distinct amounts.
+  const originalExpectedStr = (current.expectedAmount ?? 0).toString();
+  const overrideRequested =
+    input.chargedAmount !== undefined &&
+    input.chargedAmount !== null &&
+    String(input.chargedAmount) !== originalExpectedStr;
+  if (overrideRequested) {
+    if (
+      !input.chargeOverrideReason ||
+      input.chargeOverrideReason.trim().length < 5
+    ) {
+      throw new ValidationError(
+        "chargeOverrideReason is required when chargedAmount differs from the visit's expectedAmount",
+      );
+    }
+  }
+
   // Concurrency guard via the shared helper (Refactor C). Pre-transition
-  // state pinned in WHERE; P2025 → user-friendly race error.
+  // state pinned in WHERE; P2025 → user-friendly race error. expectedAmount
+  // is conditionally included so the override lands in the same atomic write.
   type VisitRow = Awaited<ReturnType<typeof prisma.visit.update>>;
   const updated = (await updateWithStateGuard(prisma.visit, {
     id: visitId,
@@ -129,6 +164,9 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
       partsReplaced: partsJson,
       photos: photosJson,
       customerSignaturePhotoUrl: input.customerSignaturePhotoStorageKey,
+      ...(overrideRequested
+        ? { expectedAmount: input.chargedAmount as number }
+        : {}),
     },
     entityName: "Visit",
   })) as VisitRow;
@@ -147,41 +185,17 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
     });
   }
 
-  // Effective charged (= invoiced) amount. If the technician overrode the
-  // pre-scheduled visit.expectedAmount on-site (extra parts, partial work,
-  // goodwill discount), input.chargedAmount carries the new value plus a
-  // mandatory reason. We persist the override on the visit + audit it.
-  const originalExpected = current.expectedAmount ?? 0;
-  const originalExpectedNum =
-    typeof originalExpected === "object"
-      ? Number(originalExpected.toString())
-      : Number(originalExpected);
-  let effectiveCharged = originalExpectedNum;
-  if (
-    input.chargedAmount !== undefined &&
-    input.chargedAmount !== null &&
-    input.chargedAmount !== originalExpectedNum
-  ) {
-    if (
-      !input.chargeOverrideReason ||
-      input.chargeOverrideReason.trim().length < 5
-    ) {
-      throw new ValidationError(
-        "chargeOverrideReason is required when chargedAmount differs from the visit's expectedAmount",
-      );
-    }
-    await prisma.visit.update({
-      where: { id: visitId },
-      data: { expectedAmount: input.chargedAmount },
-    });
-    effectiveCharged = input.chargedAmount;
+  const effectiveCharged = overrideRequested
+    ? (input.chargedAmount ?? 0)
+    : Number(originalExpectedStr);
+  if (overrideRequested) {
     await logAudit({
       actorType: "USER",
       actorId: actorUserId,
       action: "VISIT_CHARGE_OVERRIDE",
       entityType: "Visit",
       entityId: visitId,
-      before: { expectedAmount: originalExpectedNum },
+      before: { expectedAmount: Number(originalExpectedStr) },
       after: {
         expectedAmount: input.chargedAmount,
         reason: input.chargeOverrideReason,

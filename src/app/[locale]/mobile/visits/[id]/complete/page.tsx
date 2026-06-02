@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi } from "@/lib/api/client";
-import { useAuth } from "@/providers/auth-provider";
+import { useFieldAuth } from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/input";
@@ -59,7 +59,7 @@ function CompleteWizard() {
   const tm = useTranslations("mobile");
   const router = useRouter();
   const api = useApi();
-  const { accessToken } = useAuth();
+  const { accessToken } = useFieldAuth();
 
   const [step, setStep] = useState(1);
   const [findings, setFindings] = useState("");
@@ -209,6 +209,15 @@ function CompleteWizard() {
       setError("Findings required");
       return;
     }
+    // chargeOverride guard MUST fire before the body is assembled — otherwise
+    // the offline-sync queue would carry the under-validated payload.
+    if (
+      chargedAmount !== expectedAmount &&
+      chargeOverrideReason.trim().length < 5
+    ) {
+      setError(t("chargeOverrideReasonRequired"));
+      return;
+    }
     setSubmitting(true);
     const consumableLogs = suggestions
       .filter((s) => selectedSuggestionKeys.has(suggestionKey(s)))
@@ -231,14 +240,6 @@ function CompleteWizard() {
       collectedAmount: collectedAmount > 0 ? collectedAmount : null,
       paymentMethod: collectedAmount > 0 ? paymentMethod : undefined,
     };
-    if (
-      chargedAmount !== expectedAmount &&
-      chargeOverrideReason.trim().length < 5
-    ) {
-      setError(t("chargeOverrideReasonRequired"));
-      setSubmitting(false);
-      return;
-    }
     if (!online) {
       // Offline path — queue locally and bounce back to the visit detail.
       try {
