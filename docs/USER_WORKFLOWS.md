@@ -1,42 +1,42 @@
-# USER_WORKFLOWS — Seoul Aqua SOMS 전체 워크플로우
+# USER_WORKFLOWS — Seoul Aqua SOMS End-to-End Workflows
 
-**버전:** 2026-06-02 초안
-**대상 독자:** 신규 개발자 / QA / 영업 / 기사 교육 담당
-**근거 문서:** [SPEC.md](./SPEC.md) · [PROCESS_NOTES.md](./PROCESS_NOTES.md) · [DOCUMENT_TEMPLATES.md](./DOCUMENT_TEMPLATES.md) · [DATA_MODEL_NOTES.md](./DATA_MODEL_NOTES.md)
+**Version:** 2026-06-02 draft
+**Audience:** New engineers / QA / sales / technician training leads
+**Source documents:** [SPEC.md](./SPEC.md) · [PROCESS_NOTES.md](./PROCESS_NOTES.md) · [DOCUMENT_TEMPLATES.md](./DOCUMENT_TEMPLATES.md) · [DATA_MODEL_NOTES.md](./DATA_MODEL_NOTES.md)
 
-> 이 문서는 SOMS의 **모든 사용자 그룹**(ADMIN / MANAGER / STAFF / TECHNICIAN / CUSTOMER)이 시스템에서 수행하는 **모든 주요 워크플로우**를 한 곳에 모은 운영 안내서다. 데이터 모델·API 시그니처가 아니라 **누가, 언제, 무엇을, 왜** 하는지를 다이어그램과 함께 정리한다.
+> This document is the single-source operations reference for **every major workflow** performed by **every user group** (ADMIN / MANAGER / STAFF / TECHNICIAN / CUSTOMER) in SOMS. It is not a data-model or API reference — it answers **who does what, when, and why**, with diagrams.
 
-## 목차
+## Table of Contents
 
-0. [시스템 개요 (3-Realm)](#0-시스템-개요-3-realm)
-1. [역할별 권한 매트릭스](#1-역할별-권한-매트릭스)
-2. [마스터 데이터 셋업](#2-마스터-데이터-셋업)
-3. [고객 라이프사이클](#3-고객-라이프사이클)
-4. [계약 워크플로](#4-계약-워크플로)
-5. [장비 라이프사이클](#5-장비-라이프사이클)
-6. [정기점검 (Periodic Maintenance)](#6-정기점검-periodic-maintenance)
-7. [서비스 요청 (Service Request)](#7-서비스-요청-service-request)
-8. [방문 (Visit) 워크플로](#8-방문-visit-워크플로)
-9. [청구 · 결제 · 세금계산서](#9-청구--결제--세금계산서)
-10. [알림 (Cross-cutting)](#10-알림-cross-cutting)
-11. [인증 · 세션 (3-Realm)](#11-인증--세션-3-realm)
-12. [감사 로그](#12-감사-로그)
+0. [System Overview (3-Realm)](#0-system-overview-3-realm)
+1. [Role-Based Permission Matrix](#1-role-based-permission-matrix)
+2. [Master Data Setup](#2-master-data-setup)
+3. [Customer Lifecycle](#3-customer-lifecycle)
+4. [Contract Workflow](#4-contract-workflow)
+5. [Equipment Lifecycle](#5-equipment-lifecycle)
+6. [Periodic Maintenance](#6-periodic-maintenance)
+7. [Service Request](#7-service-request)
+8. [Visit Workflow](#8-visit-workflow)
+9. [Billing · Payment · Tax Invoice](#9-billing--payment--tax-invoice)
+10. [Notifications (Cross-cutting)](#10-notifications-cross-cutting)
+11. [Authentication · Sessions (3-Realm)](#11-authentication--sessions-3-realm)
+12. [Audit Log](#12-audit-log)
 
 ---
 
-## 0. 시스템 개요 (3-Realm)
+## 0. System Overview (3-Realm)
 
-SOMS는 동일 도메인에서 **3개의 분리된 인증 영역(realm)**을 운영한다. 각 realm은 자체 로그인 페이지, JWT audience, 세션 쿠키, sessionStorage namespace, AuthProvider, 그리고 별도의 API 경로를 가진다.
+SOMS operates **three isolated authentication realms** on the same domain. Each realm has its own login page, JWT audience, session cookies, sessionStorage namespace, AuthProvider, and a separate set of API routes.
 
 ```mermaid
 flowchart LR
-  subgraph Browser["같은 브라우저 / 같은 device"]
-    OfficeTab["Office 탭<br/>/o/login"]
-    FieldTab["Field 탭<br/>/f/login"]
-    CustomerTab["Customer 탭<br/>/login"]
+  subgraph Browser["Same browser / Same device"]
+    OfficeTab["Office tab<br/>/o/login"]
+    FieldTab["Field tab<br/>/f/login"]
+    CustomerTab["Customer tab<br/>/login"]
   end
 
-  subgraph App["Next.js App (단일 호스트)"]
+  subgraph App["Next.js App (single host)"]
     OfficeAuth["AuthProvider<br/>aud=office<br/>officeAccessToken"]
     FieldAuth["FieldAuthProvider<br/>aud=field<br/>fieldAccessToken"]
     CustomerAuth["CustomerAuthProvider<br/>aud=customer<br/>customerAccessToken"]
@@ -60,23 +60,23 @@ flowchart LR
   Middleware -.-> CustomerTab
 ```
 
-**realm 분리 보장**:
-- 쿠키 이름이 realm 별로 달라 cross-realm 침범 불가
-- sessionStorage namespace(`soms_office_*` / `soms_field_*` / `soms_customer_*`)가 분리되어 동시 로그인 가능
-- 미들웨어가 path-prefix별로 다른 realm 쿠키를 요구
+**Realm isolation guarantees**:
+- Cookie names differ per realm, preventing cross-realm overwrites
+- sessionStorage namespaces (`soms_office_*` / `soms_field_*` / `soms_customer_*`) are separate, enabling simultaneous logins
+- The middleware requires the matching realm cookie for each path prefix
 
-| Path prefix | Realm | 누락 시 redirect |
+| Path prefix | Realm | Redirect on missing |
 |---|---|---|
 | `/o/login` | office (public) | — |
 | `/o/...` | office | `/{locale}/o/login` |
 | `/f/login` | field (public) | — |
 | `/f/...` | field | `/{locale}/f/login` |
 | `/login`, `/forgot-password`, `/change-password` | customer (public) | — |
-| 그 외 root | customer | `/{locale}/login` |
+| Other root paths | customer | `/{locale}/login` |
 
 ---
 
-## 1. 역할별 권한 매트릭스
+## 1. Role-Based Permission Matrix
 
 ```mermaid
 flowchart TB
@@ -89,12 +89,12 @@ flowchart TB
   end
 
   subgraph Field["Field Realm"]
-    TECH["TECHNICIAN<br/>~80 인원 · 모바일"]
+    TECH["TECHNICIAN<br/>~80 staff · mobile"]
   end
 
   subgraph Portal["Customer Realm"]
-    CP["CONTRACT_PARTY<br/>계약 주체 · 1명"]
-    OPS["OPS_CONTACT<br/>운영 컨택트 · 0..N명"]
+    CP["CONTRACT_PARTY<br/>Signatory · 1 per customer"]
+    OPS["OPS_CONTACT<br/>Operations · 0..N per customer"]
   end
 
   Customer[("Customer DB row<br/>B2C or B2B")]
@@ -102,44 +102,44 @@ flowchart TB
   OPS --> Customer
 ```
 
-**핵심 권한 게이팅 (SPEC §2.1)**:
+**Core permission gating (SPEC §2.1)**:
 
-| 능력 | ADMIN | MANAGER | STAFF | TECH | CP | OPS |
+| Capability | ADMIN | MANAGER | STAFF | TECH | CP | OPS |
 |---|---|---|---|---|---|---|
-| 사용자 관리 · 시스템 설정 | ● | — | — | — | — | — |
-| 가격 변경 · 계약 수정 | ● | ● | — | — | — | — |
-| 세금계산서 발행 · 월마감 | ● | ● | — | — | — | — |
-| 고객 비밀번호 재설정 | ● | ● | — | — | — | — |
-| 서비스 요청 승인 (유료) | ● | ● | ● | — | — | — |
+| User management · system settings | ● | — | — | — | — | — |
+| Price change · contract amendment | ● | ● | — | — | — | — |
+| Tax invoice issuance · month close | ● | ● | — | — | — | — |
+| Customer password reset | ● | ● | — | — | — | — |
+| Service request approval (paid) | ● | ● | ● | — | — | — |
 | Customer · Contract · Equipment CRUD | ● | ● | ● | — | — | — |
-| Visit 생성/재일정 | ● | ● | ● | — | — | — |
-| 결제 입력/매칭 | ● | ● | ● | — | — | — |
-| Mobile visit 완료 · 본인 수금 | ● | ● | ● | ●(본인만) | — | — |
-| Audit log 조회 | ● | ● | — | — | — | — |
-| Audit log 내보내기 | ● | — | — | — | — | — |
-| OPS_CONTACT 추가/편집/삭제 | ● | ● | — | — | ●(자기 고객) | — |
-| 서비스 요청 제출 | — | — | — | — | ● | ● |
+| Visit create / reschedule | ● | ● | ● | — | — | — |
+| Payment entry / matching | ● | ● | ● | — | — | — |
+| Mobile visit completion · own collection | ● | ● | ● | ●(own only) | — | — |
+| Audit log read | ● | ● | — | — | — | — |
+| Audit log export | ● | — | — | — | — | — |
+| Add / edit / delete OPS_CONTACT | ● | ● | — | — | ●(own customer) | — |
+| Submit service request | — | — | — | — | ● | ● |
 
 ---
 
-## 2. 마스터 데이터 셋업
+## 2. Master Data Setup
 
-서비스 운영을 시작하기 전에 ADMIN/MANAGER가 채워두는 데이터.
+Data that ADMIN/MANAGER populates before service operations begin.
 
-### 2.1 제품 카탈로그 (Brand · EquipmentModel · Filter)
+### 2.1 Product Catalog (Brand · EquipmentModel · Filter)
 
 ```mermaid
 flowchart LR
   subgraph Admin["ADMIN/MANAGER"]
-    A1["Brand 생성<br/>e.g. 'Seoul Aqua'"]
-    A2["EquipmentModel 생성<br/>nameKo, nameVi, nameEn<br/>modelCode"]
-    A3["호환 Filter 등록<br/>partCode, replacementMonths"]
+    A1["Create Brand<br/>e.g. 'Seoul Aqua'"]
+    A2["Create EquipmentModel<br/>nameKo, nameVi, nameEn<br/>modelCode"]
+    A3["Register compatible Filters<br/>partCode, replacementMonths"]
   end
 
-  subgraph Used["사용 시점"]
-    B1["Contract 작성 시<br/>모델 선택"]
-    B2["Equipment 설치 시<br/>serialNumber 입력"]
-    B3["정기점검 cron이<br/>filterDueDate 계산"]
+  subgraph Used["Usage Points"]
+    B1["Contract creation<br/>model selection"]
+    B2["Equipment installation<br/>serialNumber entry"]
+    B3["Periodic maintenance cron<br/>filterDueDate computation"]
   end
 
   A1 --> A2 --> A3
@@ -147,177 +147,177 @@ flowchart LR
   A3 --> B3
 ```
 
-**경로**: `/o/admin/products` → Brand 탭 → Model 탭 → CSV 업로드 가능 (sample_catalog_for_upload.csv 참고)
+**Path**: `/o/admin/products` → Brand tab → Model tab → CSV upload supported (see sample_catalog_for_upload.csv)
 
-**검증 규칙**:
-- modelCode는 같은 Brand 내 unique
-- 모델명은 ko/vi/en 3개 언어 모두 필수 (i18n)
-- 호환 Filter는 modelCode로 lookup 가능해야 함
+**Validation rules**:
+- `modelCode` is unique within a Brand
+- Model names are required in all three languages (ko/vi/en) for i18n
+- Compatible Filters must be looked up by `modelCode`
 
-### 2.2 직원 사용자 (HQ + Technician) 등록
+### 2.2 Staff User Registration (HQ + Technician)
 
 ```mermaid
 sequenceDiagram
   participant Admin as ADMIN
   participant System as SOMS
   participant DB as DB
-  participant User as 신규 직원
+  participant User as New Staff Member
 
-  Admin->>System: /o/admin/users → 신규 등록
+  Admin->>System: /o/admin/users → new user
   Admin->>System: username, phone, role (ADMIN/MANAGER/STAFF/TECHNICIAN)
-  System->>System: 10자 임시 비밀번호 생성
-  System->>DB: User 행 추가 (mustChangePassword=true, bcrypt hash)
-  System->>User: SMS_PORTAL_WELCOME (mock 또는 eSMS)
-  User->>System: /o/login (또는 /f/login for TECH) + 임시 비번
-  System->>User: 첫 로그인 → /change-password 강제
-  User->>System: 새 비번 입력
-  System->>DB: passwordHash 갱신, mustChangePassword=false
+  System->>System: Generate 10-character temporary password
+  System->>DB: Insert User row (mustChangePassword=true, bcrypt hash)
+  System->>User: SMS_PORTAL_WELCOME (mock or eSMS)
+  User->>System: /o/login (or /f/login for TECH) with temp password
+  System->>User: First login → forced /change-password
+  User->>System: Submit new password
+  System->>DB: Update passwordHash, mustChangePassword=false
   Note over System,DB: AuditLog: USER_CREATED + PASSWORD_CHANGED
 ```
 
-**중요**:
-- TECHNICIAN은 username 대신 phone으로 로그인 (모바일 UX)
-- ADMIN/MANAGER/STAFF는 username 또는 phone 모두 가능 (단, username은 의도적으로 non-unique — 동명이인은 phone으로 구분)
-- 같은 username을 가진 직원이 2명 이상이면 로그인 자체가 `INVALID_CREDENTIALS`로 fail-closed (보안 결정, SPEC §11.4 후속)
+**Important**:
+- TECHNICIAN logs in by phone instead of username (mobile UX)
+- ADMIN/MANAGER/STAFF can log in with either username or phone — note that **username is intentionally non-unique** (it is a display label); namesake staff disambiguate by phone
+- If two or more staff share a username, login itself **fails closed** with `INVALID_CREDENTIALS` (security decision; see SPEC §11.4 follow-up)
 
-### 2.3 기사 추가 정보 (preferredRegion · 차량 등)
+### 2.3 Technician Profile (preferredRegion · Vehicle · Etc.)
 
-ADMIN/MANAGER가 TECHNICIAN 등록 후 추가로 채워야 할 필드:
-- `preferredRegion` — 지역 매칭 알고리즘에 사용 (SPEC §6.4.1)
-- `isActive` — 휴직/퇴사 시 비활성화 (visit 자동 배정에서 제외)
-- `availableDays`, `availableHours` — 주말근무 가능 여부 등
+After TECHNICIAN registration, ADMIN/MANAGER should fill in:
+- `preferredRegion` — used by the technician assignment algorithm (SPEC §6.4.1)
+- `isActive` — disable on leave/resignation (excludes from auto-assignment)
+- `availableDays`, `availableHours` — e.g. weekend availability
 
 ---
 
-## 3. 고객 라이프사이클
+## 3. Customer Lifecycle
 
-### 3.1 B2C 고객 생성
+### 3.1 B2C Customer Creation
 
 ```mermaid
 flowchart TD
-  Start([STAFF가 /o/customers/new 접근])
-  ChooseType{고객 유형 선택}
-  B2CForm["B2C 폼<br/>name, phone1, addressFull<br/>district, city,<br/>preferredRegion"]
-  GenCode["시스템 자동 발급<br/>code = KH##### (next seq)"]
-  CreateCP["CONTRACT_PARTY 1명 자동 생성<br/>(name=고객명, phone=phone1,<br/>language=ko/vi/en)"]
+  Start([STAFF visits /o/customers/new])
+  ChooseType{Select customer type}
+  B2CForm["B2C form<br/>name, phone1, addressFull<br/>district, city,<br/>preferredRegion"]
+  GenCode["System auto-issues<br/>code = KH##### (next seq)"]
+  CreateCP["Auto-create CONTRACT_PARTY<br/>(name=customer name, phone=phone1,<br/>language=ko/vi/en)"]
   PortalCheck{portalEnabled<br/>= true?}
-  GenPwd["10자 임시 비번 생성<br/>bcrypt hash"]
-  SMSWelcome["SMS_PORTAL_WELCOME 큐"]
-  Done([고객 생성 완료<br/>AuditLog: CUSTOMER_CREATED])
+  GenPwd["Generate 10-char temp password<br/>bcrypt hash"]
+  SMSWelcome["Queue SMS_PORTAL_WELCOME"]
+  Done([Customer created<br/>AuditLog: CUSTOMER_CREATED])
 
   Start --> ChooseType
   ChooseType -->|B2C| B2CForm
   B2CForm --> GenCode --> CreateCP --> PortalCheck
-  PortalCheck -->|yes 기본| GenPwd --> SMSWelcome --> Done
+  PortalCheck -->|yes default| GenPwd --> SMSWelcome --> Done
   PortalCheck -->|no| Done
 ```
 
-### 3.2 B2B 고객 생성 + Site 등록
+### 3.2 B2B Customer Creation + Site Registration
 
 ```mermaid
 flowchart TD
-  Start([STAFF가 /o/customers/new])
-  B2BForm["B2B 폼<br/>name(=회사), taxCode (필수)<br/>shortcode (2-5자 영문)<br/>HQ addressFull"]
-  GenCode["code = KH#####<br/>shortcode = SHV/MMD/...<br/>(B2B contract code에 사용)"]
-  CreateCP["CONTRACT_PARTY 자동 생성<br/>scope=CUSTOMER (조직 레벨)<br/>title='대표' / '법인 대표'"]
-  AddSites{Site 추가?<br/>(공장 A동, 본사,<br/>R&D 빌딩...)}
-  SiteForm["Site 폼<br/>name, addressFull,<br/>region, phone"]
-  AddOpsContact{Site-scoped<br/>OPS 추가?}
-  OpsForm["OPS_CONTACT 폼<br/>scope=SITE, siteId=X<br/>name, phone, language<br/>(예: '공장 A 시설관리자')"]
-  Done([B2B 셋업 완료])
+  Start([STAFF visits /o/customers/new])
+  B2BForm["B2B form<br/>name(=company), taxCode (required)<br/>shortcode (2-5 alpha)<br/>HQ addressFull"]
+  GenCode["code = KH#####<br/>shortcode = SHV/MMD/...<br/>(used in B2B contract codes)"]
+  CreateCP["Auto-create CONTRACT_PARTY<br/>scope=CUSTOMER (org level)<br/>title='CEO' / 'Legal Rep'"]
+  AddSites{Add Site?<br/>(Plant A, HQ,<br/>R&D Building...)}
+  SiteForm["Site form<br/>name, addressFull,<br/>region, phone"]
+  AddOpsContact{Add Site-scoped<br/>OPS?}
+  OpsForm["OPS_CONTACT form<br/>scope=SITE, siteId=X<br/>name, phone, language<br/>(e.g. 'Plant A facilities mgr')"]
+  Done([B2B setup complete])
 
   Start --> B2BForm --> GenCode --> CreateCP --> AddSites
   AddSites -->|yes| SiteForm --> AddOpsContact
-  AddSites -->|no — HQ만| Done
+  AddSites -->|no — HQ only| Done
   AddOpsContact -->|yes| OpsForm --> AddSites
   AddOpsContact -->|no| AddSites
 ```
 
-### 3.3 Customer Contact 관리 (1 + N 모델)
+### 3.3 Customer Contact Management (1 + N Model)
 
-각 Customer는 **CONTRACT_PARTY 1명** + **OPS_CONTACT 0..N명**을 갖는다.
+Every Customer has **exactly 1 CONTRACT_PARTY** + **0..N OPS_CONTACTs**.
 
 ```mermaid
 sequenceDiagram
-  participant CP as CONTRACT_PARTY<br/>(고객 포털)
+  participant CP as CONTRACT_PARTY<br/>(Customer Portal)
   participant Office as MANAGER<br/>(/o/customers/:id/contacts)
   participant System as SOMS
   participant DB as DB
 
-  Note over CP,DB: 시나리오 1: CP가 portal에서 OPS 추가
+  Note over CP,DB: Scenario 1: CP adds OPS via portal
 
   CP->>System: POST /api/portal/contacts<br/>(name, phone, language, scope, siteId?)
-  System->>System: 권한 확인: CP만 가능
-  System->>DB: CustomerContact 추가<br/>(role=OPS_CONTACT, portalEnabled=true)
-  System->>System: 임시 비번 + bcrypt
+  System->>System: Permission check: CP only
+  System->>DB: Insert CustomerContact<br/>(role=OPS_CONTACT, portalEnabled=true)
+  System->>System: Generate temp password + bcrypt
   System->>DB: AuditLog: CONTACT_CREATED
   System-->>CP: 201 Created
-  System->>System: SMS_PORTAL_WELCOME 큐 → 새 OPS
+  System->>System: Queue SMS_PORTAL_WELCOME → new OPS
 
-  Note over CP,DB: 시나리오 2: MANAGER가 office에서 OPS 추가
+  Note over CP,DB: Scenario 2: MANAGER adds OPS via office
 
   Office->>System: POST /api/customers/:id/contacts
-  System->>System: 권한 확인: MANAGER+
-  System->>DB: CustomerContact 추가
+  System->>System: Permission check: MANAGER+
+  System->>DB: Insert CustomerContact
   System->>DB: AuditLog: CONTACT_CREATED (by=MANAGER)
-  System->>System: SMS_PORTAL_WELCOME 큐
+  System->>System: Queue SMS_PORTAL_WELCOME
 
-  Note over CP,DB: CONTRACT_PARTY 변경은 MANAGER+ 만 가능<br/>(법적 영향 — 계약서 재서명 가능)
+  Note over CP,DB: Changing CONTRACT_PARTY identity is MANAGER+ only<br/>(legal implications — contract may need re-signing)
 ```
 
-**contact 정보 라우팅 규칙** (SPEC §3.3.1):
+**Contact routing rules (SPEC §3.3.1)**:
 
-| 채널 | 수신자 | 언어 | Fallback |
+| Channel | Recipient | Language | Fallback |
 |---|---|---|---|
-| 계약서 · 세금계산서 · 법적 통보 | CONTRACT_PARTY | CP.language | 필수 — fallback 없음 |
-| 방문 SMS · 영수증 · 정기점검표 | primary OPS_CONTACT | OPS.language | CP.language → vi |
-| 미수금 독촉 | CP + 모든 OPS (CC) | 각자 language | — |
-| 모바일 "고객 전화" | primary OPS | — | CP |
+| Contract · tax invoice · legal notice | CONTRACT_PARTY | CP.language | required — no fallback |
+| Visit SMS · receipts · periodic check report | primary OPS_CONTACT | OPS.language | CP.language → vi |
+| Overdue dunning | CP + all OPS (CC) | each their own language | — |
+| Mobile "call customer" | primary OPS | — | CP |
 
-### 3.4 Customer Portal 자동 활성화
+### 3.4 Customer Portal Auto-Activation
 
-고객 생성 직후 또는 계약 활성화 시점에 portal 계정이 자동 발급된다 — 명시적 가입 화면 없음.
+A portal account is auto-provisioned at customer creation or contract activation — there is no explicit registration screen.
 
 ```mermaid
 flowchart LR
-  Trigger1["고객 생성<br/>(portalEnabled=true)"]
-  Trigger2["계약 활성화<br/>(첫 ACTIVE 전환 시)"]
-  GenPwd["10자 랜덤 비번<br/>+ bcrypt hash"]
-  SaveDB["CustomerContact:<br/>passwordHash 저장<br/>mustChangePassword=true"]
-  QueueSMS["SMS_PORTAL_WELCOME<br/>큐잉<br/>(phone1 → mock 또는 eSMS)"]
-  Login["고객 → /login + 임시 비번"]
-  ForceCP["첫 로그인 → /change-password"]
-  Done["정상 사용 가능"]
+  Trigger1["Customer created<br/>(portalEnabled=true)"]
+  Trigger2["Contract activated<br/>(first ACTIVE transition)"]
+  GenPwd["10-char random password<br/>+ bcrypt hash"]
+  SaveDB["CustomerContact:<br/>save passwordHash<br/>mustChangePassword=true"]
+  QueueSMS["Queue SMS_PORTAL_WELCOME<br/>(phone1 → mock or eSMS)"]
+  Login["Customer → /login + temp password"]
+  ForceCP["First login → /change-password"]
+  Done["Normal portal usage"]
 
   Trigger1 --> GenPwd
   Trigger2 --> GenPwd
   GenPwd --> SaveDB --> QueueSMS --> Login --> ForceCP --> Done
 ```
 
-**MANAGER+가 언제든 재설정 가능** — `POST /api/portal/auth/reset-password` (관리자 모드). 새 임시 비번 생성 → SMS_PASSWORD_RESET 큐 → 기존 세션 모두 revoke (보안).
+**MANAGER+ can reset at any time** — `POST /api/portal/auth/reset-password` (admin mode). Generates a new temp password → queues SMS_PASSWORD_RESET → revokes all existing sessions (security).
 
 ---
 
-## 4. 계약 워크플로
+## 4. Contract Workflow
 
-### 4.1 계약 종류 분기
+### 4.1 Contract Type Branching
 
 ```mermaid
 flowchart TD
-  Start([영업 시점<br/>STAFF가 /o/contracts/new])
-  Choose{고객 유형 + 계약 유형}
-  SALE["SALE (판매)<br/>totalSalePrice<br/>termMonths=null<br/>1회 결제"]
-  RENTAL["RENTAL (임대)<br/>monthlyFee<br/>termMonths=36 (기본)<br/>mandatoryMonths=24<br/>월 청구"]
-  MAINT["MAINTENANCE (유지관리)<br/>monthlyMaintenanceFee<br/>termMonths=12 (재계약)<br/>월 청구"]
-  Done([각 분기로 진행<br/>§4.2 참조])
+  Start([Sales touchpoint<br/>STAFF on /o/contracts/new])
+  Choose{Customer type + Contract type}
+  SALE["SALE (Purchase)<br/>totalSalePrice<br/>termMonths=null<br/>one-time payment"]
+  RENTAL["RENTAL<br/>monthlyFee<br/>termMonths=36 (default)<br/>mandatoryMonths=24<br/>monthly billing"]
+  MAINT["MAINTENANCE<br/>monthlyMaintenanceFee<br/>termMonths=12 (renewable)<br/>monthly billing"]
+  Done([Proceed per branch<br/>see §4.2])
 
   Start --> Choose
-  Choose -->|판매| SALE --> Done
-  Choose -->|임대 36개월| RENTAL --> Done
-  Choose -->|유지관리만| MAINT --> Done
+  Choose -->|Sale| SALE --> Done
+  Choose -->|36-month rental| RENTAL --> Done
+  Choose -->|Maintenance only| MAINT --> Done
 ```
 
-### 4.2 계약 생성 → 서명 → 활성화
+### 4.2 Contract Create → Sign → Activate
 
 ```mermaid
 sequenceDiagram
@@ -326,11 +326,11 @@ sequenceDiagram
   participant Manager as MANAGER
   participant PDF as PDF Renderer
   participant Tech as TECHNICIAN
-  participant Customer as 고객
+  participant Customer as Customer
   participant DB as DB
 
   Staff->>System: POST /api/contracts<br/>(customerId, type, equipmentLines, dates...)
-  System->>System: 계약 코드 발급<br/>B2C: HD-YYYYmmDD/SA-KH####<br/>B2B: HD-YYYYmmDD/SA-{shortcode}
+  System->>System: Issue contract code<br/>B2C: HD-YYYYmmDD/SA-KH####<br/>B2B: HD-YYYYmmDD/SA-{shortcode}
   System->>DB: Contract: DRAFT
   System->>DB: AuditLog: CONTRACT_CREATED
   System-->>Staff: 201 + contractId
@@ -338,37 +338,37 @@ sequenceDiagram
   Staff->>System: GET /api/contracts/:id/pdf
   System->>PDF: @react-pdf/renderer<br/>bilingual VI primary + KO/EN
   PDF-->>System: PDF buffer
-  System->>System: S3 업로드 → documentPdfPath
+  System->>System: Upload to S3 → documentPdfPath
   System-->>Staff: PDF URL
 
-  Note over Staff,Customer: 인쇄 or 모바일 전달 → 고객 서명 (E.1: 종이 사진 업로드)
+  Note over Staff,Customer: Print or send to mobile → customer signs (E.1: photo of paper)
 
   Tech->>System: PATCH /api/contracts/:id/sign<br/>(signedBy, signedAt, photoPath)
   System->>DB: Contract.status = ACTIVE<br/>signedAt = now
-  System->>System: INSTALLATION Visit 자동 생성<br/>(scheduledDate = startDate)
+  System->>System: Auto-create INSTALLATION Visit<br/>(scheduledDate = startDate)
   System->>DB: AuditLog: CONTRACT_ACTIVATED + VISIT_CREATED
 
-  alt RENTAL 또는 MAINTENANCE
-    System->>System: 정기 청구 cron이 다음 주기에<br/>월 청구를 생성하기 시작
+  alt RENTAL or MAINTENANCE
+    System->>System: Recurring billing cron generates<br/>monthly Payment rows on next tick
   end
 ```
 
-### 4.3 계약 상태 머신
+### 4.3 Contract State Machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> DRAFT: STAFF 작성
-  DRAFT --> ACTIVE: 서명 + 활성화
-  DRAFT --> CANCELLED: 폐기
+  [*] --> DRAFT: STAFF drafts
+  DRAFT --> ACTIVE: Signed + activated
+  DRAFT --> CANCELLED: Discarded
 
-  ACTIVE --> OVERDUE: 미수금 D+7 경과
-  OVERDUE --> ACTIVE: 결제 수금
-  OVERDUE --> TERMINATED_EARLY: MANAGER 조기 종료
+  ACTIVE --> OVERDUE: Past due D+7
+  OVERDUE --> ACTIVE: Payment received
+  OVERDUE --> TERMINATED_EARLY: MANAGER early termination
 
   ACTIVE --> COMPLETED: paidInstallments == termMonths
-  OVERDUE --> COMPLETED: 누적 결제 완료
+  OVERDUE --> COMPLETED: Cumulative payment complete
 
-  ACTIVE --> TERMINATED_EARLY: 고객 요청 + MANAGER 승인
+  ACTIVE --> TERMINATED_EARLY: Customer request + MANAGER approval
 
   COMPLETED --> [*]
   TERMINATED_EARLY --> [*]
@@ -376,22 +376,22 @@ stateDiagram-v2
 
   note right of COMPLETED
     B.3 (2026-05-26):
-    COMPLETED 전환 시
-    Equipment.ownership
-    → CUSTOMER로 자동 flip
+    On COMPLETED transition,
+    Equipment.ownership auto-flips
+    to CUSTOMER
   end note
 ```
 
-### 4.4 B2B Appendix (부록서)
+### 4.4 B2B Appendix (Contract Amendment)
 
-B2B 고객이 기존 계약에 장비를 추가할 때, 새 계약 발행 대신 **Appendix**(부록)로 처리한다.
+When a B2B customer adds equipment to an existing contract, instead of issuing a new contract we use an **Appendix**.
 
 ```mermaid
 flowchart LR
   Original["Contract #1<br/>code: HD-20260101/SA-SHV<br/>amendmentRevision=0<br/>parentContractId=null"]
-  Add["B2B 고객: '20대 더 설치 요청'"]
+  Add["B2B customer: 'Install 20 more units'"]
   Appendix["Contract #2 (Appendix)<br/>code: HD-20260315/SA-SHV-A1<br/>amendmentRevision=1<br/>parentContractId=#1"]
-  More["Contract #3 (다음 Appendix)<br/>amendmentRevision=2"]
+  More["Contract #3 (next Appendix)<br/>amendmentRevision=2"]
 
   Original --> Add --> Appendix
   Appendix -.-> More
@@ -400,9 +400,9 @@ flowchart LR
   style More fill:#fff7e6
 ```
 
-**B2C는 Appendix를 안 쓴다** — price/equipment 변경은 in-place 업데이트 + AuditLog 항목만 추가.
+**B2C does NOT use Appendix** — price/equipment changes are in-place updates + an AuditLog entry only.
 
-### 4.5 계약 갱신 (RENTAL → MAINTENANCE)
+### 4.5 Contract Renewal (RENTAL → MAINTENANCE)
 
 ```mermaid
 sequenceDiagram
@@ -413,64 +413,64 @@ sequenceDiagram
   participant Customer as CONTRACT_PARTY
   participant Tech as TECHNICIAN
 
-  Cron->>DB: 매일 03:00 (VST)<br/>endDate 임박 RENTAL 조회
-  DB-->>Cron: 60일, 30일, 7일 이내
+  Cron->>DB: Daily 03:00 VST<br/>find RENTAL nearing endDate
+  DB-->>Cron: within 60d, 30d, 7d
 
   alt D-60
     Cron->>System: EMAIL_CONTRACT_RENEWAL_D60 → CP
     System->>DB: EmailLog
   end
 
-  alt D-7 (최종)
+  alt D-7 (final)
     Cron->>System: SMS_CONTRACT_RENEWAL_FINAL → CP
     System->>DB: SmsLog
   end
 
-  Customer->>Staff: '유지관리로 전환하고 싶음'
+  Customer->>Staff: 'Convert to maintenance'
   Staff->>System: POST /api/contracts/:id/renew<br/>(action=RENEW_AS_MAINTENANCE)
-  System->>DB: 기존 Contract.status = COMPLETED<br/>Equipment.ownership = CUSTOMER (B.3)
-  System->>DB: 신규 Contract 생성<br/>type=MAINTENANCE<br/>parentContractId=원본<br/>monthlyMaintenanceFee 적용
+  System->>DB: Existing Contract.status = COMPLETED<br/>Equipment.ownership = CUSTOMER (B.3)
+  System->>DB: Create new Contract<br/>type=MAINTENANCE<br/>parentContractId=original<br/>monthlyMaintenanceFee applied
   System->>DB: AuditLog: CONTRACT_RENEWED
-  System->>Tech: 다음 정기점검 Visit 자동 예약
+  System->>Tech: Auto-schedule next periodic Visit
 ```
 
-### 4.6 계약 조기 종료 (TERMINATED_EARLY)
+### 4.6 Early Termination (TERMINATED_EARLY)
 
 ```mermaid
 flowchart TD
-  Trigger["고객 요청 또는<br/>OVERDUE 장기 미해소"]
-  MgrApprove{MANAGER 승인}
-  Reason["terminationReason 입력<br/>(고객 이사 / 부도 / 환불 합의 등)"]
-  Equip{장비 회수?}
-  RetVisit["RETRIEVAL Visit 자동 생성<br/>기사가 회수 + 사진 + 서명"]
-  Refund["환불 처리 가능 (ADMIN만)<br/>Payment 음수 행 + AuditLog"]
+  Trigger["Customer request or<br/>long-running OVERDUE"]
+  MgrApprove{MANAGER approval}
+  Reason["Enter terminationReason<br/>(customer moved / bankruptcy / refund agreement, ...)"]
+  Equip{Retrieve equipment?}
+  RetVisit["Auto-create RETRIEVAL Visit<br/>Tech retrieves + photos + signature"]
+  Refund["Refund possible (ADMIN only)<br/>Negative Payment row + AuditLog"]
   Done["Contract.status=TERMINATED_EARLY<br/>Equipment.status=RETRIEVED"]
 
   Trigger --> MgrApprove
-  MgrApprove -->|승인| Reason --> Equip
-  MgrApprove -->|반려| Trigger
+  MgrApprove -->|Approved| Reason --> Equip
+  MgrApprove -->|Rejected| Trigger
   Equip -->|yes — rental| RetVisit --> Refund --> Done
   Equip -->|no — sale| Done
 ```
 
 ---
 
-## 5. 장비 라이프사이클
+## 5. Equipment Lifecycle
 
-### 5.1 Equipment 상태 머신
+### 5.1 Equipment State Machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> PENDING_INSTALL: Contract 활성화 시 자동
-  PENDING_INSTALL --> ACTIVE: INSTALLATION Visit 완료
-  PENDING_INSTALL --> CANCELLED: 계약 취소
+  [*] --> PENDING_INSTALL: Auto on contract activation
+  PENDING_INSTALL --> ACTIVE: INSTALLATION Visit completed
+  PENDING_INSTALL --> CANCELLED: Contract cancelled
 
-  ACTIVE --> REPLACED: 다른 장비로 교체 (REPAIR/PART_REPLACEMENT)
-  ACTIVE --> RELOCATED: Site 간 이동 (RELOCATION Visit)
-  RELOCATED --> ACTIVE: 새 위치에서 정상 가동
+  ACTIVE --> REPLACED: Swapped with another (REPAIR/PART_REPLACEMENT)
+  ACTIVE --> RELOCATED: Moved between Sites (RELOCATION Visit)
+  RELOCATED --> ACTIVE: Operational at new location
 
-  ACTIVE --> RETRIEVED: RETRIEVAL Visit (rental 종료)
-  ACTIVE --> DEACTIVATED: 고객 비활성화 시 cascade
+  ACTIVE --> RETRIEVED: RETRIEVAL Visit (rental end)
+  ACTIVE --> DEACTIVATED: Customer deactivation cascade
 
   RETRIEVED --> [*]
   REPLACED --> [*]
@@ -478,7 +478,7 @@ stateDiagram-v2
   CANCELLED --> [*]
 ```
 
-### 5.2 Equipment 설치 흐름
+### 5.2 Equipment Installation Flow
 
 ```mermaid
 sequenceDiagram
@@ -487,35 +487,35 @@ sequenceDiagram
   participant Tech as TECHNICIAN
   participant Customer
 
-  Staff->>System: Contract 활성화
-  System->>System: Equipment 행 N개 생성<br/>(status=PENDING_INSTALL)
-  System->>System: INSTALLATION Visit 자동 생성<br/>(scheduledDate=startDate)
-  System->>Tech: 모바일 큐에 새 Visit
+  Staff->>System: Contract activation
+  System->>System: Create N Equipment rows<br/>(status=PENDING_INSTALL)
+  System->>System: Auto-create INSTALLATION Visit<br/>(scheduledDate=startDate)
+  System->>Tech: New Visit on mobile queue
 
-  Tech->>Customer: 설치 작업 + serialNumber 부여
+  Tech->>Customer: Install + assign serialNumber
   Tech->>System: PATCH /api/mobile/visits/:id/complete<br/>(equipmentSerials, photos, signature)
-  System->>System: Equipment.serialNumber 갱신<br/>status = ACTIVE
+  System->>System: Update Equipment.serialNumber<br/>status = ACTIVE
   System->>System: Visit.status = COMPLETED
-  System->>System: 첫 정기점검 filterDueDate 계산<br/>(installDate + replacementMonths)
-  System->>System: 작업확인서 PDF 생성 → S3
+  System->>System: Compute first filterDueDate<br/>(installDate + replacementMonths)
+  System->>System: Generate work-confirmation PDF → S3
   System->>Customer: EMAIL_VISIT_COMPLETED (PDF attached)
 ```
 
-### 5.3 Equipment 교체 (REPLACE)
+### 5.3 Equipment Replacement (REPLACE)
 
 ```mermaid
 flowchart LR
-  Old["기존 Equipment<br/>status=ACTIVE<br/>serial=ABC"]
+  Old["Existing Equipment<br/>status=ACTIVE<br/>serial=ABC"]
   Visit["REPAIR or PART_REPLACEMENT Visit"]
-  Tech["기사가 교체"]
-  NewEq["새 Equipment<br/>status=ACTIVE<br/>serial=XYZ<br/>installDate=오늘"]
-  OldRepl["기존 Equipment<br/>status=REPLACED<br/>replacedByEquipmentId=NewEq.id"]
+  Tech["Tech swaps unit"]
+  NewEq["New Equipment<br/>status=ACTIVE<br/>serial=XYZ<br/>installDate=today"]
+  OldRepl["Old Equipment<br/>status=REPLACED<br/>replacedByEquipmentId=NewEq.id"]
 
   Old --> Visit --> Tech --> NewEq
   Tech --> OldRepl
 ```
 
-### 5.4 Equipment 이동 (RELOCATE — B2B Site 간)
+### 5.4 Equipment Relocation (B2B Site → Site)
 
 ```mermaid
 sequenceDiagram
@@ -525,67 +525,67 @@ sequenceDiagram
   participant System as SOMS
   participant Tech as TECHNICIAN
 
-  Customer->>Portal: 서비스 요청 제출<br/>(type=RELOCATION, 새 siteId)
+  Customer->>Portal: Submit service request<br/>(type=RELOCATION, new siteId)
   Portal->>System: POST /api/portal/service-requests
-  System->>System: 유료 type → 사무실 검토 대기
-  Office->>System: 검토 + 견적
-  Office->>Customer: 견적 통보
-  Customer->>Office: 결제 입금
-  Office->>System: APPROVED → RELOCATION Visit 생성
-  Tech->>System: 이동 작업 완료
-  System->>System: Equipment.siteId = 새 siteId<br/>RelocationHistory 행 추가
+  System->>System: Paid type → pending office review
+  Office->>System: Review + quote
+  Office->>Customer: Send quote notification
+  Customer->>Office: Payment received
+  Office->>System: APPROVED → create RELOCATION Visit
+  Tech->>System: Relocation work completed
+  System->>System: Equipment.siteId = new siteId<br/>Insert RelocationHistory row
 ```
 
 ---
 
-## 6. 정기점검 (Periodic Maintenance)
+## 6. Periodic Maintenance
 
-정기점검은 RENTAL/MAINTENANCE 계약 하의 장비를 월 또는 격월로 방문해 필터를 교체하는 자동 워크플로다.
+Periodic maintenance is an automated workflow that visits equipment under RENTAL/MAINTENANCE contracts on a monthly or bi-monthly cadence to replace filters.
 
-### 6.1 전체 흐름 (Cron 기반)
+### 6.1 End-to-End Flow (Cron-driven)
 
 ```mermaid
 flowchart TD
-  subgraph Cron["일일 cron (VST 03:00)"]
-    C1["cron-filter-due<br/>filterDueDate 임박 조회"]
-    C2["cron-recurring-payments<br/>월 청구 생성"]
-    C3["cron-overdue-escalation<br/>미수금 단계별 알림"]
+  subgraph Cron["Daily cron (VST 03:00)"]
+    C1["cron-filter-due<br/>find equipment with imminent filterDueDate"]
+    C2["cron-recurring-payments<br/>generate monthly billing"]
+    C3["cron-overdue-escalation<br/>tiered overdue notifications"]
   end
 
-  subgraph D14["D-14 (필터 교체 14일 전)"]
+  subgraph D14["D-14 (14 days before filter due)"]
     E1["EMAIL_FILTER_DUE_D14 → primary OPS"]
-    A1["사무실 작업 큐에 표시"]
+    A1["Surface in office work queue"]
   end
 
-  subgraph D1["D-1 (방문 전날)"]
+  subgraph D1["D-1 (day before visit)"]
     S1["SMS_VISIT_REMINDER → primary OPS"]
-    V1["PERIODIC Visit 자동 생성<br/>+ 기사 자동 배정"]
+    V1["Auto-create PERIODIC Visit<br/>+ auto-assign technician"]
   end
 
-  subgraph VisitDay["방문일"]
-    T1["기사 모바일에서 Visit 진행"]
-    T2["필터 교체 + 사진 + 서명"]
-    T3["VisitComplete + filterDueDate 재계산"]
+  subgraph VisitDay["Visit day"]
+    T1["Tech processes the Visit on mobile"]
+    T2["Filter swap + photos + signature"]
+    T3["VisitComplete + recompute filterDueDate"]
   end
 
   C1 --> D14 --> D1 --> VisitDay
-  C2 -.->|월 1회| RentalBilling["Rental/Maintenance<br/>월 청구 Payment 행 생성"]
+  C2 -.->|monthly| RentalBilling["Rental/Maintenance<br/>create monthly Payment rows"]
 ```
 
-### 6.2 Filter Due 계산
+### 6.2 Filter Due Calculation
 
 ```
 filterDueDate = Equipment.installDate + EquipmentModel.filter.replacementMonths
 ```
 
-각 교체 시 재계산: `filterDueDate = lastReplacedAt + replacementMonths`.
+Recomputed on each replacement: `filterDueDate = lastReplacedAt + replacementMonths`.
 
 `filterPolicy` JSON (E.2):
-- 기본 RENTAL = 필터 무료 포함
-- B2C SALE = 필터 유료 (고객 부담)
-- 특정 partCode는 예외 가능 (계약별 override)
+- Default RENTAL = filters included free
+- B2C SALE = filters paid (customer-borne)
+- Specific partCodes may be exceptions (contract-level overrides)
 
-### 6.3 정기점검 Visit 완료 후
+### 6.3 After Periodic Visit Completion
 
 ```mermaid
 sequenceDiagram
@@ -596,65 +596,65 @@ sequenceDiagram
   participant OPS as OPS_CONTACT
 
   Tech->>System: PATCH /api/mobile/visits/:id/complete<br/>(replacedFilters, sigs, photos)
-  System->>DB: Equipment.filterDueDate 재계산
+  System->>DB: Recompute Equipment.filterDueDate
   System->>DB: Visit.status=COMPLETED + completedAt
-  System->>DB: FilterReplacementLog 행 추가
-  System->>System: 정기점검표 PDF 생성<br/>(bilingual VI primary)
-  System->>S3: PDF 업로드
+  System->>DB: Insert FilterReplacementLog row
+  System->>System: Generate periodic-check report PDF<br/>(bilingual VI primary)
+  System->>S3: Upload PDF
   System->>OPS: EMAIL_PERIODIC_CHECK_COMPLETED (PDF attached)
-  System->>System: 다음 PERIODIC Visit cron이 예약
+  System->>System: Next PERIODIC Visit scheduled by cron
 ```
 
 ---
 
-## 7. 서비스 요청 (Service Request)
+## 7. Service Request
 
-고객이 portal에서 직접 제출하는 요청. 일부는 자동 승인, 일부는 사무실 검토 + 견적.
+Customer-submitted requests via the portal. Some auto-approve, others require office review + quoting.
 
-### 7.1 Service Request 상태 머신
+### 7.1 Service Request State Machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> SUBMITTED: 고객 제출
-  SUBMITTED --> AUTO_APPROVED: 무료 type 자동
-  SUBMITTED --> APPROVED: 사무실 검토 후
-  SUBMITTED --> REJECTED: 사무실 거부
+  [*] --> SUBMITTED: Customer submits
+  SUBMITTED --> AUTO_APPROVED: Free type, automatic
+  SUBMITTED --> APPROVED: After office review
+  SUBMITTED --> REJECTED: Office rejects
 
-  AUTO_APPROVED --> SCHEDULED: Visit 자동 생성
-  APPROVED --> SCHEDULED: Visit 생성
+  AUTO_APPROVED --> SCHEDULED: Visit auto-created
+  APPROVED --> SCHEDULED: Visit created
 
-  SCHEDULED --> COMPLETED: Visit 완료
-  SCHEDULED --> CANCELLED: 고객 취소
+  SCHEDULED --> COMPLETED: Visit completed
+  SCHEDULED --> CANCELLED: Customer cancels
   REJECTED --> [*]
   COMPLETED --> [*]
   CANCELLED --> [*]
 ```
 
-### 7.2 무료 SR (자동 승인 — INSPECTION/CONSULTATION)
+### 7.2 Free SR (Auto-approved — INSPECTION/CONSULTATION)
 
 ```mermaid
 sequenceDiagram
   participant Customer as CONTRACT_PARTY/OPS
   participant Portal as Customer Portal
   participant System as SOMS
-  participant Scheduler as 스케줄러
+  participant Scheduler as Scheduler
   participant Tech as TECHNICIAN
 
   Customer->>Portal: /portal/requests/new<br/>(type=INSPECTION, photos)
   Portal->>System: POST /api/portal/service-requests
-  System->>System: 무료 type 판정 → AUTO_APPROVED
-  System->>Scheduler: 자동 PERIODIC Visit 생성<br/>(C.1 알고리즘)
-  System->>System: ServiceRequest.linkedVisitId 설정
-  System->>Customer: EMAIL_SR_RECEIVED + SMS_SR_APPROVED (날짜)
-  System->>Tech: 모바일 큐에 추가
+  System->>System: Free type → AUTO_APPROVED
+  System->>Scheduler: Auto-create PERIODIC Visit<br/>(C.1 algorithm)
+  System->>System: Set ServiceRequest.linkedVisitId
+  System->>Customer: EMAIL_SR_RECEIVED + SMS_SR_APPROVED (date)
+  System->>Tech: Add to mobile queue
 
-  Tech->>Customer: 방문 + 작업
+  Tech->>Customer: Visit + work
   Tech->>System: Visit COMPLETED
   System->>System: ServiceRequest.status = COMPLETED
   System->>Customer: EMAIL_VISIT_COMPLETED
 ```
 
-### 7.3 유료 SR (검토 필요 — RELOCATION/PART_REPLACEMENT)
+### 7.3 Paid SR (Requires Review — RELOCATION/PART_REPLACEMENT)
 
 ```mermaid
 sequenceDiagram
@@ -664,29 +664,29 @@ sequenceDiagram
   participant Staff as STAFF+
   participant Tech as TECHNICIAN
 
-  Customer->>Portal: type=RELOCATION, 새 주소
+  Customer->>Portal: type=RELOCATION, new address
   Portal->>System: POST /api/portal/service-requests
-  System->>System: 유료 type → SUBMITTED (검토 대기)
-  System->>Customer: EMAIL_SR_RECEIVED (검토 중 안내)
-  System->>Staff: 사무실 작업 큐 진입<br/>/o/service-requests?state=SUBMITTED
+  System->>System: Paid type → SUBMITTED (pending review)
+  System->>Customer: EMAIL_SR_RECEIVED (under review notice)
+  System->>Staff: Add to office queue<br/>/o/service-requests?state=SUBMITTED
 
-  Staff->>System: 검토 + 견적 입력<br/>(quotedAmount)
-  alt 승인
+  Staff->>System: Review + enter quote<br/>(quotedAmount)
+  alt Approved
     Staff->>System: PATCH /api/service-requests/:id<br/>(state=APPROVED)
-    System->>System: Visit 자동 생성
-    System->>Customer: SMS_SR_APPROVED + EMAIL_SR_APPROVED (PDF 견적)
-    Customer->>System: 결제 (BANK_TRANSFER) → office 매칭
-    Tech->>Customer: 방문 + 작업
+    System->>System: Auto-create Visit
+    System->>Customer: SMS_SR_APPROVED + EMAIL_SR_APPROVED (PDF quote)
+    Customer->>System: Payment (BANK_TRANSFER) → office matching
+    Tech->>Customer: Visit + work
     Tech->>System: COMPLETED
-  else 거부
+  else Rejected
     Staff->>System: state=REJECTED + reason
     System->>Customer: SMS_SR_REJECTED + EMAIL_SR_REJECTED
   end
 ```
 
-### 7.4 Service Request 메시지 thread
+### 7.4 Service Request Message Thread
 
-고객과 사무실은 SR 안에서 양방향 메시지 교환 가능 (mockup screen 53).
+Customer and office can exchange messages within an SR (mockup screen 53).
 
 ```mermaid
 flowchart LR
@@ -705,50 +705,50 @@ flowchart LR
 
 ---
 
-## 8. 방문 (Visit) 워크플로
+## 8. Visit Workflow
 
-### 8.1 Visit 상태 머신
+### 8.1 Visit State Machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> SCHEDULED: 자동 또는 수동 생성
-  SCHEDULED --> CONFIRMED: 고객 확인
-  SCHEDULED --> RESCHEDULED: 일정 변경
-  RESCHEDULED --> SCHEDULED: 새 행 생성, 연결
+  [*] --> SCHEDULED: Auto or manual creation
+  SCHEDULED --> CONFIRMED: Customer confirms
+  SCHEDULED --> RESCHEDULED: Schedule change
+  RESCHEDULED --> SCHEDULED: New row created, linked
 
-  CONFIRMED --> IN_PROGRESS: 기사 도착 + 시작
-  SCHEDULED --> IN_PROGRESS: B2B는 confirm 없이 진행
+  CONFIRMED --> IN_PROGRESS: Tech arrives + starts
+  SCHEDULED --> IN_PROGRESS: B2B proceeds without confirm
 
-  IN_PROGRESS --> COMPLETED: 기사 완료 + 서명
-  IN_PROGRESS --> NEEDS_REVISIT: 부품 미준비 / 재방문 필요
+  IN_PROGRESS --> COMPLETED: Tech completes + signature
+  IN_PROGRESS --> NEEDS_REVISIT: Parts missing / revisit required
 
-  SCHEDULED --> CUSTOMER_NO_SHOW: 부재
+  SCHEDULED --> CUSTOMER_NO_SHOW: Customer absent
   CUSTOMER_NO_SHOW --> RESCHEDULED
 
-  SCHEDULED --> CANCELLED: 고객/사무실 취소
+  SCHEDULED --> CANCELLED: Customer/office cancellation
 
   COMPLETED --> [*]
   NEEDS_REVISIT --> SCHEDULED
   CANCELLED --> [*]
 ```
 
-### 8.2 자동 스케줄러 추천 (C.1)
+### 8.2 Auto-Scheduler Recommendation (C.1)
 
 ```mermaid
 flowchart TD
-  Start["새 Visit 생성 (SR 승인 or PERIODIC cron)"]
-  Q1{Customer.preferredTechnicianId<br/>설정?}
-  Q2{preferred tech<br/>당일 가용?}
-  PickPreferred["1순위: preferred tech"]
+  Start["New Visit created (SR approval or PERIODIC cron)"]
+  Q1{Customer.preferredTechnicianId<br/>set?}
+  Q2{Preferred tech<br/>available that day?}
+  PickPreferred["Priority 1: preferred tech"]
 
-  Q3["region match 후보군<br/>Technician.preferredRegion ∩ Customer/Site.region"]
-  Q4["당일 부하 적은 순 정렬<br/>(이미 배정된 Visit 수)"]
-  PickByLoad["2순위: 지역 + 부하 균형"]
+  Q3["Region-match candidate pool<br/>Technician.preferredRegion ∩ Customer/Site.region"]
+  Q4["Sort by daily load (ascending)<br/>(visits already assigned)"]
+  PickByLoad["Priority 2: region + load balance"]
 
-  Office["사무실 화면: 1순위 추천 + 후보 리스트 표시"]
-  Confirm{1-click 승인}
-  Override{수동 override<br/>다른 기사 선택}
-  Save["Visit.leadTechnicianId 저장<br/>+ collaboratorTechnicianIds[]"]
+  Office["Office screen: top recommendation + candidate list"]
+  Confirm{1-click approve}
+  Override{Manual override<br/>pick another tech}
+  Save["Save Visit.leadTechnicianId<br/>+ collaboratorTechnicianIds[]"]
 
   Start --> Q1
   Q1 -->|yes| Q2
@@ -763,31 +763,31 @@ flowchart TD
   Override --> Save
 ```
 
-### 8.3 Lead vs Collaborator 기사 (K.3)
+### 8.3 Lead vs Collaborator Technicians (K.3)
 
 ```mermaid
 flowchart LR
-  Visit["Visit row<br/>leadTechnicianId (필수)<br/>collaboratorTechnicianIds[] (선택)"]
+  Visit["Visit row<br/>leadTechnicianId (required)<br/>collaboratorTechnicianIds[] (optional)"]
 
-  subgraph Lead["Lead Tech (1명)"]
-    L1["방문 완료 권한"]
-    L2["서명 받기"]
-    L3["현금 수금"]
-    L4["작업확인서 PDF 서명"]
+  subgraph Lead["Lead Tech (1)"]
+    L1["Can mark visit complete"]
+    L2["Collect signature"]
+    L3["Collect cash"]
+    L4["Sign work-confirmation PDF"]
   end
 
-  subgraph Collab["Collaborators (0..N명)"]
-    C1["모바일 큐에 '공유됨' 배지로 표시"]
-    C2["사진 · 노트 추가 가능"]
-    C3["완료 마킹 불가"]
-    C4["수금 불가"]
+  subgraph Collab["Collaborators (0..N)"]
+    C1["Shows on mobile queue with 'Shared' badge"]
+    C2["Can add photos · notes"]
+    C3["Cannot mark complete"]
+    C4["Cannot accept payment"]
   end
 
   Visit --> Lead
   Visit --> Collab
 ```
 
-### 8.4 모바일 Visit 완료 마법사
+### 8.4 Mobile Visit Completion Wizard
 
 ```mermaid
 sequenceDiagram
@@ -796,86 +796,86 @@ sequenceDiagram
   participant System as SOMS
   participant Offline as IndexedDB queue
 
-  Tech->>Mobile: Step 1: 도착 + IN_PROGRESS 마킹
+  Tech->>Mobile: Step 1: Arrive + mark IN_PROGRESS
   Mobile->>System: PATCH /api/mobile/visits/:id (status=IN_PROGRESS)
 
-  Tech->>Mobile: Step 2: 작업 항목 선택<br/>(필터 교체, 부품 교체)
-  Mobile->>Mobile: useApiQuery (staleTime:Infinity)<br/>← 마법사 중간 값 변경 방지
+  Tech->>Mobile: Step 2: Select work items<br/>(filter swap, part replacement)
+  Mobile->>Mobile: useApiQuery (staleTime:Infinity)<br/>← prevents mid-wizard value drift
 
-  Tech->>Mobile: Step 3: 사진 촬영 + 업로드
-  alt 온라인
+  Tech->>Mobile: Step 3: Take + upload photos
+  alt Online
     Mobile->>System: POST /api/mobile/visits/:id/photos
-  else 오프라인 (C.4 — Phase 7+)
-    Mobile->>Offline: PHOTO_UPLOAD 큐잉
+  else Offline (C.4 — Phase 7+)
+    Mobile->>Offline: Queue PHOTO_UPLOAD
   end
 
-  Tech->>Mobile: Step 4: 고객 서명 (E.1: 종이 사진)
+  Tech->>Mobile: Step 4: Customer signature (E.1: paper photo)
   Mobile->>System: POST signaturePath
 
-  Tech->>Mobile: Step 5: 결제 수금
-  alt 현금
-    Tech->>Mobile: 금액 + 영수증 발급
+  Tech->>Mobile: Step 5: Collect payment
+  alt Cash
+    Tech->>Mobile: Amount + issue receipt
     Mobile->>System: POST /api/payments<br/>(method=CASH_AT_VISIT, collectedByUserId=tech)
-    Note over Mobile,System: officeReceivedAt = null<br/>(다음날 사무실 매칭)
-  else 이미 송금됨
+    Note over Mobile,System: officeReceivedAt = null<br/>(office matches next day)
+  else Already transferred
     Tech->>Mobile: BANK_TRANSFER skip
   end
 
-  Tech->>Mobile: Step 6: 완료 마킹
+  Tech->>Mobile: Step 6: Mark complete
   Mobile->>System: PATCH visit (status=COMPLETED, completedAt)
-  System->>System: Equipment.filterDueDate 재계산
-  System->>System: 작업확인서 PDF 생성 → S3
-  System-->>Tech: 완료 화면 + 다음 visit 안내
+  System->>System: Recompute Equipment.filterDueDate
+  System->>System: Generate work-confirmation PDF → S3
+  System-->>Tech: Completion screen + next visit prompt
 ```
 
-### 8.5 Cash Handover (현금 인계)
+### 8.5 Cash Handover
 
 ```mermaid
 sequenceDiagram
   participant Tech as TECHNICIAN
-  participant Office as STAFF (다음날)
+  participant Office as STAFF (next day)
   participant System as SOMS
   participant DB
 
-  Note over Tech,DB: 당일 저녁
+  Note over Tech,DB: End of day
 
-  Tech->>System: 본인 미인계 현금 현황<br/>(/f/profile → 보유 현금)
-  System-->>Tech: 합계 = SUM(officeReceivedAt IS NULL Payments)
+  Tech->>System: Check own undeposited cash<br/>(/f/profile → cash on hand)
+  System-->>Tech: Sum = SUM(officeReceivedAt IS NULL Payments)
 
-  Note over Tech,DB: 다음 영업일 오전
+  Note over Tech,DB: Next business day morning
 
-  Tech->>Office: 현금 + 영수증 사본 인계
-  Office->>System: /o/payments → 인계 매칭
+  Tech->>Office: Hand over cash + receipt copies
+  Office->>System: /o/payments → match handover
   Office->>System: PATCH /api/payments/:id<br/>(officeReceivedAt = now, receivedByUserId)
   System->>DB: Payment.status = RECEIVED
   System->>DB: AuditLog: PAYMENT_OFFICE_RECEIVED
 
-  alt 차이 발생 (분실, 미인계)
-    System->>System: cron-cash-handover-alert<br/>(D+1 미인계 시 ADMIN 알림)
+  alt Discrepancy (lost, not handed over)
+    System->>System: cron-cash-handover-alert<br/>(notify ADMIN on D+1 non-handover)
   end
 ```
 
 ---
 
-## 9. 청구 · 결제 · 세금계산서
+## 9. Billing · Payment · Tax Invoice
 
-### 9.1 결제 방법 매트릭스
+### 9.1 Payment Method Matrix
 
 ```mermaid
 flowchart TD
-  Bill["청구 발생 trigger"]
+  Bill["Billing trigger"]
   Bill --> A1[CASH_AT_VISIT]
   Bill --> A2[BANK_TRANSFER]
   Bill --> A3[B2B_EINVOICE]
   Bill --> A4[B2B_NO_INVOICE]
 
-  A1 --> F1["기사 현장 수금<br/>→ 다음날 사무실 인계<br/>→ officeReceivedAt 마킹"]
-  A2 --> F2["고객 송금<br/>→ 사무실 transferReference 매칭<br/>→ status=RECONCILED"]
-  A3 --> F3["사무실 e-invoice 외부 발행<br/>→ PDF 업로드<br/>→ 송금 대기 → 매칭"]
-  A4 --> F4["BANK_TRANSFER와 동일<br/>invoicePdfPath=null"]
+  A1 --> F1["Tech collects on site<br/>→ next-day office handover<br/>→ mark officeReceivedAt"]
+  A2 --> F2["Customer transfers<br/>→ office matches transferReference<br/>→ status=RECONCILED"]
+  A3 --> F3["Office issues external e-invoice<br/>→ upload PDF<br/>→ await transfer → match"]
+  A4 --> F4["Same as BANK_TRANSFER<br/>invoicePdfPath=null"]
 ```
 
-### 9.2 월 청구 생성 (Recurring Payments cron)
+### 9.2 Monthly Billing (Recurring Payments Cron)
 
 ```mermaid
 sequenceDiagram
@@ -884,93 +884,93 @@ sequenceDiagram
   participant System as SOMS
   participant CP as CONTRACT_PARTY
 
-  Note over Cron,CP: 매월 1일 03:00 VST
+  Note over Cron,CP: 1st of each month, 03:00 VST
 
-  Cron->>DB: ACTIVE Rental + MAINTENANCE 조회
-  loop 각 계약
-    Cron->>DB: 이번 달 Payment 행 존재?
-    alt 없음
-      Cron->>DB: Payment 행 추가<br/>(amount=monthlyFee, status=PENDING,<br/>coveredMonth=YYYY-MM)
+  Cron->>DB: Find ACTIVE Rental + MAINTENANCE
+  loop per contract
+    Cron->>DB: Does this month's Payment row exist?
+    alt Missing
+      Cron->>DB: Insert Payment row<br/>(amount=monthlyFee, status=PENDING,<br/>coveredMonth=YYYY-MM)
       Cron->>System: EMAIL_RENTAL_DUE → CP
-    else 이미 있음
+    else Already present
       Cron->>Cron: skip
     end
   end
 ```
 
-### 9.3 결제 상태 머신
+### 9.3 Payment State Machine
 
 ```mermaid
 stateDiagram-v2
-  [*] --> PENDING: cron이 생성 또는 수동 입력
-  PENDING --> RECEIVED: 현금 수금 또는 송금 도착
-  RECEIVED --> RECONCILED: contract installment에 매칭
-  PENDING --> WAIVED: ADMIN/MANAGER 면제
-  PENDING --> BOUNCED: 송금 실패 / 부도
+  [*] --> PENDING: Created by cron or manual entry
+  PENDING --> RECEIVED: Cash collected or transfer arrived
+  RECEIVED --> RECONCILED: Matched to contract installment
+  PENDING --> WAIVED: ADMIN/MANAGER waived
+  PENDING --> BOUNCED: Transfer failed / dishonor
 
-  BOUNCED --> RECEIVED: 재송금 성공
+  BOUNCED --> RECEIVED: Successful retransfer
   WAIVED --> [*]
   RECONCILED --> [*]
 ```
 
-### 9.4 미수금 escalation (Dunning)
+### 9.4 Overdue Escalation (Dunning)
 
 ```mermaid
 flowchart TD
-  Subgraph7d["D+7 (1차)"]
-  Subgraph14d["D+14 (2차)"]
-  Subgraph30d["D+30 (최종)"]
+  Subgraph7d["D+7 (1st)"]
+  Subgraph14d["D+14 (2nd)"]
+  Subgraph30d["D+30 (final)"]
 
-  Trigger["Payment.status=PENDING<br/>+ dueDate 경과"]
+  Trigger["Payment.status=PENDING<br/>+ past dueDate"]
 
-  Trigger --> D7{cron 매일 체크}
+  Trigger --> D7{Daily cron check}
   D7 -->|D+7| E1[EMAIL_PAYMENT_OVERDUE_D7 → CP + OPS]
   D7 -->|D+14| E2[EMAIL_PAYMENT_OVERDUE_D14 → CP + OPS]
-  D7 -->|D+30| E3[SMS_PAYMENT_OVERDUE_FINAL → CP + 모든 OPS]
-  E3 --> Action["Contract.status → OVERDUE<br/>사무실에 강제 통보 진입"]
+  D7 -->|D+30| E3[SMS_PAYMENT_OVERDUE_FINAL → CP + all OPS]
+  E3 --> Action["Contract.status → OVERDUE<br/>Escalate to office for forced action"]
 ```
 
-### 9.5 B2B 세금계산서 (Tax Invoice)
+### 9.5 B2B Tax Invoice
 
-v1에서는 **외부 e-invoice 시스템**(Viettel SInvoice / MISA / VNPT eHoadon)에서 발행한 PDF를 SOMS에 **업로드**하는 방식.
+In v1, an **external e-invoice system** (Viettel SInvoice / MISA / VNPT eHoadon) issues the PDF, which is then **uploaded** to SOMS.
 
 ```mermaid
 sequenceDiagram
   participant Mgr as MANAGER
   participant System as SOMS
-  participant External as 외부 e-Invoice<br/>(Viettel/MISA/VNPT)
+  participant External as External e-Invoice<br/>(Viettel/MISA/VNPT)
   participant CP as B2B Customer<br/>CONTRACT_PARTY
-  participant Email as Email Relay<br/>(vhost.vn 또는 Resend)
+  participant Email as Email Relay<br/>(vhost.vn or Resend)
 
-  Note over Mgr,Email: 월말 마감 + 송장 발행
+  Note over Mgr,Email: Month-end close + invoice issuance
 
-  Mgr->>External: 외부 시스템에서<br/>세금계산서 발행
-  External-->>Mgr: PDF 다운로드
+  Mgr->>External: Issue tax invoice<br/>in external system
+  External-->>Mgr: Download PDF
 
-  Mgr->>System: /o/tax-invoices/new<br/>(customerId, contractId, PDF 업로드,<br/>invoiceNumber, issuedAt)
-  System->>S3: PDF 저장 → invoicePdfPath
-  System->>System: Payment 행 연결<br/>(method=B2B_EINVOICE)
-  System->>Email: EMAIL_TAX_INVOICE_ISSUED → CP<br/>(PDF attached, 운영 email 채널)
-  Email-->>CP: 수신
+  Mgr->>System: /o/tax-invoices/new<br/>(customerId, contractId, upload PDF,<br/>invoiceNumber, issuedAt)
+  System->>S3: Store PDF → invoicePdfPath
+  System->>System: Link to Payment row<br/>(method=B2B_EINVOICE)
+  System->>Email: EMAIL_TAX_INVOICE_ISSUED → CP<br/>(PDF attached, operational email channel)
+  Email-->>CP: Delivered
 
-  CP->>System: BANK_TRANSFER 송금
-  Mgr->>System: 사무실 매칭<br/>(transferReference 입력)
+  CP->>System: BANK_TRANSFER
+  Mgr->>System: Office matching<br/>(enter transferReference)
   System->>System: Payment.status = RECONCILED
 ```
 
-**보존 정책 (E.4)**: 세금계산서 PDF는 **10년 보존** (베트남 법 best practice). 일반 영수증은 5년.
+**Retention policy (E.4)**: Tax invoice PDFs are retained **10 years** (Vietnamese legal best practice). Regular receipts: 5 years.
 
-### 9.6 영수증 (Receipt)
+### 9.6 Receipt
 
-CASH_AT_VISIT 결제 시 기사가 현장에서 영수증 발급:
+When a CASH_AT_VISIT payment is collected, the tech issues a receipt on site:
 
 ```mermaid
 flowchart LR
-  Cash["기사 현금 수금"]
-  GenReceipt["영수증 PDF 즉시 생성<br/>(bilingual)"]
-  PrintShow{기사 옵션}
-  Print["휴대용 프린터 출력"]
-  Show["모바일 화면 표시 + QR 스캔"]
+  Cash["Tech collects cash"]
+  GenReceipt["Receipt PDF generated immediately<br/>(bilingual)"]
+  PrintShow{Tech's choice}
+  Print["Portable printer output"]
+  Show["Display on mobile + QR scan"]
   Email["EMAIL_PAYMENT_RECEIPT → primary OPS"]
 
   Cash --> GenReceipt --> PrintShow
@@ -981,83 +981,83 @@ flowchart LR
 
 ---
 
-## 10. 알림 (Cross-cutting)
+## 10. Notifications (Cross-cutting)
 
-### 10.1 채널 선택 매트릭스
+### 10.1 Channel Selection Matrix
 
 ```mermaid
 flowchart TD
-  Template["발송할 템플릿"]
-  Decision{내용 성격}
+  Template["Template to send"]
+  Decision{Content nature}
 
-  Decision -->|보안 · 자격증명<br/>≤24h window<br/>최종 escalation| SMS["SMS Only<br/>(eSMS)"]
-  Decision -->|영수증 · 정기 안내<br/>PDF 첨부| Email["Email Only<br/>(Resend)"]
-  Decision -->|초기 환영 · SR 승인<br/>풍부한 안내| Hybrid["SMS + Email<br/>(둘 다)"]
+  Decision -->|Security · Credentials<br/>≤24h window<br/>Final escalation| SMS["SMS Only<br/>(eSMS)"]
+  Decision -->|Receipts · Periodic notices<br/>PDF attachments| Email["Email Only<br/>(Resend)"]
+  Decision -->|Initial welcome · SR approval<br/>Rich guidance| Hybrid["SMS + Email<br/>(both)"]
 
   Template --> Decision
 
-  Email --> Tax{tax invoice?}
-  Tax -->|yes| OpsEmail["vhost.vn 운영 채널"]
-  Tax -->|no| TransEmail["Resend 트랜잭션 채널"]
+  Email --> Tax{Tax invoice?}
+  Tax -->|yes| OpsEmail["vhost.vn operational channel"]
+  Tax -->|no| TransEmail["Resend transactional channel"]
 ```
 
-**SMS Only 케이스 (7개 템플릿)**:
-- SMS_PORTAL_WELCOME — 첫 임시 비번 (보안)
-- SMS_PASSWORD_RESET — 재발급 (보안, opt-out 무시)
-- SMS_VISIT_REMINDER — D-1 알림
-- SMS_SR_APPROVED — 유료 SR 최종 승인 + 일정
-- SMS_SR_REJECTED — 거부 + 사유
-- SMS_PAYMENT_OVERDUE_FINAL — D+30 최종 escalation
-- SMS_CONTRACT_RENEWAL_FINAL — D-7 갱신 최종
+**SMS-Only cases (7 templates)**:
+- SMS_PORTAL_WELCOME — First temp password (security)
+- SMS_PASSWORD_RESET — Reset (security, ignores opt-out)
+- SMS_VISIT_REMINDER — D-1 reminder
+- SMS_SR_APPROVED — Paid SR final approval + schedule
+- SMS_SR_REJECTED — Rejection + reason
+- SMS_PAYMENT_OVERDUE_FINAL — D+30 final escalation
+- SMS_CONTRACT_RENEWAL_FINAL — D-7 final renewal notice
 
-**Email Only / Hybrid 케이스**: `docs/DOCUMENT_TEMPLATES.md` §B + §C 매트릭스 참조.
+**Email-Only / Hybrid cases**: see `docs/DOCUMENT_TEMPLATES.md` §B + §C matrix.
 
-### 10.2 채널 라우팅 + 언어 결정
+### 10.2 Channel Routing + Language Selection
 
 ```mermaid
 flowchart TD
-  Template["템플릿 + 컨텍스트"]
-  Channel{채널?}
+  Template["Template + context"]
+  Channel{Channel?}
 
-  Channel -->|SMS| Recipient1["수신자 결정"]
-  Channel -->|Email| Recipient2["수신자 결정"]
+  Channel -->|SMS| Recipient1["Determine recipient"]
+  Channel -->|Email| Recipient2["Determine recipient"]
 
-  Recipient1 --> R1{템플릿 종류}
-  R1 -->|계약 · 법적| CP1[CONTRACT_PARTY]
-  R1 -->|운영 · 방문| OPS1[primary OPS_CONTACT]
-  R1 -->|미수금 최종| Both1[CP + 모든 OPS]
+  Recipient1 --> R1{Template kind}
+  R1 -->|Contract · Legal| CP1[CONTRACT_PARTY]
+  R1 -->|Operational · Visit| OPS1[primary OPS_CONTACT]
+  R1 -->|Overdue final| Both1[CP + all OPS]
 
-  Recipient2 --> R2{언어 결정}
-  R2 -->|contact.language 있음| L1[contact.language]
+  Recipient2 --> R2{Language selection}
+  R2 -->|contact.language present| L1[contact.language]
   R2 -->|empty| L2[CONTRACT_PARTY.language]
-  R2 -->|CP도 empty| L3[vi 기본]
+  R2 -->|CP also empty| L3[vi default]
 
-  CP1 --> Send1["발송 큐"]
+  CP1 --> Send1["Send queue"]
   OPS1 --> Send1
   Both1 --> Send1
   L1 --> Send1
   L2 --> Send1
   L3 --> Send1
 
-  Send1 --> Opt{opt-out 체크}
-  Opt -->|system msg<br/>비밀번호/영수증| IgnoreOpt["opt-out 무시 · 강제 발송"]
-  Opt -->|일반 msg<br/>+ smsOptOut=true| Skip["발송 skip + 로그"]
-  Opt -->|일반 msg<br/>+ opt-out=false| Deliver["발송"]
+  Send1 --> Opt{Opt-out check}
+  Opt -->|System msg<br/>password/receipt| IgnoreOpt["Ignore opt-out · force send"]
+  Opt -->|Regular msg<br/>+ smsOptOut=true| Skip["Skip + log"]
+  Opt -->|Regular msg<br/>+ opt-out=false| Deliver["Deliver"]
 ```
 
 ### 10.3 Channel Fallback
 
 ```mermaid
 flowchart LR
-  Decide["선호 채널<br/>(매트릭스에 따라)"]
-  Check1{선호 채널<br/>가능?}
-  Use1["선호 채널 발송"]
-  Check2{대체 채널<br/>가능?}
-  UseAlt["대체 채널 발송"]
-  AdminAlert["둘 다 불가 →<br/>ADMIN 알림 + AuditLog"]
+  Decide["Preferred channel<br/>(per matrix)"]
+  Check1{Preferred channel<br/>available?}
+  Use1["Send via preferred channel"]
+  Check2{Fallback channel<br/>available?}
+  UseAlt["Send via fallback channel"]
+  AdminAlert["Neither available →<br/>Notify ADMIN + AuditLog"]
 
   Decide --> Check1
-  Check1 -->|yes — phone/email 존재| Use1
+  Check1 -->|yes — phone/email exists| Use1
   Check1 -->|no| Check2
   Check2 -->|yes| UseAlt
   Check2 -->|no| AdminAlert
@@ -1065,40 +1065,40 @@ flowchart LR
 
 ---
 
-## 11. 인증 · 세션 (3-Realm)
+## 11. Authentication · Sessions (3-Realm)
 
-### 11.1 Office 로그인 + Silent Refresh
+### 11.1 Office Login + Silent Refresh
 
 ```mermaid
 sequenceDiagram
-  participant U as Office 사용자
+  participant U as Office user
   participant L as /o/login
   participant API as /api/auth/office/login
   participant DB
-  participant App as Office 영역
+  participant App as Office area
 
   U->>L: username/phone + password
   L->>API: POST credentials
-  API->>DB: User 조회<br/>(phone unique) or (username findMany take:2)
-  alt username 동명이인 발견
-    API-->>L: 401 INVALID_CREDENTIALS<br/>(보안: 동일 메시지)
+  API->>DB: Look up User<br/>(phone unique) or (username findMany take:2)
+  alt Namesake on username
+    API-->>L: 401 INVALID_CREDENTIALS<br/>(security: identical message)
   end
-  API->>API: bcrypt 비교 + role 확인
-  alt role mismatch (예: TECHNICIAN이 office에)
+  API->>API: bcrypt compare + role check
+  alt Role mismatch (e.g. TECHNICIAN to office)
     API-->>L: 409 ROLE_MISMATCH<br/>+ suggestedUrl: /f/login
   end
-  API->>DB: Session row + JWT 발급<br/>(aud=office, 15min)
-  API->>DB: refreshToken (30일, httpOnly)
+  API->>DB: Session row + issue JWT<br/>(aud=office, 15min)
+  API->>DB: refreshToken (30d, httpOnly)
   API-->>L: { user, accessToken } + cookies
   L->>App: router.replace(/o/dashboard)
 
-  loop 12분마다
+  loop Every 12 minutes
     App->>API: POST /api/auth/office/refresh<br/>(refreshToken cookie)
-    API-->>App: 새 accessToken
+    API-->>App: New accessToken
   end
 ```
 
-### 11.2 Customer Portal 로그인
+### 11.2 Customer Portal Login
 
 ```mermaid
 sequenceDiagram
@@ -1110,22 +1110,22 @@ sequenceDiagram
   C->>L: phone + password (+ optional contactId)
   L->>API: POST
   API->>DB: CustomerContact.findMany(phone=phone)
-  alt 동일 phone 다수 (A.13)
-    API-->>L: { candidates: [...] }<br/>고객이 본인 선택
-    C->>L: contactId 선택
+  alt Multiple contacts share phone (A.13)
+    API-->>L: { candidates: [...] }<br/>Customer picks themselves
+    C->>L: Pick contactId
     L->>API: POST + contactId
   end
-  API->>API: bcrypt 비교
-  API->>DB: CustomerSession 생성<br/>(aud=customer, 15min access + 30일 refresh)
+  API->>API: bcrypt compare
+  API->>DB: Create CustomerSession<br/>(aud=customer, 15min access + 30d refresh)
   API-->>L: { contact, accessToken, mustChangePassword }
   alt mustChangePassword=true
-    L->>C: /change-password 강제
+    L->>C: Force /change-password
   else
     L->>C: /
   end
 ```
 
-### 11.3 비밀번호 변경 + Sibling Session Revoke
+### 11.3 Password Change + Sibling Session Revoke
 
 ```mermaid
 sequenceDiagram
@@ -1134,47 +1134,47 @@ sequenceDiagram
   participant DB
 
   C->>API: POST oldPassword + newPassword
-  API->>API: oldPassword bcrypt 비교
-  API->>DB: passwordHash 갱신
-  API->>DB: revokeAllCustomerSessions(contactId)<br/>(전체 세션 무효화)
-  API->>DB: 새 CustomerSession 발급<br/>(현재 호출자에게만 fresh 쿠키)
-  API-->>C: 새 access/refresh cookies
-  Note over API,DB: 도난된 refresh 토큰이 있었다면<br/>이 시점에 사용 불가가 됨
+  API->>API: bcrypt compare oldPassword
+  API->>DB: Update passwordHash
+  API->>DB: revokeAllCustomerSessions(contactId)<br/>(invalidate all sessions)
+  API->>DB: Issue new CustomerSession<br/>(only caller gets fresh cookies)
+  API-->>C: New access/refresh cookies
+  Note over API,DB: Any stolen refresh token<br/>becomes unusable at this point
 ```
 
-### 11.4 로그아웃 + Cache 정리
+### 11.4 Logout + Cache Cleanup
 
 ```mermaid
 flowchart LR
-  Logout["사용자가 logout 버튼 클릭"]
-  API["POST /api/auth/*/logout<br/>(session DB row 삭제)"]
-  Clear["AuthProvider.logout finally:<br/>1. setUser(null)<br/>2. setAccessToken(null)<br/>3. sessionStorage.clear()<br/>4. queryClient.clear() ← TanStack Query 캐시 전부<br/>5. (field만) clearOfflineQueue() ← Dexie IndexedDB"]
-  Redirect["realm별 login으로 redirect"]
+  Logout["User clicks logout"]
+  API["POST /api/auth/*/logout<br/>(delete session DB row)"]
+  Clear["AuthProvider.logout finally:<br/>1. setUser(null)<br/>2. setAccessToken(null)<br/>3. sessionStorage.clear()<br/>4. queryClient.clear() ← entire TanStack Query cache<br/>5. (field only) clearOfflineQueue() ← Dexie IndexedDB"]
+  Redirect["Redirect to realm login"]
 
   Logout --> API --> Clear --> Redirect
 ```
 
-**같은 device에서 다음 사용자가 로그인해도 이전 사용자 데이터가 보이지 않도록 보장됨** (Phase 1 보안 fix 결과).
+**Guarantee: even if another user logs in on the same device immediately afterward, no traces of the previous user's data are visible** (Phase 1 security fix outcome).
 
 ---
 
-## 12. 감사 로그 (Audit Log)
+## 12. Audit Log
 
-모든 상태 변경 액션은 `AuditLog` 행으로 기록된다. 24개월 보존 (H.2).
+Every state-changing action writes an `AuditLog` row. 24-month retention (H.2).
 
 ```mermaid
 flowchart LR
-  subgraph Sources["발생원"]
-    A["사용자 액션<br/>(office/field/portal)"]
-    B["Cron 자동 처리"]
-    C["시스템 자동 전환<br/>(state machine)"]
+  subgraph Sources["Origins"]
+    A["User actions<br/>(office/field/portal)"]
+    B["Cron automation"]
+    C["System auto-transitions<br/>(state machines)"]
   end
 
-  subgraph Log["AuditLog 행"]
-    F1["actorUserId<br/>또는 actorContactId<br/>(NULL = system)"]
+  subgraph Log["AuditLog row"]
+    F1["actorUserId<br/>or actorContactId<br/>(NULL = system)"]
     F2["action: enum<br/>(CUSTOMER_CREATED,<br/>CONTRACT_ACTIVATED,<br/>VISIT_COMPLETED,<br/>PAYMENT_RECEIVED,<br/>SR_APPROVED, ...)"]
-    F3["entityType + entityId<br/>(예: 'Contract', uuid)"]
-    F4["before / after JSON<br/>(diff 가능)"]
+    F3["entityType + entityId<br/>(e.g. 'Contract', uuid)"]
+    F4["before / after JSON<br/>(diff-capable)"]
     F5["createdAt + ip"]
   end
 
@@ -1182,51 +1182,51 @@ flowchart LR
   B --> Log
   C --> Log
 
-  subgraph Read["조회"]
+  subgraph Read["Reading"]
     D1["MANAGER+ → /o/reports/audit"]
-    D2["ADMIN → CSV 내보내기"]
+    D2["ADMIN → CSV export"]
   end
 
   Log --> D1
   Log --> D2
 ```
 
-**ADMIN-only 액션** (예: ambiguous username login 차단)도 `AMBIGUOUS_USERNAME` 같은 보안 액션 코드로 기록되어 사후 추적 가능.
+**ADMIN-only actions** (e.g. blocked login on ambiguous username) are also logged with a dedicated security action code such as `AMBIGUOUS_USERNAME` for post-incident traceability.
 
 ---
 
-## 부록: 워크플로 매트릭스 (한 눈에)
+## Appendix: Workflow Matrix (Quick Reference)
 
-| 워크플로 | 시작 트리거 | 주체 | 산출물 | 알림 |
+| Workflow | Trigger | Actor | Output | Notification |
 |---|---|---|---|---|
-| 고객 생성 | STAFF | STAFF | KH##### + CP + portal | SMS_PORTAL_WELCOME |
-| 계약 생성 | STAFF | STAFF | DRAFT contract + PDF | — |
-| 계약 활성화 | TECH 서명 | TECH | ACTIVE + INSTALLATION Visit | EMAIL_VISIT_COMPLETED |
-| 정기점검 D-14 | cron-filter-due | system | 작업 큐 표시 | EMAIL_FILTER_DUE_D14 |
-| 정기점검 D-1 | cron | system | PERIODIC Visit | SMS_VISIT_REMINDER |
-| 정기점검 완료 | TECH | TECH | 정기점검표 PDF + filterDueDate 재계산 | EMAIL_PERIODIC_CHECK_COMPLETED |
-| 무료 SR | CUSTOMER portal | CUSTOMER | AUTO_APPROVED + Visit | SMS_SR_APPROVED + EMAIL_SR_RECEIVED |
-| 유료 SR | CUSTOMER portal | STAFF+ 검토 | 견적 → APPROVED/REJECTED | EMAIL_SR_RECEIVED → SMS_SR_APPROVED/REJECTED |
-| 방문 완료 | TECH 모바일 | TECH (lead) | 작업확인서 + 결제 | EMAIL_VISIT_COMPLETED |
-| 현금 인계 | TECH 익일 | TECH→STAFF | Payment.officeReceivedAt | — |
-| 월 청구 | cron-recurring-payments | system | PENDING Payment | EMAIL_RENTAL_DUE |
-| 미수금 D+7 | cron-overdue-escalation | system | — | EMAIL_PAYMENT_OVERDUE_D7 |
-| 미수금 D+14 | cron | system | — | EMAIL_PAYMENT_OVERDUE_D14 |
-| 미수금 D+30 | cron | system | Contract → OVERDUE | SMS_PAYMENT_OVERDUE_FINAL |
-| 세금계산서 발행 | MANAGER | MANAGER | PDF 업로드 + Payment 연결 | EMAIL_TAX_INVOICE_ISSUED |
-| 계약 갱신 D-60/30 | cron-rental-renewal | system | — | EMAIL_CONTRACT_RENEWAL_D60/D30 |
-| 계약 갱신 D-7 | cron | system | — | SMS_CONTRACT_RENEWAL_FINAL |
-| 계약 갱신 실행 | STAFF | STAFF | 새 MAINTENANCE Contract + ownership flip | — |
-| 비밀번호 재설정 | MANAGER 또는 self | MANAGER 또는 self | 임시 비번 + 전 세션 revoke | SMS_PASSWORD_RESET |
-| 로그아웃 | 사용자 | 사용자 | QueryClient + Dexie 캐시 비움 | — |
+| Customer creation | STAFF | STAFF | KH##### + CP + portal | SMS_PORTAL_WELCOME |
+| Contract creation | STAFF | STAFF | DRAFT contract + PDF | — |
+| Contract activation | TECH signature | TECH | ACTIVE + INSTALLATION Visit | EMAIL_VISIT_COMPLETED |
+| Periodic D-14 | cron-filter-due | system | Work-queue surface | EMAIL_FILTER_DUE_D14 |
+| Periodic D-1 | cron | system | PERIODIC Visit | SMS_VISIT_REMINDER |
+| Periodic complete | TECH | TECH | Periodic report PDF + filterDueDate recompute | EMAIL_PERIODIC_CHECK_COMPLETED |
+| Free SR | CUSTOMER portal | CUSTOMER | AUTO_APPROVED + Visit | SMS_SR_APPROVED + EMAIL_SR_RECEIVED |
+| Paid SR | CUSTOMER portal | STAFF+ review | Quote → APPROVED/REJECTED | EMAIL_SR_RECEIVED → SMS_SR_APPROVED/REJECTED |
+| Visit complete | TECH mobile | TECH (lead) | Work-confirmation + Payment | EMAIL_VISIT_COMPLETED |
+| Cash handover | TECH next day | TECH→STAFF | Payment.officeReceivedAt | — |
+| Monthly billing | cron-recurring-payments | system | PENDING Payment | EMAIL_RENTAL_DUE |
+| Overdue D+7 | cron-overdue-escalation | system | — | EMAIL_PAYMENT_OVERDUE_D7 |
+| Overdue D+14 | cron | system | — | EMAIL_PAYMENT_OVERDUE_D14 |
+| Overdue D+30 | cron | system | Contract → OVERDUE | SMS_PAYMENT_OVERDUE_FINAL |
+| Tax invoice issuance | MANAGER | MANAGER | PDF upload + Payment link | EMAIL_TAX_INVOICE_ISSUED |
+| Renewal D-60/30 | cron-rental-renewal | system | — | EMAIL_CONTRACT_RENEWAL_D60/D30 |
+| Renewal D-7 | cron | system | — | SMS_CONTRACT_RENEWAL_FINAL |
+| Renewal execution | STAFF | STAFF | New MAINTENANCE Contract + ownership flip | — |
+| Password reset | MANAGER or self | MANAGER or self | Temp password + all sessions revoked | SMS_PASSWORD_RESET |
+| Logout | User | User | QueryClient + Dexie cache cleared | — |
 
 ---
 
-## 참고
+## References
 
-- 도메인 용어: [.claude/CLAUDE.md "Domain Vocabulary"](../.claude/CLAUDE.md)
-- 권한 매트릭스 원본: [SPEC.md §2.1](./SPEC.md)
-- 비즈니스 프로세스 원본: [PROCESS_NOTES.md](./PROCESS_NOTES.md)
-- 문서 양식 매트릭스: [DOCUMENT_TEMPLATES.md](./DOCUMENT_TEMPLATES.md)
-- 데이터 모델: [DATA_MODEL_NOTES.md](./DATA_MODEL_NOTES.md)
-- 인증 상세: [AUTH.md](./AUTH.md)
+- Domain glossary: [.claude/CLAUDE.md "Domain Vocabulary"](../.claude/CLAUDE.md)
+- Permission matrix source: [SPEC.md §2.1](./SPEC.md)
+- Business process source: [PROCESS_NOTES.md](./PROCESS_NOTES.md)
+- Document template matrix: [DOCUMENT_TEMPLATES.md](./DOCUMENT_TEMPLATES.md)
+- Data model: [DATA_MODEL_NOTES.md](./DATA_MODEL_NOTES.md)
+- Auth details: [AUTH.md](./AUTH.md)
