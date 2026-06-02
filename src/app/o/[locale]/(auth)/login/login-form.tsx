@@ -54,7 +54,11 @@ export function LoginForm() {
     try {
       await login(values.phone ?? "", values.password);
       const next = searchParams.get("next");
-      router.replace(next?.startsWith("/") ? next : "/dashboard");
+      // Allow only same-origin paths. `startsWith("/")` alone would let
+      // through `//evil.com` (protocol-relative URL), which router.replace
+      // resolves as a cross-origin redirect — a classic open redirect.
+      const safeNext = next && /^\/(?!\/)/.test(next) ? next : "/dashboard";
+      router.replace(safeNext);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "UNKNOWN";
       let message: string;
