@@ -7,6 +7,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -91,6 +92,16 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
+  // See `field-auth-provider.tsx` for the rationale — single-flight refresh
+  // protects against locale-change + StrictMode double-fire racing the
+  // refresh-token rotation and wiping local state.
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  // Snapshot for refresh() so a 401 on the login-page silent-restore
+  // attempt doesn't clobber a fast login() that landed in between.
+  const contactRef = useRef<PortalContact | null>(null);
+  useEffect(() => {
+    contactRef.current = contact;
+  }, [contact]);
 
   const isAuthenticated = !!contact && !!accessToken;
 
@@ -153,31 +164,40 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
   }, [queryClient]);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current !== null) return refreshInFlightRef.current;
+    const startedWithUser = contactRef.current !== null;
+    const promise = (async () => {
+      try {
+        const res = await fetch("/api/portal/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (res.status === 401 || res.status === 403) {
+          if (startedWithUser) {
+            setContact(null);
+            setAccessToken(null);
+            setCached(null, null);
+          }
+          return;
+        }
+        if (!res.ok) {
+          // 5xx / transient — keep cached state, retry next interval.
+          return;
+        }
+        const json = await res.json();
+        if (!json.success) return;
+        setContact(json.data.contact);
+        setAccessToken(json.data.accessToken);
+        setCached(json.data.contact, json.data.accessToken);
+      } catch {
+        // Network drop — keep cached state, do NOT wipe.
+      }
+    })();
+    refreshInFlightRef.current = promise;
     try {
-      const res = await fetch("/api/portal/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        setContact(null);
-        setAccessToken(null);
-        setCached(null, null);
-        return;
-      }
-      const json = await res.json();
-      if (!json.success) {
-        setContact(null);
-        setAccessToken(null);
-        setCached(null, null);
-        return;
-      }
-      setContact(json.data.contact);
-      setAccessToken(json.data.accessToken);
-      setCached(json.data.contact, json.data.accessToken);
-    } catch {
-      setContact(null);
-      setAccessToken(null);
-      setCached(null, null);
+      await promise;
+    } finally {
+      refreshInFlightRef.current = null;
     }
   }, []);
 
@@ -192,10 +212,23 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
       setAccessToken(cachedToken);
       setIsLoading(false);
       void refresh();
-    } else {
-      refresh().finally(() => setIsLoading(false));
+      return;
     }
-
+    // No cache. On /login (or forgot/change-password) the user has no
+    // session yet, so a refresh() here is a guaranteed 401 — and
+    // browsers log 4xx responses to the console regardless of how the
+    // JS code handles them. Skip the call on customer public pages.
+    const path =
+      globalThis.window === undefined
+        ? ""
+        : globalThis.window.location.pathname;
+    if (
+      /^\/[^/]+\/(login|forgot-password|change-password)(?:\/|$)/.test(path)
+    ) {
+      setIsLoading(false);
+      return;
+    }
+    refresh().finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {

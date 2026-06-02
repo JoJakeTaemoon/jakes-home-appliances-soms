@@ -7,6 +7,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -73,9 +74,11 @@ function cacheAuth(user: AuthUser | null, token: string | null) {
 
 class LoginError extends Error {
   code: string;
-  constructor(message: string, code: string) {
+  suggestedUrl: string | null;
+  constructor(message: string, code: string, suggestedUrl: string | null = null) {
     super(message);
     this.code = code;
+    this.suggestedUrl = suggestedUrl;
   }
 }
 
@@ -84,6 +87,18 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
+  // See `field-auth-provider.tsx` for why refresh is single-flight: locale
+  // change + StrictMode replay can fire refresh() twice on the same commit;
+  // the second call would carry an already-rotated refresh cookie and 401,
+  // wiping local state and bouncing the user to /o/login.
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  // Snapshot for refresh() so a 401 from a no-cookie initial refresh
+  // (login page) does NOT clobber state set by a fast login() running
+  // concurrently.
+  const userRef = useRef<AuthUser | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const isAuthenticated = !!user && !!accessToken;
 
@@ -110,7 +125,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       if (!res.ok || !json.success) {
         const code = json?.error?.code ?? "UNKNOWN";
         const msg = json?.error?.message ?? "Login failed";
-        throw new LoginError(msg, code);
+        const suggestedUrl: string | null =
+          typeof json?.error?.suggestedUrl === "string"
+            ? json.error.suggestedUrl
+            : null;
+        throw new LoginError(msg, code, suggestedUrl);
       }
       setUser(json.data.user);
       setAccessToken(json.data.accessToken);
@@ -140,31 +159,40 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, [queryClient]);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current !== null) return refreshInFlightRef.current;
+    const startedWithUser = userRef.current !== null;
+    const promise = (async () => {
+      try {
+        const res = await fetch("/api/auth/refresh", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (res.status === 401 || res.status === 403) {
+          if (startedWithUser) {
+            setUser(null);
+            setAccessToken(null);
+            cacheAuth(null, null);
+          }
+          return;
+        }
+        if (!res.ok) {
+          // 5xx / transient — keep cached state, retry next interval.
+          return;
+        }
+        const json = await res.json();
+        if (!json.success) return;
+        setUser(json.data.user);
+        setAccessToken(json.data.accessToken);
+        cacheAuth(json.data.user, json.data.accessToken);
+      } catch {
+        // Network drop — keep cached state, do NOT wipe.
+      }
+    })();
+    refreshInFlightRef.current = promise;
     try {
-      const res = await fetch("/api/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        setUser(null);
-        setAccessToken(null);
-        cacheAuth(null, null);
-        return;
-      }
-      const json = await res.json();
-      if (!json.success) {
-        setUser(null);
-        setAccessToken(null);
-        cacheAuth(null, null);
-        return;
-      }
-      setUser(json.data.user);
-      setAccessToken(json.data.accessToken);
-      cacheAuth(json.data.user, json.data.accessToken);
-    } catch {
-      setUser(null);
-      setAccessToken(null);
-      cacheAuth(null, null);
+      await promise;
+    } finally {
+      refreshInFlightRef.current = null;
     }
   }, []);
 
@@ -177,10 +205,22 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       setAccessToken(cachedToken);
       setIsLoading(false);
       void refresh();
-    } else {
-      refresh().finally(() => setIsLoading(false));
+      return;
     }
-
+    // No cache. On /o/login the user has no session yet, so a refresh()
+    // here is a guaranteed 401 — and browsers log 4xx responses to the
+    // console regardless of how the JS code handles them. Skip the call
+    // on the login page; the auth guard still redirects unauthenticated
+    // protected-page visits.
+    const path =
+      globalThis.window === undefined
+        ? ""
+        : globalThis.window.location.pathname;
+    if (/^\/o\/[^/]+\/login(?:\/|$)/.test(path)) {
+      setIsLoading(false);
+      return;
+    }
+    refresh().finally(() => setIsLoading(false));
   }, []);
 
   // Silent refresh every 12 minutes (access TTL is 15min).
