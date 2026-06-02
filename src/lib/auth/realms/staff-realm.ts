@@ -1,8 +1,9 @@
 /**
  * Staff realm — concrete `AuthRealm` for HQ users (`User` model).
  *
- * Cookies: `accessToken` / `refreshToken` (Path=/).
- * JWT aud: `staff`.
+ * Cookies: `officeAccessToken` / `officeRefreshToken` (Path=/).
+ * JWT aud: `staff` (legacy value, retained while the office cookie rename
+ * lands — see docs/URL_SCHEME.md §5).
  * Refresh TTL: 7 days.
  * Lockout: sliding window via `LoginAttempt` rows (5 fails / 15min → 15min lock).
  */
@@ -36,8 +37,8 @@ import type {
 } from "@/lib/auth/realm";
 import type { StaffRole } from "@/lib/auth/roles";
 
-export const STAFF_ACCESS_COOKIE = "accessToken";
-export const STAFF_REFRESH_COOKIE = "refreshToken";
+export const STAFF_ACCESS_COOKIE = "officeAccessToken";
+export const STAFF_REFRESH_COOKIE = "officeRefreshToken";
 
 /** Hydrated staff actor returned by `requireAuth(staffRealm, …)`. */
 export interface AuthenticatedStaff extends StaffJwtPayload {

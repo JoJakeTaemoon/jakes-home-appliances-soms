@@ -1,168 +1,144 @@
-import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 
-const intlMiddleware = createMiddleware(routing);
-
-// Public suffixes (no auth) — locale-stripped paths
-const PUBLIC_OFFICE_SUFFIXES = ["/login"];
-const PUBLIC_FIELD_SUFFIXES = ["/mobile/login"];
-const PUBLIC_PORTAL_SUFFIXES = [
-  "/portal/login",
-  "/portal/forgot-password",
-];
-
-function stripLocale(pathname: string): string {
-  for (const locale of routing.locales) {
-    if (pathname === `/${locale}`) return "/";
-    if (pathname.startsWith(`/${locale}/`)) return pathname.slice(locale.length + 1);
-  }
-  return pathname;
-}
-
-function isPortalPath(stripped: string): boolean {
-  return stripped === "/portal" || stripped.startsWith("/portal/");
-}
-
-function isPublicPortalPath(stripped: string): boolean {
-  return PUBLIC_PORTAL_SUFFIXES.some(
-    (suffix) => stripped === suffix || stripped.startsWith(`${suffix}/`),
-  );
-}
-
-function isFieldPath(stripped: string): boolean {
-  return stripped === "/mobile" || stripped.startsWith("/mobile/");
-}
-
-function isPublicFieldPath(stripped: string): boolean {
-  return PUBLIC_FIELD_SUFFIXES.some(
-    (suffix) => stripped === suffix || stripped.startsWith(`${suffix}/`),
-  );
-}
-
-function isPublicOfficePath(stripped: string): boolean {
-  return PUBLIC_OFFICE_SUFFIXES.some(
-    (suffix) => stripped === suffix || stripped.startsWith(`${suffix}/`),
-  );
-}
-
-function currentLocale(pathname: string): string {
-  return (
-    routing.locales.find(
-      (l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`,
-    ) ?? routing.defaultLocale
-  );
-}
-
-function buildOfficeLoginRedirect(
-  request: NextRequest,
-  stripped: string,
-  locale: string,
-): URL {
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}/login`;
-  if (stripped !== "/" && stripped !== "/login") {
-    url.searchParams.set("next", stripped);
-  }
-  return url;
-}
-
-function buildFieldLoginRedirect(
-  request: NextRequest,
-  stripped: string,
-  locale: string,
-): URL {
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}/mobile/login`;
-  if (stripped !== "/mobile" && stripped !== "/mobile/login") {
-    url.searchParams.set("next", stripped);
-  }
-  return url;
-}
-
-function buildPortalLoginRedirect(
-  request: NextRequest,
-  stripped: string,
-  locale: string,
-): URL {
-  const url = request.nextUrl.clone();
-  url.pathname = `/${locale}/portal/login`;
-  if (stripped !== "/portal" && stripped !== "/portal/login") {
-    url.searchParams.set("next", stripped);
-  }
-  return url;
-}
-
 /**
- * 3-realm middleware (steps 4-7 of the auth split).
+ * URL scheme middleware — see docs/URL_SCHEME.md for the contract.
  *
- *   Path under /[locale]/    | Realm    | Required cookie
- *   --------------------------+----------+-----------------------
- *   /portal/login + others    | (public) | —
- *   /portal/*                 | customer | customerRefreshToken
- *   /mobile/login             | (public) | —
- *   /mobile/*                 | field    | fieldRefreshToken
- *   /login                    | (public) | —
- *   everything else           | office   | refreshToken (staff)
+ *   {protocol}://{host}/{group?}/{locale?}/{path}
  *
- * Cookies are distinct names per realm so the three sessions can coexist
- * in the same browser without colliding. Middleware only checks cookie
- * presence; full audience verification happens in route handlers via the
- * realm-bound hydrate helpers.
+ *   group:   "o" → office | "f" → field | absent → customer
+ *   locale:  "en" | "ko" | "vi" | absent → en (silent, no redirect)
+ *
+ * Responsibilities:
+ *   1. Parse the URL into (group, locale, rest).
+ *   2. Enforce the per-group refresh cookie on non-public paths; on miss
+ *      redirect to that group's login.
+ *   3. If locale was omitted, INTERNAL rewrite to insert `/en` so the
+ *      file-tree's [locale] dynamic segment resolves. The browser URL
+ *      bar is not changed (per URL_SCHEME.md §3.2 — no-redirect rule).
+ *
+ * Note: next-intl's createMiddleware is intentionally NOT used here.
+ * The group prefix sits outside the locale segment, and the silent-en
+ * rewrite is incompatible with next-intl's redirect-to-canonical
+ * behavior. Locale is still surfaced to React via `[locale]` dynamic
+ * params + `getRequestConfig`; navigation helpers from
+ * `@/i18n/navigation` continue to generate per-locale URLs.
  */
+
+const LOCALES = routing.locales as readonly string[];
+
+// Public sub-paths (no auth) — after group prefix and locale are stripped.
+const OFFICE_PUBLIC = ["/login", "/forgot-password"];
+const FIELD_PUBLIC = ["/login"];
+const CUSTOMER_PUBLIC = ["/login", "/forgot-password", "/change-password"];
+
+type Group = "office" | "field" | "customer";
+type GroupPrefix = "" | "/o" | "/f";
+
+interface ParsedUrl {
+  group: Group;
+  groupPrefix: GroupPrefix;
+  locale: string;
+  hasExplicitLocale: boolean;
+  rest: string; // path after group + locale, leading slash, "/" for root
+}
+
+function parseUrl(pathname: string): ParsedUrl {
+  const segments = pathname.split("/").filter(Boolean);
+
+  let group: Group = "customer";
+  let groupPrefix: GroupPrefix = "";
+  let afterGroup = segments;
+  if (segments[0] === "o") {
+    group = "office";
+    groupPrefix = "/o";
+    afterGroup = segments.slice(1);
+  } else if (segments[0] === "f") {
+    group = "field";
+    groupPrefix = "/f";
+    afterGroup = segments.slice(1);
+  }
+
+  let locale = routing.defaultLocale as string;
+  let hasExplicitLocale = false;
+  let afterLocale = afterGroup;
+  if (afterGroup[0] && LOCALES.includes(afterGroup[0])) {
+    locale = afterGroup[0];
+    hasExplicitLocale = true;
+    afterLocale = afterGroup.slice(1);
+  }
+
+  const rest = afterLocale.length === 0 ? "/" : `/${afterLocale.join("/")}`;
+  return { group, groupPrefix, locale, hasExplicitLocale, rest };
+}
+
+const PUBLIC_BY_GROUP: Record<Group, readonly string[]> = {
+  office: OFFICE_PUBLIC,
+  field: FIELD_PUBLIC,
+  customer: CUSTOMER_PUBLIC,
+};
+
+const COOKIE_BY_GROUP: Record<Group, string> = {
+  office: "officeRefreshToken",
+  field: "fieldRefreshToken",
+  customer: "customerRefreshToken",
+};
+
+const GROUP_PREFIX: Record<Group, GroupPrefix> = {
+  office: "/o",
+  field: "/f",
+  customer: "",
+};
+
+function isPublic(group: Group, rest: string): boolean {
+  // Group home (`/`, `/o`, `/f`) is treated as public; the page itself
+  // decides whether to render a marketing landing or kick the user to
+  // login. This avoids a middleware redirect loop on first visit.
+  if (rest === "/") return true;
+  return PUBLIC_BY_GROUP[group].some(
+    (p) => rest === p || rest.startsWith(`${p}/`),
+  );
+}
+
+function buildLoginUrl(group: Group, locale: string): string {
+  const localePrefix =
+    locale === routing.defaultLocale ? "" : `/${locale}`;
+  return `${GROUP_PREFIX[group]}${localePrefix}/login`;
+}
+
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/_next") || pathname.includes(".")) {
     return NextResponse.next();
   }
-
   if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
 
-  const stripped = stripLocale(pathname);
-  const locale = currentLocale(pathname);
+  const parsed = parseUrl(pathname);
 
-  // Customer (portal) realm
-  if (isPublicPortalPath(stripped)) {
-    return intlMiddleware(request);
-  }
-  if (isPortalPath(stripped)) {
-    if (!request.cookies.has("customerRefreshToken")) {
-      return NextResponse.redirect(
-        buildPortalLoginRedirect(request, stripped, locale),
-      );
+  // 1. Realm cookie gate
+  if (!isPublic(parsed.group, parsed.rest)) {
+    if (!request.cookies.has(COOKIE_BY_GROUP[parsed.group])) {
+      const url = request.nextUrl.clone();
+      url.pathname = buildLoginUrl(parsed.group, parsed.locale);
+      if (parsed.rest !== "/" && parsed.rest !== "/login") {
+        url.searchParams.set("next", `${parsed.groupPrefix}${parsed.rest}`);
+      }
+      return NextResponse.redirect(url);
     }
-    return intlMiddleware(request);
   }
 
-  // Field (technician) realm — requires the field refresh cookie. An office
-  // staff cookie alone does NOT grant access; technicians must log in via
-  // /mobile/login to mint a field session.
-  if (isPublicFieldPath(stripped)) {
-    return intlMiddleware(request);
-  }
-  if (isFieldPath(stripped)) {
-    if (!request.cookies.has("fieldRefreshToken")) {
-      return NextResponse.redirect(
-        buildFieldLoginRedirect(request, stripped, locale),
-      );
-    }
-    return intlMiddleware(request);
+  // 2. Locale-optional silent rewrite — insert /en so [locale] resolves.
+  if (!parsed.hasExplicitLocale) {
+    const url = request.nextUrl.clone();
+    const tail = parsed.rest === "/" ? "" : parsed.rest;
+    url.pathname = `${parsed.groupPrefix}/${parsed.locale}${tail}`;
+    return NextResponse.rewrite(url);
   }
 
-  // Office (HQ) realm — everything else.
-  if (isPublicOfficePath(stripped)) {
-    return intlMiddleware(request);
-  }
-  if (!request.cookies.has("refreshToken")) {
-    return NextResponse.redirect(
-      buildOfficeLoginRedirect(request, stripped, locale),
-    );
-  }
-
-  return intlMiddleware(request);
+  return NextResponse.next();
 }
 
 export const config = {

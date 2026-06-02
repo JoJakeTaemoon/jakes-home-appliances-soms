@@ -36,11 +36,11 @@ export function TechnicianAuthGuard({
   useEffect(() => {
     if (isLoading) return;
     if (!isAuthenticated) {
-      router.replace("/mobile/login");
+      router.replace("/f/login");
       return;
     }
     if (user && user.role !== "TECHNICIAN") {
-      router.replace("/dashboard");
+      router.replace("/o/dashboard");
     }
   }, [isAuthenticated, isLoading, user, router]);
 

@@ -38,7 +38,7 @@ export function CustomerAuthGuard({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace("/portal/login");
+      router.replace("/login");
       return;
     }
     if (
@@ -47,7 +47,7 @@ export function CustomerAuthGuard({
       contact?.mustChangePassword &&
       !requireChange
     ) {
-      router.replace("/portal/change-password");
+      router.replace("/change-password");
     }
   }, [
     isAuthenticated,

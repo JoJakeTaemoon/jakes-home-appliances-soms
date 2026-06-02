@@ -221,3 +221,8 @@ export function useCustomerAuth() {
   }
   return ctx;
 }
+
+/** Non-throwing variant — see `useOptionalAuth` in auth-provider for rationale. */
+export function useOptionalCustomerAuth() {
+  return useContext(Ctx) ?? null;
+}

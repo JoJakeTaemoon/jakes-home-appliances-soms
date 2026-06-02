@@ -10,9 +10,9 @@ import { OfflineIndicator } from "@/components/mobile/offline-indicator";
 type TabKey = "today" | "upcoming" | "profile";
 
 const TABS: Array<{ key: TabKey; href: string; Icon: typeof Calendar }> = [
-  { key: "today", href: "/mobile/today", Icon: Calendar },
-  { key: "upcoming", href: "/mobile/upcoming", Icon: Clock4 },
-  { key: "profile", href: "/mobile/profile", Icon: User },
+  { key: "today", href: "/f/today", Icon: Calendar },
+  { key: "upcoming", href: "/f/upcoming", Icon: Clock4 },
+  { key: "profile", href: "/f/profile", Icon: User },
 ];
 
 export function MobileShell({ children }: Readonly<{ children: React.ReactNode }>) {

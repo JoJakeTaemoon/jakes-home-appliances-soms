@@ -9,7 +9,9 @@
  */
 
 import { useMemo } from "react";
-import { useAuth } from "@/providers/auth-provider";
+import { useOptionalAuth } from "@/providers/auth-provider";
+import { useOptionalFieldAuth } from "@/providers/field-auth-provider";
+import { useOptionalCustomerAuth } from "@/providers/customer-auth-provider";
 
 export class ApiClientError extends Error {
   code: string;
@@ -71,7 +73,16 @@ async function rawCall<T>(input: string, opts: ApiOptions): Promise<T> {
  *   const data = await api.get<Customer[]>("/api/customers");
  */
 export function useApi() {
-  const { accessToken } = useAuth();
+  // Pick whichever realm's access token is currently mounted. Pages
+  // under any realm (office, field, customer) call `useApi()` to send
+  // authenticated requests; resolving the token here keeps callsites
+  // identical across realms without forcing each page to import the
+  // realm-specific provider.
+  const office = useOptionalAuth();
+  const field = useOptionalFieldAuth();
+  const customer = useOptionalCustomerAuth();
+  const accessToken =
+    office?.accessToken ?? field?.accessToken ?? customer?.accessToken ?? null;
   // The returned object must be reference-stable across renders. Callers
   // routinely pass `api` (or a callback derived from it) into useEffect /
   // useCallback dependency arrays — without useMemo, the object literal

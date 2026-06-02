@@ -28,6 +28,7 @@ Most of what's worth knowing lives in dedicated documents rather than this READM
 |---|---|
 | [AGENTS.md](AGENTS.md) | The 11-agent TDD pipeline + how to invoke each agent |
 | [.claude/CLAUDE.md](.claude/CLAUDE.md) | Project context loaded by every Claude Code session (conventions, gotchas, vocabulary) |
+| [docs/URL_SCHEME.md](docs/URL_SCHEME.md) | Canonical URL structure — `/o/*` office, `/f/*` field, `/` customer, locale optional (defaults to `en` silently) |
 | [docs/DATA_MODEL_NOTES.md](docs/DATA_MODEL_NOTES.md) | Schema rationale derived from client CSV samples |
 | [docs/INFRA.md](docs/INFRA.md) | Self-hosted staging runbook (vhost.vn dry-run) — Docker Compose, systemd cron, pg_dump backup, deploy workflow |
 | [.claude/skills/DESIGN.md](.claude/skills/DESIGN.md) | Design system: Intercom-frame + Seoul Aqua brand-blue |
@@ -192,20 +193,6 @@ seoul-aqua-soms/
 | `npm run vercel:deploy` | One-shot deploy to Vercel |
 
 > **⚠️ DANGER:** `npm run db:reset` (no `:dev`) wipes the **production** Supabase DB. Always use `:dev`.
-
----
-
-## Agent Team
-
-This project uses an 11-agent TDD pipeline. Full agent table, model assignments, and pipeline rules are in [AGENTS.md](AGENTS.md). One-line summary:
-
-> User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED) → frontend / backend → tdd-guide(GREEN) → reviewer + api-docs → qa → manuals → git-flow(END)
-
-Invoke via:
-
-```
-@orchestrator Phase 1 — Foundation을 TDD로 진행해주세요
-```
 
 ---
 
