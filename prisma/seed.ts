@@ -2148,8 +2148,26 @@ async function main() {
     return prisma.visit.create({ data: { ...data, id } });
   }
 
+  // Variant of ensureVisit that always re-syncs the visit's photos
+  // field. Used for the showcase fixture (seed-visit-001) so the
+  // customer portal demo has photos to render even when the DB
+  // already has the visit row from an earlier seed run.
+  async function ensureVisitWithPhotos(
+    id: string,
+    data: Parameters<typeof prisma.visit.create>[0]["data"],
+  ) {
+    const v = await ensureVisit(id, data);
+    if (data.photos !== undefined) {
+      await prisma.visit.update({
+        where: { id },
+        data: { photos: data.photos },
+      });
+    }
+    return v;
+  }
+
   // Past completed periodic inspection (KH00001).
-  const vCompleted = await ensureVisit("seed-visit-001", {
+  const vCompleted = await ensureVisitWithPhotos("seed-visit-001", {
     customerId: b2c.id,
     equipmentId: b2c.equipment[0].id,
     type: "PERIODIC_INSPECTION",
@@ -2161,6 +2179,23 @@ async function main() {
     startedAt: at(daysFromNow(-30), 10, 15),
     completedAt: at(daysFromNow(-30), 11, 0),
     partsReplaced: { parts: [{ type: "Sediment", qty: 1 }] },
+    // Two placeholder field photos so the customer portal visit detail
+    // has something to render in the "현장 사진" section. picsum.photos
+    // serves stable images per seed string so the IDs are reproducible
+    // across re-seeds. In production these come from the technician's
+    // visit-complete upload flow.
+    photos: [
+      {
+        url: "https://picsum.photos/seed/seed-visit-001-before/800/600",
+        takenAt: at(daysFromNow(-30), 10, 20).toISOString(),
+        caption: "Tình trạng trước bảo trì",
+      },
+      {
+        url: "https://picsum.photos/seed/seed-visit-001-after/800/600",
+        takenAt: at(daysFromNow(-30), 10, 55).toISOString(),
+        caption: "Sau khi thay lõi và vệ sinh",
+      },
+    ],
   });
 
   // Today — SCHEDULED periodic inspection (KH00010), tech1 lead + collaborator.

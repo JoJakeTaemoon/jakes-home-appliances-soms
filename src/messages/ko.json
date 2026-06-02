@@ -1124,7 +1124,8 @@
       "scheduled": "예정일",
       "technician": "기사",
       "equipment": "장비",
-      "findings": "작업 내용"
+      "findings": "작업 내용",
+      "photos": "현장 사진"
     },
     "payments": {
       "title": "결제",

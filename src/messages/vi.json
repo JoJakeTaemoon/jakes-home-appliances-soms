@@ -1124,7 +1124,8 @@
       "scheduled": "Ngày hẹn",
       "technician": "Kỹ thuật viên",
       "equipment": "Thiết bị",
-      "findings": "Nội dung công việc"
+      "findings": "Nội dung công việc",
+      "photos": "Hình ảnh hiện trường"
     },
     "payments": {
       "title": "Thanh toán",

@@ -1124,7 +1124,8 @@
       "scheduled": "Scheduled",
       "technician": "Technician",
       "equipment": "Equipment",
-      "findings": "Findings"
+      "findings": "Findings",
+      "photos": "Site photos"
     },
     "payments": {
       "title": "Payments",
