@@ -87,7 +87,7 @@ export function EquipmentListClient() {
             {groups.get(key)!.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/portal/equipment/${r.id}`}
+                  href={`/equipment/${r.id}`}
                   className="block rounded-2xl border border-[#e5e5e5] bg-white p-4 transition-colors hover:border-[var(--brand-blue-500)]"
                 >
                   <div className="flex items-start justify-between gap-3">

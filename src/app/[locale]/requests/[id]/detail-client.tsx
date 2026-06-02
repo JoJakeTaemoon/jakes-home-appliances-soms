@@ -159,7 +159,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
               </p>
             )}
             <Link
-              href={`/portal/visits/${sr.visit.id}`}
+              href={`/visits/${sr.visit.id}`}
               className="text-xs text-[var(--brand-blue-700)] underline-offset-2 hover:underline"
             >
               {t("detailVisitView")}
