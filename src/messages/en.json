@@ -114,7 +114,8 @@
     "companyContact": "Company info",
     "userManagement": "User Management",
     "reports": "Reports",
-    "auditLog": "Audit log"
+    "auditLog": "Audit log",
+    "unreadMessageBadge": "Unread customer messages"
   },
   "dashboard": {
     "greeting": "Dashboard",
@@ -759,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "Service requests",
+    "unreadMessage": "New customer message",
     "newRequest": "+ New request",
     "newPageTitle": "New service request (office intake)",
     "customerLabel": "Customer",
@@ -1538,6 +1540,7 @@
     "noMessages": "No messages yet.",
     "you": "You",
     "office": "Office",
-    "readOnly": "This request is completed; no further messages can be sent."
+    "readOnly": "This request is completed; no further messages can be sent.",
+    "markRead": "Mark read"
   }
 }

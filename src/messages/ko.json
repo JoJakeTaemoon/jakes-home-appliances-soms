@@ -114,7 +114,8 @@
     "companyContact": "회사 정보",
     "userManagement": "사용자 관리",
     "reports": "보고서",
-    "auditLog": "감사 로그"
+    "auditLog": "감사 로그",
+    "unreadMessageBadge": "확인하지 않은 고객 메시지"
   },
   "dashboard": {
     "greeting": "대시보드",
@@ -759,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "서비스 요청",
+    "unreadMessage": "새 고객 메시지",
     "newRequest": "+ 새 요청",
     "newPageTitle": "신규 서비스 요청 (사무실 접수)",
     "customerLabel": "고객",
@@ -1538,6 +1540,7 @@
     "noMessages": "메시지가 없습니다.",
     "you": "고객",
     "office": "사무실",
-    "readOnly": "이 요청은 완료되어 더 이상 메시지를 보낼 수 없습니다."
+    "readOnly": "이 요청은 완료되어 더 이상 메시지를 보낼 수 없습니다.",
+    "markRead": "읽음"
   }
 }

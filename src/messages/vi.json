@@ -114,7 +114,8 @@
     "companyContact": "Thông tin công ty",
     "userManagement": "Quản lý người dùng",
     "reports": "Báo cáo",
-    "auditLog": "Nhật ký kiểm tra"
+    "auditLog": "Nhật ký kiểm tra",
+    "unreadMessageBadge": "Có tin nhắn khách hàng chưa đọc"
   },
   "dashboard": {
     "greeting": "Bảng điều khiển",
@@ -759,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "Yêu cầu dịch vụ",
+    "unreadMessage": "Tin nhắn khách hàng mới",
     "newRequest": "+ Yêu cầu mới",
     "newPageTitle": "Yêu cầu dịch vụ mới (nhập tại văn phòng)",
     "customerLabel": "Khách hàng",
@@ -1538,6 +1540,7 @@
     "noMessages": "Chưa có tin nhắn.",
     "you": "Bạn",
     "office": "Văn phòng",
-    "readOnly": "Yêu cầu này đã hoàn tất, không thể gửi thêm tin nhắn."
+    "readOnly": "Yêu cầu này đã hoàn tất, không thể gửi thêm tin nhắn.",
+    "markRead": "Đánh dấu đã đọc"
   }
 }
