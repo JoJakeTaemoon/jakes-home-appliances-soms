@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { formatVnd, formatDate } from "@/lib/format";
 
 function StatCard({
@@ -30,53 +30,39 @@ function StatCard({
   return href ? <Link href={href}>{inner}</Link> : inner;
 }
 
-interface PortalSummary {
+interface PortalVisit {
+  scheduledFor: string;
+  state: string;
+}
+
+interface PortalPayments {
   outstanding: number;
-  upcomingVisitDate: string | null;
-  pendingRequestCount: number;
-  nextFilterDate: string | null;
 }
 
 export function DashboardClient() {
   const t = useTranslations("portal.dashboard");
   const locale = useLocale();
   const { contact } = useCustomerAuth();
-  const api = useApi();
-  const [summary, setSummary] = useState<PortalSummary | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const [payments, visits] = await Promise.all([
-        api.get<{ outstanding: number }>("/api/portal/payments"),
-        api.get<{ scheduledFor: string; state: string }[]>(
-          "/api/portal/visits",
-        ),
-      ]);
-      const upcoming = (visits.data ?? [])
-        .filter(
-          (v) =>
-            v.state === "SCHEDULED" &&
-            new Date(v.scheduledFor).getTime() > Date.now(),
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.scheduledFor).getTime() -
-            new Date(b.scheduledFor).getTime(),
-        )[0];
-      setSummary({
-        outstanding: payments.data?.outstanding ?? 0,
-        upcomingVisitDate: upcoming?.scheduledFor ?? null,
-        pendingRequestCount: 0,
-        nextFilterDate: null,
-      });
-    } catch {
-      setSummary(null);
-    }
-  }, [api]);
+  const payments = useApiQuery<PortalPayments>("/api/portal/payments");
+  const visits = useApiQuery<PortalVisit[]>("/api/portal/visits");
 
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const upcomingVisitDate = useMemo(() => {
+    const list = visits.data ?? [];
+    // Date.now() during a useMemo is technically impure under React Compiler.
+    // It is required here to separate past vs upcoming visits; the result is
+    // a string label, not a hook ordering decision, so re-running on render
+    // is harmless. Locally suppressed instead of plumbing a "now" tick.
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now();
+    const future = list
+      .filter((v) => v.state === "SCHEDULED" && new Date(v.scheduledFor).getTime() > now)
+      .sort(
+        (a, b) =>
+          new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime(),
+      );
+    return future[0]?.scheduledFor ?? null;
+  }, [visits.data]);
 
   return (
     <div className="space-y-4">
@@ -105,9 +91,7 @@ export function DashboardClient() {
         <StatCard
           label={t("nextVisit")}
           value={
-            summary?.upcomingVisitDate
-              ? formatDate(summary.upcomingVisitDate, locale)
-              : "—"
+            upcomingVisitDate ? formatDate(upcomingVisitDate, locale) : "—"
           }
           href="/visits"
         />
@@ -119,7 +103,9 @@ export function DashboardClient() {
         />
         <StatCard
           label={t("outstanding")}
-          value={summary ? formatVnd(summary.outstanding) : "—"}
+          value={
+            payments.data ? formatVnd(payments.data.outstanding) : "—"
+          }
           href="/payments"
         />
         <StatCard

@@ -9,9 +9,8 @@
  * region. Unknown regions fall through to a list below the SVG.
  */
 
-import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 
 interface MapResp {
   total: number;
@@ -45,22 +44,9 @@ const REGION_ANCHORS: Record<string, [number, number]> = {
 
 export default function VisitMapPage() {
   const t = useTranslations("visitMap");
-  const api = useApi();
-  const [data, setData] = useState<MapResp | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<MapResp>(`/api/visits/map`);
-      setData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiQuery<MapResp>(`/api/visits/map`);
+  const data = query.data ?? null;
+  const loading = query.isLoading;
 
   const mapped: Array<{ region: string; count: number; x: number; y: number }> = [];
   const unmapped: Array<{ region: string; count: number }> = [];

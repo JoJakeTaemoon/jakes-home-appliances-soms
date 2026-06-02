@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,6 @@ export default function ServiceRequestsListPage() {
   const t = useTranslations("serviceRequests");
   const locale = useLocale();
   const router = useRouter();
-  const api = useApi();
 
   const [tab, setTab] = useState<"pending" | "all">("pending");
   const [q, setQ] = useState("");
@@ -56,45 +55,37 @@ export default function ServiceRequestsListPage() {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [paidFilter, setPaidFilter] = useState<string | null>(null);
 
-  const [rows, setRows] = useState<SrRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "submittedAt",
     direction: "desc",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      sp.set("page", String(page));
-      sp.set("pageSize", String(PAGE_SIZE));
-      if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
-      if (tab === "pending") {
-        sp.set("state", "PENDING_REVIEW");
-      } else if (stateFilter) {
-        sp.set("state", stateFilter);
-      }
-      if (typeFilter) sp.set("type", typeFilter);
-      if (paidFilter) sp.set("isPaid", paidFilter);
-      if (sort) {
-        sp.set("sortBy", sort.column);
-        sp.set("sortDir", sort.direction);
-      }
-      const res = await api.get<SrRow[]>(`/api/service-requests?${sp.toString()}`);
-      setRows(res.data);
-      const pag = (res as { pagination?: { total: number } }).pagination;
-      setTotal(pag?.total ?? res.data.length);
-    } finally {
-      setLoading(false);
+  const url = useMemo(() => {
+    const sp = new URLSearchParams();
+    sp.set("page", String(page));
+    sp.set("pageSize", String(PAGE_SIZE));
+    if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
+    if (tab === "pending") {
+      sp.set("state", "PENDING_REVIEW");
+    } else if (stateFilter) {
+      sp.set("state", stateFilter);
     }
-  }, [api, page, debouncedQ, tab, stateFilter, typeFilter, paidFilter, sort]);
+    if (typeFilter) sp.set("type", typeFilter);
+    if (paidFilter) sp.set("isPaid", paidFilter);
+    if (sort) {
+      sp.set("sortBy", sort.column);
+      sp.set("sortDir", sort.direction);
+    }
+    return `/api/service-requests?${sp.toString()}`;
+  }, [page, debouncedQ, tab, stateFilter, typeFilter, paidFilter, sort]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const query = useApiPageQuery<SrRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total =
+    (query.data?.pagination as { total?: number } | undefined)?.total ??
+    rows.length;
+  const loading = query.isLoading;
 
   const columns: Column<SrRow>[] = [
     {

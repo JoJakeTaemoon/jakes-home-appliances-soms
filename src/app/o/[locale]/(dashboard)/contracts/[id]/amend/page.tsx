@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
@@ -33,28 +34,46 @@ export default function AmendContractPage() {
   const router = useRouter();
   const api = useApi();
 
-  const [contract, setContract] = useState<ContractRow | null>(null);
+  const contractQuery = useApiQuery<ContractRow>(
+    id ? `/api/contracts/${id}` : null,
+  );
+  const contract = contractQuery.data ?? null;
+
   const [changeType, setChangeType] = useState<ChangeType>("FEE_ADJUST");
-  const [monthlyFee, setMonthlyFee] = useState<number>(0);
+  const [monthlyFeeOverride, setMonthlyFeeOverride] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [equipmentLines, setEquipmentLines] = useState<Array<{ equipmentId: string; unitPrice: number; quantity: number }>>([]);
+  const [equipmentLinesOverride, setEquipmentLinesOverride] = useState<
+    Array<{ equipmentId: string; unitPrice: number; quantity: number }> | null
+  >(null);
 
-  const load = useCallback(async () => {
-    const res = await api.get<ContractRow>(`/api/contracts/${id}`);
-    setContract(res.data);
-    if (res.data.monthlyMaintenanceFee !== null) {
-      setMonthlyFee(Number(res.data.monthlyMaintenanceFee));
-    }
-    setEquipmentLines(
-      res.data.equipment.map((ce) => ({ equipmentId: ce.equipmentId, unitPrice: 0, quantity: 1 })),
-    );
-  }, [api, id]);
-
-  useEffect(() => {
-    if (id) void load();
-  }, [id, load]);
+  // Defaults come from the loaded contract; the user's overrides win.
+  const monthlyFee =
+    monthlyFeeOverride ??
+    (contract?.monthlyMaintenanceFee !== null && contract?.monthlyMaintenanceFee !== undefined
+      ? Number(contract.monthlyMaintenanceFee)
+      : 0);
+  const equipmentLines = useMemo(
+    () =>
+      equipmentLinesOverride ??
+      (contract?.equipment ?? []).map((ce) => ({
+        equipmentId: ce.equipmentId,
+        unitPrice: 0,
+        quantity: 1,
+      })),
+    [equipmentLinesOverride, contract],
+  );
+  const setMonthlyFee = (v: number) => setMonthlyFeeOverride(v);
+  type Line = { equipmentId: string; unitPrice: number; quantity: number };
+  const setEquipmentLines = (
+    v: Line[] | ((prev: Line[]) => Line[]),
+  ) => {
+    setEquipmentLinesOverride((prev) => {
+      const current = prev ?? equipmentLines;
+      return typeof v === "function" ? v(current) : v;
+    });
+  };
 
   if (!contract) return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
 

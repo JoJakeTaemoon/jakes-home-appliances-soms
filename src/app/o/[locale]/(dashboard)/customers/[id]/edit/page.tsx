@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -31,20 +32,20 @@ export default function EditCustomerPage() {
   const router = useRouter();
   const api = useApi();
 
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<CustomerDetail>(
+    id ? `/api/customers/${id}` : null,
+  );
+  const loading = query.isLoading;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [data, setData] = useState<CustomerDetail | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await api.get<CustomerDetail>(`/api/customers/${id}`);
-    setData(res.data);
-    setLoading(false);
-  }, [api, id]);
-
-  useEffect(() => {
-    if (id) void load();
-  }, [id, load]);
+  const [edits, setEdits] = useState<Partial<CustomerDetail>>({});
+  const data = useMemo<CustomerDetail | null>(
+    () => (query.data ? { ...query.data, ...edits } : null),
+    [query.data, edits],
+  );
+  const setData = (next: CustomerDetail) => {
+    setEdits((prev) => ({ ...prev, ...next }));
+  };
 
   async function submit() {
     if (!data) return;

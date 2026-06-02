@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -69,29 +70,20 @@ export default function PaymentDetailPage() {
   const { user } = useAuth();
 
   const [tab, setTab] = useState<"overview" | "taxInvoice" | "receipt" | "activity">("overview");
-  const [data, setData] = useState<PaymentDetail | null>(null);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showWriteOff, setShowWriteOff] = useState(false);
   const [writeOffReason, setWriteOffReason] = useState("");
   const [showPartial, setShowPartial] = useState(false);
   const [partialAmount, setPartialAmount] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<PaymentDetail>(`/api/payments/${id}`);
-      setData(res.data);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    if (id) load().catch(() => undefined);
-  }, [id, load]);
+  const query = useApiQuery<PaymentDetail>(
+    id ? `/api/payments/${id}` : null,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const load = async () => {
+    await query.refetch();
+  };
 
   if (loading) {
     return <p className="text-sm text-[#737373]">Loading…</p>;
@@ -103,9 +95,12 @@ export default function PaymentDetailPage() {
   const isManager = user?.role === "ADMIN" || user?.role === "MANAGER";
   const isOffice = isManager || user?.role === "STAFF";
 
+  // SLA badge: time-dependent comparison — Date.now() recomputed each
+  // render is correct, the badge updates as time advances.
   const slaBreach =
     data.state === "COLLECTED" &&
     data.collectedAt &&
+    // eslint-disable-next-line react-hooks/purity
     Date.now() - new Date(data.collectedAt).getTime() > 48 * HOUR_MS;
 
   const handleHandOver = async () => {

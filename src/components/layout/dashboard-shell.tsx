@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 
-export function DashboardShell({ children }: { children: ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
-
-  // Close sidebar on route change
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
+  // Sidebar is "open at <pathname>"; navigating to any other pathname
+  // implicitly closes it without needing a useEffect that setStates from
+  // another setState (which the set-state-in-effect rule flags).
+  const [openAtPathname, setOpenAtPathname] = useState<string | null>(null);
+  const sidebarOpen = openAtPathname === pathname;
+  const setSidebarOpen = (open: boolean) => {
+    setOpenAtPathname(open ? pathname : null);
+  };
 
   // Prevent body scroll when sidebar is open
   useEffect(() => {

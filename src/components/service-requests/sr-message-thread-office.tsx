@@ -5,9 +5,10 @@
  * endpoint `/api/service-requests/:id/messages`.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 
@@ -22,26 +23,15 @@ interface SrMessage {
 export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
   const t = useTranslations("portalThread");
   const api = useApi();
-  const [messages, setMessages] = useState<SrMessage[]>([]);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await api.get<{ messages: SrMessage[] }>(
-        `/api/service-requests/${srId}/messages`,
-      );
-      setMessages(res.data.messages ?? []);
-    } catch {
-      /* ignore */
-    }
-  }, [api, srId]);
-  useEffect(() => {
-    load();
-    const tick = window.setInterval(load, 30_000);
-    return () => window.clearInterval(tick);
-  }, [load]);
+  const query = useApiQuery<{ messages: SrMessage[] }>(
+    srId ? `/api/service-requests/${srId}/messages` : null,
+    { refetchInterval: 30_000 },
+  );
+  const messages = query.data?.messages ?? [];
 
   const send = async () => {
     const trimmed = body.trim();
@@ -49,11 +39,11 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
     setSending(true);
     setError(null);
     try {
-      const res = await api.post<{ messages: SrMessage[] }>(
+      await api.post<{ messages: SrMessage[] }>(
         `/api/service-requests/${srId}/messages`,
         { body: trimmed },
       );
-      setMessages(res.data.messages ?? []);
+      await query.refetch();
       setBody("");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

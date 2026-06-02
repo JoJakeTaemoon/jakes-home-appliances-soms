@@ -4,7 +4,7 @@
  * UC-RP-03 — Technician productivity.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   BarChart,
@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 
@@ -38,28 +38,15 @@ function isoDate(d: Date): string {
 
 export default function TechnicianProductivityReportPage() {
   const t = useTranslations("reports.productivity");
-  const api = useApi();
   const today = new Date();
   const thirtyAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
   const [start, setStart] = useState(isoDate(thirtyAgo));
   const [end, setEnd] = useState(isoDate(today));
-  const [data, setData] = useState<Resp | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<Resp>(
-        `/api/reports/technician-productivity?start=${start}&end=${end}`,
-      );
-      setData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, start, end]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiQuery<Resp>(
+    `/api/reports/technician-productivity?start=${start}&end=${end}`,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-4">

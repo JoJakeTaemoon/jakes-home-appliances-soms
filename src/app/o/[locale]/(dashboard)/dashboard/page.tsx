@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { formatDate, formatVnd } from "@/lib/format";
 
 type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
@@ -80,30 +79,12 @@ export default function DashboardPage() {
   const tRoles = useTranslations("roles");
   const locale = useLocale();
   const { user } = useAuth();
-  const api = useApi();
 
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<DashboardSummary>(`/api/dashboard/summary`);
-      setSummary(res.data);
-    } catch {
-      setSummary(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (user?.role && user.role !== "TECHNICIAN") {
-      load().catch(() => undefined);
-    } else {
-      setLoading(false);
-    }
-  }, [load, user?.role]);
+  const query = useApiQuery<DashboardSummary>(
+    user?.role && user.role !== "TECHNICIAN" ? `/api/dashboard/summary` : null,
+  );
+  const summary = query.data ?? null;
+  const loading = query.isLoading;
 
   const role = user?.role ? tRoles(user.role as RoleKey) : "";
 

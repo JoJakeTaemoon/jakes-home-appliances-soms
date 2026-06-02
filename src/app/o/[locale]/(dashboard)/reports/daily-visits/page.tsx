@@ -7,7 +7,7 @@
  * breakdown card row. CSV export pulls the same data.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   BarChart,
@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 
@@ -45,25 +45,12 @@ function todayIso(): string {
 
 export default function DailyVisitsReportPage() {
   const t = useTranslations("reports.daily");
-  const api = useApi();
   const [date, setDate] = useState<string>(todayIso());
-  const [data, setData] = useState<SummaryResp | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<SummaryResp>(
-        `/api/reports/daily-visits?date=${date}`,
-      );
-      setData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, date]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiQuery<SummaryResp>(
+    `/api/reports/daily-visits?date=${date}`,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
 
   const chartData = useMemo(() => data?.byTechnician ?? [], [data]);
 

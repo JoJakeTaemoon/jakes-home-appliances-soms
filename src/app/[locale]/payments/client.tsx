@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate, formatVnd } from "@/lib/format";
 
@@ -23,27 +22,10 @@ interface PortalPaymentsResponse {
 export function PortalPaymentsClient() {
   const t = useTranslations("portalExtra.payments");
   const locale = useLocale();
-  const api = useApi();
-  const [data, setData] = useState<PortalPaymentsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<PortalPaymentsResponse>(`/api/portal/payments`);
+  const data = query.data;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<PortalPaymentsResponse>(`/api/portal/payments`);
-      setData(res.data);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
   if (!data) return <p className="text-sm text-[#737373]">{t("loadError")}</p>;
   if (data.payments.length === 0)
     return <p className="text-sm text-[#737373]">{t("noPayments")}</p>;

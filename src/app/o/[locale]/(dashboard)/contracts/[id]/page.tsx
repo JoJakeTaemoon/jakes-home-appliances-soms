@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import {
@@ -69,32 +68,23 @@ export default function ContractDetailPage() {
   const tc = useTranslations("common");
   const locale = useLocale();
   const router = useRouter();
-  const api = useApi();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [data, setData] = useState<ContractDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [version, setVersion] = useState(0);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<ContractDetail>(`/api/contracts/${id}`);
-      setData(res.data);
-      setVersion((v) => v + 1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    if (!id) return;
-    void reload();
-  }, [id, reload]);
+  const query = useApiQuery<ContractDetail>(
+    id ? `/api/contracts/${id}` : null,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const error =
+    query.error instanceof Error ? query.error.message : null;
+  // `version` was bumped on every successful reload — used as a child-key
+  // to remount sub-trees. The query's dataUpdatedAt timestamp serves the
+  // same purpose without a setState-in-effect.
+  const version = query.dataUpdatedAt;
+  const reload = async () => {
+    await query.refetch();
+  };
 
   if (loading && !data) return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
   if (error || !data) {

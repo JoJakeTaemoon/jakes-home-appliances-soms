@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
@@ -76,31 +77,19 @@ function MobileVisitDetailContent() {
   const router = useRouter();
   const api = useApi();
   const { user } = useAuth();
-  const [data, setData] = useState<VisitDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useApiQuery<VisitDetail>(id ? `/api/mobile/visits/${id}` : null);
+  const data = query.data;
+  const error =
+    query.error instanceof Error ? query.error.message : null;
+  const reload = async () => {
+    await query.refetch();
+  };
+
   const [actionError, setActionError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<VisitDetail>(`/api/mobile/visits/${id}`);
-      setData(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    if (!id) return;
-    reload().catch(() => undefined);
-  }, [id, reload]);
-
-  if (loading && !data) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading && !data) return <p className="text-sm text-[#737373]">Loading…</p>;
   if (error || !data) {
     return <p className="text-sm text-red-600">{error ?? "Not found"}</p>;
   }

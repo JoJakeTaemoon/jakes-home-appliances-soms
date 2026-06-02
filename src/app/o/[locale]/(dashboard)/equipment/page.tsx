@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
@@ -46,7 +46,6 @@ export default function EquipmentPage() {
   const tc = useTranslations("common");
   const router = useRouter();
   const locale = useLocale();
-  const api = useApi();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
@@ -54,45 +53,39 @@ export default function EquipmentPage() {
   const dq = useDebounced(q, 300);
   const [status, setStatus] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [rows, setRows] = useState<EquipmentRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "createdAt",
     direction: "desc",
   });
 
-  useEffect(() => {
+  const onQ = (v: string) => {
+    setQ(v);
     setPage(1);
-  }, [dq, status]);
+  };
+  const onStatus = (v: string | null) => {
+    setStatus(v);
+    setPage(1);
+  };
 
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      setLoading(true);
-      try {
-        const qs = new URLSearchParams();
-        if (dq) qs.set("q", dq);
-        if (status) qs.set("status", status);
-        if (sort) {
-          qs.set("sortBy", sort.column);
-          qs.set("sortDir", sort.direction);
-        }
-        qs.set("page", String(page));
-        qs.set("pageSize", String(PAGE_SIZE));
-        const res = await api.get<EquipmentRow[]>(`/api/equipment?${qs.toString()}`);
-        if (cancelled) return;
-        setRows(res.data);
-        setTotal((res as unknown as { pagination?: { total: number } }).pagination?.total ?? res.data.length);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+  const url = useMemo(() => {
+    const qs = new URLSearchParams();
+    if (dq) qs.set("q", dq);
+    if (status) qs.set("status", status);
+    if (sort) {
+      qs.set("sortBy", sort.column);
+      qs.set("sortDir", sort.direction);
     }
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, dq, status, page, sort]);
+    qs.set("page", String(page));
+    qs.set("pageSize", String(PAGE_SIZE));
+    return `/api/equipment?${qs.toString()}`;
+  }, [dq, status, page, sort]);
+
+  const query = useApiPageQuery<EquipmentRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total =
+    (query.data?.pagination as { total?: number } | undefined)?.total ??
+    rows.length;
+  const loading = query.isLoading;
 
   const columns = useMemo<Column<EquipmentRow>[]>(
     () => [
@@ -180,12 +173,12 @@ export default function EquipmentPage() {
         toolbar={
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchPlaceholder")} />
+              <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={t("searchPlaceholder")} />
             </div>
             <div className="w-full sm:w-56">
               <Combobox
                 value={status}
-                onChange={setStatus}
+                onChange={onStatus}
                 options={(["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"] as const).map((s) => ({
                   value: s,
                   label: t(`statusValues.${s}`),

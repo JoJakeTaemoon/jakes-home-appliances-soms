@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export default function NewCustomerPage() {
   const form = useForm<FormValues>({
     defaultValues: defaultsFor(tab),
   });
-  const { register, handleSubmit, control, reset, setValue, watch, formState } = form;
+  const { register, handleSubmit, control, reset, setValue, formState } = form;
   const { errors } = formState;
 
   const opsArray = useFieldArray<FormValues, "opsContacts">({
@@ -104,7 +104,8 @@ export default function NewCustomerPage() {
     }
   });
 
-  const language = watch("contractParty.language");
+  const language = useWatch({ control, name: "contractParty.language" });
+  const residency = useWatch({ control, name: "residency" });
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
@@ -185,7 +186,7 @@ export default function NewCustomerPage() {
 
           {tab === "B2C" && (
             <ResidencyBlock
-              residency={watch("residency") ?? "DOMESTIC"}
+              residency={residency ?? "DOMESTIC"}
               setResidency={(v) => setValue("residency", v)}
               register={register}
               errors={errors}

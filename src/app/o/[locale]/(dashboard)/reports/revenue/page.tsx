@@ -8,7 +8,7 @@
  * HANDED_OVER / RECONCILED, bucketed by the originating contract type.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   LineChart,
@@ -20,7 +20,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { formatVnd } from "@/lib/format";
@@ -40,27 +40,14 @@ interface RevenueResp {
 
 export default function RevenueReportPage() {
   const t = useTranslations("reports.revenue");
-  const api = useApi();
   const now = new Date();
   const [year, setYear] = useState<number>(now.getUTCFullYear());
   const [month, setMonth] = useState<number>(now.getUTCMonth() + 1);
-  const [data, setData] = useState<RevenueResp | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<RevenueResp>(
-        `/api/reports/revenue?year=${year}&month=${month}`,
-      );
-      setData(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [api, year, month]);
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiQuery<RevenueResp>(
+    `/api/reports/revenue?year=${year}&month=${month}`,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
 
   const chartData = (data?.byMonth ?? []).map((m) => ({
     period: `${m.year}-${String(m.month).padStart(2, "0")}`,

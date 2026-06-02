@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,6 @@ export default function ContractsPage() {
   const t = useTranslations("contracts");
   const router = useRouter();
   const locale = useLocale();
-  const api = useApi();
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebounced(q, 300);
@@ -54,44 +53,46 @@ export default function ContractsPage() {
   const [startDateFrom, setStartDateFrom] = useState("");
   const [startDateTo, setStartDateTo] = useState("");
 
-  const [rows, setRows] = useState<ContractRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "createdAt",
     direction: "desc",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      sp.set("page", String(page));
-      sp.set("pageSize", String(PAGE_SIZE));
-      if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
-      if (typeFilter) sp.set("type", typeFilter);
-      if (stateFilter) sp.set("state", stateFilter);
-      if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
-      if (startDateFrom) sp.set("startDateFrom", new Date(startDateFrom).toISOString());
-      if (startDateTo) sp.set("startDateTo", new Date(`${startDateTo}T23:59:59`).toISOString());
-      if (sort) {
-        sp.set("sortBy", sort.column);
-        sp.set("sortDir", sort.direction);
-      }
-
-      const res = await api.get<ContractRow[]>(`/api/contracts?${sp.toString()}`);
-      setRows(res.data);
-      const pag = (res as { pagination?: { total: number } }).pagination;
-      setTotal(pag?.total ?? res.data.length);
-    } finally {
-      setLoading(false);
+  const url = useMemo(() => {
+    const sp = new URLSearchParams();
+    sp.set("page", String(page));
+    sp.set("pageSize", String(PAGE_SIZE));
+    if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
+    if (typeFilter) sp.set("type", typeFilter);
+    if (stateFilter) sp.set("state", stateFilter);
+    if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
+    if (startDateFrom)
+      sp.set("startDateFrom", new Date(startDateFrom).toISOString());
+    if (startDateTo)
+      sp.set("startDateTo", new Date(`${startDateTo}T23:59:59`).toISOString());
+    if (sort) {
+      sp.set("sortBy", sort.column);
+      sp.set("sortDir", sort.direction);
     }
-  }, [api, page, debouncedQ, typeFilter, stateFilter, customerTypeFilter, startDateFrom, startDateTo, sort]);
+    return `/api/contracts?${sp.toString()}`;
+  }, [
+    page,
+    debouncedQ,
+    typeFilter,
+    stateFilter,
+    customerTypeFilter,
+    startDateFrom,
+    startDateTo,
+    sort,
+  ]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const query = useApiPageQuery<ContractRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total =
+    (query.data?.pagination as { total?: number } | undefined)?.total ??
+    rows.length;
+  const loading = query.isLoading;
 
   // Compute renewal-due threshold (60 days from today).
   const renewalThreshold = new Date();

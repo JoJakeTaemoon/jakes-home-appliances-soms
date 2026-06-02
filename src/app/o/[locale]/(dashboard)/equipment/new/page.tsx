@@ -1,10 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -43,11 +44,7 @@ function NewEquipmentInner() {
   const sp = useSearchParams();
   const presetCustomer = sp.get("customerId");
 
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [models, setModels] = useState<ModelOption[]>([]);
-  const [sites, setSites] = useState<SiteOption[]>([]);
-
-  const [customerId, setCustomerId] = useState<string | null>(presetCustomer);
+  const [customerId, setCustomerIdRaw] = useState<string | null>(presetCustomer);
   const [siteId, setSiteId] = useState<string | null>(null);
   const [modelId, setModelId] = useState<string | null>(null);
   const [serialNumber, setSerialNumber] = useState("");
@@ -57,49 +54,33 @@ function NewEquipmentInner() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      const [cRes, mRes] = await Promise.all([
-        api.get<CustomerOption[]>("/api/customers?pageSize=100"),
-        api.get<ModelOption[]>("/api/equipment-models?pageSize=200"),
-      ]);
-      if (cancelled) return;
-      setCustomers(cRes.data);
-      setModels(mRes.data);
-    }
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [api]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      if (!customerId) {
-        setSites([]);
-        return;
-      }
-      const customer = customers.find((c) => c.id === customerId);
-      if (customer?.type !== "B2B") {
-        setSites([]);
-        setSiteId(null);
-        return;
-      }
-      const res = await api.get<SiteOption[]>(`/api/customers/${customerId}/sites`);
-      if (!cancelled) setSites(res.data);
-    }
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId, customers]);
+  const customersQuery = useApiQuery<CustomerOption[]>(
+    "/api/customers?pageSize=100",
+  );
+  const modelsQuery = useApiQuery<ModelOption[]>(
+    "/api/equipment-models?pageSize=200",
+  );
+  const customers = useMemo(() => customersQuery.data ?? [], [customersQuery.data]);
+  const models = modelsQuery.data ?? [];
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => c.id === customerId) ?? null,
     [customers, customerId],
   );
+
+  const sitesQuery = useApiQuery<SiteOption[]>(
+    customerId && selectedCustomer?.type === "B2B"
+      ? `/api/customers/${customerId}/sites`
+      : null,
+  );
+  const sites = sitesQuery.data ?? [];
+
+  // Wrap setCustomerId so changing the customer also clears the site choice
+  // (B2C customers have no sites).
+  const setCustomerId = (id: string | null) => {
+    setCustomerIdRaw(id);
+    setSiteId(null);
+  };
 
   async function submit() {
     setBusy(true);

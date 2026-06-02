@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
@@ -125,9 +126,6 @@ export default function CustomerDetailPage() {
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [data, setData] = useState<CustomerDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(false);
   const [showReactivate, setShowReactivate] = useState(false);
@@ -136,23 +134,16 @@ export default function CustomerDetailPage() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [siteFilter, setSiteFilter] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get<CustomerDetail>(`/api/customers/${id}`);
-      setData(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    if (!id) return;
-    void reload();
-  }, [id, reload]);
+  const query = useApiQuery<CustomerDetail>(
+    id ? `/api/customers/${id}` : null,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const error =
+    query.error instanceof Error ? query.error.message : null;
+  const reload = async () => {
+    await query.refetch();
+  };
 
   async function doDeactivate() {
     if (!deactivateReason.trim()) return;
@@ -614,7 +605,6 @@ function ServiceSummaryCard({ customerId }: Readonly<{ customerId: string }>) {
   const tSr = useTranslations("serviceRequests");
   const tV = useTranslations("visits");
   const locale = useLocale();
-  const api = useApi();
 
   interface SrItem {
     id: string;
@@ -631,35 +621,19 @@ function ServiceSummaryCard({ customerId }: Readonly<{ customerId: string }>) {
     completedAt: string | null;
   }
 
-  const [srs, setSrs] = useState<SrItem[]>([]);
-  const [visits, setVisits] = useState<VisitItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    Promise.all([
-      api
-        .get<SrItem[]>(`/api/service-requests?customerId=${customerId}&pageSize=5&sortBy=submittedAt&sortDir=desc`)
-        .then((r) => r.data)
-        .catch(() => [] as SrItem[]),
-      api
-        .get<VisitItem[]>(`/api/visits?customerId=${customerId}&pageSize=5&sortBy=scheduledFor&sortDir=desc`)
-        .then((r) => r.data)
-        .catch(() => [] as VisitItem[]),
-    ])
-      .then(([srRows, visitRows]) => {
-        if (cancelled) return;
-        setSrs(srRows);
-        setVisits(visitRows);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId]);
+  const srsQuery = useApiQuery<SrItem[]>(
+    customerId
+      ? `/api/service-requests?customerId=${customerId}&pageSize=5&sortBy=submittedAt&sortDir=desc`
+      : null,
+  );
+  const visitsQuery = useApiQuery<VisitItem[]>(
+    customerId
+      ? `/api/visits?customerId=${customerId}&pageSize=5&sortBy=scheduledFor&sortDir=desc`
+      : null,
+  );
+  const srs = srsQuery.data ?? [];
+  const visits = visitsQuery.data ?? [];
+  const loading = srsQuery.isLoading || visitsQuery.isLoading;
 
   return (
     <Card label={t("serviceSummary")}>
@@ -1421,7 +1395,6 @@ function CustomerContractsTab({ customerId }: Readonly<{ customerId: string }>) 
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const api = useApi();
   type Row = {
     id: string;
     contractNumber: string;
@@ -1432,24 +1405,11 @@ function CustomerContractsTab({ customerId }: Readonly<{ customerId: string }>) 
     monthlyMaintenanceFee: string | null;
     amendmentRevision: number;
   };
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    api
-      .get<Row[]>(`/api/contracts?customerId=${customerId}&pageSize=100`)
-      .then((res) => {
-        if (!cancelled) setRows(res.data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId]);
+  const contractsQuery = useApiQuery<Row[]>(
+    customerId ? `/api/contracts?customerId=${customerId}&pageSize=100` : null,
+  );
+  const rows = contractsQuery.data ?? [];
+  const loading = contractsQuery.isLoading;
 
   if (loading) return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
 
@@ -1507,7 +1467,6 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
   const t = useTranslations("serviceRequests");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const api = useApi();
   type Row = {
     id: string;
     code: string;
@@ -1517,24 +1476,13 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
     submittedAt: string;
     equipment: { id: string; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } } | null;
   };
-  const [rows, setRows] = useState<Row[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    api
-      .get<Row[]>(`/api/service-requests?customerId=${customerId}&pageSize=100`)
-      .then((res) => {
-        if (!cancelled) setRows(res.data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, customerId]);
+  const srsQuery = useApiQuery<Row[]>(
+    customerId
+      ? `/api/service-requests?customerId=${customerId}&pageSize=100`
+      : null,
+  );
+  const rows = srsQuery.data ?? [];
+  const loading = srsQuery.isLoading;
 
   if (loading) return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
   if (rows.length === 0) {

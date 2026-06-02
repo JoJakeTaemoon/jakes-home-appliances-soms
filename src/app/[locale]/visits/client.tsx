@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/format";
 
@@ -24,25 +23,10 @@ interface VisitRow {
 export function PortalVisitsClient() {
   const t = useTranslations("portalExtra.visits");
   const locale = useLocale();
-  const api = useApi();
-  const [rows, setRows] = useState<VisitRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useApiQuery<VisitRow[]>(`/api/portal/visits`);
+  const rows = query.data ?? [];
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<VisitRow[]>(`/api/portal/visits`);
-      setRows(res.data ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
   if (rows.length === 0)
     return <p className="text-sm text-[#737373]">{t("noVisits")}</p>;
 

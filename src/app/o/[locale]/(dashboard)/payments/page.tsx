@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useApi } from "@/lib/api/client";
+import { useApiPageQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -56,55 +56,38 @@ export default function PaymentsListPage() {
   const tMethods = useTranslations("payments.methods");
   const locale = useLocale();
   const router = useRouter();
-  const api = useApi();
 
   const [stateFilter, setStateFilter] = useState<string | null>(null);
   const [methodFilter, setMethodFilter] = useState<string | null>(null);
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [pendingHandover, setPendingHandover] = useState(false);
   const [search, setSearch] = useState("");
-  const [rows, setRows] = useState<PaymentRow[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "dueDate",
     direction: "asc",
   });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.set("page", String(page));
-      params.set("pageSize", String(PAGE_SIZE));
-      if (stateFilter) params.set("state", stateFilter);
-      if (methodFilter) params.set("method", methodFilter);
-      if (overdueOnly) params.set("overdueOnly", "true");
-      if (pendingHandover) params.set("pendingHandover", "true");
-      if (sort) {
-        params.set("sortBy", sort.column);
-        params.set("sortDir", sort.direction);
-      }
-      const res = await api.get<PaymentRow[]>(
-        `/api/payments?${params.toString()}`,
-      );
-      setRows(res.data ?? []);
-      setTotal(
-        (res as unknown as { pagination?: { total?: number } }).pagination
-          ?.total ?? 0,
-      );
-    } catch {
-      setRows([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
+  const url = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("pageSize", String(PAGE_SIZE));
+    if (stateFilter) params.set("state", stateFilter);
+    if (methodFilter) params.set("method", methodFilter);
+    if (overdueOnly) params.set("overdueOnly", "true");
+    if (pendingHandover) params.set("pendingHandover", "true");
+    if (sort) {
+      params.set("sortBy", sort.column);
+      params.set("sortDir", sort.direction);
     }
-  }, [api, page, stateFilter, methodFilter, overdueOnly, pendingHandover, sort]);
+    return `/api/payments?${params.toString()}`;
+  }, [page, stateFilter, methodFilter, overdueOnly, pendingHandover, sort]);
 
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
+  const query = useApiPageQuery<PaymentRow[]>(url);
+  const rows = query.data?.data ?? [];
+  const total =
+    (query.data?.pagination as { total?: number } | undefined)?.total ?? 0;
+  const loading = query.isLoading;
 
   const columns: Column<PaymentRow>[] = [
     {

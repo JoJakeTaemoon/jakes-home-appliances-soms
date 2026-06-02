@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -85,9 +86,12 @@ export default function ServiceRequestDetailPage() {
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [data, setData] = useState<SrDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useApiQuery<SrDetail>(
+    id ? `/api/service-requests/${id}` : null,
+  );
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const error = query.error instanceof Error ? query.error.message : null;
 
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
@@ -112,21 +116,9 @@ export default function ServiceRequestDetailPage() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<SrDetail>(`/api/service-requests/${id}`);
-      setData(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  const reload = async () => {
+    await query.refetch();
+  };
 
   async function doApprove() {
     if (!Number.isFinite(price) || price <= 0 || !approvedDate) return;

@@ -14,14 +14,24 @@
  * irreversible action warning.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
+
+function useDebounced<T>(value: T, ms = 250): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
+}
 
 interface CustomerLite {
   id: string;
@@ -39,59 +49,33 @@ interface CustomerLite {
   };
 }
 
-function useCustomerSearch() {
-  const api = useApi();
-  return useCallback(
-    async (q: string): Promise<CustomerLite[]> => {
-      if (!q.trim()) return [];
-      const res = await api.get<CustomerLite[]>(
-        `/api/customers?q=${encodeURIComponent(q)}&pageSize=10`,
-      );
-      return res.data ?? [];
-    },
-    [api],
-  );
-}
-
 export default function CustomerMergePage() {
   const t = useTranslations("merge");
   const { user } = useAuth();
   const api = useApi();
   const router = useRouter();
-  const search = useCustomerSearch();
   const [sourceQ, setSourceQ] = useState("");
   const [targetQ, setTargetQ] = useState("");
-  const [sourceResults, setSourceResults] = useState<CustomerLite[]>([]);
-  const [targetResults, setTargetResults] = useState<CustomerLite[]>([]);
+  const debouncedSourceQ = useDebounced(sourceQ);
+  const debouncedTargetQ = useDebounced(targetQ);
   const [source, setSource] = useState<CustomerLite | null>(null);
   const [target, setTarget] = useState<CustomerLite | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    const id = window.setTimeout(async () => {
-      const r = await search(sourceQ);
-      if (!cancelled) setSourceResults(r);
-    }, 250);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
-  }, [sourceQ, search]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const id = window.setTimeout(async () => {
-      const r = await search(targetQ);
-      if (!cancelled) setTargetResults(r);
-    }, 250);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
-  }, [targetQ, search]);
+  const sourceSearch = useApiQuery<CustomerLite[]>(
+    debouncedSourceQ.trim()
+      ? `/api/customers?q=${encodeURIComponent(debouncedSourceQ.trim())}&pageSize=10`
+      : null,
+  );
+  const targetSearch = useApiQuery<CustomerLite[]>(
+    debouncedTargetQ.trim()
+      ? `/api/customers?q=${encodeURIComponent(debouncedTargetQ.trim())}&pageSize=10`
+      : null,
+  );
+  const sourceResults = sourceSearch.data ?? [];
+  const targetResults = targetSearch.data ?? [];
 
   if (user && user.role !== "ADMIN") {
     return (

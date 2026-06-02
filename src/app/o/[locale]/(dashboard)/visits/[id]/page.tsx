@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -79,9 +80,14 @@ export default function VisitDetailPage() {
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [data, setData] = useState<VisitDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useApiQuery<VisitDetail>(id ? `/api/visits/${id}` : null);
+  const data = query.data ?? null;
+  const loading = query.isLoading;
+  const error =
+    query.error instanceof Error ? query.error.message : null;
+  const reload = async () => {
+    await query.refetch();
+  };
 
   const [showCancel, setShowCancel] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -89,23 +95,6 @@ export default function VisitDetailPage() {
   const [reschedFor, setReschedFor] = useState("");
   const [reschedReason, setReschedReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<VisitDetail>(`/api/visits/${id}`);
-      setData(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api, id]);
-
-  useEffect(() => {
-    if (!id) return;
-    reload().catch(() => undefined);
-  }, [id, reload]);
 
   const doCancel = async () => {
     if (!data) return;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { useApi, ApiClientError } from "@/lib/api/client";
+import { ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { formatDate, formatVnd } from "@/lib/format";
 
 interface InvoiceRow {
@@ -16,33 +16,14 @@ interface InvoiceRow {
 export function PortalInvoicesClient() {
   const t = useTranslations("portalExtra.invoices");
   const locale = useLocale();
-  const api = useApi();
-  const [rows, setRows] = useState<InvoiceRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [forbidden, setForbidden] = useState(false);
+  const query = useApiQuery<InvoiceRow[]>(`/api/portal/invoices`);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setForbidden(false);
-    try {
-      const res = await api.get<InvoiceRow[]>(`/api/portal/invoices`);
-      setRows(res.data ?? []);
-    } catch (err) {
-      if (err instanceof ApiClientError && err.status === 403) {
-        setForbidden(true);
-      }
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
+  const isForbidden =
+    query.error instanceof ApiClientError && query.error.status === 403;
+  const rows = query.data ?? [];
 
-  useEffect(() => {
-    load().catch(() => undefined);
-  }, [load]);
-
-  if (loading) return <p className="text-sm text-[#737373]">Loading…</p>;
-  if (forbidden) {
+  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (isForbidden) {
     return (
       <div className="rounded-2xl border border-dashed border-[#e5e5e5] bg-white p-8 text-center">
         <p className="text-sm text-[#525252]">{t("b2bOnly")}</p>

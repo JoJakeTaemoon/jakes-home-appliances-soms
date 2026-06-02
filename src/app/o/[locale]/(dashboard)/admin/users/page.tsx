@@ -13,10 +13,11 @@
  * single-click delete is intentionally not exposed.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/providers/auth-provider";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -45,10 +46,8 @@ export default function AdminUsersPage() {
   const { user } = useAuth();
   const api = useApi();
 
-  const [rows, setRows] = useState<UserRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
@@ -56,22 +55,18 @@ export default function AdminUsersPage() {
 
   const allowed = user?.role === "ADMIN" || user?.role === "MANAGER";
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.get<UserRow[]>(`/api/users?includeDisabled=true`);
-      setRows(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [api]);
-
-  useEffect(() => {
-    if (allowed) load().catch(() => undefined);
-  }, [allowed, load]);
+  const query = useApiQuery<UserRow[]>(
+    allowed ? `/api/users?includeDisabled=true` : null,
+  );
+  const rows = query.data ?? [];
+  const loading = query.isLoading;
+  const error =
+    actionError ??
+    (query.error instanceof Error ? query.error.message : null);
+  const setError = setActionError;
+  const load = async () => {
+    await query.refetch();
+  };
 
   async function confirmDelete() {
     if (!deleting) return;
