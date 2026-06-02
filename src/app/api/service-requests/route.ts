@@ -81,7 +81,37 @@ export const GET = defineQuery({
       }),
     ]);
 
-    return { rows, pagination: { page, limit: pageSize, total } };
+    // Compute hasUnreadCustomerMessage per row. We pull the max
+    // `at` of the customer SR_MESSAGE audit rows for these SRs in a
+    // single grouped query, then compare to each row's
+    // lastOfficeReadAt. A null lastOfficeReadAt means the office team
+    // has never marked anything read; any customer message there
+    // counts as unread.
+    const lastCustomerMsgByEntity = new Map<string, Date>();
+    if (rows.length > 0) {
+      const groups = await prisma.auditLog.groupBy({
+        by: ["entityId"],
+        where: {
+          action: "SR_MESSAGE",
+          actorType: "CUSTOMER",
+          entityType: "ServiceRequest",
+          entityId: { in: rows.map((r) => r.id) },
+        },
+        _max: { at: true },
+      });
+      for (const g of groups) {
+        if (g.entityId && g._max.at) lastCustomerMsgByEntity.set(g.entityId, g._max.at);
+      }
+    }
+    const decorated = rows.map((r) => {
+      const lastMsg = lastCustomerMsgByEntity.get(r.id) ?? null;
+      const hasUnreadCustomerMessage =
+        lastMsg !== null &&
+        (r.lastOfficeReadAt === null || r.lastOfficeReadAt < lastMsg);
+      return { ...r, hasUnreadCustomerMessage };
+    });
+
+    return { rows: decorated, pagination: { page, limit: pageSize, total } };
   },
 });
 
