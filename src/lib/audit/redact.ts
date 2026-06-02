@@ -20,16 +20,19 @@ const ALWAYS_MASK = new Set<string>([
   "accessToken",
   "refreshToken",
   "recoveryCode",
+  "apiKey",
 ]);
 
-/** Suffix matchers — case-insensitive. e.g. `apiToken`, `clientSecret`. */
+/** Suffix matchers — case-insensitive. e.g. `apiToken`, `clientSecret`, `signatureHash`. */
 const TOKEN_SUFFIX = /Token$/i;
 const SECRET_SUFFIX = /Secret$/i;
+const HASH_SUFFIX = /Hash$/i;
 
 function shouldMask(key: string): boolean {
   if (ALWAYS_MASK.has(key)) return true;
   if (TOKEN_SUFFIX.test(key)) return true;
   if (SECRET_SUFFIX.test(key)) return true;
+  if (HASH_SUFFIX.test(key)) return true;
   return false;
 }
 
@@ -40,6 +43,13 @@ function shouldMask(key: string): boolean {
  *     // → { username: "jake", passwordHash: "••••" }
  *
  * Arrays + nested objects are recursed. Primitives are returned as-is.
+ *
+ * **Caller contract.** Masking is keyed on the property name, so a
+ * sensitive value passed as a top-level primitive (e.g.
+ * `redact(user.passwordHash)`) is returned UNCHANGED. Always wrap secrets
+ * in an object so the key carries the signal:
+ *   ✅  redact({ passwordHash: user.passwordHash })
+ *   ❌  redact(user.passwordHash)
  */
 export function redact(value: unknown): unknown {
   if (value === null || value === undefined) return value;

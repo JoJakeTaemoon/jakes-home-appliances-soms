@@ -50,6 +50,11 @@ export default function MobileLoginPage() {
   const goToSuggested = () => {
     if (!mismatch) return;
     const url = new URL(mismatch.url, globalThis.location.origin);
+    // Defense in depth: even though /api/auth/field/login only emits known
+    // safe locale-prefixed paths, reject any url whose origin differs from
+    // the current document before navigating — protects against a future
+    // server bug that returns an absolute URL.
+    if (url.origin !== globalThis.location.origin) return;
     if (identifier) url.searchParams.set("phone", identifier);
     globalThis.location.assign(url.toString());
   };
