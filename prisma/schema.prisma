@@ -687,6 +687,14 @@ model ServiceRequest {
   submittedAt   DateTime            @default(now())
   decidedAt     DateTime?
   decidedById   String?
+  // Team-wide "last read" marker for the office side of the customer
+  // message thread. Any office user (ADMIN / MANAGER / STAFF) hitting
+  // the mark-read endpoint advances this for everyone, so the unread
+  // badge is consistent across the team. Comparing against the max
+  // timestamp of AuditLog rows where action='SR_MESSAGE' AND
+  // actorType='CUSTOMER' for this SR tells us if there are new
+  // customer messages to surface.
+  lastOfficeReadAt DateTime?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
