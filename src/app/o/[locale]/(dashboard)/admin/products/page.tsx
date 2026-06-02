@@ -970,7 +970,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         category: (r) => r.category ?? "",
         isActive: (r) => r.isActive,
       }),
-    [filtered, sort],
+    [filtered, sort, locale],
   );
 
   return (
@@ -1195,7 +1195,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       models
         .filter((m) => !brandFilter || m.brand?.id === brandFilter)
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
-    [models, brandFilter],
+    [models, brandFilter, locale],
   );
 
   const sorted = useMemo(
@@ -1525,7 +1525,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       models
         .filter((m) => !brandFilter || m.brand?.id === brandFilter)
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
-    [models, brandFilter],
+    [models, brandFilter, locale],
   );
 
   const sorted = useMemo(

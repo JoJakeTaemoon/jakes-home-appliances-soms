@@ -189,7 +189,7 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
     } else {
       refresh().finally(() => setIsLoading(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   useEffect(() => {

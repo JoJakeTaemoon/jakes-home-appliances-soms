@@ -81,7 +81,7 @@ async function convertEntry(entry, sourceOverride) {
   const converter = v8ToIstanbul(scriptPath, 0, opts);
   try {
     await converter.load();
-  } catch (err) {
+  } catch {
     // Source maps for some Next.js dev chunks are external URLs that
     // we can't fetch from this script; skip and move on.
     conversionErrors += 1;

@@ -7,7 +7,6 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import {
   ContractStateBadge,

@@ -1,7 +1,7 @@
 /**
  * Offline queue unit test — exercises Dexie against a fake-indexeddb backend.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 import "fake-indexeddb/auto";
 
 import { describe, it, expect, beforeEach } from "vitest";

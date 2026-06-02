@@ -174,7 +174,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     } else {
       refresh().finally(() => setIsLoading(false));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Silent refresh every 12 minutes (access TTL is 15min).

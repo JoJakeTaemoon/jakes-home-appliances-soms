@@ -23,7 +23,7 @@ export interface CustomerSessionCreateInput {
   ipAddress?: string | null;
 }
 
-export interface CustomerSessionCreateResult extends SessionCreateResult {}
+export type CustomerSessionCreateResult = SessionCreateResult;
 
 export async function createCustomerSession(
   input: CustomerSessionCreateInput,

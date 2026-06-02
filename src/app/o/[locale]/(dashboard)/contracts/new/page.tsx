@@ -23,8 +23,6 @@ interface CustomerOption {
   shortcode: string | null;
 }
 
-interface SiteOption { id: string; name: string }
-
 interface EquipmentOption {
   id: string;
   modelCode: string;
@@ -125,7 +123,7 @@ function NewContractPageInner() {
     } finally {
       setLoadingEquipment(false);
     }
-  }, [api, customerId]);
+  }, [api, customerId, locale]);
 
   useEffect(() => {
     void loadEquipment();

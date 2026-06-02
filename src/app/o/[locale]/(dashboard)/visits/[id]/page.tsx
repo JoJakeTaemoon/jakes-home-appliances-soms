@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
@@ -76,7 +75,6 @@ export default function VisitDetailPage() {
   const t = useTranslations("visits");
   const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
   const api = useApi();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";

@@ -44,6 +44,29 @@ function suggestionKey(s: { consumableId: string; action: string }): string {
   return `${s.consumableId}:${s.action}`;
 }
 
+interface StepNumProps {
+  n: number;
+  label: string;
+  active: boolean;
+}
+
+function StepNum({ n, label, active }: Readonly<StepNumProps>) {
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        className={
+          active
+            ? "flex size-7 items-center justify-center rounded-full bg-[var(--brand-blue-500)] text-xs font-semibold text-white"
+            : "flex size-7 items-center justify-center rounded-full bg-[#e5e5e5] text-xs font-semibold text-[#737373]"
+        }
+      >
+        {n}
+      </span>
+      <span className="mt-1 text-[10px] text-[#737373]">{label}</span>
+    </div>
+  );
+}
+
 export default function MobileCompletePage() {
   return (
     <MobileWrapper>
@@ -289,30 +312,15 @@ function CompleteWizard() {
     }
   };
 
-  const StepNum = ({ n, label }: Readonly<{ n: number; label: string }>) => (
-    <div className="flex flex-col items-center">
-      <span
-        className={
-          step >= n
-            ? "flex size-7 items-center justify-center rounded-full bg-[var(--brand-blue-500)] text-xs font-semibold text-white"
-            : "flex size-7 items-center justify-center rounded-full bg-[#e5e5e5] text-xs font-semibold text-[#737373]"
-        }
-      >
-        {n}
-      </span>
-      <span className="mt-1 text-[10px] text-[#737373]">{label}</span>
-    </div>
-  );
-
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-[#002A4D]">{t("title")}</h1>
       <div className="flex items-start justify-between gap-2">
-        <StepNum n={1} label={t("step1")} />
-        <StepNum n={2} label={t("step2")} />
-        <StepNum n={3} label={t("step3")} />
-        <StepNum n={4} label={t("step4")} />
-        <StepNum n={5} label={t("step5")} />
+        <StepNum active={step >= 1} n={1} label={t("step1")} />
+        <StepNum active={step >= 2} n={2} label={t("step2")} />
+        <StepNum active={step >= 3} n={3} label={t("step3")} />
+        <StepNum active={step >= 4} n={4} label={t("step4")} />
+        <StepNum active={step >= 5} n={5} label={t("step5")} />
       </div>
 
       {step === 1 && (
@@ -432,6 +440,7 @@ function CompleteWizard() {
                 key={p.storageKey}
                 className="relative aspect-square overflow-hidden rounded-md border border-[#e5e5e5] bg-[#fafafa]"
               >
+                {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, no optimisation needed */}
                 <img src={p.url} alt="" className="size-full object-cover" />
                 <button
                   type="button"
@@ -462,6 +471,7 @@ function CompleteWizard() {
           {uploading && <p className="text-xs text-[#737373]">{t("uploading")}</p>}
           {signature && (
             <div className="relative aspect-[2/1] overflow-hidden rounded-md border border-[#e5e5e5] bg-[#fafafa]">
+              {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, no optimisation needed */}
               <img src={signature.url} alt="" className="size-full object-contain" />
               <button
                 type="button"

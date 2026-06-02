@@ -53,8 +53,15 @@ function jsonReq(url: string, body: unknown): NextRequest {
   });
 }
 
-async function readJson(res: Response): Promise<{ status: number; body: any }> {
-  return { status: res.status, body: await res.json() };
+interface ApiResponseBody {
+  success?: boolean;
+  data?: unknown;
+  pagination?: unknown;
+  error: { code?: string; message?: string; issues?: Array<{ path: (string | number)[] }> };
+}
+
+async function readJson(res: Response): Promise<{ status: number; body: ApiResponseBody }> {
+  return { status: res.status, body: (await res.json()) as ApiResponseBody };
 }
 
 describe("defineMutation", () => {

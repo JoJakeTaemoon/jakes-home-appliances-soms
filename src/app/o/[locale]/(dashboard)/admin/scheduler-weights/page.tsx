@@ -25,6 +25,34 @@ interface Resp {
   defaults: Weights;
 }
 
+interface SliderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  hint?: string;
+}
+
+function Slider({ label, value, min, max, onChange, hint }: Readonly<SliderProps>) {
+  return (
+    <FormField label={label}>
+      <div className="flex items-center gap-3">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="flex-1 accent-[var(--brand-blue-500)]"
+        />
+        <span className="w-12 text-right text-sm tabular-nums">{value}</span>
+      </div>
+      {hint && <p className="mt-1 text-[11px] text-[#737373]">{hint}</p>}
+    </FormField>
+  );
+}
+
 export default function SchedulerWeightsPage() {
   const { user } = useAuth();
   const api = useApi();
@@ -77,37 +105,6 @@ export default function SchedulerWeightsPage() {
   const reset = () => {
     setDraft(data.defaults);
   };
-
-  const Slider = ({
-    label,
-    value,
-    min,
-    max,
-    onChange,
-    hint,
-  }: {
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    onChange: (v: number) => void;
-    hint?: string;
-  }) => (
-    <FormField label={label}>
-      <div className="flex items-center gap-3">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 accent-[var(--brand-blue-500)]"
-        />
-        <span className="w-12 text-right text-sm tabular-nums">{value}</span>
-      </div>
-      {hint && <p className="mt-1 text-[11px] text-[#737373]">{hint}</p>}
-    </FormField>
-  );
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">

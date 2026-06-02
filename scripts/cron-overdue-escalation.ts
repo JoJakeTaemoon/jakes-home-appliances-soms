@@ -11,7 +11,7 @@ import { runOverdueEscalation } from "@/lib/cron/overdue-escalation";
 async function main() {
   const start = Date.now();
   const summary = await runOverdueEscalation();
-  // eslint-disable-next-line no-console
+
   console.log(
     JSON.stringify(
       { ranAt: new Date().toISOString(), elapsedMs: Date.now() - start, ...summary },
@@ -24,7 +24,7 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((err) => {
-    // eslint-disable-next-line no-console
+
     console.error("[cron-overdue-escalation] failed:", err);
     process.exit(1);
   });

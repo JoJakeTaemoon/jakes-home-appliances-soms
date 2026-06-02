@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
@@ -54,7 +54,6 @@ export default function EquipmentDetailPage() {
   const id = params?.id ?? "";
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
-  const router = useRouter();
   const locale = useLocale();
   const api = useApi();
   const { user } = useAuth();

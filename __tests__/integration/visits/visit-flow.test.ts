@@ -67,7 +67,6 @@ vi.mock("@/lib/pdf/renderer", async () => {
 });
 
 import { GET as visitsGet, POST as visitsPost } from "@/app/api/visits/route";
-import { GET as visitGet } from "@/app/api/visits/[id]/route";
 import { POST as scheduleRoute } from "@/app/api/visits/[id]/schedule/route";
 import { POST as cancelRoute } from "@/app/api/visits/[id]/cancel/route";
 import { POST as reschedRoute } from "@/app/api/visits/[id]/reschedule/route";
@@ -92,7 +91,6 @@ let collabToken = "";
 let otherToken = "";
 let leadUserId = "";
 let collabUserId = "";
-let otherUserId = "";
 
 async function buildReq(url: string, method: string, token: string, body?: unknown) {
   return new NextRequest(`http://localhost${url}`, {
@@ -200,7 +198,6 @@ beforeAll(async () => {
   });
   leadUserId = lead.id;
   collabUserId = collab.id;
-  otherUserId = other.id;
   staffToken = await signStaffAccessToken({
     userId: staff.id,
     username: staff.username,
