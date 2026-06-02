@@ -45,13 +45,13 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
         `/api/service-requests/${srId}/messages`,
         { body: trimmed },
       )) as unknown as { data: { messages: SrMessage[] } };
-      // Inject POST response into cache so the new message shows up
-      // immediately without the refetch flash.
+      // Inject POST response (server-authoritative list) so the new
+      // message renders without a refetch flash. The 30s poll handles
+      // drift from concurrent writes by other office users.
       if (queryUrl && Array.isArray(env.data?.messages)) {
         qc.setQueryData([queryUrl], { messages: env.data.messages });
       }
       setBody("");
-      query.refetch().catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

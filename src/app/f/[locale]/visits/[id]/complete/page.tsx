@@ -112,11 +112,19 @@ function CompleteWizard() {
   const [queuedForSync, setQueuedForSync] = useState(false);
   const online = useOnlineStatus();
 
+  // Wizard form values (expectedAmount, suggestion list) are frozen for
+  // the duration of the completion flow: if the technician taps away to
+  // check the manual and returns, a window-focus refetch must NOT flip
+  // their in-progress numbers or re-include consumable rows they
+  // explicitly unchecked. staleTime: Infinity + no refetch-on-focus
+  // keeps the initial server snapshot until the page unmounts.
   const visitQuery = useApiQuery<{ expectedAmount: string | null }>(
     id ? `/api/mobile/visits/${id}` : null,
+    { staleTime: Infinity, refetchOnWindowFocus: false },
   );
   const suggestionsQuery = useApiQuery<{ recommendations: SuggestionResp[] }>(
     id ? `/api/mobile/visits/${id}/suggest-consumables` : null,
+    { staleTime: Infinity, refetchOnWindowFocus: false },
   );
   const expectedAmount = visitQuery.data?.expectedAmount
     ? Number(visitQuery.data.expectedAmount)

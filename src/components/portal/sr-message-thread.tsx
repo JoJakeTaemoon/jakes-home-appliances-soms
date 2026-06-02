@@ -60,15 +60,14 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
       if (!res.ok || !json.success) {
         throw new Error(json?.error?.message ?? "Failed");
       }
-      // The POST response already contains the new message list. Inject
-      // it into the query cache immediately so the UI shows the message
-      // without a flash, then fire-and-forget a refetch as a consistency
-      // check.
+      // The POST response already contains the authoritative message
+      // list (server reads after the INSERT commit). Inject it into the
+      // query cache so the UI updates without a refetch flash; the 30s
+      // poll handles drift from concurrent writes by other contacts.
       if (queryUrl && Array.isArray(json.data?.messages)) {
         qc.setQueryData([queryUrl], { messages: json.data.messages });
       }
       setBody("");
-      query.refetch().catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

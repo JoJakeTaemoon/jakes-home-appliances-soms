@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const useIsomorphicLayoutEffect =
   globalThis.window === undefined ? useEffect : useLayoutEffect;
@@ -89,6 +90,7 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
   const [contact, setContact] = useState<PortalContact | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!contact && !!accessToken;
 
@@ -143,8 +145,12 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
       setContact(null);
       setAccessToken(null);
       setCached(null, null);
+      // Drop ALL cached TanStack Query data so the next contact who
+      // logs in on this device cannot see the previous contact's
+      // invoices / equipment / SR thread until staleTime expires.
+      queryClient.clear();
     }
-  }, []);
+  }, [queryClient]);
 
   const refresh = useCallback(async () => {
     try {

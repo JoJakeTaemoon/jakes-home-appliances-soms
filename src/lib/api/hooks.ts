@@ -26,10 +26,17 @@ import {
 } from "@tanstack/react-query";
 import { useApi, type ApiClientError } from "./client";
 
+export interface ApiPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages?: number;
+}
+
 interface PageEnvelope<T> {
   success: true;
   data: T;
-  pagination?: unknown;
+  pagination?: ApiPagination;
 }
 
 type ApiUrl = string | null | undefined;
@@ -96,9 +103,12 @@ type ApiMethod = "post" | "patch" | "put" | "del";
 
 /**
  * Mutation wrapper. Pass the HTTP verb + a function that yields the URL
- * for the call. On success the cached entries listed in `invalidate`
- * are evicted, which is how downstream `useApiQuery` calls pick up the
- * server-side state change.
+ * for the call. On success any cached query whose URL starts with one of
+ * the strings in `invalidate` is evicted. Prefix matching is intentional
+ * because list queries include their query string in the queryKey
+ * (e.g. `/api/customers?page=1&q=foo`), so an exact-key match like
+ * `invalidate: ['/api/customers']` would silently no-op for every list
+ * page.
  */
 export function useApiMutation<TVars = unknown, TResp = unknown>(
   method: ApiMethod,
@@ -125,9 +135,15 @@ export function useApiMutation<TVars = unknown, TResp = unknown>(
     },
     onSuccess: (data, vars, onMutateResult, ctx) => {
       options?.mutationOptions?.onSuccess?.(data, vars, onMutateResult, ctx);
-      for (const key of options?.invalidate ?? []) {
-        qc.invalidateQueries({ queryKey: [key] });
-      }
+      const prefixes = options?.invalidate ?? [];
+      if (prefixes.length === 0) return;
+      qc.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey[0];
+          if (typeof k !== "string") return false;
+          return prefixes.some((p) => k === p || k.startsWith(`${p}?`));
+        },
+      });
     },
   });
 }
