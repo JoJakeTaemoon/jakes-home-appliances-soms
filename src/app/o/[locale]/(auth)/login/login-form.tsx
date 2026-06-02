@@ -31,6 +31,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [roleMismatchUrl, setRoleMismatchUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const {
@@ -50,6 +51,7 @@ export function LoginForm() {
 
   const onSubmit = async (values: LoginInput) => {
     setServerError(null);
+    setRoleMismatchUrl(null);
     setSubmitting(true);
     try {
       await login(values.phone ?? "", values.password);
@@ -61,6 +63,7 @@ export function LoginForm() {
       router.replace(safeNext);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "UNKNOWN";
+      const suggestedUrl = (err as { suggestedUrl?: string | null }).suggestedUrl ?? null;
       let message: string;
       switch (code) {
         case "INVALID_CREDENTIALS":
@@ -71,6 +74,10 @@ export function LoginForm() {
           break;
         case "ACCOUNT_INACTIVE":
           message = t("errorInactive");
+          break;
+        case "ROLE_MISMATCH":
+          message = t("errorRoleMismatchField");
+          if (suggestedUrl) setRoleMismatchUrl(suggestedUrl);
           break;
         default:
           message = t("errorGeneric");
@@ -128,10 +135,20 @@ export function LoginForm() {
       {serverError && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2 rounded-md border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-sm text-[#b91c1c]"
+          className="mb-4 flex flex-col gap-2 rounded-md border border-[#fecaca] bg-[#fef2f2] px-3 py-2 text-sm text-[#b91c1c]"
         >
-          <ErrorIcon />
-          <span>{serverError}</span>
+          <div className="flex items-start gap-2">
+            <ErrorIcon />
+            <span>{serverError}</span>
+          </div>
+          {roleMismatchUrl && (
+            <a
+              href={roleMismatchUrl}
+              className="self-start rounded-md border border-[#b91c1c] bg-white px-3 py-1 text-xs font-medium text-[#b91c1c] hover:bg-[#fef2f2]"
+            >
+              {t("goToFieldLogin")}
+            </a>
+          )}
         </div>
       )}
 

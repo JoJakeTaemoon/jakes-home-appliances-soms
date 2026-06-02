@@ -1344,6 +1344,10 @@ async function main() {
             phone1: "0901112233",
             email: "minh.tran@sheratonvn.example.com",
             language: "vi",
+            // Portal access — B2B contract party, first login forces change.
+            portalEnabled: true,
+            passwordHash: portalPwHash,
+            mustChangePassword: true,
           },
           {
             role: "OPS_CONTACT",
@@ -1354,6 +1358,10 @@ async function main() {
             phone1: "0901112234",
             email: "mai.le@sheratonvn.example.com",
             language: "vi",
+            // Portal access — B2B primary OPS, exercises OPS-only access path.
+            portalEnabled: true,
+            passwordHash: portalPwHash,
+            mustChangePassword: true,
           },
           {
             role: "OPS_CONTACT",
@@ -1506,6 +1514,11 @@ async function main() {
             phone1: "0901555000",
             email: "minsoo.kim@example.com",
             language: "ko",
+            // Portal access — Korean-speaker, already finished the first
+            // change so dev can jump straight into the portal UI.
+            portalEnabled: true,
+            passwordHash: portalPwHash,
+            mustChangePassword: false,
           },
         ],
       },
@@ -2085,8 +2098,12 @@ async function main() {
 
   // ─── Service requests (covering all states) ─────────────────────────
   const b2cPrimaryContact = b2c.contacts.find((c) => c.role === "CONTRACT_PARTY")!;
+  // Today's PENDING_REVIEW SR with a "preferred visit time" set — exercises
+  // the office approval modal's auto-fill of scheduledFor + the new
+  // preferred-time read-only display every time the dev DB is reseeded.
+  const todayPreferred = at(daysFromNow(0), 14);
   const srSeed = [
-    { code: "SR-00001", customerId: b2c.id, contactId: b2cPrimaryContact.id, equipmentId: b2c.equipment[0].id, type: "INSPECTION" as const, isPaid: false, state: "PENDING_REVIEW" as const, desc: "Nước chảy yếu, nhờ kiểm tra giúp." },
+    { code: "SR-00001", customerId: b2c.id, contactId: b2cPrimaryContact.id, equipmentId: b2c.equipment[0].id, type: "INSPECTION" as const, isPaid: false, state: "PENDING_REVIEW" as const, desc: "Nước chảy yếu, nhờ kiểm tra giúp.", preferredVisitAt: todayPreferred },
     { code: "SR-00002", customerId: b2c.id, contactId: b2cPrimaryContact.id, equipmentId: b2c.equipment[0].id, type: "REPAIR" as const, isPaid: true, state: "APPROVED" as const, desc: "Máy kêu to khi lọc nước.", price: 350_000 },
     { code: "SR-00003", customerId: b2cCustomers["KH00004"].id, type: "PART_REPLACEMENT" as const, isPaid: true, state: "REJECTED" as const, desc: "Thay lõi lọc sớm hơn lịch.", reject: "Lõi lọc vẫn trong hạn, chưa cần thay." },
     { code: "SR-00004", customerId: b2cCustomers["KH00006"].id, type: "RELOCATION" as const, isPaid: true, state: "SCHEDULED" as const, desc: "Chuyển máy sang phòng bếp mới.", price: 200_000 },
@@ -2094,9 +2111,15 @@ async function main() {
   ];
   const serviceRequests: Record<string, { id: string }> = {};
   for (const sr of srSeed) {
+    const preferredVisitAt =
+      "preferredVisitAt" in sr ? sr.preferredVisitAt : null;
     const created = await prisma.serviceRequest.upsert({
       where: { code: sr.code },
-      update: {},
+      // Roll forward time-sensitive fields (preferredVisitAt + submittedAt)
+      // on re-seed so SR-00001 always shows up as "today's request".
+      update: preferredVisitAt
+        ? { preferredVisitAt, submittedAt: new Date() }
+        : {},
       create: {
         code: sr.code,
         customerId: sr.customerId,
@@ -2106,6 +2129,7 @@ async function main() {
         isPaid: sr.isPaid,
         state: sr.state,
         description: sr.desc,
+        preferredVisitAt: preferredVisitAt ?? undefined,
         approvedPrice: "price" in sr ? sr.price : undefined,
         approvedDate: sr.state === "APPROVED" || sr.state === "SCHEDULED" ? daysFromNow(2) : undefined,
         rejectionReason: "reject" in sr ? sr.reject : undefined,
@@ -2203,19 +2227,40 @@ async function main() {
   // ─── Bulk visits per state (~50 total, ~7 per VisitState) ──────────────
   // Seeds enough volume for filter / dashboard widgets to surface meaningful
   // numbers in dev. Reuses bulk B2C/B2B customers + tech pool above.
-  const bulkVisitPool: Array<{ customerId: string; equipmentId?: string }> = [
-    { customerId: b2cCustomers["KH00004"].id },
-    { customerId: b2cCustomers["KH00005"].id },
-    { customerId: b2cCustomers["KH00006"].id },
-    { customerId: b2cCustomers["KH00007"].id },
-    { customerId: b2cCustomers["KH00008"].id },
-    { customerId: b2cCustomers["KH00009"].id },
-    { customerId: b2cCustomers["KH00010"].id },
-    { customerId: b2bCustomers["KH00011"].id },
-    { customerId: b2bCustomers["KH00012"].id },
-    { customerId: b2bCustomers["KH00013"].id },
-    { customerId: b2bCustomers["KH00014"].id },
+  //
+  // Each pool entry carries the customer's first equipmentId — the field
+  // visit-detail's equipment + work-scope panels read it, so without this
+  // link technicians see an empty equipment block in dev. We fetch the
+  // ids in one query (the customers were just upserted above).
+  const bulkPoolCustomerIds: string[] = [
+    b2cCustomers["KH00004"].id,
+    b2cCustomers["KH00005"].id,
+    b2cCustomers["KH00006"].id,
+    b2cCustomers["KH00007"].id,
+    b2cCustomers["KH00008"].id,
+    b2cCustomers["KH00009"].id,
+    b2cCustomers["KH00010"].id,
+    b2bCustomers["KH00011"].id,
+    b2bCustomers["KH00012"].id,
+    b2bCustomers["KH00013"].id,
+    b2bCustomers["KH00014"].id,
   ];
+  const firstEquipmentRows = await prisma.equipment.findMany({
+    where: { customerId: { in: bulkPoolCustomerIds } },
+    select: { id: true, customerId: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const firstEquipmentByCustomer = new Map<string, string>();
+  for (const e of firstEquipmentRows) {
+    if (!firstEquipmentByCustomer.has(e.customerId)) {
+      firstEquipmentByCustomer.set(e.customerId, e.id);
+    }
+  }
+  const bulkVisitPool: Array<{ customerId: string; equipmentId?: string }> =
+    bulkPoolCustomerIds.map((customerId) => ({
+      customerId,
+      equipmentId: firstEquipmentByCustomer.get(customerId),
+    }));
   const visitTypePool = ["PERIODIC_INSPECTION", "FILTER_REPLACEMENT", "REPAIR", "INSTALLATION"] as const;
   const stateBuckets: Array<{
     state: "SUGGESTED" | "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "FAILED_NO_SHOW" | "RESCHEDULED" | "CANCELLED";
@@ -2244,6 +2289,7 @@ async function main() {
 
       const baseData: Parameters<typeof prisma.visit.create>[0]["data"] = {
         customerId: targetCustomer.customerId,
+        equipmentId: targetCustomer.equipmentId,
         type: vType,
         state: bucket.state,
         scheduledFor: at(daysFromNow(dayOff), hourBase),
@@ -2270,27 +2316,38 @@ async function main() {
     }
   }
 
-  // ─── Daily SCHEDULED visits (today + next 30 days, one per day) ────────
-  // Gives the calendar / dashboard widgets a steady stream of upcoming work
-  // so cron jobs (D-1 reminder) + the today/upcoming mobile screens always
-  // have something to render in dev. Round-robins through bulk customers
-  // and the technician pool; alternates visit type day by day.
+  // ─── Daily visits (past 60 days + today + next 30 days, one per day) ──
+  // Guarantees ≥1 visit per calendar day across a 91-day window so the
+  // calendar / dashboard widgets, reporting filters, and date-range
+  // analytics always have continuous data in dev. Past days land as
+  // COMPLETED with findings; today + future as SCHEDULED so cron jobs
+  // (D-1 reminder) + today/upcoming mobile screens have material.
+  // Round-robins through bulk customers and the technician pool;
+  // alternates visit type day by day.
   let dailyVisitCounter = 0;
-  for (let dayOff = 0; dayOff <= 30; dayOff++) {
+  for (let dayOff = -60; dayOff <= 30; dayOff++) {
     const targetCustomer = bulkVisitPool[dailyVisitCounter % bulkVisitPool.length];
     const techPick = techs[dailyVisitCounter % techs.length];
     const vType = visitTypePool[dailyVisitCounter % visitTypePool.length];
     // Spread starting hours 8–16 so the day-view doesn't look identical.
     const hourBase = 8 + (dailyVisitCounter % 9);
-    const id = `seed-visit-daily-${String(dayOff).padStart(2, "0")}`;
-    await ensureVisit(id, {
+    const isPast = dayOff < 0;
+    const id = `seed-visit-daily-${dayOff < 0 ? "p" : "f"}${String(Math.abs(dayOff)).padStart(2, "0")}`;
+    const data: Parameters<typeof prisma.visit.create>[0]["data"] = {
       customerId: targetCustomer.customerId,
+      equipmentId: targetCustomer.equipmentId,
       type: vType,
-      state: "SCHEDULED",
+      state: isPast ? "COMPLETED" : "SCHEDULED",
       scheduledFor: at(daysFromNow(dayOff), hourBase),
       scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
       leadTechnicianId: techPick.id,
-    });
+    };
+    if (isPast) {
+      data.startedAt = at(daysFromNow(dayOff), hourBase, 10);
+      data.completedAt = at(daysFromNow(dayOff), hourBase + 1, 5);
+      data.findings = `Daily seed visit (${dayOff}) — ${vType.toLowerCase()} completed.`;
+    }
+    await ensureVisit(id, data);
     dailyVisitCounter++;
   }
 
@@ -2522,9 +2579,12 @@ async function main() {
   console.log("  tech3    phone 0123456786  / pw 12341234 (HCMC-D3)");
   console.log("  tech4    phone 0123456787  / pw 12341234 (HN-HK)");
   console.log("  tech5    phone 0123456788  / pw 12341234 (HCMC-D1)");
-  console.log("\nPortal credentials (KH00001 CONTRACT_PARTY):");
-  console.log("  phone 0901234567 / pw portal1234 (mustChangePassword=true)");
-  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 56 visits, 10 payments.");
+  console.log("\nPortal credentials (4 accounts, all pw portal1234):");
+  console.log("  KH00001 CP   phone 0901234567 / vi / mustChange=true  (Nguyễn Thị Lan, B2C anchor)");
+  console.log("  KH00002 CP   phone 0901112233 / vi / mustChange=true  (Trần Văn Minh, B2B 사장님)");
+  console.log("  KH00002 OPS  phone 0901112234 / vi / mustChange=true  (Lê Thị Mai, B2B 운영담당)");
+  console.log("  KH00003 CP   phone 0901555000 / ko / mustChange=false (김민수, 한국어 — 바로 진입)");
+  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 147 visits, 10 payments.");
 }
 
 main()

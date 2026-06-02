@@ -25,6 +25,21 @@ interface OfficeNoteEntry {
   text: string;
 }
 
+interface ConsumableOnModel {
+  quantity: number;
+  consumable: {
+    id: string;
+    sku: string;
+    nameKo: string;
+    nameVi: string;
+    nameEn: string;
+    replaceEveryMonths: number | null;
+    cleanEveryMonths: number | null;
+    cleanOnEveryVisit: boolean;
+    isActive: boolean;
+  };
+}
+
 interface VisitDetail {
   id: string;
   type: string;
@@ -47,7 +62,15 @@ interface VisitDetail {
   };
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+    installedAt: string | null;
+    model: {
+      modelCode: string | null;
+      nameKo: string | null;
+      nameVi: string | null;
+      nameEn: string | null;
+      category?: string;
+      consumables?: ConsumableOnModel[];
+    };
     site: { id: string; name: string } | null;
   } | null;
   leadTechnician: { username: string } | null;
@@ -181,17 +204,32 @@ function MobileVisitDetailContent() {
       <section className="rounded-xl border border-[#e5e5e5] bg-white p-4 shadow-sm">
         <h2 className="text-sm font-medium text-[#737373]">{tv("equipment")}</h2>
         {data.equipment ? (
-          <p className="mt-1 text-sm">
-            {pickModelName(data.equipment.model, locale)} · {pickModelName(data.equipment.model, locale)}
-            <br />
-            <span className="font-mono text-xs text-[#737373]">
-              {data.equipment.serialNumber ?? "—"}
-            </span>
-          </p>
+          <div className="mt-1 space-y-1">
+            <p className="text-sm font-medium text-[#262626]">
+              {pickModelName(data.equipment.model, locale)}
+            </p>
+            <p className="text-xs text-[#737373]">
+              {data.equipment.model.modelCode ?? "—"}
+              {data.equipment.serialNumber
+                ? ` · S/N ${data.equipment.serialNumber}`
+                : ""}
+              {data.equipment.installedAt
+                ? ` · ${t("installedAt")}: ${formatDate(data.equipment.installedAt, locale)}`
+                : ""}
+            </p>
+            {data.equipment.site && (
+              <p className="text-xs text-[#737373]">
+                {tv("site")}: {data.equipment.site.name}
+              </p>
+            )}
+          </div>
         ) : (
           <p className="mt-1 text-sm text-[#737373]">—</p>
         )}
       </section>
+
+      <WorkScopeSection visit={data} />
+
 
       {data.serviceRequest && (
         <section className="rounded-xl border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-4 shadow-sm">
@@ -287,5 +325,147 @@ function MobileVisitDetailContent() {
         )}
       </div>
     </div>
+  );
+}
+
+function pickConsumableName(
+  c: ConsumableOnModel["consumable"],
+  locale: string,
+): string {
+  if (locale === "ko") return c.nameKo;
+  if (locale === "en") return c.nameEn;
+  return c.nameVi;
+}
+
+/**
+ * Visit-type-aware "scope of work" panel. Tells the technician what they
+ * came here to do — for periodic inspections and filter replacements it
+ * lists the model's compatible consumables (replace cycle, clean cycle,
+ * or every-visit cleaning) so the tech knows which filters to bring +
+ * what to check before tapping Start. For other visit types it falls
+ * back to a generic type-specific intro line.
+ */
+function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
+  const t = useTranslations("mobile.workScope");
+  const tv = useTranslations("visits.types");
+  const locale = useLocale();
+
+  const type = visit.type;
+  const allConsumables = visit.equipment?.model.consumables ?? [];
+  const active = allConsumables.filter((c) => c.consumable.isActive);
+
+  // Buckets per visit type — periodic inspections clean every-visit
+  // filters + check cycle-due filters; filter replacements list every
+  // replaceable filter.
+  const cleanItems = active.filter((c) => {
+    if (type === "PERIODIC_INSPECTION")
+      return c.consumable.cleanOnEveryVisit || c.consumable.cleanEveryMonths != null;
+    if (type === "FILTER_REPLACEMENT")
+      return c.consumable.cleanOnEveryVisit;
+    return false;
+  });
+  const replaceItems = active.filter((c) => {
+    if (type === "PERIODIC_INSPECTION")
+      return c.consumable.replaceEveryMonths != null;
+    if (type === "FILTER_REPLACEMENT")
+      return c.consumable.replaceEveryMonths != null;
+    return false;
+  });
+
+  const introKey = (() => {
+    switch (type) {
+      case "INSTALLATION":
+        return "introInstallation";
+      case "PERIODIC_INSPECTION":
+        return "introPeriodicInspection";
+      case "FILTER_REPLACEMENT":
+        return "introFilterReplacement";
+      case "REPAIR":
+        return "introRepair";
+      case "RELOCATION":
+        return "introRelocation";
+      case "PAYMENT_COLLECTION":
+        return "introPaymentCollection";
+      default:
+        return "introOther";
+    }
+  })();
+
+  return (
+    <section className="rounded-xl border border-[var(--brand-blue-200)] bg-white p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-[var(--brand-blue-700)]">
+        {t("title")} · {tv(type as never)}
+      </h2>
+      <p className="mt-2 text-sm text-[#262626]">{t(introKey as never)}</p>
+
+      {replaceItems.length > 0 && (
+        <div className="mt-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#737373]">
+            {t("replaceTitle")}
+          </h3>
+          <ul className="mt-1 space-y-1">
+            {replaceItems.map((c) => (
+              <li
+                key={`r-${c.consumable.id}`}
+                className="flex items-start justify-between gap-2 text-sm"
+              >
+                <span className="text-[#262626]">
+                  {pickConsumableName(c.consumable, locale)}
+                  {c.quantity > 1 ? ` × ${c.quantity}` : ""}
+                </span>
+                <span className="font-mono text-xs text-[#737373]">
+                  {c.consumable.sku}
+                  {c.consumable.replaceEveryMonths
+                    ? ` · ${t("everyMonths", { n: c.consumable.replaceEveryMonths })}`
+                    : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {cleanItems.length > 0 && (
+        <div className="mt-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#737373]">
+            {t("cleanTitle")}
+          </h3>
+          <ul className="mt-1 space-y-1">
+            {cleanItems.map((c) => {
+              let cycle = "";
+              if (c.consumable.cleanOnEveryVisit) cycle = ` · ${t("everyVisit")}`;
+              else if (c.consumable.cleanEveryMonths != null)
+                cycle = ` · ${t("everyMonths", { n: c.consumable.cleanEveryMonths })}`;
+              return (
+                <li
+                  key={`c-${c.consumable.id}`}
+                  className="flex items-start justify-between gap-2 text-sm"
+                >
+                  <span className="text-[#262626]">
+                    {pickConsumableName(c.consumable, locale)}
+                  </span>
+                  <span className="font-mono text-xs text-[#737373]">
+                    {c.consumable.sku}
+                    {cycle}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {visit.scheduledWindow && (
+        <p className="mt-3 text-xs text-[#737373]">
+          {t("windowLabel")}: {visit.scheduledWindow}
+        </p>
+      )}
+      {visit.expectedAmount && Number(visit.expectedAmount) > 0 && (
+        <p className="mt-1 text-xs text-[#737373]">
+          {t("expectedAmountLabel")}:{" "}
+          <span className="font-mono">{visit.expectedAmount}</span>
+        </p>
+      )}
+    </section>
   );
 }

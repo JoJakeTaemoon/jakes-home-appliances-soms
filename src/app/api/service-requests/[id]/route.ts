@@ -35,6 +35,21 @@ export const GET = defineQuery({
             address: true,
             district: true,
             city: true,
+            // Office needs the OPS contact phone to call the customer if
+            // the proposed visit time doesn't fit. Sort so the primary
+            // OPS bubbles up first in the office UI.
+            contacts: {
+              where: { role: "OPS_CONTACT" },
+              orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+              select: {
+                id: true,
+                name: true,
+                phone1: true,
+                role: true,
+                scope: true,
+                isPrimary: true,
+              },
+            },
           },
         },
         contact: { select: { id: true, name: true, phone1: true, role: true } },

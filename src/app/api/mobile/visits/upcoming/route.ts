@@ -13,7 +13,7 @@ import { dayBounds } from "@/lib/scheduler/availability";
 const ACTIVE_STATES = ["SCHEDULED", "RESCHEDULED"] as const;
 
 export const GET = defineQuery({
-  audience: "staff",
+  audience: "field",
   authorize: (auth) => {
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile endpoints are technician-only");

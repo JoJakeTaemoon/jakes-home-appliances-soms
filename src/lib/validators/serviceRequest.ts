@@ -63,6 +63,9 @@ export const createServiceRequestSchema = z.object({
     .min(10, "Description must be at least 10 characters")
     .max(4000),
   attachments: z.array(srAttachmentSchema).max(8).optional().default([]),
+  // Customer's preferred visit time (optional). Office uses it to seed the
+  // approval modal's scheduledFor.
+  preferredVisitAt: z.coerce.date().optional(),
 });
 
 /** Office-staff manual SR creation — adds customerId + optional contactId. */

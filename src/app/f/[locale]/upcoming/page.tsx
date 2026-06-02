@@ -6,7 +6,7 @@ import { pickModelName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatWeekday } from "@/lib/format";
 
 interface VisitCard {
   id: string;
@@ -53,7 +53,7 @@ function MobileUpcomingContent() {
           .map((dateKey) => (
             <section key={dateKey} className="flex flex-col gap-2">
               <h2 className="text-sm font-medium text-[#525252]">
-                {formatDate(dateKey, locale)}
+                {formatDate(dateKey, locale)} ({formatWeekday(dateKey, locale)})
               </h2>
               <ul className="flex flex-col gap-2">
                 {grouped[dateKey].map((v) => (
@@ -66,7 +66,7 @@ function MobileUpcomingContent() {
                         <span className="text-sm font-semibold text-[#002A4D]">
                           {v.customer.name}
                         </span>
-                        <span className="font-mono text-xs text-[#737373]">
+                        <span className="font-mono text-sm font-semibold text-[var(--brand-blue-700)]">
                           {v.scheduledFor.slice(11, 16)}
                         </span>
                       </div>

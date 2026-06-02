@@ -27,6 +27,21 @@ export function formatDate(value: Date | string | null | undefined, locale: AppL
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/** Short locale weekday — e.g. ko "월", vi "Th 2", en "Mon". Returns "" on bad input. */
+export function formatWeekday(
+  value: Date | string | null | undefined,
+  locale: AppLocale | string = "vi",
+): string {
+  if (value === null || value === undefined || value === "") return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  try {
+    return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(d);
+  } catch {
+    return "";
+  }
+}
+
 /** Format a datetime as locale-appropriate date + 24h time. */
 export function formatDateTime(value: Date | string | null | undefined, locale: AppLocale | string = "vi"): string {
   if (value === null || value === undefined || value === "") return "";

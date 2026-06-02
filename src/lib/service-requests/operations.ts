@@ -185,53 +185,42 @@ export async function createServiceRequest(
       .map((c) => ({ type: c.contract.type })),
   });
 
+  const baseData = {
+    customerId,
+    contactId,
+    equipmentId: input.equipmentId ?? null,
+    type: input.type,
+    isPaid: decision.isPaid,
+    state: decision.isPaid ? "PENDING_REVIEW" : "APPROVED",
+    description: input.description,
+    preferredVisitAt: input.preferredVisitAt ?? null,
+    attachments:
+      (input.attachments && input.attachments.length > 0
+        ? (input.attachments as unknown as Prisma.InputJsonValue)
+        : undefined) ?? undefined,
+    submittedAt: new Date(),
+  } as const;
+
   // Allocate code w/ one retry on collision.
   let code = await allocateServiceRequestCode();
   let created;
   try {
     created = await prisma.serviceRequest.create({
-      data: {
-        code,
-        customerId,
-        contactId,
-        equipmentId: input.equipmentId ?? null,
-        type: input.type,
-        isPaid: decision.isPaid,
-        state: decision.isPaid ? "PENDING_REVIEW" : "APPROVED",
-        description: input.description,
-        attachments:
-          (input.attachments && input.attachments.length > 0
-            ? (input.attachments as unknown as Prisma.InputJsonValue)
-            : undefined) ?? undefined,
-        submittedAt: new Date(),
-      },
+      data: { code, ...baseData },
     });
   } catch (err) {
     if ((err as { code?: string }).code === "P2002") {
       code = await allocateServiceRequestCode();
       created = await prisma.serviceRequest.create({
-        data: {
-          code,
-          customerId,
-          contactId,
-          equipmentId: input.equipmentId ?? null,
-          type: input.type,
-          isPaid: decision.isPaid,
-          state: decision.isPaid ? "PENDING_REVIEW" : "APPROVED",
-          description: input.description,
-          attachments:
-            (input.attachments && input.attachments.length > 0
-              ? (input.attachments as unknown as Prisma.InputJsonValue)
-              : undefined) ?? undefined,
-          submittedAt: new Date(),
-        },
+        data: { code, ...baseData },
       });
     } else {
       throw err;
     }
   }
 
-  // Auto-create Visit for free SR.
+  // Auto-create Visit for free SR. Prefer the customer's requested time;
+  // fall back to T+3 days when none was given.
   let visitId: string | null = null;
   if (!decision.isPaid) {
     const visit = await prisma.visit.create({
@@ -241,7 +230,9 @@ export async function createServiceRequest(
         serviceRequestId: created.id,
         type: srTypeToVisitType(input.type),
         state: "SUGGESTED",
-        scheduledFor: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        scheduledFor:
+          input.preferredVisitAt ??
+          new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       },
     });
     visitId = visit.id;
@@ -339,7 +330,26 @@ export async function approveServiceRequest(args: ApproveSrArgs) {
     entityName: "ServiceRequest",
   });
 
-  // Create Visit linked to the SR.
+  // Office may have left a note for the technician — persist as the
+  // first Visit.officeNotes entry so it shows up in the mobile handoff
+  // thread and in the office activity feed.
+  const officeNotes =
+    input.notes && input.notes.trim().length > 0
+      ? ([
+          {
+            at: new Date().toISOString(),
+            authorId: actor.actorUserId ?? null,
+            authorType: actor.actorType,
+            kind: "APPROVAL_NOTE",
+            text: input.notes.trim(),
+          },
+        ] as unknown as Prisma.InputJsonValue)
+      : undefined;
+
+  // Create Visit linked to the SR. scheduledFor priority:
+  // 1) office's explicit override
+  // 2) customer's preferred time captured at SR submission
+  // 3) the office-set approvedDate (legacy fallback)
   const visit = await prisma.visit.create({
     data: {
       customerId: current.customerId,
@@ -347,10 +357,12 @@ export async function approveServiceRequest(args: ApproveSrArgs) {
       serviceRequestId: current.id,
       type: srTypeToVisitType(current.type as ServiceRequestTypeLite),
       state: input.leadTechnicianId ? "SCHEDULED" : "SUGGESTED",
-      scheduledFor: input.scheduledFor ?? input.approvedDate,
+      scheduledFor:
+        input.scheduledFor ?? current.preferredVisitAt ?? input.approvedDate,
       scheduledWindow: input.scheduledWindow ?? null,
       expectedAmount: input.approvedPrice,
       leadTechnicianId: input.leadTechnicianId ?? null,
+      officeNotes,
     },
   });
 

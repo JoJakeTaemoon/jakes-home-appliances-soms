@@ -24,6 +24,16 @@ interface Props {
   emptyText?: string;
   /** Aria label for the trigger when no label is wired via FormField. */
   ariaLabel?: string;
+  /**
+   * When true, callers receive a `Create "<query>"` row whenever the
+   * search query doesn't match any option. Pair with `onCreate` to
+   * handle free-text entries (parts list in the visit completion flow).
+   */
+  allowCreate?: boolean;
+  /** Label template for the create row. Receives the typed query. */
+  createLabel?: (query: string) => string;
+  /** Fires when the user picks the "Create" row. */
+  onCreate?: (query: string) => void;
 }
 
 /**
@@ -44,6 +54,9 @@ export function Combobox({
   allowClear = true,
   emptyText = "No results",
   ariaLabel,
+  allowCreate = false,
+  createLabel = (q) => `Add “${q}”`,
+  onCreate,
 }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -147,33 +160,56 @@ export function Combobox({
             </div>
           )}
           <div role="listbox" className="max-h-64 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
+            {filtered.length === 0 && (
               <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText}</div>
-            ) : (
-              filtered.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  role="option"
-                  aria-selected={value === o.value}
-                  disabled={o.disabled}
-                  onClick={() => {
-                    onChange(o.value);
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                  className={cn(
-                    "flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-[#f5f5f5]",
-                    value === o.value && "bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]",
-                    o.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
-                  )}
-                >
-                  <span className="font-medium">{o.label}</span>
-                  {o.description && (
-                    <span className="text-xs text-[#737373]">{o.description}</span>
-                  )}
-                </button>
-              ))
+            )}
+            {filtered.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="option"
+                aria-selected={value === o.value}
+                disabled={o.disabled}
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={cn(
+                  "flex w-full flex-col items-start px-3 py-2 text-left text-sm hover:bg-[#f5f5f5]",
+                  value === o.value && "bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]",
+                  o.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
+                )}
+              >
+                <span className="font-medium">{o.label}</span>
+                {o.description && (
+                  <span className="text-xs text-[#737373]">{o.description}</span>
+                )}
+              </button>
+            ))}
+            {/*
+              Free-text "create" row. Shown when allowCreate is on AND the
+              typed query doesn't already match an existing option label.
+              Lets callers (e.g. the parts list in the visit-completion
+              wizard) accept off-catalog items without leaving the field.
+            */}
+            {allowCreate && onCreate && query.trim() && !filtered.some((o) => o.label.toLowerCase() === query.trim().toLowerCase()) && (
+              <button
+                type="button"
+                role="option"
+                aria-selected={false}
+                onClick={() => {
+                  const q = query.trim();
+                  if (!q) return;
+                  onCreate(q);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className="flex w-full items-center gap-1 border-t border-[#f0f0f0] px-3 py-2 text-left text-sm text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)]"
+              >
+                <span className="font-semibold">+</span>
+                <span className="truncate">{createLabel(query.trim())}</span>
+              </button>
             )}
           </div>
         </div>

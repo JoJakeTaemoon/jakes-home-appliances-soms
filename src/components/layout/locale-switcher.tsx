@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter as useNextRouter } from "next/navigation";
 import { useLocale } from "next-intl";
-import { useRouter, usePathname, getPathname } from "@/i18n/navigation";
+import { usePathname, getPathname } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { ChevronDown, Globe } from "lucide-react";
 
@@ -14,7 +15,7 @@ const locales = [
 
 export function LocaleSwitcher() {
   const locale = useLocale();
-  const router = useRouter();
+  const router = useNextRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);

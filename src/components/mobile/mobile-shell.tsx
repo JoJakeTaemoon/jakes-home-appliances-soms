@@ -6,6 +6,7 @@ import { useFieldAuth } from "@/providers/field-auth-provider";
 import { LogOut, Calendar, Clock4, User } from "lucide-react";
 import { ServiceWorkerRegister } from "@/components/mobile/sw-register";
 import { OfflineIndicator } from "@/components/mobile/offline-indicator";
+import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 
 type TabKey = "today" | "upcoming" | "profile";
 
@@ -26,8 +27,9 @@ export function MobileShell({ children }: Readonly<{ children: React.ReactNode }
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{t("appName")}</span>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <span className="opacity-90">{user?.username}</span>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="opacity-90 max-sm:hidden">{user?.username}</span>
+          <LocaleSwitcher />
           <button
             type="button"
             onClick={() => {
