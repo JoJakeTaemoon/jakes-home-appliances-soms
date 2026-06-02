@@ -57,15 +57,13 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/*.local.*
 
-# Generated manual PDFs (built via `npx tsx scripts/build-manual-pdfs.ts`).
-# Previously caught by a blanket `*.pdf` rule, but that also blocked the
-# user-uploaded drawing PDFs under uploads/ from being shipped with the
-# vercel deploy bundle — causing the daily-report viewer to 404 on every
-# attached drawing. The cache PDFs live under /private (already ignored
-# above), so this narrow set is enough.
+# Generated PDFs from the old MegaDnC manual builder (different repo
+# convention). Kept for safety.
 /MegaDnC_PMIS_Manual_*/
-/docs/manuals/**/*.pdf
 /docs/presentations/*.pdf
+# NOTE: docs/manuals/**/*.pdf is intentionally TRACKED in this repo —
+# the per-user-group manuals (office/field/customer × ko/vi) are
+# end-user deliverables, rebuilt via `npm run manuals:pdf`.
 .gstack/
 
 # bundled user-manual archive (re-built via `npx tsx scripts/build-manual-pdfs.ts`)
