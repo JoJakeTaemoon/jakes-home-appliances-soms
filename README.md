@@ -196,20 +196,6 @@ seoul-aqua-soms/
 
 ---
 
-## Agent Team
-
-This project uses an 11-agent TDD pipeline. Full agent table, model assignments, and pipeline rules are in [AGENTS.md](AGENTS.md). One-line summary:
-
-> User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED) → frontend / backend → tdd-guide(GREEN) → reviewer + api-docs → qa → manuals → git-flow(END)
-
-Invoke via:
-
-```
-@orchestrator Phase 1 — Foundation을 TDD로 진행해주세요
-```
-
----
-
 ## License
 
 Private. All rights reserved.

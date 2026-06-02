@@ -42,17 +42,19 @@ function clientIp(req: NextRequest): string | null {
   );
 }
 
+// docs/URL_SCHEME.md §2.2: office login is `/o/login` (en is silent),
+// `/o/ko/login`, `/o/vi/login`. Locale-after-group, en omitted.
 const OFFICE_LOGIN_URL_BY_LOCALE: Record<string, string> = {
-  ko: "/ko/o/login",
-  vi: "/vi/o/login",
-  en: "/en/o/login",
+  en: "/o/login",
+  ko: "/o/ko/login",
+  vi: "/o/vi/login",
 };
 
 function suggestedOfficeUrl(req: NextRequest): string {
   const referer = req.headers.get("referer") ?? "";
-  const m = /\/(ko|vi|en)\//.exec(referer);
-  const locale = m?.[1] ?? "vi";
-  return OFFICE_LOGIN_URL_BY_LOCALE[locale] ?? "/vi/o/login";
+  const m = /\/(ko|vi|en)\b/.exec(referer);
+  const locale = m?.[1] ?? "en";
+  return OFFICE_LOGIN_URL_BY_LOCALE[locale] ?? "/o/login";
 }
 
 export async function POST(request: NextRequest) {

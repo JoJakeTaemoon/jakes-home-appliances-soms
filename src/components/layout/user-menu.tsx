@@ -72,7 +72,7 @@ export function UserMenu() {
             onClick={async () => {
               await logout();
               setOpen(false);
-              router.replace("/login");
+              router.replace("/o/login");
             }}
           >
             {t("logout")}

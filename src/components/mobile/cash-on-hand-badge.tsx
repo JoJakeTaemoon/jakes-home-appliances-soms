@@ -64,7 +64,7 @@ export function CashOnHandBadge() {
 
   return (
     <Link
-      href="/mobile/profile"
+      href="/f/profile"
       className={`mb-3 flex flex-col gap-0.5 rounded-md border-2 ${tone} px-3 py-2 text-sm`}
     >
       <div className="flex items-center justify-between">

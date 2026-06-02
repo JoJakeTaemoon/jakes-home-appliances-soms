@@ -15,10 +15,10 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { href: "/portal", labelKey: "dashboard", icon: "🏠" },
-  { href: "/portal/equipment", labelKey: "equipment", icon: "💧" },
-  { href: "/portal/visits", labelKey: "visits", icon: "📅" },
-  { href: "/portal/requests", labelKey: "requests", icon: "📨" },
-  { href: "/portal/settings", labelKey: "settings", icon: "⚙️" },
+  { href: "/equipment", labelKey: "equipment", icon: "💧" },
+  { href: "/visits", labelKey: "visits", icon: "📅" },
+  { href: "/requests", labelKey: "requests", icon: "📨" },
+  { href: "/settings", labelKey: "settings", icon: "⚙️" },
 ];
 
 export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
@@ -29,7 +29,7 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
 
   const handleLogout = async () => {
     await logout();
-    router.replace("/portal/login");
+    router.replace("/login");
   };
 
   return (

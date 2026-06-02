@@ -3,14 +3,18 @@ import { defineRouting } from "next-intl/routing";
 /**
  * Seoul Aqua SOMS supported locales.
  *
- * Vietnam is the primary market — defaultLocale is `vi`. Korean engineers
- * and English-speaking auditors / clients are also first-class. Locale
- * order in the array drives the LocaleSwitcher dropdown order.
+ * Default is `en` and `localePrefix: "as-needed"` per docs/URL_SCHEME.md §3:
+ * a URL with no locale segment is served as `en` in place, with no
+ * redirect; `ko` and `vi` are explicit-prefix only. Locale order in the
+ * array drives the LocaleSwitcher dropdown order.
+ *
+ * The user-group prefix (`o`, `f`, none) sits OUTSIDE the locale and is
+ * handled by middleware before next-intl ever sees the path.
  */
 export const routing = defineRouting({
-  locales: ["vi", "ko", "en"],
-  defaultLocale: "vi",
-  localePrefix: "always",
+  locales: ["en", "ko", "vi"],
+  defaultLocale: "en",
+  localePrefix: "as-needed",
 });
 
 export type Locale = (typeof routing.locales)[number];

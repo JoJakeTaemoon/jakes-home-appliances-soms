@@ -62,26 +62,26 @@ const ALL_OFFICE_ROLES: readonly RoleKey[] = [
 const ADMIN_MANAGER: readonly RoleKey[] = ["ADMIN", "MANAGER"];
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", labelKey: "dashboard", Icon: LayoutDashboard, roles: ALL_OFFICE_ROLES },
-  { href: "/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
-  { href: "/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
-  { href: "/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
-  { href: "/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
-  { href: "/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
-  { href: "/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
-  { href: "/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
-  { href: "/reports", labelKey: "reports", Icon: BarChart3, roles: ALL_OFFICE_ROLES },
+  { href: "/o/dashboard", labelKey: "dashboard", Icon: LayoutDashboard, roles: ALL_OFFICE_ROLES },
+  { href: "/o/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
+  { href: "/o/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
+  { href: "/o/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
+  { href: "/o/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
+  { href: "/o/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
+  { href: "/o/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
+  { href: "/o/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
+  { href: "/o/reports", labelKey: "reports", Icon: BarChart3, roles: ALL_OFFICE_ROLES },
 ];
 
 const adminNavItems: NavItem[] = [
-  { href: "/reports/audit", labelKey: "auditLog", Icon: ScrollText, roles: ADMIN_MANAGER },
-  { href: "/admin/products", labelKey: "products", Icon: Package, roles: ADMIN_MANAGER },
-  { href: "/admin/users", labelKey: "userManagement", Icon: Users, roles: ADMIN_MANAGER },
-  { href: "/admin/company-contact", labelKey: "companyContact", Icon: Phone, roles: ADMIN_MANAGER },
+  { href: "/o/reports/audit", labelKey: "auditLog", Icon: ScrollText, roles: ADMIN_MANAGER },
+  { href: "/o/admin/products", labelKey: "products", Icon: Package, roles: ADMIN_MANAGER },
+  { href: "/o/admin/users", labelKey: "userManagement", Icon: Users, roles: ADMIN_MANAGER },
+  { href: "/o/admin/company-contact", labelKey: "companyContact", Icon: Phone, roles: ADMIN_MANAGER },
 ];
 
 const adminSettingsItems: NavItem[] = [
-  { href: "/admin/notification-templates", labelKey: "notificationTemplates", Icon: Settings, roles: ADMIN_MANAGER },
+  { href: "/o/admin/notification-templates", labelKey: "notificationTemplates", Icon: Settings, roles: ADMIN_MANAGER },
 ];
 
 function visibleFor(items: readonly NavItem[], role: RoleKey | undefined): NavItem[] {
