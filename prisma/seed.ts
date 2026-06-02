@@ -2219,7 +2219,9 @@ async function main() {
     leadTechnicianId: tech2.id,
   });
 
-  // In progress now (KH00002 B2B HCMC site).
+  // In progress now (KH00002 B2B HCMC site). Previously this visit was
+  // wired to SR-00002 (a KH00001 SR) — that mismatch is fixed; the
+  // proper KH00001 SR-00002 visit lives below as seed-visit-001-sr.
   await ensureVisit("seed-visit-004", {
     customerId: b2b.id,
     siteId: hcmcSite.id,
@@ -2231,6 +2233,19 @@ async function main() {
     leadTechnicianId: tech1.id,
     collaboratorTechnicianIds: [tech3.id],
     startedAt: at(daysFromNow(0), 9, 20),
+  });
+
+  // KH00001 approved-SR follow-up — SR-00002 is APPROVED awaiting visit.
+  // Office scheduled it for two days out. Surfaces as the customer's
+  // "다음 방문" tile on the portal dashboard.
+  await ensureVisit("seed-visit-001-sr", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "REPAIR",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(2), 10),
+    scheduledWindow: "morning",
+    leadTechnicianId: tech1.id,
     serviceRequestId: serviceRequests["SR-00002"].id,
   });
 
@@ -2268,6 +2283,11 @@ async function main() {
   // link technicians see an empty equipment block in dev. We fetch the
   // ids in one query (the customers were just upserted above).
   const bulkPoolCustomerIds: string[] = [
+    // KH00001 is the showcase customer used in dashboard demos —
+    // including it in the bulk pool ensures the customer portal
+    // dashboard's "다음 방문" / "다음 필터 교체" tiles have data
+    // (the original pool only contained KH00004+).
+    b2c.id,
     b2cCustomers["KH00004"].id,
     b2cCustomers["KH00005"].id,
     b2cCustomers["KH00006"].id,
