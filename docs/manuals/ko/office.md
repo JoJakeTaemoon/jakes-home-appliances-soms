@@ -121,7 +121,7 @@ flowchart TB
 ### 3.1 한눈에 보기
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[출근<br/>로그인] --> B[대시보드 확인<br/>오늘 방문 · 미수금 · 인계 대기]
   B --> C{오전 업무}
   C --> D[새 손님 등록]
@@ -364,7 +364,7 @@ B2B 손님이 여러 공장이나 빌딩을 가진 경우, **각 사업장을 Si
 손님 상세 → "담당자" 탭
 
 ```mermaid
-flowchart LR
+flowchart TB
   Customer["손님 (Customer)"]
   Customer --> CP["계약 당사자<br/>CONTRACT_PARTY<br/>딱 1명"]
   Customer --> OPS1["일상 담당자 1<br/>OPS_CONTACT"]
@@ -735,7 +735,7 @@ stateDiagram-v2
 정기점검은 시스템이 매일 새벽 자동으로 생성합니다.
 
 ```mermaid
-flowchart LR
+flowchart TB
   Cron[매일 03:00<br/>cron-filter-due] --> Find[필터 교체일 임박 장비 찾기]
   Find --> D14[D-14<br/>일상 담당자에게 이메일]
   Find --> D1[D-1<br/>일상 담당자에게 SMS]

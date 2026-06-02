@@ -124,7 +124,7 @@ Trong gia đình hay công ty thường có sự khác biệt giữa **người 
 ### 3.1 Cái nhìn tổng quan
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[Ký hợp đồng] --> B[Nhận SMS<br/>Mật khẩu tạm thời]
   B --> C[Đăng nhập cổng lần đầu + Đổi mật khẩu]
   C --> D[Tháng 1<br/>Bảo trì định kỳ đầu]

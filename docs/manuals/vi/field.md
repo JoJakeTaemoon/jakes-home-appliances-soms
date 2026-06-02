@@ -74,7 +74,7 @@ Tin nhắn này **chỉ mình bạn** được xem. Tuyệt đối không tiết
 ### 2.1 Cái nhìn tổng quan
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[Sáng dậy<br/>Mở điện thoại] --> B[Đăng nhập]
   B --> C[Màn hình Hôm nay<br/>Danh sách lượt thăm theo giờ]
   C --> D[Đi đến địa điểm 1<br/>Kết hợp app chỉ đường]

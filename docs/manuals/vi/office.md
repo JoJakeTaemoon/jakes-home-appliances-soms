@@ -121,7 +121,7 @@ Trước khi vào chi tiết từng màn hình, hãy xem **luồng công việc 
 ### 3.1 Cái nhìn tổng quan
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[Đến công ty<br/>Đăng nhập] --> B[Kiểm tra Bảng điều khiển<br/>Lịch thăm hôm nay · Công nợ · Tiền chờ nộp]
   B --> C{Công việc buổi sáng}
   C --> D[Đăng ký khách hàng mới]
@@ -364,7 +364,7 @@ Cấu trúc tab:
 Chi tiết khách hàng → Tab "Liên hệ"
 
 ```mermaid
-flowchart LR
+flowchart TB
   Customer["Khách hàng (Customer)"]
   Customer --> CP["Bên ký hợp đồng<br/>CONTRACT_PARTY<br/>Đúng 1 người"]
   Customer --> OPS1["Liên hệ vận hành 1<br/>OPS_CONTACT"]
@@ -735,7 +735,7 @@ stateDiagram-v2
 Hệ thống tự tạo lượt thăm định kỳ vào sáng sớm mỗi ngày.
 
 ```mermaid
-flowchart LR
+flowchart TB
   Cron[03:00 mỗi ngày<br/>cron-filter-due] --> Find[Tìm thiết bị sắp đến ngày thay lõi]
   Find --> D14[D-14<br/>Email cho Liên hệ vận hành]
   Find --> D1[D-1<br/>SMS cho Liên hệ vận hành]

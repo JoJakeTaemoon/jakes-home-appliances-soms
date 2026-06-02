@@ -124,7 +124,7 @@ https://seoulaqua.com.vn/login
 ### 3.1 한눈에 보기
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[계약서 서명] --> B[SMS 도착<br/>임시 비밀번호]
   B --> C[포털 첫 로그인 + 비번 변경]
   C --> D[1개월 차<br/>첫 정기점검]

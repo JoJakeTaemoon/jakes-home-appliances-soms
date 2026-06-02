@@ -74,7 +74,7 @@ Seoul Aqua 기사용 계정이 생성되었습니다.
 ### 2.1 한눈에 보기
 
 ```mermaid
-flowchart LR
+flowchart TB
   A[아침 일어나서<br/>핸드폰 열기] --> B[로그인]
   B --> C[오늘 화면<br/>방문 목록 시간순]
   C --> D[1번 방문지로 출발<br/>길찾기 앱 연동]

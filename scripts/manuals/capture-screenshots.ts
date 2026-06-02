@@ -34,16 +34,16 @@ const MOBILE = { width: 412, height: 915 };  // Pixel 5-ish
 
 const SEED = {
   office: {
-    phone: process.env.SEED_OFFICE_PHONE ?? "0900000001",
-    password: process.env.SEED_OFFICE_PASSWORD ?? "admin1234",
+    phone: process.env.SEED_OFFICE_PHONE ?? "012345678",
+    password: process.env.SEED_OFFICE_PASSWORD ?? "12341234",
   },
   field: {
-    phone: process.env.SEED_FIELD_PHONE ?? "0900000010",
-    password: process.env.SEED_FIELD_PASSWORD ?? "tech1234",
+    phone: process.env.SEED_FIELD_PHONE ?? "0123456783",
+    password: process.env.SEED_FIELD_PASSWORD ?? "12341234",
   },
   customer: {
-    phone: process.env.SEED_CUSTOMER_PHONE ?? "0911111111",
-    password: process.env.SEED_CUSTOMER_PASSWORD ?? "customer1234",
+    phone: process.env.SEED_CUSTOMER_PHONE ?? "0901234567",
+    password: process.env.SEED_CUSTOMER_PASSWORD ?? "portal1234",
   },
 };
 
@@ -80,62 +80,163 @@ const OFFICE_SHOTS: Shot[] = [
 
 const FIELD_SHOTS: Shot[] = [
   { name: "01-login", url: "/f/login", viewport: MOBILE, waitFor: 500 },
-  { name: "02-today", url: "/f/today", viewport: MOBILE, waitFor: 800 },
-  { name: "03-upcoming", url: "/f/upcoming", viewport: MOBILE, waitFor: 800 },
-  { name: "04-profile", url: "/f/profile", viewport: MOBILE, waitFor: 500 },
+  { name: "02-today", url: "/f/today", viewport: MOBILE, waitFor: 2500 },
+  { name: "03-upcoming", url: "/f/upcoming", viewport: MOBILE, waitFor: 2500 },
+  { name: "04-profile", url: "/f/profile", viewport: MOBILE, waitFor: 1500 },
 ];
 
 const CUSTOMER_SHOTS: Shot[] = [
   { name: "01-login", url: "/login", viewport: MOBILE, waitFor: 500 },
-  { name: "02-home", url: "/", viewport: MOBILE, waitFor: 800 },
-  { name: "03-equipment", url: "/equipment", viewport: MOBILE, waitFor: 800 },
-  { name: "04-visits", url: "/visits", viewport: MOBILE, waitFor: 800 },
-  { name: "05-requests", url: "/requests", viewport: MOBILE, waitFor: 800 },
-  { name: "06-requests-new", url: "/requests/new", viewport: MOBILE, waitFor: 500 },
-  { name: "07-invoices", url: "/invoices", viewport: MOBILE, waitFor: 800 },
-  { name: "08-payments", url: "/payments", viewport: MOBILE, waitFor: 800 },
-  { name: "09-contacts", url: "/contacts", viewport: MOBILE, waitFor: 800 },
-  { name: "10-settings", url: "/settings", viewport: MOBILE, waitFor: 500 },
+  { name: "02-home", url: "/", viewport: MOBILE, waitFor: 2500 },
+  { name: "03-equipment", url: "/equipment", viewport: MOBILE, waitFor: 2500 },
+  { name: "04-visits", url: "/visits", viewport: MOBILE, waitFor: 2500 },
+  { name: "05-requests", url: "/requests", viewport: MOBILE, waitFor: 2500 },
+  { name: "06-requests-new", url: "/requests/new", viewport: MOBILE, waitFor: 1500 },
+  { name: "07-invoices", url: "/invoices", viewport: MOBILE, waitFor: 2500 },
+  { name: "08-payments", url: "/payments", viewport: MOBILE, waitFor: 2500 },
+  { name: "09-contacts", url: "/contacts", viewport: MOBILE, waitFor: 2500 },
+  { name: "10-settings", url: "/settings", viewport: MOBILE, waitFor: 1500 },
 ];
+
+/**
+ * Hide the Next.js dev-mode error / build-status overlay (the floating
+ * "N Issue" pill at the bottom of every page in `next dev`). It is
+ * never part of the actual product UI and would otherwise clutter the
+ * manual screenshots.
+ */
+async function hideDevOverlay(page: Page) {
+  await page.addStyleTag({
+    content: `
+      nextjs-portal,
+      [data-nextjs-toast],
+      [data-nextjs-toast-wrapper],
+      [data-nextjs-dialog-overlay],
+      [data-nextjs-build-indicator],
+      [data-next-mark],
+      #__next-build-watcher { display: none !important; visibility: hidden !important; }
+    `,
+  });
+}
 
 async function settle(page: Page, waitFor?: string | number) {
   if (!waitFor) return;
   if (typeof waitFor === "number") {
     await page.waitForTimeout(waitFor);
-    return;
+  } else {
+    try {
+      await page.waitForSelector(waitFor, { timeout: 5_000 });
+    } catch {
+      // best-effort
+    }
   }
-  try {
-    await page.waitForSelector(waitFor, { timeout: 5_000 });
-  } catch {
-    // best-effort
+}
+
+/**
+ * Robust submit: fills phone + password, waits for the login API to
+ * respond 200, then waits for redirect to the post-login route. Throws
+ * if either step fails so captureBatch can surface a clear error
+ * instead of silently re-capturing the login screen.
+ */
+async function submitLogin(
+  page: Page,
+  loginUrl: string,
+  loginApi: RegExp,
+  postLoginUrl: RegExp,
+  phone: string,
+  password: string,
+) {
+  await page.goto(`${BASE}${loginUrl}`);
+  await page.waitForLoadState("domcontentloaded", { timeout: 10_000 });
+
+  // Office uses #phone, field uses #identifier; cover both. Customer
+  // uses the same office-style id="phone" on /login.
+  const phoneInput = page.locator(
+    '#phone, #identifier, input[type="tel"], input[inputmode="tel"], input[placeholder*="phone" i]',
+  ).first();
+  await phoneInput.waitFor({ state: "visible", timeout: 10_000 });
+  await phoneInput.fill(phone);
+
+  const pwInput = page.locator('input[type="password"]').first();
+  await pwInput.waitFor({ state: "visible", timeout: 5_000 });
+  await pwInput.fill(password);
+
+  // Wait for the submit to actually fire BEFORE clicking.
+  const apiResp = page.waitForResponse(
+    (r) => loginApi.test(r.url()) && r.request().method() === "POST",
+    { timeout: 15_000 },
+  );
+  await page.locator('button[type="submit"]').first().click();
+  const resp = await apiResp;
+  if (resp.status() !== 200) {
+    throw new Error(`login API responded ${resp.status()} for ${resp.url()}`);
   }
+
+  // After 200, wait for the client-side redirect to the post-login URL.
+  await page.waitForURL(postLoginUrl, { timeout: 10_000 });
+  // Give the cookie store a beat to settle before subsequent page.goto
+  // calls (otherwise navigation can race and middleware sees no cookie,
+  // bouncing us back to /f/login).
+  await page.waitForTimeout(400);
 }
 
 async function loginOffice(page: Page) {
-  await page.goto(`${BASE}/o/login`);
-  await page.waitForSelector("input", { timeout: 10_000 });
-  await page.fill('input[name="phone"], input[type="tel"], input[placeholder*="phone" i], input[placeholder*="전화" i]', SEED.office.phone);
-  await page.fill('input[type="password"], input[name="password"]', SEED.office.password);
-  await page.click('button[type="submit"], button:has-text("로그인"), button:has-text("Login")');
-  await page.waitForURL(/\/o\/(dashboard|login)/, { timeout: 10_000 });
+  await submitLogin(
+    page,
+    "/o/login",
+    /\/api\/auth\/login(\?|$)/,
+    /\/o\/dashboard/,
+    SEED.office.phone,
+    SEED.office.password,
+  );
 }
 
 async function loginField(page: Page) {
-  await page.goto(`${BASE}/f/login`);
-  await page.waitForSelector("input", { timeout: 10_000 });
-  await page.fill('input[type="tel"], input[name="phone"]', SEED.field.phone);
-  await page.fill('input[type="password"]', SEED.field.password);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(/\/f\/(today|login)/, { timeout: 10_000 });
+  await submitLogin(
+    page,
+    "/f/login",
+    /\/api\/auth\/field\/login(\?|$)/,
+    /\/f\/today/,
+    SEED.field.phone,
+    SEED.field.password,
+  );
 }
 
 async function loginCustomer(page: Page) {
-  await page.goto(`${BASE}/login`);
-  await page.waitForSelector("input", { timeout: 10_000 });
-  await page.fill('input[type="tel"], input[name="phone"]', SEED.customer.phone);
-  await page.fill('input[type="password"]', SEED.customer.password);
-  await page.click('button[type="submit"]');
-  await page.waitForURL(/\/(login)?$/, { timeout: 10_000 });
+  await submitLogin(
+    page,
+    "/login",
+    /\/api\/portal\/auth\/login(\?|$)/,
+    /\/(change-password|equipment|visits|requests|settings|invoices|payments|contacts)?$|\/$/,
+    SEED.customer.phone,
+    SEED.customer.password,
+  );
+
+  // Seed contact ships with mustChangePassword=true → first login lands
+  // on /change-password. Form has 3 inputs (#cur, #new, #confirm). We
+  // pick a NEW password so the API doesn't reject PASSWORD_REUSE.
+  if (/\/change-password/.test(page.url())) {
+    const newPw = SEED.customer.password + "x";  // e.g. portal1234x
+    const cur = page.locator('input#cur').first();
+    const next = page.locator('input#new').first();
+    const confirm = page.locator('input#cnf').first();
+    await cur.fill(SEED.customer.password);
+    await next.fill(newPw);
+    await confirm.fill(newPw);
+    const apiResp = page.waitForResponse(
+      (r) => /\/api\/portal\/auth\/change-password(\?|$)/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 15_000 },
+    );
+    await page.locator('button[type="submit"]').first().click();
+    const resp = await apiResp;
+    if (resp.status() !== 200) {
+      throw new Error(`change-password API responded ${resp.status()}`);
+    }
+    // The form does setTimeout(800) → router.replace("/"). Wait for the
+    // redirect away from /change-password.
+    await page.waitForURL((url) => !/\/change-password/.test(url.pathname), {
+      timeout: 10_000,
+    });
+  }
 }
 
 async function captureBatch(
@@ -174,16 +275,40 @@ async function captureBatch(
     return;
   }
 
+  const isLoginUrl = (urlStr: string) => {
+    const u = new URL(urlStr);
+    return /\/(o\/login|f\/login)$|\/login(\?|$)/.test(u.pathname + u.search);
+  };
+
   for (const shot of shots) {
     if (shot.name === "01-login") continue;  // already captured
     const viewport = shot.viewport ?? defaultViewport;
     await page.setViewportSize(viewport);
     try {
-      await page.goto(`${BASE}${shot.url}`);
-      await settle(page, shot.waitFor);
+      let bouncedToLogin = false;
+      // Up to 3 attempts: an auth-cookie race can bounce the first
+      // navigation back to /login even though we're authenticated.
+      // Re-login + retry once if that happens.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await page.goto(`${BASE}${shot.url}`);
+        await settle(page, shot.waitFor);
+        bouncedToLogin = isLoginUrl(page.url());
+        if (!bouncedToLogin) break;
+        if (attempt === 0) {
+          // Re-establish the session and try again.
+          try { await login(page); } catch { /* fall through */ }
+        } else {
+          // Final retry: just give it a longer beat.
+          await page.waitForTimeout(1500);
+        }
+      }
+      // Hide Next.js dev overlay just before the snapshot.
+      await hideDevOverlay(page).catch(() => undefined);
+      await page.waitForTimeout(150);  // let CSS apply
       const file = path.join(outDir, `${shot.name}.png`);
       await page.screenshot({ path: file, fullPage: shot.fullPage ?? false });
-      process.stdout.write(`  ${groupName}/${shot.name}.png ✓\n`);
+      const tag = bouncedToLogin ? "✗ (auth bounce after retry)" : "✓";
+      process.stdout.write(`  ${groupName}/${shot.name}.png ${tag}\n`);
     } catch (e) {
       process.stdout.write(`  ${groupName}/${shot.name}.png ✗  (${(e as Error).message})\n`);
     }
