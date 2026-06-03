@@ -17,6 +17,7 @@ import {
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
 import { SchedulerWidget } from "@/components/visits/scheduler-widget";
+import { DocumentIssueCard } from "@/components/visits/document-issue-card";
 import { formatDate, formatVnd } from "@/lib/format";
 
 interface VisitDetail {
@@ -66,6 +67,7 @@ interface VisitDetail {
     collectedAt: string | null;
   }>;
   documents: Array<{ id: string; kind: string; filename: string; generatedAt: string }>;
+  latestContractType: "RENTAL" | "SALE" | "MAINTENANCE" | null;
 }
 
 interface PhotoEntry { storageKey: string }
@@ -196,6 +198,19 @@ export default function VisitDetailPage() {
           onScheduled={() => {
             reload().catch(() => undefined);
           }}
+        />
+      )}
+
+      {isOffice && (
+        <DocumentIssueCard
+          visitId={data.id}
+          state={data.state}
+          leadTechnicianId={data.leadTechnicianId}
+          visitType={data.type}
+          customerType={data.customer.type}
+          contractType={data.latestContractType}
+          documents={data.documents}
+          onIssued={() => reload()}
         />
       )}
 
