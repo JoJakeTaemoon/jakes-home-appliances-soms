@@ -828,7 +828,87 @@ sequenceDiagram
   System-->>Tech: Completion screen + next visit prompt
 ```
 
-### 8.5 Cash Handover
+### 8.5 Visit Document Issuance (Phase 6 — 2026-06-03)
+
+`DocumentKind` extended with 5 new visit-document kinds. Office issues manually after the visit is scheduled with a lead technician.
+
+```mermaid
+flowchart TD
+  Start["Office opens /o/visits/:id"]
+  Q1{visit.state}
+  Suggested["State=SUGGESTED<br/>Issue button disabled<br/>'기사 배정 후 발급 가능'"]
+  Scheduled["State ∈ {SCHEDULED, IN_PROGRESS, COMPLETED, RESCHEDULED}<br/>+ leadTechnicianId set"]
+  Cancelled["State=CANCELLED / FAILED_NO_SHOW<br/>Issue button hidden"]
+
+  Card["Visit detail '지참 서류' card:<br/>• Auto-suggested kind (from matrix)<br/>• 발급 button (primary)<br/>• 추가 발급 dropdown (other 5 kinds)<br/>• Issued list (file · created · issuer · download · 재발급)"]
+
+  Suggest["suggestVisitDocumentKind(visit.type, customer.type, contract.type)"]
+  Issue["POST /api/visits/:id/issue-document<br/>{kind, langPair: 'vi-ko'}"]
+  Server["server-side renderPdf(kind, payload)<br/>→ persistWithArchive (old version archived)"]
+  Audit["AuditLog DOCUMENT_ISSUED or DOCUMENT_REISSUED<br/>before/after = {kind, version}"]
+  Download["GET /api/visits/:id/documents/:docId/download<br/>(STAFF+ office) or<br/>/api/mobile/visits/:id/documents/:docId/download<br/>(TECHNICIAN, scoped to own lead/collab visits)"]
+
+  Start --> Q1
+  Q1 -->|SUGGESTED| Suggested
+  Q1 -->|SCHEDULED+| Scheduled
+  Q1 -->|CANCELLED / FAILED_NO_SHOW| Cancelled
+  Scheduled --> Suggest --> Card
+  Card -->|click 발급| Issue --> Server --> Audit
+  Audit --> Download
+```
+
+**Auto-suggestion matrix** (single most-relevant kind):
+
+| VisitType | Customer.type | Contract.type | → DocumentKind |
+|---|---|---|---|
+| INSTALLATION | B2C | RENTAL | `DELIVERY_RECEIPT` |
+| INSTALLATION | B2C | SALE | `SALE_RECEIPT_B2C` |
+| INSTALLATION | B2B | * | `DELIVERY_SLIP_B2B` |
+| PERIODIC_INSPECTION | B2C | * | `PERIODIC_CHECK_B2C` |
+| PERIODIC_INSPECTION | B2B | * | `PERIODIC_CHECK_B2B` |
+| else (REPAIR / FILTER_REPLACEMENT / RELOCATION / PAYMENT_COLLECTION / OTHER) | * | * | `WORK_CONFIRMATION` |
+
+### 8.6 Office "오늘의 배정" Board (Phase 6 — 2026-06-03)
+
+`/o/{locale}/schedule-board` is the per-day assignment view that fills the gap between the SchedulerWidget (single visit) and the calendar (week overview).
+
+```mermaid
+flowchart LR
+  Pick["Date picker (default: today)"]
+  Pick --> Fetch["GET /api/schedule-board?date=YYYY-MM-DD"]
+  Fetch --> Unassigned["Left column:<br/>Unassigned queue<br/>(state=SUGGESTED, count badge)"]
+  Fetch --> Per["Right columns:<br/>per-technician day<br/>(sorted by load; visit count chip)"]
+
+  Unassigned --> Card["Per-card inline SchedulerWidget:<br/>recommended tech + 확정 1-click"]
+  Card --> Confirm["POST /api/visits/:id/schedule<br/>(reuses existing endpoint)"]
+  Confirm --> Audit["AuditLog VISIT_SCHEDULED"]
+
+  Per --> Header["Column header:<br/>• Technician name + region<br/>• Load chip (n visits)<br/>• 🖨 인쇄 → /o/visits/print?date=...&technicianId=..."]
+```
+
+### 8.7 Bulk-print (Track 4 — 2026-06-03)
+
+`/o/{locale}/visits/print?date=YYYY-MM-DD&technicianId=<id>` — backend merges the day's per-tech bundle into a single PDF via `pdf-lib`. The page renders an `<iframe>` plus "PDF 새 탭에서 인쇄" button so the browser PDF viewer can print at A4.
+
+```mermaid
+flowchart TD
+  URL["/o/visits/print?date=...&technicianId=..."]
+  URL --> API["GET /api/visits/print-bundle/pdf?date=...&technicianId=..."]
+  API --> Loop["For each visit (sorted by scheduledTimeWindow):"]
+  Loop --> Inst{visit.type<br/>= INSTALLATION?}
+  Inst -->|yes| Contract["Append real /o/contracts/:id PDF<br/>(getLatestPdf, kind=CONTRACT)<br/>× 2 (customer copy + company copy)"]
+  Inst -->|no| Skip[ ]
+  Contract --> Doc
+  Skip --> Doc
+  Doc["Resolve DocumentKind:<br/>• existing issued doc (latest), OR<br/>• auto-issue from suggestion matrix"]
+  Doc --> Render["renderToBuffer(buildPreviewElement(...))<br/>→ append to merged PDF"]
+  Render --> Loop
+  Loop -->|done| Return["application/pdf<br/>Content-Disposition: inline"]
+```
+
+Mobile equivalent: `/f/{locale}/visits/print?date=...` — scoped to TECHNICIAN's own lead visits.
+
+### 8.8 Cash Handover
 
 ```mermaid
 sequenceDiagram

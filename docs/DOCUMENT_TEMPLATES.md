@@ -150,17 +150,64 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 
 ## Document workflow summary
 
-| Scenario | Customer type | Documents issued (v1) | Signed by | Doc language source | Office gets back |
+> **2026-06-03 update (Phase 6 visit deep-dive)** — `DocumentKind` enum extended to carry **6 active visit-document kinds** plus 2 deprecated aliases. Office issues each document manually after the visit is scheduled with a `leadTechnicianId`. See §0 below for the auto-suggestion matrix and issuance policy.
+
+| Scenario | Customer type | Visit-document recommended (Phase 6) | Signed by | Doc language source | Office gets back |
 |---|---|---|---|---|---|
-| New rental contract — install day | B2C | `RENTAL_CONTRACT_B2C` + `PERIODIC_CHECK_B2C` (with first visit) | **Contract Party** | Contract Party lang (contract) + Ops Contact lang (periodic check) | Next day (technician) |
-| New rental contract — install day | B2B | `RENTAL_CONTRACT_B2B` + `DELIVERY_SLIP_B2B` | **Contract Party** (manager) + warehouse + recipient | Contract Party lang | Post (contract) + next day (delivery slip) |
-| New sale | B2C / B2B | `DELIVERY_RECEIPT` | **Contract Party** | Contract Party lang | Next day (technician) |
-| Periodic visit (rental) | B2C | `PERIODIC_CHECK_B2C` | Whoever's home (Ops Contact preferred, falls back to anyone present) | **Ops Contact lang** | Next day |
-| Periodic visit (rental) | B2B | `PERIODIC_CHECK_B2B` + separate `TAX_INVOICE_RECEIPT` (from office) | Ops Contact-staff on site | Periodic check → **Ops Contact lang** · Tax invoice → **Contract Party lang** + billingEmail | Post or hand-back |
-| Ad-hoc service / repair / relocation | Any | `WORK_CONFIRMATION` | Ops Contact (or whoever signs) | **Ops Contact lang** | Next day |
+| New rental contract — install day | B2C | **`DELIVERY_RECEIPT`** (장비 인수증) + Contract PDF carried alongside | **Contract Party** | Contract Party lang (contract) + Ops Contact lang (delivery receipt) | Next day (technician) |
+| New sale — install day | B2C | **`SALE_RECEIPT_B2C`** (영수증 겸 인수증) | **Contract Party** | Ops Contact lang | Next day |
+| New install — any contract type | B2B | **`DELIVERY_SLIP_B2B`** (Mẫu 02-VT phiếu xuất kho) + Contract PDF | **Contract Party** (manager) + warehouse + 인계자/작업자 | Contract Party lang | Post (contract) + next day (delivery slip) |
+| Periodic visit | B2C | **`PERIODIC_CHECK_B2C`** (정기 점검표 — 영수증 겸) | Whoever's home (Ops Contact preferred) | **Ops Contact lang** | Next day |
+| Periodic visit | B2B | **`PERIODIC_CHECK_B2B`** (정기 점검 확인서 — 가격 없음) + separate `TAX_INVOICE_RECEIPT` (from office) | Ops Contact-staff on site | Periodic check → **Ops Contact lang** · Tax invoice → **Contract Party lang** + billingEmail | Post or hand-back |
+| Ad-hoc service / repair / relocation / filter swap / payment-only / other | Any | **`WORK_CONFIRMATION`** (작업확인서) | Ops Contact (or whoever signs) | **Ops Contact lang** | Next day |
 | Monthly invoicing | B2B | `TAX_INVOICE_RECEIPT` (emailed) | n/a (digital) | **Contract Party lang** → Customer.billingEmail | Bank transfer reference |
 | Visit reminder SMS (auto) | Any | SMS only (no PDF) | n/a | **Ops Contact lang** → Ops Contact.phone1 | n/a |
 | Overdue dunning notice | Any | Email + SMS | n/a | Each in **its own** contact's language | n/a |
+
+### 0. Visit-document auto-suggestion matrix (Phase 6 — 2026-06-03)
+
+`src/lib/visits/document-suggest.ts → suggestVisitDocumentKind()`:
+
+| `Visit.type` | `Customer.type` | `Contract.type` (latest active) | → DocumentKind |
+|---|---|---|---|
+| INSTALLATION | B2C | RENTAL | `DELIVERY_RECEIPT` |
+| INSTALLATION | B2C | SALE | `SALE_RECEIPT_B2C` |
+| INSTALLATION | B2B | * | `DELIVERY_SLIP_B2B` |
+| PERIODIC_INSPECTION | B2C | * | `PERIODIC_CHECK_B2C` |
+| PERIODIC_INSPECTION | B2B | * | `PERIODIC_CHECK_B2B` |
+| REPAIR / FILTER_REPLACEMENT / RELOCATION / PAYMENT_COLLECTION / OTHER | * | * | `WORK_CONFIRMATION` |
+
+### 0.1 Issuance policy (D3 — 2026-06-03)
+
+`src/lib/visits/document-policy.ts → canIssueVisitDocument()` gate:
+
+- ✅ Issuable: `state ∈ { SCHEDULED, IN_PROGRESS, COMPLETED, RESCHEDULED }` AND `leadTechnicianId` is set
+- 🚫 Blocked `VISIT_UNASSIGNED`: `state = SUGGESTED`, or scheduled without a lead tech
+- 🚫 Blocked `VISIT_CANCELLED`: `state = CANCELLED`
+- 🚫 Blocked `VISIT_FAILED`: `state = FAILED_NO_SHOW`
+
+Issuance is **always manual** (office STAFF+ clicks "발급" on the visit detail). Re-issuance is allowed at any time on issuable states — the previous PDF is archived (`renderer.persistWithArchive`) and a new version is generated. Both the issue and the reissue write `DOCUMENT_ISSUED` / `DOCUMENT_REISSUED` rows to the audit log with `before/after = { kind, version }`.
+
+### 0.2 Layout rules (Phase 6)
+
+- VI primary + KO secondary, stacked via the shared `<Bi>` component (`primary / secondary`)
+- Single-line section titles: `Khách hàng / 고객`, `Phí dịch vụ / 청구 항목`, `Nội dung bảo trì / 점검 작업 내역`, `Danh sách thiết bị bảo trì / 점검 장비 목록`
+- Single-line headers: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
+- Watermark = company logo (200×200 pt, opacity 0.07), positioned **inside each copy block** so it survives the tear line
+- Signature blocks bottom-aligned via `marginTop: auto`; when vertical space is tight the spacer collapses
+- All tear-line docs MUST fit on one A4 sheet — 1-page compaction applied uniformly across padding, font sizes, sign-row heights
+- `PERIODIC_CHECK_B2B` exception: ≤4 devices = 1 page, 5–10 devices = 2 pages (page 1 = customer copy, page 2 = company copy). 11+ devices is follow-up.
+- `WORK_CONFIRMATION` is 2 identical pages (1=customer, 2=company) instead of 1-page tear; the layout has a 2-column visit + customer header.
+
+### 0.3 Bulk-print (Track 4 — 2026-06-03)
+
+`/o/{locale}/visits/print?date=YYYY-MM-DD&technicianId=<id>` — backend merges the day's per-tech bundle into a single PDF via `pdf-lib`. The page renders an `<iframe>` of that merged PDF plus a "PDF 새 탭에서 인쇄" button. For each visit:
+
+- If `visit.type = INSTALLATION`, the **actual contract PDF** (the same file the `/o/contracts/[id]` page shows, served from `getLatestPdf({kind:'CONTRACT'})`) is appended twice (customer copy + company copy) **before** the visit document. The technician hand-carries both.
+- The visit's suggested or already-issued document follows.
+- Visits without an issued document trigger **auto-issuance** at print time.
+
+TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print?date=...` scoped to their own lead visits.
 
 ---
 
