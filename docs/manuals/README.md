@@ -2,13 +2,21 @@
 
 End-user manuals organized by **user group** and language.
 
-## Coverage (2026-06-02)
+## Coverage (2026-06-03 — refreshed for Phase 6 visit deep-dive)
 
 | User Group | Korean (ko) | Vietnamese (vi) | English |
 |---|---|---|---|
-| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1491 lines) | ✅ [`vi/office.md`](vi/office.md) (1491 lines) | — (not in v1 scope) |
-| **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) (989 lines) | ✅ [`vi/field.md`](vi/field.md) (989 lines) | — |
-| **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) (1083 lines) | ✅ [`vi/customer.md`](vi/customer.md) (1083 lines) | — |
+| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1638 lines) | ✅ [`vi/office.md`](vi/office.md) (1638 lines) | — (not in v1 scope) |
+| **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) (1003 lines) | ✅ [`vi/field.md`](vi/field.md) (1003 lines) | — |
+| **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) (1098 lines) | ✅ [`vi/customer.md`](vi/customer.md) (1098 lines) | — |
+
+**Phase 6 update (2026-06-03)** — Visit-management deep dive added 6 distinct visit documents, the **"오늘의 배정"** board, the **"일괄 인쇄"** view, the **방문 지참 서류 발급 카드**, and mobile **서명 받을 서류** previews. Updated sections:
+
+| Manual | New sections |
+|---|---|
+| `office.md` | §4.4 sidebar (2 new entries), §7.2 unassigned tab, §7.8 schedule board, §7.9 document issuance, §7.10 bulk print, scenarios 15–17, Appendix A 3 new menu rows |
+| `field.md` | §4.1 sign-required badge on today card, §5.1 mobile signature-doc preview section |
+| `customer.md` | §7.4 — list of paper documents the customer will receive at each visit type |
 
 Each manual covers the workflow overview (taken from [HOW_TO_USE.md](../HOW_TO_USE.md)) **plus** every screen and every common scenario for that user group.
 

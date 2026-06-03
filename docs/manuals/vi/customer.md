@@ -390,6 +390,21 @@ Chạm từng dòng:
 - Ảnh (KTV đã chụp trước/sau công việc)
 - Số tiền thanh toán (nếu có) + PDF hóa đơn thu tiền
 
+### 7.4 Giấy tờ giấy bạn sẽ nhận khi KTV đến (Phase 6 — 2026-06-03)
+
+Tùy loại lượt thăm, KTV mang 1 tờ giấy đến và xin chữ ký. Bản sao giấy sẽ được KTV giao tận tay cho bạn 1 bản. Bản còn lại là bản công ty giữ (giấy được chia theo đường nét đứt).
+
+| Tình huống lượt thăm | Giấy bạn sẽ nhận |
+|---|---|
+| Lắp đặt thuê (RENTAL) — Lần đầu | **Biên nhận thiết bị** + Bản sao **Hợp đồng** |
+| Lắp đặt bán (SALE) — Lần đầu | **Hóa đơn bán hàng** + Bản sao **Hợp đồng** |
+| Lắp đặt B2B | **Phiếu xuất kho B2B Mẫu 02-VT** + Bản sao **Hợp đồng** |
+| Bảo trì định kỳ hộ gia đình | **Phiếu bảo trì hộ gia đình** — Kèm hóa đơn thu tiền |
+| Bảo trì định kỳ B2B | **Phiếu xác nhận bảo trì B2B** — Không có giá, hóa đơn GTGT được gửi qua email riêng |
+| Sửa chữa·Thay lõi·Di dời·Thu tiền·Khác | **Phiếu xác nhận công việc** |
+
+> 💡 Nếu bạn lỡ mất bản sao giấy cũng không sao. Hãy gọi văn phòng (hoặc gửi tin nhắn qua portal), **bản PDF sẽ được gửi lại qua email**.
+
 ---
 
 ## Chương 8. Gửi yêu cầu dịch vụ

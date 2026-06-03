@@ -426,13 +426,15 @@ For large or rush jobs, **multiple technicians work the same site simultaneously
 
 ## 13. Document workflow per customer type (PDF §7)
 
+> **2026-06-03 Phase 6 update** — Document kinds are now 6 distinct visit documents (see `docs/DOCUMENT_TEMPLATES.md` §0 for the auto-suggestion matrix and §0.1 for the issuance policy gate). The B2C "정기점검 + 영수증" combo is now `PERIODIC_CHECK_B2C`; the B2B "유지보수 확인서 without prices" is now `PERIODIC_CHECK_B2B`. Office issues each manually after the visit gets a `leadTechnicianId`.
+
 ### 13.1 B2C / 가정집
 
 | Aspect | Detail |
 |---|---|
 | Technician role | Direct visit + on-site cash collection |
-| Documents used | 유지보수 확인서 + 수금 영수증 (combined or paired) |
-| After visit | Customer signs receipt |
+| Documents used | `DELIVERY_RECEIPT` (rental install), `SALE_RECEIPT_B2C` (sale install), `PERIODIC_CHECK_B2C` (periodic — includes receipt), `WORK_CONFIRMATION` (other) |
+| After visit | Customer signs the printed paper; technician photographs the signed page |
 | Document return | Technician brings paper back next business day to office |
 
 ### 13.2 B2B / 회사
@@ -440,7 +442,7 @@ For large or rush jobs, **multiple technicians work the same site simultaneously
 | Aspect | Detail |
 |---|---|
 | Technician role | Visit, log work, get customer-staff signature |
-| Documents used | 유지보수 확인서 (work-content + parts; **no unit price, no total, no payment info**) |
+| Documents used | `DELIVERY_SLIP_B2B` (install — Mẫu 02-VT), `PERIODIC_CHECK_B2B` (periodic — work-content + parts; **no unit price, no total, no payment info**), `WORK_CONFIRMATION` (other) |
 | Up-sell during visit | Allowed — extra filters / consumables; recorded on the same doc |
 | Accounting | Office issues separate **tax invoice** later; customer pays per invoice schedule |
 | Document return | Sometimes by post (especially contract originals — manager signs at HQ, then courier) |
@@ -679,6 +681,7 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical table — that'
 
 ## Change log
 
+- **2026-06-03** — v0.4. §13.1/§13.2 updated for Phase 6 visit-document kinds (`DELIVERY_RECEIPT`, `SALE_RECEIPT_B2C`, `DELIVERY_SLIP_B2B`, `PERIODIC_CHECK_B2C`, `PERIODIC_CHECK_B2B`, `WORK_CONFIRMATION`). Detailed matrix + issuance policy live in `docs/DOCUMENT_TEMPLATES.md` §0/§0.1; Office "오늘의 배정" board + bulk-print landed at `/o/{locale}/schedule-board` and `/o/{locale}/visits/print` (see `docs/USER_WORKFLOWS.md` §8.6/§8.7).
 - **2026-05-26** — v0.3. §17 (Customer Portal Workflow) added — sign-up flow, service request flow, multi-OPS management, password reset, lockout. §18 (gaps) updated — portal + SMS no longer gaps. §19 was §18 (Vocabulary).
 - **2026-05-26** — v0.2. §8.6 (two-contact model) added.
 - **2026-05-25** — v0.1 distillation. Source: `reference/process/*.pdf` (both files). All quotations marked with `> ` come verbatim from the PDFs (in original Korean). Cross-references to `SPEC.md` and `QUESTIONS.docx` noted inline.

@@ -374,7 +374,10 @@ One Contract → many Equipment (a single rental contract can cover multiple dev
 
 ### 6.4 Schedule UI (v1)
 
-- Office staff: weekly calendar view by technician (Mon–Sun × techs grid), drag to reschedule
+- Office staff: **3 entry points** for managing the visit queue (Phase 6 — 2026-06-03):
+  1. `/o/{locale}/visits` — visit list with three tabs: **Calendar**, **List**, **Unassigned ✱N**. The "Unassigned" tab is the day-to-day queue for `SUGGESTED` (technician=null) visits; each row shows inline `SchedulerWidget` with auto-recommendation + confirm button.
+  2. `/o/{locale}/schedule-board` — **"오늘의 배정"** board (`LayoutGrid` sidebar icon). Date picker (defaults to today) + left "Unassigned queue" column + right "per-technician day" columns sorted by load. Each per-tech column header has a `🖨 인쇄` button that jumps to the bulk-print view (Track 4 below).
+  3. `/o/{locale}/visits/[id]` — single visit detail with the `SchedulerWidget` (existing) for one-off cases.
 - Technician: phone roster — "tomorrow", "today", "overdue" tabs
 - Map view: deferred to Phase 4+ — **C.5 (2026-05-26)**: v1 ships without map view; region-based sort only. Map provider TODO for Phase 7+.
 
@@ -468,6 +471,64 @@ Customer sees real-time status in the portal (mockup screen 53). Each transition
 5. **Archived** in S3 with the signed image attached
 
 The system can answer "have we received the signed original for contract HD-2026-00123?" instantly.
+
+### 8.1 Visit document kinds (Phase 6 deep-dive — 2026-06-03)
+
+`DocumentKind` enum carries 6 active visit-document kinds + 2 deprecated aliases:
+
+| Kind | Use case | Customer copy + company copy on one A4 |
+|---|---|---|
+| `DELIVERY_RECEIPT` | B2C **rental** installation (장비 인수증) | yes — split by dashed tear line |
+| `SALE_RECEIPT_B2C` | B2C **sale** installation receipt (영수증 겸 인수증) | yes |
+| `DELIVERY_SLIP_B2B` | B2B installation (Mẫu 02-VT phiếu xuất kho) | yes |
+| `PERIODIC_CHECK_B2C` | B2C periodic inspection report (정기 점검 확인서 — 영수증 겸) | yes |
+| `PERIODIC_CHECK_B2B` | B2B periodic inspection confirmation (정기 점검 확인서 — 가격 없음) | yes (≤4 devices) or 2-page (5–10 devices: page 1 = customer, page 2 = company) |
+| `WORK_CONFIRMATION` | All other visits — repair / filter swap / relocation / etc. (작업확인서) | no — 2 identical pages (1=customer, 2=company) |
+| `DELIVERY_SLIP` (deprecated) | Legacy single B2C/B2B delivery slip — preserved for old rows | — |
+| `PERIODIC_INSPECTION` (deprecated) | Legacy single periodic kind — preserved for old rows | — |
+
+**Auto-suggestion matrix** (`src/lib/visits/document-suggest.ts`) — picks the single most-relevant kind from the visit's `(VisitType, Customer.type, Contract.type)` triple:
+
+| VisitType | Customer.type | Contract.type | → DocumentKind |
+|---|---|---|---|
+| INSTALLATION | B2C | RENTAL | `DELIVERY_RECEIPT` |
+| INSTALLATION | B2C | SALE | `SALE_RECEIPT_B2C` |
+| INSTALLATION | B2B | * | `DELIVERY_SLIP_B2B` |
+| PERIODIC_INSPECTION | B2C | * | `PERIODIC_CHECK_B2C` |
+| PERIODIC_INSPECTION | B2B | * | `PERIODIC_CHECK_B2B` |
+| REPAIR / FILTER_REPLACEMENT / RELOCATION / PAYMENT_COLLECTION / OTHER | * | * | `WORK_CONFIRMATION` |
+
+**The matrix is a suggestion, not an auto-issue trigger.** Office still has to click "발급" — see §8.2.
+
+### 8.2 Issuance policy (D3 — 2026-06-03)
+
+`src/lib/visits/document-policy.ts → canIssueVisitDocument()`:
+
+- `visit.state ∈ { SCHEDULED, IN_PROGRESS, COMPLETED, RESCHEDULED }` **AND** `leadTechnicianId` is set → **issuable**
+- `state = SUGGESTED` (unassigned) → blocked with reason `VISIT_UNASSIGNED` — the technician carries the printed papers to the customer, so unassigned visits cannot have documents
+- `state = CANCELLED` → blocked with reason `VISIT_CANCELLED`
+- `state = FAILED_NO_SHOW` → blocked with reason `VISIT_FAILED`
+
+Issuance is **always manual** (office STAFF+ clicks "발급" on the visit detail). Re-issuance is allowed at any time on issuable states — the previous PDF is archived (`renderer.persistWithArchive`) and a new version is generated. Both the issue and the reissue write `DOCUMENT_ISSUED` / `DOCUMENT_REISSUED` rows to the audit log with `before/after = { kind, version }`.
+
+### 8.3 Bilingual PDF layout rules
+
+- VI primary + KO secondary, stacked via the shared `<Bi>` component (`primary / secondary`)
+- Section titles on a single line: e.g. `Khách hàng / 고객`, `Phí dịch vụ / 청구 항목`
+- Headers compressed to one line: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
+- Watermark = company logo (200×200 pt, opacity 0.07) **placed inside each copy block** so it survives the tear line
+- Signature blocks bottom-aligned via `marginTop: auto`; when vertical space is tight, the spacer collapses
+- All tear-line docs MUST fit on one A4 sheet; 1-page compaction is applied across padding, font sizes, sign-row heights uniformly
+
+### 8.4 Bulk-print (Track 4 — 2026-06-03)
+
+`/o/{locale}/visits/print?date=YYYY-MM-DD&technicianId=<id>` — backend merges every issued (or auto-issued) visit document for the date×technician pair into a single PDF using `pdf-lib`. The page renders an `<iframe>` of that merged PDF plus a "PDF 새 탭에서 인쇄" button. For each visit:
+
+- If `visit.type = INSTALLATION`, the **actual contract PDF** (the same file the `/o/contracts/[id]` page shows, served from `getLatestPdf({kind:'CONTRACT'})`) is appended twice (customer copy + company copy) **before** the visit document. The technician hand-carries both.
+- The visit's suggested or already-issued document follows.
+- Visits without an issued document trigger **auto-issuance** at print time (the single-path simplification; D3 says only `SCHEDULED+` visits with `leadTechnicianId` are eligible — `SUGGESTED` visits in the queue are excluded from the print).
+
+TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print?date=...` scoped to their own lead visits.
 
 ---
 
@@ -618,6 +679,15 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical KR / VI / EN te
 ---
 
 ## Change log
+
+- **2026-06-03 (v0.6)** — **Phase 6 visit-management deep dive** (PR #26 머지):
+  - §6.4 Schedule UI — three entry points: visits page "Unassigned ✱N" tab, `/o/{locale}/schedule-board`, single visit detail. 사이드바 `LayoutGrid` 아이콘으로 "오늘의 배정" 추가, `Printer` 아이콘으로 "일괄 인쇄" 추가.
+  - §8.1 새 `DocumentKind` 5종: `DELIVERY_RECEIPT`, `SALE_RECEIPT_B2C`, `DELIVERY_SLIP_B2B`, `PERIODIC_CHECK_B2C`, `PERIODIC_CHECK_B2B`. 기존 `DELIVERY_SLIP` / `PERIODIC_INSPECTION` 은 deprecated alias.
+  - §8.1 매핑 매트릭스 — `(VisitType, Customer.type, Contract.type)` → 단일 추천 DocumentKind.
+  - §8.2 발급 정책 — `SCHEDULED + leadTechnicianId` 부터 가능. `SUGGESTED` 차단. 발급/재발급 시 `DOCUMENT_ISSUED` / `DOCUMENT_REISSUED` audit.
+  - §8.3 PDF 레이아웃 규칙 — bilingual section titles 한 줄, 워터마크는 copy block 내부, 서명란 bottom-align, 1장 강제 compaction.
+  - §8.4 일괄 인쇄 — backend `pdf-lib` merge, INSTALLATION 방문은 실제 contract PDF 두 부 (고객용 + 회사용) 자동 stack.
+  - 모바일 영향: `/f/today` 카드에 서명 받아야 할 서류 종류 노란 뱃지, `/f/visits/[id]` 에 서류별 inline PDF 미리보기 + 계약서 링크.
 
 - **2026-06-01 (v0.5)** — Post-merge architecture updates from sprint Phase 4 work:
   - **Audit log redesign** (PR #9 머지) — `/[locale]/reports/audit` 가 자연어 sentence + diff 표 + 민감 필드 redact (passwordHash/*Token/*Secret → `••••`). 권한 좁힘: ADMIN + MANAGER only (STAFF self-view 폐기). 사이드바 위치 Reports → Admin. 신규 lib: `src/lib/audit/{labels,field-labels,diff,redact,entity-resolver,value-format}.ts`. 자세히: `docs/AUDIT_LOG.md` (TODO 후속 작성).

@@ -76,6 +76,11 @@ const OFFICE_SHOTS: Shot[] = [
   { name: "13-admin-users", url: "/o/admin/users", waitFor: 800 },
   { name: "14-admin-products", url: "/o/admin/products", waitFor: 800 },
   { name: "15-admin-scheduler-weights", url: "/o/admin/scheduler-weights", waitFor: 500 },
+  // ── Phase 6 — visit-management deep dive ────────────────────────────
+  { name: "16-schedule-board", url: "/o/schedule-board", waitFor: 2500 },
+  { name: "17-visits-unassigned", url: "/o/visits?view=unassigned", waitFor: 2500 },
+  { name: "18-visit-document-issue", url: "/o/visits/seed-visit-doc-delivery-receipt", waitFor: 2000 },
+  { name: "19-visits-print", url: "/o/visits/print", waitFor: 2000 },
 ];
 
 const FIELD_SHOTS: Shot[] = [
@@ -83,6 +88,8 @@ const FIELD_SHOTS: Shot[] = [
   { name: "02-today", url: "/f/today", viewport: MOBILE, waitFor: 2500 },
   { name: "03-upcoming", url: "/f/upcoming", viewport: MOBILE, waitFor: 2500 },
   { name: "04-profile", url: "/f/profile", viewport: MOBILE, waitFor: 1500 },
+  // ── Phase 6 — mobile signature-doc previews ─────────────────────────
+  { name: "05-visit-detail-signature-docs", url: "/f/visits/seed-visit-doc-delivery-receipt", viewport: MOBILE, waitFor: 2500 },
 ];
 
 const CUSTOMER_SHOTS: Shot[] = [
