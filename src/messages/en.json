@@ -778,6 +778,7 @@
     "noRequests": "No service requests yet.",
     "noResults": "No requests match.",
     "tabPending": "Pending review",
+    "tabUnread": "Unread messages",
     "tabAll": "All",
     "filterState": "State",
     "filterType": "Type",

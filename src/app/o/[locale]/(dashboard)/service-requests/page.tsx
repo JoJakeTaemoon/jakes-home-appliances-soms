@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
-import { useApiPageQuery } from "@/lib/api/hooks";
+import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ export default function ServiceRequestsListPage() {
   const locale = useLocale();
   const router = useRouter();
 
-  const [tab, setTab] = useState<"pending" | "all">("pending");
+  const [tab, setTab] = useState<"pending" | "unread" | "all">("pending");
   const [q, setQ] = useState("");
   const debouncedQ = useDebounced(q, 300);
   const [stateFilter, setStateFilter] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export default function ServiceRequestsListPage() {
     setQ(v);
     setPage(1);
   };
-  const onTab = (v: "pending" | "all") => {
+  const onTab = (v: "pending" | "unread" | "all") => {
     setTab(v);
     setPage(1);
   };
@@ -93,6 +93,8 @@ export default function ServiceRequestsListPage() {
     if (debouncedQ.trim()) sp.set("q", debouncedQ.trim());
     if (tab === "pending") {
       sp.set("state", "PENDING_REVIEW");
+    } else if (tab === "unread") {
+      sp.set("unread", "true");
     } else if (stateFilter) {
       sp.set("state", stateFilter);
     }
@@ -107,6 +109,15 @@ export default function ServiceRequestsListPage() {
 
   const query = useApiPageQuery<SrRow[]>(url);
   const rows = query.data?.data ?? [];
+
+  // Reuses the same endpoint the sidebar polls; React Query dedupes
+  // so the count badge on the "Unread" tab tracks the sidebar without
+  // a second network round trip.
+  const unreadQuery = useApiQuery<{ count: number }>(
+    "/api/service-requests/unread-count",
+    { refetchInterval: 60_000, refetchOnWindowFocus: true },
+  );
+  const unreadCount = unreadQuery.data?.count ?? 0;
   const total =
     (query.data?.pagination as { total?: number } | undefined)?.total ??
     rows.length;
@@ -188,21 +199,32 @@ export default function ServiceRequestsListPage() {
       </header>
 
       <div className="flex gap-1 border-b border-[#e5e5e5]">
-        {(["pending", "all"] as const).map((k) => {
+        {(["pending", "unread", "all"] as const).map((k) => {
           const active = tab === k;
+          const labelByTab: Record<typeof k, string> = {
+            pending: t("tabPending"),
+            unread: t("tabUnread"),
+            all: t("tabAll"),
+          };
+          const label = labelByTab[k];
           return (
             <button
               key={k}
               type="button"
               onClick={() => onTab(k)}
               className={[
-                "px-4 py-2 text-sm font-medium outline-none transition-colors",
+                "flex items-center gap-1.5 px-4 py-2 text-sm font-medium outline-none transition-colors",
                 active
                   ? "border-b-2 border-[var(--brand-blue-500)] text-[var(--brand-blue-700)]"
                   : "text-[#525252] hover:text-[#262626]",
               ].join(" ")}
             >
-              {k === "pending" ? t("tabPending") : t("tabAll")}
+              <span>{label}</span>
+              {k === "unread" && unreadCount > 0 && (
+                <span className="inline-flex min-w-[18px] items-center justify-center rounded-full bg-[#fee2e2] px-1.5 text-[10px] font-semibold text-[#b91c1c]">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           );
         })}

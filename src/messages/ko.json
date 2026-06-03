@@ -778,6 +778,7 @@
     "noRequests": "아직 서비스 요청이 없습니다.",
     "noResults": "조건에 맞는 요청이 없습니다.",
     "tabPending": "검토 대기",
+    "tabUnread": "읽지 않은 메시지",
     "tabAll": "전체",
     "filterState": "상태",
     "filterType": "유형",
