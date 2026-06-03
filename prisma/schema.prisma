@@ -913,9 +913,15 @@ enum DocumentKind {
   CONTRACT
   RECEIPT
   WORK_CONFIRMATION
-  DELIVERY_SLIP
-  PERIODIC_INSPECTION
+  DELIVERY_SLIP          // legacy alias — DELIVERY_SLIP_B2B is the new canonical kind (kept for back-compat)
+  PERIODIC_INSPECTION    // legacy alias — PERIODIC_CHECK_B2C / B2B are the new canonical kinds
   TAX_INVOICE
+  // Phase 6+ visit-document expansion (2026-06-03):
+  DELIVERY_RECEIPT       // B2C rental — install + handover slip & receipt (DOCUMENT_TEMPLATES §4)
+  SALE_RECEIPT_B2C       // B2C sale — sale receipt + handover (§5)
+  DELIVERY_SLIP_B2B      // B2B install — Mẫu số 02-VT delivery slip (§3)
+  PERIODIC_CHECK_B2C     // B2C periodic — inspection + receipt (§6)
+  PERIODIC_CHECK_B2B     // B2B periodic — inspection confirmation (no prices, §7)
   OTHER
 }
 

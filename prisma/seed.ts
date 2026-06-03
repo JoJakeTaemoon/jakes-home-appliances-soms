@@ -2395,6 +2395,65 @@ async function main() {
     { state: "RESCHEDULED", count: 7, dayOffset: (i) => -1 - i },
     { state: "CANCELLED", count: 7, dayOffset: (i) => -4 - i },
   ];
+  // ─── Sample visits for the 6-format document preview iteration ───────
+  // Each one is SCHEDULED so the (Track 3) document-issue policy gate
+  // allows preview. Lead tech = tech1. Customers chosen so each maps to
+  // exactly one auto-suggested DocumentKind:
+  //   - DELIVERY_RECEIPT      ← KH00001 B2C rental install
+  //   - SALE_RECEIPT_B2C      ← KH00004 B2C sale install (ACTIVE SALE contract)
+  //   - DELIVERY_SLIP_B2B     ← KH00002 B2B install at HCMC HQ
+  //   - PERIODIC_CHECK_B2C    ← KH00001 B2C periodic
+  //   - PERIODIC_CHECK_B2B    ← KH00002 B2B periodic at HCMC HQ
+  // WORK_CONFIRMATION reuses seed-visit-001-sr (KH00001 REPAIR SCHEDULED).
+  const kh00004FirstEq =
+    firstEquipmentByCustomer.get(b2cCustomers["KH00004"].id) ?? null;
+  await ensureVisit("seed-visit-doc-delivery-receipt", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "INSTALLATION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(3), 9),
+    scheduledWindow: "morning",
+    leadTechnicianId: tech1.id,
+  });
+  await ensureVisit("seed-visit-doc-sale-b2c", {
+    customerId: b2cCustomers["KH00004"].id,
+    ...(kh00004FirstEq ? { equipmentId: kh00004FirstEq } : {}),
+    type: "INSTALLATION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(3), 11),
+    scheduledWindow: "morning",
+    leadTechnicianId: tech1.id,
+  });
+  await ensureVisit("seed-visit-doc-slip-b2b", {
+    customerId: b2b.id,
+    siteId: hcmcSite.id,
+    equipmentId: b2bEq1.id,
+    type: "INSTALLATION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(3), 14),
+    scheduledWindow: "afternoon",
+    leadTechnicianId: tech1.id,
+  });
+  await ensureVisit("seed-visit-doc-periodic-b2c", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "PERIODIC_INSPECTION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(4), 10),
+    scheduledWindow: "morning",
+    leadTechnicianId: tech1.id,
+  });
+  await ensureVisit("seed-visit-doc-periodic-b2b", {
+    customerId: b2b.id,
+    siteId: hcmcSite.id,
+    type: "PERIODIC_INSPECTION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(4), 14),
+    scheduledWindow: "afternoon",
+    leadTechnicianId: tech1.id,
+  });
+
   let bulkVisitCounter = 0;
   for (const bucket of stateBuckets) {
     for (let i = 0; i < bucket.count; i++) {
