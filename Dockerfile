@@ -44,7 +44,24 @@ RUN npx prisma generate
 RUN npm run build
 
 # ─────────────────────────────────────────────────────────────────────────
-# 3. runtime — only the standalone output + public + Prisma engine
+# 3. runtime-deps — production-only node_modules for ops tooling
+# ─────────────────────────────────────────────────────────────────────────
+# Next.js standalone ships a trimmed `node_modules` traced from app entry
+# points only. That trim consistently misses dependencies of the prisma
+# CLI (effect, @prisma/internals deps, etc.) — we kept hitting
+# "Cannot find module 'X'" at `prisma migrate deploy` time.
+#
+# Fix: install ALL prod deps in a clean stage and copy them whole into
+# runtime. Determinism > image-size optimization for staging.
+FROM node:20-alpine AS runtime-deps
+WORKDIR /app
+RUN apk add --no-cache libc6-compat openssl
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci --omit=dev --no-audit --no-fund
+
+# ─────────────────────────────────────────────────────────────────────────
+# 4. runtime — standalone output + public + prod node_modules + dev tools
 # ─────────────────────────────────────────────────────────────────────────
 FROM node:20-alpine AS runtime
 WORKDIR /app
@@ -58,49 +75,33 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Standalone output already includes a trimmed node_modules tree.
+# Standalone output ships the Next.js server entry + a trimmed
+# node_modules. The trim follows app-runtime imports only and
+# consistently misses dependencies of the prisma CLI, so we
+# OVERRIDE its node_modules with a full prod tree from runtime-deps.
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Prisma + tooling needed at runtime for `npx prisma migrate deploy` and
-# `npx prisma db seed`. The standalone tracer only follows imports made
-# from app-runtime code, so anything used exclusively by the CLI or the
-# seed script must be COPY'd explicitly.
-#
-# Prisma v7 (with `output = "../src/generated/prisma"` in schema.prisma):
-#   - generated client lives at `src/generated/prisma/`, NOT
-#     `node_modules/.prisma` — that directory is never created
-#   - the prisma CLI (`node_modules/prisma`) requires the FULL `@prisma/*`
-#     org (engines, fetch-engine, get-platform, internals, …) — copying
-#     only `@prisma/client` makes `prisma migrate deploy` fail with
-#     "Cannot find module '@prisma/engines'"
-#   - seed.ts uses a relative import `../src/generated/prisma/client`
-#     so the generated directory must exist on disk at runtime
-#   - `prisma.config.ts` declares the seed command + datasource URL —
-#     prisma CLI loads it from the working directory
-#
-# tsx (for `prisma db seed` → `tsx prisma/seed.ts`):
-#   - depends on `esbuild` (declared as a peer) and the platform-specific
-#     `@esbuild/linux-*` package — copy both or tsx errors with
-#     "Cannot find package 'esbuild'"
-#
-# `node_modules/.bin/` carries the symlinks `npx` resolves — without it
-# `npx prisma` falls back to a registry install in the container and
-# fails (offline + read-only fs).
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-# tsx + esbuild peer for `prisma db seed` → `tsx prisma/seed.ts`
+# Full prod node_modules — replaces standalone's trimmed copy. Brings in
+# every transitive dep of prisma, @prisma/client, bcryptjs, dotenv, pg,
+# adapter-pg, … so `prisma migrate deploy` and the seed script don't
+# trip on missing modules like `effect`, `@prisma/internals` deps, etc.
+COPY --from=runtime-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Layer dev-only ops tooling on top:
+#   - tsx + esbuild peer (for `prisma db seed` → `tsx prisma/seed.ts`)
+#   - .bin/ binstubs (so `npx prisma|tsx` resolve without a registry hit)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/tsx ./node_modules/tsx
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/esbuild ./node_modules/esbuild
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@esbuild ./node_modules/@esbuild
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv-cli ./node_modules/dotenv-cli
-# Binstubs so `npx prisma` / `npx tsx` resolve without a network hit
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin ./node_modules/.bin
+
+# Prisma generated client + schema + migrations + config (kept at root
+# because prisma.config.ts is discovered from cwd at CLI invocation).
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
