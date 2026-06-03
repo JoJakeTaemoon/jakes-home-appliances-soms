@@ -81,6 +81,8 @@ interface VisitDetail {
     description: string;
     isPaid: boolean;
   } | null;
+  signatureDocs: string[];
+  contract: { id: string; contractNumber: string } | null;
 }
 
 export default function MobileVisitDetailPage() {
@@ -227,6 +229,8 @@ function MobileVisitDetailContent() {
           <p className="mt-1 text-sm text-[#737373]">—</p>
         )}
       </section>
+
+      <SignatureDocsSection visit={data} />
 
       <WorkScopeSection visit={data} />
 
@@ -466,6 +470,74 @@ function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
           <span className="font-mono">{visit.expectedAmount}</span>
         </p>
       )}
+    </section>
+  );
+}
+
+/**
+ * Signature-required document list for the visit, with an inline PDF
+ * preview per doc so the technician can verify exactly what the
+ * customer is about to sign — prevents handing over the wrong slip or
+ * skipping a signature.
+ */
+function SignatureDocsSection({ visit }: Readonly<{ visit: VisitDetail }>) {
+  const t = useTranslations("mobile");
+  if (!visit.signatureDocs || visit.signatureDocs.length === 0) return null;
+  return (
+    <section className="rounded-xl border border-[#fcd34d] bg-[#fffbeb] p-4 shadow-sm">
+      <h2 className="text-sm font-semibold text-[#92400e]">
+        {t("signRequired")}
+      </h2>
+      <ul className="mt-3 flex flex-col gap-3">
+        {visit.signatureDocs.map((kind) => {
+          const label = t(
+            `signatureDocLabels.${kind}` as "signatureDocLabels.WORK_CONFIRMATION",
+          );
+          const previewUrl =
+            kind === "CONTRACT"
+              ? visit.contract
+                ? `/api/contracts/${visit.contract.id}/pdf`
+                : null
+              : `/api/mobile/visits/${visit.id}/preview/${kind}?langPair=vi-ko`;
+          return (
+            <li
+              key={kind}
+              className="overflow-hidden rounded-lg border border-[#fcd34d] bg-white"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#fef3c7] bg-[#fffbeb] px-3 py-2">
+                <span className="text-sm font-semibold text-[#92400e]">
+                  {label}
+                  {kind === "CONTRACT" && visit.contract && (
+                    <span className="ml-2 font-mono text-xs text-[#737373]">
+                      {visit.contract.contractNumber}
+                    </span>
+                  )}
+                </span>
+                {previewUrl && (
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded border border-[#92400e] px-2 py-0.5 text-xs font-medium text-[#92400e] hover:bg-[#fef3c7]"
+                  >
+                    {t("docPreviewOpen")}
+                  </a>
+                )}
+              </div>
+              {previewUrl && (
+                <iframe
+                  title={`preview-${kind}`}
+                  src={previewUrl}
+                  className="h-[60vh] w-full border-none"
+                />
+              )}
+              <p className="px-3 py-2 text-xs text-[#92400e]">
+                {t("docSignersHint")}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
