@@ -99,6 +99,8 @@
     "equipment": "Thiết bị",
     "contracts": "Hợp đồng",
     "visits": "Lượt thăm",
+    "scheduleBoard": "Bảng phân công",
+    "visitsPrint": "In hàng loạt",
     "payments": "Thu tiền",
     "taxInvoices": "Hóa đơn GTGT",
     "serviceRequests": "Yêu cầu dịch vụ",
@@ -116,6 +118,34 @@
     "reports": "Báo cáo",
     "auditLog": "Nhật ký kiểm tra",
     "unreadMessageBadge": "Có tin nhắn khách hàng chưa đọc"
+  },
+  "visitsPrint": {
+    "title": "In hàng loạt (Tài liệu mang theo)",
+    "subtitle": "Chọn ngày + KTV để in toàn bộ tài liệu của các lượt thăm trong một lần.",
+    "pickTechnician": "Chọn KTV...",
+    "pickPrompt": "Hãy chọn ngày và KTV.",
+    "loading": "Đang tải...",
+    "empty": "Không có lượt thăm nào cần in cho ngày này.",
+    "ready": "Sẵn sàng {n} lượt thăm.",
+    "installCount": "{n} lượt lắp đặt — đã gồm hợp đồng",
+    "openPrintTab": "Mở PDF tab mới để in",
+    "printBtn": "In"
+  },
+  "scheduleBoard": {
+    "title": "Bảng phân công",
+    "subtitle": "Chưa phân công {unassigned} · Đã phân công hôm nay {assigned}",
+    "prev": "Trước",
+    "today": "Hôm nay",
+    "next": "Sau",
+    "loading": "Đang tải...",
+    "unassignedTitle": "Chưa phân công ✱ {count}",
+    "noUnassigned": "Không có lượt thăm chưa phân công.",
+    "noVisits": "Không có lượt thăm",
+    "noTechnicians": "Không có KTV đang hoạt động.",
+    "loadBadge": "{n} lượt",
+    "assign": "Phân công",
+    "close": "Đóng",
+    "printBtn": "In"
   },
   "dashboard": {
     "greeting": "Bảng điều khiển",
@@ -681,6 +711,9 @@
     "state": "Trạng thái",
     "viewCalendar": "Lịch",
     "viewList": "Danh sách",
+    "viewUnassigned": "Chưa phân công",
+    "assign": "Phân công",
+    "close": "Đóng",
     "calendarPrev": "Tháng trước",
     "calendarNext": "Tháng sau",
     "calendarToday": "Hôm nay",
@@ -756,6 +789,27 @@
       "photos": "Hình ảnh",
       "activity": "Hoạt động",
       "payments": "Thanh toán"
+    },
+    "documents": {
+      "title": "Tài liệu mang theo",
+      "suggested": "Tài liệu đề xuất",
+      "issue": "Phát hành",
+      "reissue": "Phát hành lại",
+      "download": "Tải về",
+      "addOther": "Phát hành thêm loại khác",
+      "issuedSoFar": "Đã phát hành",
+      "empty": "Chưa có tài liệu nào được phát hành.",
+      "gateUnassigned": "Chỉ có thể phát hành tài liệu sau khi gán kỹ thuật viên (SCHEDULED).",
+      "gateCancelled": "Không thể phát hành tài liệu cho lượt thăm đã hủy.",
+      "gateFailed": "Không thể phát hành tài liệu cho lượt thăm không tới được.",
+      "kindLabels": {
+        "DELIVERY_RECEIPT": "Biên bản bàn giao (B2C thuê)",
+        "SALE_RECEIPT_B2C": "Biên lai bán hàng (B2C)",
+        "DELIVERY_SLIP_B2B": "Phiếu xuất kho (B2B Mẫu 02-VT)",
+        "PERIODIC_CHECK_B2C": "Phiếu bảo trì định kỳ (B2C)",
+        "PERIODIC_CHECK_B2B": "Phiếu xác nhận bảo trì (B2B)",
+        "WORK_CONFIRMATION": "Phiếu xác nhận công việc"
+      }
     }
   },
   "serviceRequests": {
@@ -899,6 +953,18 @@
     "upcomingTitle": "Lượt thăm sắp tới",
     "noVisitsToday": "Không có lượt thăm hôm nay.",
     "noVisitsUpcoming": "Không có lượt thăm 7 ngày tới.",
+    "signRequired": "Cần ký",
+    "docPreviewOpen": "Mở tab mới",
+    "docSignersHint": "Lấy chữ ký của cả khách hàng + KTV. Nếu thiếu, gọi tổng đài.",
+    "signatureDocLabels": {
+      "DELIVERY_RECEIPT": "Biên bản bàn giao (B2C thuê)",
+      "SALE_RECEIPT_B2C": "Biên lai bán hàng (B2C)",
+      "DELIVERY_SLIP_B2B": "Phiếu xuất kho (B2B Mẫu 02-VT)",
+      "PERIODIC_CHECK_B2C": "Phiếu bảo trì định kỳ (B2C)",
+      "PERIODIC_CHECK_B2B": "Phiếu xác nhận bảo trì (B2B)",
+      "WORK_CONFIRMATION": "Phiếu xác nhận công việc",
+      "CONTRACT": "Hợp đồng"
+    },
     "lead": "Chính",
     "shared": "Phụ",
     "callHq": "Gọi tổng đài",

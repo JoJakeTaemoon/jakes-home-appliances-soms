@@ -99,6 +99,8 @@
     "equipment": "Equipment",
     "contracts": "Contracts",
     "visits": "Visits",
+    "scheduleBoard": "Schedule Board",
+    "visitsPrint": "Bulk Print",
     "payments": "Payments",
     "taxInvoices": "Tax Invoices",
     "serviceRequests": "Service Requests",
@@ -116,6 +118,34 @@
     "reports": "Reports",
     "auditLog": "Audit log",
     "unreadMessageBadge": "Unread customer messages"
+  },
+  "visitsPrint": {
+    "title": "Bulk print (carry documents)",
+    "subtitle": "Pick a date and a technician to print every visit's documents in one batch.",
+    "pickTechnician": "Pick technician...",
+    "pickPrompt": "Pick a date and a technician.",
+    "loading": "Loading…",
+    "empty": "No visits to print for this date.",
+    "ready": "{n} visits ready.",
+    "installCount": "{n} installation visits — contracts auto-included",
+    "openPrintTab": "Open PDF in new tab to print",
+    "printBtn": "Print"
+  },
+  "scheduleBoard": {
+    "title": "Schedule Board",
+    "subtitle": "{unassigned} unassigned · {assigned} assigned today",
+    "prev": "Prev",
+    "today": "Today",
+    "next": "Next",
+    "loading": "Loading…",
+    "unassignedTitle": "Unassigned ✱ {count}",
+    "noUnassigned": "No unassigned visits.",
+    "noVisits": "No visits today",
+    "noTechnicians": "No active technicians.",
+    "loadBadge": "{n} visits",
+    "assign": "Assign",
+    "close": "Close",
+    "printBtn": "Print"
   },
   "dashboard": {
     "greeting": "Dashboard",
@@ -681,6 +711,9 @@
     "state": "State",
     "viewCalendar": "Calendar",
     "viewList": "List",
+    "viewUnassigned": "Unassigned",
+    "assign": "Assign",
+    "close": "Close",
     "calendarPrev": "Previous month",
     "calendarNext": "Next month",
     "calendarToday": "Today",
@@ -756,6 +789,27 @@
       "photos": "Photos",
       "activity": "Activity",
       "payments": "Payments"
+    },
+    "documents": {
+      "title": "Documents to carry",
+      "suggested": "Suggested document",
+      "issue": "Issue",
+      "reissue": "Re-issue",
+      "download": "Download",
+      "addOther": "Issue additional kind",
+      "issuedSoFar": "Already issued",
+      "empty": "No documents issued yet.",
+      "gateUnassigned": "Documents can be issued after a technician is assigned (SCHEDULED).",
+      "gateCancelled": "Cannot issue documents for a cancelled visit.",
+      "gateFailed": "Cannot issue documents for a failed-no-show visit.",
+      "kindLabels": {
+        "DELIVERY_RECEIPT": "Delivery & receipt (B2C rental)",
+        "SALE_RECEIPT_B2C": "Sale receipt (B2C)",
+        "DELIVERY_SLIP_B2B": "Delivery slip (B2B Form 02-VT)",
+        "PERIODIC_CHECK_B2C": "Periodic check (B2C)",
+        "PERIODIC_CHECK_B2B": "Periodic check (B2B)",
+        "WORK_CONFIRMATION": "Work confirmation"
+      }
     }
   },
   "serviceRequests": {
@@ -899,6 +953,18 @@
     "upcomingTitle": "Upcoming visits",
     "noVisitsToday": "No visits scheduled today.",
     "noVisitsUpcoming": "No upcoming visits in the next 7 days.",
+    "signRequired": "Signatures required",
+    "docPreviewOpen": "Open in tab",
+    "docSignersHint": "Collect both customer and technician signatures. Missing one — call HQ.",
+    "signatureDocLabels": {
+      "DELIVERY_RECEIPT": "Delivery & receipt (B2C rental)",
+      "SALE_RECEIPT_B2C": "Sale receipt (B2C)",
+      "DELIVERY_SLIP_B2B": "Delivery slip (B2B Form 02-VT)",
+      "PERIODIC_CHECK_B2C": "Periodic check (B2C)",
+      "PERIODIC_CHECK_B2B": "Periodic check (B2B)",
+      "WORK_CONFIRMATION": "Work confirmation",
+      "CONTRACT": "Contract"
+    },
     "lead": "Lead",
     "shared": "Shared",
     "callHq": "Call HQ",
