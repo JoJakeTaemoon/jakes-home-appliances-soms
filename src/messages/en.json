@@ -114,7 +114,8 @@
     "companyContact": "Company info",
     "userManagement": "User Management",
     "reports": "Reports",
-    "auditLog": "Audit log"
+    "auditLog": "Audit log",
+    "unreadMessageBadge": "Unread customer messages"
   },
   "dashboard": {
     "greeting": "Dashboard",
@@ -519,7 +520,9 @@
       "outstanding": "Outstanding",
       "nextFilter": "Next filter change",
       "recentActivity": "Recent activity",
-      "noActivity": "No recent activity."
+      "noActivity": "No recent activity.",
+      "activityVisit": "Visit",
+      "activityRequest": "Request"
     },
     "equipment": {
       "title": "Equipment",
@@ -537,7 +540,13 @@
       "ownership": "Ownership",
       "installedAt": "Installed",
       "site": "Site",
-      "nextFilters": "Filter schedule"
+      "nextFilters": "Filter schedule",
+      "visitHistory": "Visit history",
+      "visitHistoryEmpty": "No visit history for this equipment yet.",
+      "action": {
+        "REPLACE": "Replace",
+        "CLEAN": "Clean"
+      }
     },
     "visits": {
       "title": "Visits"
@@ -639,8 +648,12 @@
       "saveError": "Could not save. Try again."
     },
     "contacts": {
-      "title": "Company contacts",
+      "title": "Contacts",
+      "titleB2B": "Company contacts",
+      "titleB2C": "My contacts",
       "addContact": "+ Add contact",
+      "addContactB2B": "+ Add staff member",
+      "addContactB2C": "+ Add family contact",
       "createComingSoon": "Create / edit contacts via the office (portal support lands in a future phase).",
       "loading": "Loading...",
       "loadError": "Could not load contacts.",
@@ -747,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "Service requests",
+    "unreadMessage": "New customer message",
     "newRequest": "+ New request",
     "newPageTitle": "New service request (office intake)",
     "customerLabel": "Customer",
@@ -764,6 +778,7 @@
     "noRequests": "No service requests yet.",
     "noResults": "No requests match.",
     "tabPending": "Pending review",
+    "tabUnread": "Unread messages",
     "tabAll": "All",
     "filterState": "State",
     "filterType": "Type",
@@ -1111,9 +1126,13 @@
       "loadError": "Could not load visits.",
       "noVisits": "No visits yet.",
       "viewPdf": "Download work confirmation",
+      "loading": "Loading…",
       "completed": "Completed",
       "scheduled": "Scheduled",
-      "technician": "Technician"
+      "technician": "Technician",
+      "equipment": "Equipment",
+      "findings": "Findings",
+      "photos": "Site photos"
     },
     "payments": {
       "title": "Payments",
@@ -1521,6 +1540,8 @@
     "placeholder": "Type a message…",
     "noMessages": "No messages yet.",
     "you": "You",
-    "office": "Office"
+    "office": "Office",
+    "readOnly": "This request is completed; no further messages can be sent.",
+    "markRead": "Mark read"
   }
 }

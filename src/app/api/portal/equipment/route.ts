@@ -29,6 +29,28 @@ export const GET = defineQuery({
             nameEn: true,
             category: true,
             filterPolicy: true,
+            // ConsumableOnModel join — needed so the customer dashboard
+            // can compute the next filter-replacement due date when no
+            // FILTER_REPLACEMENT visit has been scheduled yet. The
+            // model.filterPolicy JSON is a legacy field and is empty
+            // for most seeded models; the Consumable table is the
+            // canonical source of replacement cycles.
+            consumables: {
+              select: {
+                quantity: true,
+                consumable: {
+                  select: {
+                    id: true,
+                    sku: true,
+                    nameKo: true,
+                    nameVi: true,
+                    nameEn: true,
+                    replaceEveryMonths: true,
+                    isActive: true,
+                  },
+                },
+              },
+            },
           },
         },
         site: { select: { id: true, name: true } },

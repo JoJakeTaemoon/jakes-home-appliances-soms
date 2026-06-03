@@ -107,6 +107,22 @@ export const GET = defineQuery({
       },
     });
 
-    return { ...sr, activity };
+    // Did a customer message arrive after the office team last read?
+    // Drives the "읽음" button visibility on the detail page.
+    const lastCustomerMsg = await prisma.auditLog.findFirst({
+      where: {
+        action: "SR_MESSAGE",
+        actorType: "CUSTOMER",
+        entityType: "ServiceRequest",
+        entityId: params.id,
+      },
+      orderBy: { at: "desc" },
+      select: { at: true },
+    });
+    const hasUnreadCustomerMessage =
+      lastCustomerMsg !== null &&
+      (sr.lastOfficeReadAt === null || sr.lastOfficeReadAt < lastCustomerMsg.at);
+
+    return { ...sr, activity, hasUnreadCustomerMessage };
   },
 });

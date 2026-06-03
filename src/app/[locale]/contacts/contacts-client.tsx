@@ -20,9 +20,15 @@ interface PortalContactRow {
 
 export function ContactsClient() {
   const t = useTranslations("portal.contacts");
-  const { accessToken } = useCustomerAuth();
+  const { accessToken, contact } = useCustomerAuth();
   const [rows, setRows] = useState<PortalContactRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // B2C contacts are usually a household — calling them "Company
+  // contacts" is jarring. We branch the heading + add-button label on
+  // the customer type the logged-in contact already carries.
+  const isB2B = contact?.customerType === "B2B";
+  const titleKey = isB2B ? "titleB2B" : "titleB2C";
+  const addKey = isB2B ? "addContactB2B" : "addContactB2C";
 
   useEffect(() => {
     if (!accessToken) return;
@@ -55,13 +61,13 @@ export function ContactsClient() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[#002A4D]">{t("title")}</h1>
+        <h1 className="text-xl font-semibold text-[#002A4D]">{t(titleKey)}</h1>
         <button
           type="button"
           disabled
           className="rounded-md border border-[#e5e5e5] bg-white px-3 h-9 text-xs font-medium text-[#a3a3a3] cursor-not-allowed"
         >
-          {t("addContact")}
+          {t(addKey)}
         </button>
       </div>
       <p className="text-xs text-[#737373]">{t("createComingSoon")}</p>

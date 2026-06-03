@@ -93,7 +93,18 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
     return <p className="py-6 text-center text-sm text-[#737373]">…</p>;
   }
 
-  const canCancel = ["PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(sr.state);
+  // Visit-completed = the field tech finished the job. Even if the SR
+  // workflow hasn't yet flipped the SR row to COMPLETED, the request is
+  // effectively done from the customer's perspective, and follow-up
+  // changes (cancel, new messages) should be off the table — same gate
+  // we apply on truly terminal SR states.
+  const visitCompleted = sr.visit?.state === "COMPLETED";
+  const srTerminal = ["COMPLETED", "REJECTED", "CANCELLED"].includes(sr.state);
+  const canCancel =
+    !visitCompleted &&
+    !srTerminal &&
+    ["PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(sr.state);
+  const messagesReadOnly = visitCompleted || srTerminal;
   const attachments = Array.isArray(sr.attachments)
     ? (sr.attachments as { url?: string; storageKey: string; filename: string }[])
     : [];
@@ -195,7 +206,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
         </section>
       )}
 
-      <SrMessageThread srId={sr.id} />
+      <SrMessageThread srId={sr.id} readOnly={messagesReadOnly} />
 
       {canCancel && (
         <button

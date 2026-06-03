@@ -3,8 +3,17 @@
 import { useTranslations, useLocale } from "next-intl";
 import { pickModelName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
-import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  VisitStateBadge,
+  VisitTypeBadge,
+} from "@/components/visits/visit-state-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
+
+interface VisitPhoto {
+  url: string;
+  takenAt?: string | null;
+  caption?: string | null;
+}
 
 interface VisitDetail {
   id: string;
@@ -14,6 +23,7 @@ interface VisitDetail {
   completedAt: string | null;
   findings: string | null;
   customerSignaturePhotoUrl: string | null;
+  photos: VisitPhoto[] | null;
   equipment: {
     serialNumber: string | null;
     model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
@@ -34,7 +44,7 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
   const query = useApiQuery<VisitDetail>(`/api/portal/visits/${id}`);
   const data = query.data;
 
-  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">{t("loading")}</p>;
   if (!data) return <p className="text-sm text-[#737373]">{t("loadError")}</p>;
 
   const wc = data.documents.find((d) => d.kind === "WORK_CONFIRMATION" || d.kind === "PERIODIC_INSPECTION");
@@ -42,14 +52,12 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-[#002A4D]">{data.type}</h1>
-          <StatusBadge tone={data.state === "COMPLETED" ? "success" : "info"}>
-            {data.state}
-          </StatusBadge>
+        <div className="flex flex-wrap items-center gap-2">
+          <VisitTypeBadge type={data.type} />
+          <VisitStateBadge state={data.state} />
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-[#737373]">Scheduled</dt>
+          <dt className="text-[#737373]">{t("scheduled")}</dt>
           <dd>{formatDate(data.scheduledFor, locale)}</dd>
           {data.completedAt && (
             <>
@@ -65,22 +73,54 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
           )}
           {data.equipment && (
             <>
-              <dt className="text-[#737373]">Equipment</dt>
-              <dd>
-                {pickModelName(data.equipment.model, locale)} ({pickModelName(data.equipment.model, locale)})
-              </dd>
+              <dt className="text-[#737373]">{t("equipment")}</dt>
+              <dd>{pickModelName(data.equipment.model, locale)}</dd>
             </>
           )}
         </dl>
         {data.findings && (
           <div className="mt-3 rounded-md bg-[#FAFAFA] p-3 text-sm">
             <div className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
-              Findings
+              {t("findings")}
             </div>
             <p className="whitespace-pre-wrap text-[#262626]">{data.findings}</p>
           </div>
         )}
       </div>
+
+      {data.photos && data.photos.length > 0 && (
+        <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-[#737373]">
+            {t("photos")}
+          </h2>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {data.photos.map((p, i) => (
+              <li key={`${p.url}-${i}`} className="relative">
+                <a
+                  href={p.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block aspect-square overflow-hidden rounded-lg border border-[#e5e5e5] bg-[#fafafa]"
+                  title={p.caption ?? p.takenAt ?? ""}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.url}
+                    alt={p.caption ?? `Photo ${i + 1}`}
+                    className="h-full w-full object-cover transition-transform hover:scale-105"
+                    loading="lazy"
+                  />
+                </a>
+                {p.takenAt && (
+                  <p className="mt-1 text-[10px] text-[#737373]">
+                    {formatDate(p.takenAt, locale)}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {wc && (
         <a

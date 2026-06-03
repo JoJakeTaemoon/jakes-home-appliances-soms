@@ -114,7 +114,8 @@
     "companyContact": "Thông tin công ty",
     "userManagement": "Quản lý người dùng",
     "reports": "Báo cáo",
-    "auditLog": "Nhật ký kiểm tra"
+    "auditLog": "Nhật ký kiểm tra",
+    "unreadMessageBadge": "Có tin nhắn khách hàng chưa đọc"
   },
   "dashboard": {
     "greeting": "Bảng điều khiển",
@@ -519,7 +520,9 @@
       "outstanding": "Công nợ",
       "nextFilter": "Thay lõi kế tiếp",
       "recentActivity": "Hoạt động gần đây",
-      "noActivity": "Chưa có hoạt động."
+      "noActivity": "Chưa có hoạt động.",
+      "activityVisit": "Lượt thăm",
+      "activityRequest": "Yêu cầu"
     },
     "equipment": {
       "title": "Thiết bị",
@@ -537,7 +540,13 @@
       "ownership": "Sở hữu",
       "installedAt": "Ngày lắp đặt",
       "site": "Cơ sở",
-      "nextFilters": "Lịch thay lõi"
+      "nextFilters": "Lịch thay lõi",
+      "visitHistory": "Lịch sử thăm",
+      "visitHistoryEmpty": "Chưa có lịch sử thăm cho thiết bị này.",
+      "action": {
+        "REPLACE": "Thay",
+        "CLEAN": "Vệ sinh"
+      }
     },
     "visits": {
       "title": "Lịch hẹn"
@@ -639,8 +648,12 @@
       "saveError": "Không thể lưu. Thử lại."
     },
     "contacts": {
-      "title": "Liên hệ công ty",
+      "title": "Liên hệ",
+      "titleB2B": "Liên hệ công ty",
+      "titleB2C": "Liên hệ của tôi",
       "addContact": "+ Thêm liên hệ",
+      "addContactB2B": "+ Thêm nhân viên",
+      "addContactB2C": "+ Thêm liên hệ gia đình",
       "createComingSoon": "Tạo / sửa liên hệ qua văn phòng (sẽ mở trên cổng ở phase sau).",
       "loading": "Đang tải...",
       "loadError": "Không tải được danh sách liên hệ.",
@@ -747,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "Yêu cầu dịch vụ",
+    "unreadMessage": "Tin nhắn khách hàng mới",
     "newRequest": "+ Yêu cầu mới",
     "newPageTitle": "Yêu cầu dịch vụ mới (nhập tại văn phòng)",
     "customerLabel": "Khách hàng",
@@ -764,6 +778,7 @@
     "noRequests": "Chưa có yêu cầu nào.",
     "noResults": "Không có yêu cầu phù hợp.",
     "tabPending": "Chờ duyệt",
+    "tabUnread": "Tin nhắn chưa đọc",
     "tabAll": "Tất cả",
     "filterState": "Trạng thái",
     "filterType": "Loại",
@@ -1111,9 +1126,13 @@
       "loadError": "Không tải được lịch sử lượt thăm.",
       "noVisits": "Chưa có lượt thăm nào.",
       "viewPdf": "Tải phiếu công việc",
+      "loading": "Đang tải...",
       "completed": "Hoàn tất",
-      "scheduled": "Đã đặt lịch",
-      "technician": "Kỹ thuật viên"
+      "scheduled": "Ngày hẹn",
+      "technician": "Kỹ thuật viên",
+      "equipment": "Thiết bị",
+      "findings": "Nội dung công việc",
+      "photos": "Hình ảnh hiện trường"
     },
     "payments": {
       "title": "Thanh toán",
@@ -1521,6 +1540,8 @@
     "placeholder": "Nhập tin nhắn…",
     "noMessages": "Chưa có tin nhắn.",
     "you": "Bạn",
-    "office": "Văn phòng"
+    "office": "Văn phòng",
+    "readOnly": "Yêu cầu này đã hoàn tất, không thể gửi thêm tin nhắn.",
+    "markRead": "Đánh dấu đã đọc"
   }
 }

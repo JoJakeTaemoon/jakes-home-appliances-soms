@@ -55,6 +55,11 @@ export const POST = defineMutation({
       authorName: auth.email ?? auth.userId,
       request,
     });
+    // Posting a reply implicitly clears the unread badge for the team.
+    await prisma.serviceRequest.update({
+      where: { id: params.id },
+      data: { lastOfficeReadAt: new Date() },
+    });
     return { messages: await ServiceRequestWorkflow.listMessages(params.id) };
   },
 });

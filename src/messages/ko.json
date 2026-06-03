@@ -114,7 +114,8 @@
     "companyContact": "회사 정보",
     "userManagement": "사용자 관리",
     "reports": "보고서",
-    "auditLog": "감사 로그"
+    "auditLog": "감사 로그",
+    "unreadMessageBadge": "확인하지 않은 고객 메시지"
   },
   "dashboard": {
     "greeting": "대시보드",
@@ -519,7 +520,9 @@
       "outstanding": "미수금",
       "nextFilter": "다음 필터 교체",
       "recentActivity": "최근 활동",
-      "noActivity": "아직 활동이 없습니다."
+      "noActivity": "아직 활동이 없습니다.",
+      "activityVisit": "방문",
+      "activityRequest": "요청"
     },
     "equipment": {
       "title": "장비",
@@ -537,7 +540,13 @@
       "ownership": "소유",
       "installedAt": "설치일",
       "site": "사이트",
-      "nextFilters": "필터 교체 일정"
+      "nextFilters": "필터 교체 일정",
+      "visitHistory": "방문 내역",
+      "visitHistoryEmpty": "이 장비와 관련된 방문 내역이 아직 없습니다.",
+      "action": {
+        "REPLACE": "교체",
+        "CLEAN": "청소"
+      }
     },
     "visits": {
       "title": "방문"
@@ -639,8 +648,12 @@
       "saveError": "저장에 실패했습니다. 다시 시도하세요."
     },
     "contacts": {
-      "title": "회사 연락처",
+      "title": "연락처",
+      "titleB2B": "회사 연락처",
+      "titleB2C": "내 연락처",
       "addContact": "+ 연락처 추가",
+      "addContactB2B": "+ 직원 추가",
+      "addContactB2C": "+ 가족 연락처 추가",
       "createComingSoon": "연락처 생성/수정은 사무실 통해 가능합니다 (이후 단계에서 포털 지원 예정).",
       "loading": "불러오는 중...",
       "loadError": "연락처를 불러오지 못했습니다.",
@@ -747,6 +760,7 @@
   },
   "serviceRequests": {
     "title": "서비스 요청",
+    "unreadMessage": "새 고객 메시지",
     "newRequest": "+ 새 요청",
     "newPageTitle": "신규 서비스 요청 (사무실 접수)",
     "customerLabel": "고객",
@@ -764,6 +778,7 @@
     "noRequests": "아직 서비스 요청이 없습니다.",
     "noResults": "조건에 맞는 요청이 없습니다.",
     "tabPending": "검토 대기",
+    "tabUnread": "읽지 않은 메시지",
     "tabAll": "전체",
     "filterState": "상태",
     "filterType": "유형",
@@ -1111,9 +1126,13 @@
       "loadError": "방문 이력을 불러오지 못했습니다.",
       "noVisits": "방문 이력이 없습니다.",
       "viewPdf": "작업확인서 다운로드",
+      "loading": "불러오는 중...",
       "completed": "완료",
-      "scheduled": "예정",
-      "technician": "기사"
+      "scheduled": "예정일",
+      "technician": "기사",
+      "equipment": "장비",
+      "findings": "작업 내용",
+      "photos": "현장 사진"
     },
     "payments": {
       "title": "결제",
@@ -1521,6 +1540,8 @@
     "placeholder": "메시지를 입력하세요…",
     "noMessages": "메시지가 없습니다.",
     "you": "고객",
-    "office": "사무실"
+    "office": "사무실",
+    "readOnly": "이 요청은 완료되어 더 이상 메시지를 보낼 수 없습니다.",
+    "markRead": "읽음"
   }
 }

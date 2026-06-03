@@ -5,6 +5,11 @@ import { pickModelName } from "@/lib/products/name";
 import { useTranslations , useLocale} from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
+import {
+  VisitStateBadge,
+  VisitTypeBadge,
+} from "@/components/visits/visit-state-badge";
+import { formatDate } from "@/lib/format";
 
 interface FilterEntry {
   type: string;
@@ -30,6 +35,26 @@ interface EquipmentDetail {
   filterPolicyOverride: unknown;
 }
 
+interface VisitConsumable {
+  action: "REPLACE" | "CLEAN";
+  consumable: {
+    id: string;
+    sku: string;
+    nameKo: string;
+    nameVi: string;
+    nameEn: string;
+  };
+}
+interface VisitRow {
+  id: string;
+  type: string;
+  state: string;
+  scheduledFor: string;
+  completedAt: string | null;
+  findings: string | null;
+  consumableLogs: VisitConsumable[];
+}
+
 function computeNextFilterDates(
   installedAt: string | null,
   filters: FilterEntry[] | undefined,
@@ -52,6 +77,7 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
   const { accessToken } = useCustomerAuth();
   const router = useRouter();
   const [eq, setEq] = useState<EquipmentDetail | null>(null);
+  const [visits, setVisits] = useState<VisitRow[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,6 +93,7 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
           return;
         }
         setEq(json.data.equipment as EquipmentDetail);
+        setVisits((json.data.visits ?? []) as VisitRow[]);
       })
       .catch(() => setError(t("loadError")));
   }, [accessToken, id, t]);
@@ -152,6 +179,72 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
           </ul>
         </section>
       )}
+
+      <VisitsSection visits={visits} />
     </div>
+  );
+}
+
+function pickConsumableName(
+  c: VisitConsumable["consumable"],
+  locale: string,
+): string {
+  if (locale === "ko") return c.nameKo;
+  if (locale === "en") return c.nameEn;
+  return c.nameVi;
+}
+
+function VisitsSection({ visits }: Readonly<{ visits: VisitRow[] }>) {
+  const t = useTranslations("portal.equipmentDetail");
+  const locale = useLocale();
+  return (
+    <section className="rounded-2xl border border-[#e5e5e5] bg-white p-5">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#737373]">
+        {t("visitHistory")}
+      </h2>
+      {visits.length === 0 ? (
+        <p className="text-sm text-[#737373]">{t("visitHistoryEmpty")}</p>
+      ) : (
+        <ul className="space-y-3">
+          {visits.map((v) => {
+            const dateStr = v.completedAt ?? v.scheduledFor;
+            return (
+              <li
+                key={v.id}
+                className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-3"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-[#002A4D]">
+                    {formatDate(dateStr, locale)}
+                  </span>
+                  <VisitTypeBadge type={v.type} />
+                  <VisitStateBadge state={v.state} />
+                </div>
+                {v.findings && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-[#262626]">
+                    {v.findings}
+                  </p>
+                )}
+                {v.consumableLogs.length > 0 && (
+                  <ul className="mt-2 space-y-0.5 text-xs text-[#525252]">
+                    {v.consumableLogs.map((c, i) => (
+                      <li
+                        key={`${c.consumable.id}-${i}`}
+                        className="flex justify-between gap-2"
+                      >
+                        <span>{pickConsumableName(c.consumable, locale)}</span>
+                        <span className="font-mono text-[#737373]">
+                          {c.consumable.sku} · {t(`action.${c.action}` as never)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

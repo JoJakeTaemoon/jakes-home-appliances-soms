@@ -83,6 +83,13 @@ export const listServiceRequestQuerySchema = z.object({
     .union([z.literal("true"), z.literal("false")])
     .optional()
     .transform((v) => (v === undefined ? undefined : v === "true")),
+  // Office-only — when true, restrict the result to SRs that have at
+  // least one customer SR_MESSAGE more recent than the team's
+  // lastOfficeReadAt. Powers the "읽지 않은 메시지" tab.
+  unread: z
+    .union([z.literal("true"), z.literal("false")])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === "true")),
   sortBy: z.string().trim().min(1).max(60).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),

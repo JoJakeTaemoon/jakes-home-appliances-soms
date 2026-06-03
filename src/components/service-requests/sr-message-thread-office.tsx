@@ -5,7 +5,7 @@
  * endpoint `/api/service-requests/:id/messages`.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/lib/api/client";
@@ -21,12 +21,31 @@ interface SrMessage {
   body: string;
 }
 
-export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
+export function SrMessageThreadOffice({
+  srId,
+  hasUnread = false,
+  onMarkedRead,
+}: Readonly<{
+  srId: string;
+  hasUnread?: boolean;
+  onMarkedRead?: () => void | Promise<void>;
+}>) {
   const t = useTranslations("portalThread");
   const api = useApi();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [marking, setMarking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Local optimistic "I just cleared unread" flag. Set the moment the
+  // server confirms a mark-read or reply, so the badge / button hide
+  // immediately without waiting for the parent's refetch to round-trip.
+  // Reset whenever the parent reports hasUnread=true again so a new
+  // customer message re-opens the badge.
+  const [readOptimistic, setReadOptimistic] = useState(false);
+  useEffect(() => {
+    if (!hasUnread) setReadOptimistic(false);
+  }, [hasUnread]);
+  const effectiveHasUnread = hasUnread && !readOptimistic;
 
   const queryUrl = srId ? `/api/service-requests/${srId}/messages` : null;
   const query = useApiQuery<{ messages: SrMessage[] }>(queryUrl, {
@@ -34,6 +53,23 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
   });
   const messages = query.data?.messages ?? [];
   const qc = useQueryClient();
+
+  // Both the explicit mark-read button and the implicit
+  // mark-read-on-reply path bump lastOfficeReadAt on the server, so the
+  // client just needs to (a) refetch the parent SR so the local
+  // hasUnreadCustomerMessage flips, and (b) invalidate the sidebar
+  // unread-count query so the nav badge clears without waiting for the
+  // 60s poll. Centralised here so reply + mark-read stay in sync.
+  const clearUnreadClientState = async () => {
+    // Hide the badge / mark-read button locally before the parent
+    // refetch lands. Without this an idle React Query (no automatic
+    // refetch fires while the tab is active and the data is fresh
+    // enough) leaves hasUnread=true visible, and the user can click
+    // mark-read a second time on an already-read thread.
+    setReadOptimistic(true);
+    qc.invalidateQueries({ queryKey: ["/api/service-requests/unread-count"] });
+    if (onMarkedRead) await onMarkedRead();
+  };
 
   const send = async () => {
     const trimmed = body.trim();
@@ -52,6 +88,10 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
         qc.setQueryData([queryUrl], { messages: env.data.messages });
       }
       setBody("");
+      // Server-side: the /messages POST also stamps lastOfficeReadAt,
+      // so a reply implicitly marks the thread read. Mirror that on
+      // the client so the unread badge / red dot disappear right away.
+      await clearUnreadClientState();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -59,9 +99,34 @@ export function SrMessageThreadOffice({ srId }: Readonly<{ srId: string }>) {
     }
   };
 
+  const markAsRead = async () => {
+    setMarking(true);
+    setError(null);
+    try {
+      await api.post(`/api/service-requests/${srId}/mark-read`, {});
+      await clearUnreadClientState();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setMarking(false);
+    }
+  };
+
   return (
     <section className="space-y-2 rounded-2xl border border-[#e5e5e5] bg-white p-4">
-      <h2 className="text-sm font-semibold text-[#002A4D]">{t("title")}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-[#002A4D]">{t("title")}</h2>
+        {effectiveHasUnread && (
+          <Button
+            onClick={markAsRead}
+            disabled={marking}
+            size="sm"
+            variant="outline"
+          >
+            {marking ? "…" : t("markRead")}
+          </Button>
+        )}
+      </div>
       {messages.length === 0 ? (
         <p className="text-sm text-[#737373]">{t("noMessages")}</p>
       ) : (

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
+import { useApiQuery } from "@/lib/api/hooks";
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +19,7 @@ import {
   Phone,
   Package,
   ScrollText,
+  MessageSquareDot,
 } from "lucide-react";
 
 type LabelKey =
@@ -112,6 +114,18 @@ export function Sidebar() {
   const showAdminSection =
     visibleAdmin.length > 0 || visibleAdminSettings.length > 0;
 
+  // Office-only badge: how many SRs have at least one unread customer
+  // message. Refetches every 60s and on focus so the badge clears soon
+  // after another tab marks one read. The TECHNICIAN role never sees
+  // SR data, so we skip the fetch for them entirely.
+  const isOfficeRole =
+    role === "ADMIN" || role === "MANAGER" || role === "STAFF";
+  const unreadQuery = useApiQuery<{ count: number }>(
+    isOfficeRole ? "/api/service-requests/unread-count" : null,
+    { refetchInterval: 60_000, refetchOnWindowFocus: true },
+  );
+  const unreadCount = unreadQuery.data?.count ?? 0;
+
   return (
     <aside className="flex h-full w-64 flex-col border-r border-[#e5e5e5] bg-white">
       <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-[var(--brand-blue-500)] px-4">
@@ -152,6 +166,8 @@ export function Sidebar() {
               );
             }
 
+            const showUnreadBadge =
+              item.labelKey === "serviceRequests" && unreadCount > 0;
             return (
               <li key={item.href}>
                 <Link
@@ -164,7 +180,20 @@ export function Sidebar() {
                   }
                 >
                   <Icon className="size-5 shrink-0" strokeWidth={1.5} />
-                  <span>{label}</span>
+                  <span className="flex-1">{label}</span>
+                  {showUnreadBadge && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full bg-[#fee2e2] px-1.5 py-0.5 text-[10px] font-semibold text-[#b91c1c]"
+                      title={t("unreadMessageBadge")}
+                      aria-label={t("unreadMessageBadge")}
+                    >
+                      <MessageSquareDot
+                        className="size-3"
+                        strokeWidth={2}
+                      />
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

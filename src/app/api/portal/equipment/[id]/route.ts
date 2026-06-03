@@ -42,6 +42,39 @@ export const GET = defineQuery({
       throw new ForbiddenError("Out of your site scope");
     }
 
-    return { equipment: eq };
+    // Visit history for this equipment. We intentionally exclude
+    // technician-only fields (officeNotes is a relay channel between
+    // the technician and HQ that the customer must never see) and
+    // raw signature photo URL. We DO show findings — that mirrors
+    // what's already on the customer's signed work-confirmation PDF.
+    const visits = await prisma.visit.findMany({
+      where: { equipmentId: eq.id, customerId: auth.customerId },
+      orderBy: [{ scheduledFor: "desc" }],
+      take: 200,
+      select: {
+        id: true,
+        type: true,
+        state: true,
+        scheduledFor: true,
+        completedAt: true,
+        findings: true,
+        consumableLogs: {
+          select: {
+            action: true,
+            consumable: {
+              select: {
+                id: true,
+                sku: true,
+                nameKo: true,
+                nameVi: true,
+                nameEn: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return { equipment: eq, visits };
   },
 });

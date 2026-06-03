@@ -22,7 +22,11 @@ interface SrMessage {
   body: string;
 }
 
-export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
+export function SrMessageThread({
+  srId,
+  readOnly = false,
+  readOnlyHint,
+}: Readonly<{ srId: string; readOnly?: boolean; readOnlyHint?: string }>) {
   const t = useTranslations("portalThread");
   const { accessToken } = useCustomerAuth();
   const [body, setBody] = useState("");
@@ -106,28 +110,34 @@ export function SrMessageThread({ srId }: Readonly<{ srId: string }>) {
         </ul>
       )}
 
-      <div className="flex flex-col gap-2 pt-2">
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={3}
-          placeholder={t("placeholder")}
-          className="w-full rounded-md border border-[#e5e5e5] bg-white p-2 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
-        />
-        {error && (
-          <p className="text-xs text-[#b91c1c]" role="alert">
-            {error}
-          </p>
-        )}
-        <button
-          type="button"
-          disabled={sending || !body.trim()}
-          onClick={send}
-          className="self-end rounded-md bg-[var(--brand-blue-500)] px-4 py-1.5 text-sm font-semibold text-white outline-none disabled:opacity-50"
-        >
-          {sending ? "…" : t("send")}
-        </button>
-      </div>
+      {readOnly ? (
+        <p className="pt-2 text-xs text-[#737373]">
+          {readOnlyHint ?? t("readOnly")}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2 pt-2">
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={3}
+            placeholder={t("placeholder")}
+            className="w-full rounded-md border border-[#e5e5e5] bg-white p-2 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
+          />
+          {error && (
+            <p className="text-xs text-[#b91c1c]" role="alert">
+              {error}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={sending || !body.trim()}
+            onClick={send}
+            className="self-end rounded-md bg-[var(--brand-blue-500)] px-4 py-1.5 text-sm font-semibold text-white outline-none disabled:opacity-50"
+          >
+            {sending ? "…" : t("send")}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

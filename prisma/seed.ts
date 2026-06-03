@@ -39,6 +39,44 @@ function at(date: Date, hour: number, minute = 0): Date {
   return d;
 }
 
+// Filenames in public/sample-images. The seed routes "site photos" for
+// every COMPLETED visit through pickSamplePhotos(visitId, completedAt)
+// so the customer portal visit-detail page always has something to
+// render in the photos grid even before a real technician upload.
+const SAMPLE_IMAGE_FILES = [
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.jpg",
+  "5.jpg",
+  "6.jpg",
+  "7.jpg",
+  "8.jpg",
+] as const;
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (const c of s) h = (h * 31 + (c.codePointAt(0) ?? 0)) >>> 0;
+  return h;
+}
+
+function pickSamplePhotos(
+  visitId: string,
+  completedAt: Date,
+): { url: string; takenAt: string }[] {
+  const h = hashStr(visitId);
+  const n = SAMPLE_IMAGE_FILES.length;
+  const a = h % n;
+  // (a + 1 + extra) % n keeps b distinct from a.
+  const b = (a + 1 + (Math.floor(h / n) % (n - 1))) % n;
+  const before = new Date(completedAt.getTime() - 15 * 60 * 1000).toISOString();
+  const after = new Date(completedAt.getTime() - 5 * 60 * 1000).toISOString();
+  return [
+    { url: `/sample-images/${SAMPLE_IMAGE_FILES[a]}`, takenAt: before },
+    { url: `/sample-images/${SAMPLE_IMAGE_FILES[b]}`, takenAt: after },
+  ];
+}
+
 async function main() {
   console.log("Seeding...");
 
@@ -2148,8 +2186,27 @@ async function main() {
     return prisma.visit.create({ data: { ...data, id } });
   }
 
+  // Variant of ensureVisit that always re-syncs the visit's photos
+  // field. Used for the showcase fixture (seed-visit-001) so the
+  // customer portal demo has photos to render even when the DB
+  // already has the visit row from an earlier seed run.
+  async function ensureVisitWithPhotos(
+    id: string,
+    data: Parameters<typeof prisma.visit.create>[0]["data"],
+  ) {
+    const v = await ensureVisit(id, data);
+    if (data.photos !== undefined) {
+      await prisma.visit.update({
+        where: { id },
+        data: { photos: data.photos },
+      });
+    }
+    return v;
+  }
+
   // Past completed periodic inspection (KH00001).
-  const vCompleted = await ensureVisit("seed-visit-001", {
+  const seedVisit001CompletedAt = at(daysFromNow(-30), 11, 0);
+  const vCompleted = await ensureVisitWithPhotos("seed-visit-001", {
     customerId: b2c.id,
     equipmentId: b2c.equipment[0].id,
     type: "PERIODIC_INSPECTION",
@@ -2159,8 +2216,9 @@ async function main() {
     leadTechnicianId: tech1.id,
     findings: "Đã vệ sinh máy, thay lõi Sediment. Máy hoạt động tốt.",
     startedAt: at(daysFromNow(-30), 10, 15),
-    completedAt: at(daysFromNow(-30), 11, 0),
+    completedAt: seedVisit001CompletedAt,
     partsReplaced: { parts: [{ type: "Sediment", qty: 1 }] },
+    photos: pickSamplePhotos("seed-visit-001", seedVisit001CompletedAt),
   });
 
   // Today — SCHEDULED periodic inspection (KH00010), tech1 lead + collaborator.
@@ -2184,7 +2242,9 @@ async function main() {
     leadTechnicianId: tech2.id,
   });
 
-  // In progress now (KH00002 B2B HCMC site).
+  // In progress now (KH00002 B2B HCMC site). Previously this visit was
+  // wired to SR-00002 (a KH00001 SR) — that mismatch is fixed; the
+  // proper KH00001 SR-00002 visit lives below as seed-visit-001-sr.
   await ensureVisit("seed-visit-004", {
     customerId: b2b.id,
     siteId: hcmcSite.id,
@@ -2196,6 +2256,19 @@ async function main() {
     leadTechnicianId: tech1.id,
     collaboratorTechnicianIds: [tech3.id],
     startedAt: at(daysFromNow(0), 9, 20),
+  });
+
+  // KH00001 approved-SR follow-up — SR-00002 is APPROVED awaiting visit.
+  // Office scheduled it for two days out. Surfaces as the customer's
+  // "다음 방문" tile on the portal dashboard.
+  await ensureVisit("seed-visit-001-sr", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "REPAIR",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(2), 10),
+    scheduledWindow: "morning",
+    leadTechnicianId: tech1.id,
     serviceRequestId: serviceRequests["SR-00002"].id,
   });
 
@@ -2211,7 +2284,8 @@ async function main() {
   });
 
   // Completed inspection tied to a completed service request (KH00003).
-  const vCompleted2 = await ensureVisit("seed-visit-006", {
+  const seedVisit006CompletedAt = at(daysFromNow(-10), 13, 45);
+  const vCompleted2 = await ensureVisitWithPhotos("seed-visit-006", {
     customerId: b2c2.id,
     equipmentId: b2c2.equipment[0].id,
     type: "PERIODIC_INSPECTION",
@@ -2220,9 +2294,50 @@ async function main() {
     leadTechnicianId: tech2.id,
     findings: "Kiểm tra định kỳ, không có vấn đề.",
     startedAt: at(daysFromNow(-10), 13, 5),
-    completedAt: at(daysFromNow(-10), 13, 45),
+    completedAt: seedVisit006CompletedAt,
     serviceRequestId: serviceRequests["SR-00005"].id,
+    photos: pickSamplePhotos("seed-visit-006", seedVisit006CompletedAt),
   });
+
+  // ─── Unread customer SR messages ──────────────────────────────────────
+  // SR messages live on AuditLog (action='SR_MESSAGE'). Seeds two
+  // unanswered customer messages on KH00001's SRs — sr.lastOfficeReadAt
+  // is null on freshly inserted rows, so anything with at > NULL counts
+  // as unread for the office. Lights up the office SR list red-dot,
+  // the sidebar "new customer messages" badge, and the SR detail
+  // "읽음" button so they're all visible in dev without first
+  // logging in as the customer and typing.
+  const unreadSeedMessages = [
+    {
+      srId: serviceRequests["SR-00001"].id,
+      at: at(daysFromNow(-1), 9, 30),
+      authorName: "Nguyễn Thị Lan",
+      body: "Cho em hỏi đã có lịch kiểm tra chưa ạ? Máy vẫn chảy yếu.",
+    },
+    {
+      srId: serviceRequests["SR-00002"].id,
+      at: at(daysFromNow(0), 8, 15),
+      authorName: "Nguyễn Thị Lan",
+      body: "Sáng nay tiếng kêu càng to hơn. Mong các anh đến sớm giúp.",
+    },
+  ];
+  for (const m of unreadSeedMessages) {
+    await prisma.auditLog.create({
+      data: {
+        actorType: "CUSTOMER",
+        actorId: null,
+        action: "SR_MESSAGE",
+        entityType: "ServiceRequest",
+        entityId: m.srId,
+        at: m.at,
+        after: {
+          message: m.body,
+          authorName: m.authorName,
+          actorContactId: b2cPrimaryContact.id,
+        },
+      },
+    });
+  }
 
   // ─── Bulk visits per state (~50 total, ~7 per VisitState) ──────────────
   // Seeds enough volume for filter / dashboard widgets to surface meaningful
@@ -2233,6 +2348,11 @@ async function main() {
   // link technicians see an empty equipment block in dev. We fetch the
   // ids in one query (the customers were just upserted above).
   const bulkPoolCustomerIds: string[] = [
+    // KH00001 is the showcase customer used in dashboard demos —
+    // including it in the bulk pool ensures the customer portal
+    // dashboard's "다음 방문" / "다음 필터 교체" tiles have data
+    // (the original pool only contained KH00004+).
+    b2c.id,
     b2cCustomers["KH00004"].id,
     b2cCustomers["KH00005"].id,
     b2cCustomers["KH00006"].id,
@@ -2299,9 +2419,11 @@ async function main() {
       };
 
       if (bucket.state === "COMPLETED") {
+        const completedAt = at(daysFromNow(dayOff), hourBase + 1, 0);
         baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
-        baseData.completedAt = at(daysFromNow(dayOff), hourBase + 1, 0);
+        baseData.completedAt = completedAt;
         baseData.findings = `Bulk seed visit #${bulkVisitCounter} — ${vType.toLowerCase()} completed.`;
+        baseData.photos = pickSamplePhotos(id, completedAt);
       } else if (bucket.state === "IN_PROGRESS") {
         baseData.startedAt = at(daysFromNow(dayOff), hourBase, 10);
       } else if (bucket.state === "FAILED_NO_SHOW") {
@@ -2312,7 +2434,11 @@ async function main() {
         baseData.failureReason = "Khách hủy do thay đổi kế hoạch.";
       }
 
-      await ensureVisit(id, baseData);
+      if (bucket.state === "COMPLETED") {
+        await ensureVisitWithPhotos(id, baseData);
+      } else {
+        await ensureVisit(id, baseData);
+      }
     }
   }
 
@@ -2343,11 +2469,15 @@ async function main() {
       leadTechnicianId: techPick.id,
     };
     if (isPast) {
+      const completedAt = at(daysFromNow(dayOff), hourBase + 1, 5);
       data.startedAt = at(daysFromNow(dayOff), hourBase, 10);
-      data.completedAt = at(daysFromNow(dayOff), hourBase + 1, 5);
+      data.completedAt = completedAt;
       data.findings = `Daily seed visit (${dayOff}) — ${vType.toLowerCase()} completed.`;
+      data.photos = pickSamplePhotos(id, completedAt);
+      await ensureVisitWithPhotos(id, data);
+    } else {
+      await ensureVisit(id, data);
     }
-    await ensureVisit(id, data);
     dailyVisitCounter++;
   }
 
