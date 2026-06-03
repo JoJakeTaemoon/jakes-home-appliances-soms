@@ -189,6 +189,9 @@ Thông tin hiển thị trên mỗi thẻ:
 | **Số thiết bị** | "Máy lọc nước × 3 cái" |
 | **Số tiền dự kiến thu** | Chỉ hiển thị khi có (không có thì không hiện) |
 | **Huy hiệu chia sẻ** | Khi được gán làm KTV phụ, hiển thị "Đã chia sẻ" |
+| **🟡 Huy hiệu giấy tờ cần ký** | **(Phase 6)** Loại giấy tờ cần khách ký trong lượt thăm đó (ví dụ: "Biên nhận thiết bị · Hợp đồng"). Trước khi đi nhìn một cái biết phải mang giấy nào |
+
+> 💡 **Huy hiệu giấy tờ cần ký**: Văn phòng đã "In hàng loạt" gộp giấy trong ngày từ trước, bạn nhận tập giấy trên bàn. Hãy dùng huy hiệu này như checklist "không được thiếu giấy nào". Nếu quên, đến nhà khách vẫn có thể mở xem trước trên mobile → cho khách xem và gọi văn phòng nhờ in lại.
 
 ### 4.2 Phân loại màu sắc
 
@@ -231,19 +234,30 @@ Nếu phát sinh lượt thăm khẩn cấp, văn phòng sẽ xếp lịch mới
 
 Chạm vào thẻ lượt thăm → Hiện các thông tin sau:
 
+![Chi tiết lượt thăm — Xem trước giấy tờ cần ký](../screenshots/field/05-visit-detail-signature-docs.png)
+
 | Hạng mục | Mô tả |
 |---|---|
 | **Loại lượt thăm + Trạng thái** | Đầu màn hình |
 | **Thông tin khách** | Tên, Tên công ty (B2B) |
-| **Liên lạc** | Tên liên hệ vận hành + Nút "Gọi" |
+| **Liên lạc** | Tên liên hệ vận hành + Nút "Gọi" (chuyển qua văn phòng — số điện thoại khách không lộ trực tiếp) |
 | **Địa chỉ + Xem bản đồ** | Kết hợp app chỉ đường |
 | **Khung giờ** | Giờ hẹn |
 | **Lý do thăm** | "Thay lõi định kỳ", "Báo hỏng: Không có nước", v.v. |
 | **Danh sách thiết bị** | Thiết bị sẽ làm trong lượt thăm này (kèm số serial) |
+| **🟡 Giấy tờ cần ký** | **(Phase 6)** **Xem trước PDF (iframe)** của từng giấy tờ + hướng dẫn người ký. Nếu là lượt thăm INSTALLATION, **liên kết PDF hợp đồng** cũng hiển thị. Tiện chỉ cho khách "ký vào đây" |
 | **Lịch sử thăm trước** | Ngày kiểm tra cuối, nội dung công việc khi đó (để tham khảo) |
 | **Ghi chú văn phòng** | Lưu ý đặc biệt (ví dụ: "Mã ra vào: #1234", "Có chó lớn", "Có thể từ 2 giờ chiều") |
 | **KTV làm chung** | Hiện nếu có KTV phụ |
 | Nút **Bắt đầu / Đổi lịch / Hủy** | Phía dưới |
+
+#### Cách dùng phần "Giấy tờ cần ký"
+
+1. Trước khi đi, kiểm tra trên xem trước xem có thiếu giấy nào không (đối chiếu với tập giấy in hàng loạt của văn phòng)
+2. Khi đến nhà khách, mở màn cho khách xem để chỉ "Hãy ký vào vị trí này của giấy này"
+3. Nếu xem trước có nhưng giấy không có hoặc khác mẫu → gọi văn phòng ngay → nhờ in lại hoặc nhận qua KTV khác
+
+> ⚠️ **Không in trực tiếp từ mobile.** Xem trước chỉ là "kiểm tra mẫu giấy + hướng dẫn khách". In ở văn phòng hoặc trang `/f/{locale}/visits/print?date=hôm-nay` trên mobile của bạn.
 
 ### 5.2 Nút "Bắt đầu lượt thăm"
 
