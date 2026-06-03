@@ -11,13 +11,25 @@
 #   4. `docker compose restart caddy`.
 
 {
-	# Tell Caddy how to reach itself for the internal CA bootstrap.
-	# Default is fine; left here as a hook for future tuning.
 	admin off
+
+	# Force every site here to use Caddy's local CA. Without this, when a
+	# site is declared with no explicit hostname (`:443`) Caddy's
+	# auto-https policy reaches for public ACME and fails for raw-IP
+	# staging — the TLS handshake then aborts with `internal_error`.
+	local_certs
+
+	# Browsers + libraries don't send SNI when the URL is a raw IP literal
+	# (per RFC 6066). Without a hint, Caddy can't pick which cert to serve
+	# and the handshake fails with `internal_error`. Default unknown SNI
+	# to the staging IP so direct `https://103.27.60.70/...` works.
+	default_sni 103.27.60.70
 }
 
 # IP-bound HTTPS. Caddy issues + stores a local cert under /data on first run.
-:443 {
+# Sites must list every name the server should answer for so the local CA
+# can mint a cert whose SAN matches the connecting host.
+103.27.60.70, localhost {
 	tls internal
 
 	# Trust forwarded-for / proto headers from this proxy itself only.
