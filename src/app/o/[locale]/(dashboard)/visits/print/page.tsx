@@ -17,7 +17,7 @@
  * iframe and the print job inherits the wrong scale.
  */
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useApiQuery } from "@/lib/api/hooks";
@@ -30,6 +30,16 @@ function todayYmd(): string {
 }
 
 export default function VisitsPrintPage() {
+  // See `/o/[locale]/(dashboard)/visits/page.tsx` for the same pattern —
+  // useSearchParams() requires a Suspense boundary for static prerender.
+  return (
+    <Suspense fallback={<div className="text-sm text-[#737373]">Loading…</div>}>
+      <VisitsPrintPageInner />
+    </Suspense>
+  );
+}
+
+function VisitsPrintPageInner() {
   const t = useTranslations("visitsPrint");
   const search = useSearchParams();
   const [date, setDate] = useState<string>(search?.get("date") ?? todayYmd());

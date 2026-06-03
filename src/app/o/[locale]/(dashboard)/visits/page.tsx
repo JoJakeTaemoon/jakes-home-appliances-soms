@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -49,6 +49,17 @@ function urlForView(v: ViewMode): string {
 }
 
 export default function VisitsListPage() {
+  // useSearchParams() forces this route into client rendering. Next.js
+  // requires it to live under a Suspense boundary so the static
+  // prerender (used for build-time HTML emission) can bail out cleanly.
+  return (
+    <Suspense fallback={<div className="text-sm text-[#737373]">Loading…</div>}>
+      <VisitsListPageInner />
+    </Suspense>
+  );
+}
+
+function VisitsListPageInner() {
   const t = useTranslations("visits");
   const router = useRouter();
   const searchParams = useSearchParams();
