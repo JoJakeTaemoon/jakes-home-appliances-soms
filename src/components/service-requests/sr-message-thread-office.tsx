@@ -44,6 +44,17 @@ export function SrMessageThreadOffice({
   const messages = query.data?.messages ?? [];
   const qc = useQueryClient();
 
+  // Both the explicit mark-read button and the implicit
+  // mark-read-on-reply path bump lastOfficeReadAt on the server, so the
+  // client just needs to (a) refetch the parent SR so the local
+  // hasUnreadCustomerMessage flips, and (b) invalidate the sidebar
+  // unread-count query so the nav badge clears without waiting for the
+  // 60s poll. Centralised here so reply + mark-read stay in sync.
+  const clearUnreadClientState = async () => {
+    qc.invalidateQueries({ queryKey: ["/api/service-requests/unread-count"] });
+    if (onMarkedRead) await onMarkedRead();
+  };
+
   const send = async () => {
     const trimmed = body.trim();
     if (!trimmed) return;
@@ -61,6 +72,10 @@ export function SrMessageThreadOffice({
         qc.setQueryData([queryUrl], { messages: env.data.messages });
       }
       setBody("");
+      // Server-side: the /messages POST also stamps lastOfficeReadAt,
+      // so a reply implicitly marks the thread read. Mirror that on
+      // the client so the unread badge / red dot disappear right away.
+      await clearUnreadClientState();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -73,7 +88,7 @@ export function SrMessageThreadOffice({
     setError(null);
     try {
       await api.post(`/api/service-requests/${srId}/mark-read`, {});
-      if (onMarkedRead) await onMarkedRead();
+      await clearUnreadClientState();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
