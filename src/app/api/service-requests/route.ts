@@ -36,7 +36,7 @@ export const GET = defineQuery({
   query: listServiceRequestQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, state, type, customerId, isPaid, sortBy, sortDir, page, pageSize } = query;
+    const { q, state, type, customerId, isPaid, unread, sortBy, sortDir, page, pageSize } = query;
     const orderBy = resolveOrderBy(
       { sortBy, sortDir },
       SR_SORT_MAP,
@@ -54,6 +54,47 @@ export const GET = defineQuery({
         { customer: { name: { contains: q, mode: "insensitive" } } },
         { customer: { code: { contains: q, mode: "insensitive" } } },
       ];
+    }
+
+    // Unread tab: pre-compute the set of SR ids that have at least one
+    // customer SR_MESSAGE newer than the team's lastOfficeReadAt, then
+    // constrain the main query with where.id IN [...]. Done in two
+    // steps to keep the listing logic plain Prisma and avoid mixing
+    // raw SQL with the existing where builder.
+    if (unread === true) {
+      const groups = await prisma.auditLog.groupBy({
+        by: ["entityId"],
+        where: {
+          action: "SR_MESSAGE",
+          actorType: "CUSTOMER",
+          entityType: "ServiceRequest",
+        },
+        _max: { at: true },
+      });
+      if (groups.length === 0) {
+        return { rows: [], pagination: { page, limit: pageSize, total: 0 } };
+      }
+      const entityIds = groups
+        .map((g) => g.entityId)
+        .filter((id): id is string => id !== null);
+      const srRows = await prisma.serviceRequest.findMany({
+        where: { id: { in: entityIds } },
+        select: { id: true, lastOfficeReadAt: true },
+      });
+      const lastReadById = new Map<string, Date | null>(
+        srRows.map((s) => [s.id, s.lastOfficeReadAt]),
+      );
+      const unreadIds: string[] = [];
+      for (const g of groups) {
+        if (!g.entityId || !g._max.at) continue;
+        const lastRead = lastReadById.get(g.entityId);
+        if (lastRead === undefined) continue;
+        if (lastRead === null || lastRead < g._max.at) unreadIds.push(g.entityId);
+      }
+      if (unreadIds.length === 0) {
+        return { rows: [], pagination: { page, limit: pageSize, total: 0 } };
+      }
+      where.id = { in: unreadIds };
     }
 
     const skip = (page - 1) * pageSize;
