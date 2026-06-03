@@ -257,8 +257,8 @@ export default function ServiceRequestDetailPage() {
     : [];
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <div className="space-y-4 lg:col-span-2">
+    <div className="mx-auto w-full max-w-4xl">
+      <div className="space-y-4">
         <button
           type="button"
           onClick={() => router.push("/o/service-requests")}
@@ -366,6 +366,28 @@ export default function ServiceRequestDetailPage() {
           </p>
         </section>
 
+        {data.visit && (
+          <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
+            <h2 className="text-sm font-semibold text-[#002A4D]">
+              {t("linkedVisit")}
+            </h2>
+            <div className="mt-2 space-y-1 text-sm">
+              <div>{formatDateTime(data.visit.scheduledFor, locale)}</div>
+              {data.visit.leadTechnician && (
+                <div className="text-xs text-[#737373]">
+                  {data.visit.leadTechnician.username}
+                </div>
+              )}
+              <Link
+                href={`/o/visits/${data.visit.id}`}
+                className="block text-xs text-[var(--brand-blue-700)] underline-offset-2 hover:underline"
+              >
+                {t("actionViewVisit")}
+              </Link>
+            </div>
+          </section>
+        )}
+
         {attachments.length > 0 && (
           <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
             <h2 className="text-sm font-semibold text-[#002A4D]">
@@ -425,29 +447,6 @@ export default function ServiceRequestDetailPage() {
         />
       </div>
 
-      <aside className="space-y-3">
-        {data.visit && (
-          <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
-            <h2 className="text-sm font-semibold text-[#002A4D]">
-              {t("linkedVisit")}
-            </h2>
-            <div className="mt-2 space-y-1 text-sm">
-              <div>{formatDateTime(data.visit.scheduledFor, locale)}</div>
-              {data.visit.leadTechnician && (
-                <div className="text-xs text-[#737373]">
-                  {data.visit.leadTechnician.username}
-                </div>
-              )}
-              <Link
-                href={`/o/visits/${data.visit.id}`}
-                className="block text-xs text-[var(--brand-blue-700)] underline-offset-2 hover:underline"
-              >
-                {t("actionViewVisit")}
-              </Link>
-            </div>
-          </section>
-        )}
-      </aside>
 
       {/* Approve modal */}
       <Modal
