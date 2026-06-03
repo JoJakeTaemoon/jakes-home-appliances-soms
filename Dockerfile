@@ -66,9 +66,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Prisma client + migrations + seed are needed at runtime for
 # `npx prisma migrate deploy` and `npx prisma db seed`. The standalone
 # output ships the @prisma/client module but not the migrations.
+#
+# Prisma v7 (with `output = "../src/generated/prisma"` in schema.prisma):
+#   - generated client lives at `src/generated/prisma/`, NOT
+#     `node_modules/.prisma` — that directory is never created
+#   - `@prisma/client` package is still present (and listed in deps) so
+#     it ships; the standalone tracer covers app-side usage anyway
+#   - seed.ts uses a relative import `../src/generated/prisma/client`
+#     so the generated directory must exist on disk at runtime
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 # tsx is required to execute prisma/seed.ts (see prisma.seed in package.json)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/tsx ./node_modules/tsx
