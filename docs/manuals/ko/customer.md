@@ -188,7 +188,7 @@ flowchart TB
 
 핸드폰 브라우저에서 위 주소로 들어가시면:
 
-![로그인 화면](../screenshots/customer/01-login.png)
+![로그인 화면](../screenshots/ko/customer/01-login.png)
 
 | 입력란 | 입력 내용 |
 |---|---|
@@ -228,7 +228,7 @@ flowchart TB
 
 로그인하면 가장 먼저 보이는 화면입니다.
 
-![홈 화면](../screenshots/customer/02-home.png)
+![홈 화면](../screenshots/ko/customer/02-home.png)
 
 ### 5.1 화면 구성
 
@@ -289,7 +289,7 @@ flowchart TB
 
 화면 하단 **장비** 탭.
 
-![장비 목록](../screenshots/customer/03-equipment.png)
+![장비 목록](../screenshots/ko/customer/03-equipment.png)
 
 ### 6.1 화면 구성
 
@@ -347,7 +347,7 @@ flowchart TB
 
 화면 하단 **방문** 탭.
 
-![방문 기록](../screenshots/customer/04-visits.png)
+![방문 기록](../screenshots/ko/customer/04-visits.png)
 
 ### 7.1 탭 구분
 
@@ -411,7 +411,7 @@ flowchart TB
 
 화면 하단 **요청** 탭.
 
-![서비스 요청](../screenshots/customer/05-requests.png)
+![서비스 요청](../screenshots/ko/customer/05-requests.png)
 
 ### 8.1 어떤 요청을 보낼 수 있나요?
 
@@ -427,7 +427,7 @@ flowchart TB
 
 ### 8.2 새 요청 보내기
 
-![새 요청](../screenshots/customer/06-requests-new.png)
+![새 요청](../screenshots/ko/customer/06-requests-new.png)
 
 #### 단계 1: 요청 종류 선택
 
@@ -517,7 +517,7 @@ sequenceDiagram
 
 화면 하단 **결제** 탭.
 
-![결제 내역](../screenshots/customer/08-payments.png)
+![결제 내역](../screenshots/ko/customer/08-payments.png)
 
 ### 9.1 화면 구성
 
@@ -677,7 +677,7 @@ Seoul Aqua가 세금계산서를 발행하면:
 
 화면 하단 **내 정보** → **담당자** 탭
 
-![담당자 관리](../screenshots/customer/09-contacts.png)
+![담당자 관리](../screenshots/ko/customer/09-contacts.png)
 
 화면에 본인 회사/가정의 모든 담당자가 표시됩니다:
 
@@ -753,7 +753,7 @@ Seoul Aqua가 세금계산서를 발행하면:
 
 화면 하단 **내 정보** 탭.
 
-![내 정보](../screenshots/customer/10-settings.png)
+![내 정보](../screenshots/ko/customer/10-settings.png)
 
 ### 13.1 표시되는 정보
 

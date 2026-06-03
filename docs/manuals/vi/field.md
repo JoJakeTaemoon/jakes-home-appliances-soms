@@ -126,7 +126,7 @@ flowchart TB
 
 ### 3.1 Màn hình đăng nhập
 
-![Đăng nhập](../screenshots/field/01-login.png)
+![Đăng nhập](../screenshots/vi/field/01-login.png)
 
 | Trường nhập | Nhập |
 |---|---|
@@ -172,7 +172,7 @@ Sau khi đăng nhập màn hình "Hôm nay" tự hiện ra. Đây là màn hình
 
 ## Chương 4. Màn hình "Hôm nay" — Việc hôm nay phải làm
 
-![Màn hình Hôm nay](../screenshots/field/02-today.png)
+![Màn hình Hôm nay](../screenshots/vi/field/02-today.png)
 
 ### 4.1 Cấu trúc màn hình
 
@@ -234,7 +234,7 @@ Nếu phát sinh lượt thăm khẩn cấp, văn phòng sẽ xếp lịch mới
 
 Chạm vào thẻ lượt thăm → Hiện các thông tin sau:
 
-![Chi tiết lượt thăm — Xem trước giấy tờ cần ký](../screenshots/field/05-visit-detail-signature-docs.png)
+![Chi tiết lượt thăm — Xem trước giấy tờ cần ký](../screenshots/vi/field/05-visit-detail-signature-docs.png)
 
 | Hạng mục | Mô tả |
 |---|---|
@@ -725,7 +725,7 @@ Giờ là lúc **kiểm tra tiền mặt bạn đã nhận**.
 
 Click **tab "Thông tin của tôi"** dưới màn hình:
 
-![Thông tin của tôi](../screenshots/field/04-profile.png)
+![Thông tin của tôi](../screenshots/vi/field/04-profile.png)
 
 Hiển thị:
 

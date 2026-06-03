@@ -30,7 +30,7 @@ Same content rendered as pageless PDFs (single long page per document, optimized
 
 ## Screenshots
 
-UI screenshots used in the manuals live under [`screenshots/`](screenshots/) — one folder per user group (`office/`, `field/`, `customer/`). The screenshot pipeline is in `scripts/manuals/capture-screenshots.ts` and runs against a dev server with seeded data.
+UI screenshots used in the manuals live under [`screenshots/`](screenshots/), organized **per locale × per user group** (`{ko,vi}/{office,field,customer}/`). Each language manual references its own locale-specific PNGs so the screenshots match the manual's UI language. The screenshot pipeline is in `scripts/manuals/capture-screenshots.ts` and runs each user group twice (once per locale) against a dev server with seeded data. The Phase 6 bulk-print shot (`office/19-visits-print.png`) is captured with a real `date` + `technicianId` query string resolved at runtime so the preview shows a populated per-tech bundle.
 
 ## Structure
 
