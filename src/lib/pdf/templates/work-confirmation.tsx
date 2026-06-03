@@ -6,6 +6,7 @@
  * a small thumbnail (file-based, served by the same uploads directory).
  */
 
+import path from "node:path";
 import {
   Document,
   Page,
@@ -16,8 +17,25 @@ import {
 } from "@react-pdf/renderer";
 import { Bi } from "./shared";
 import { splitLangPair, type PdfLangPair } from "@/lib/pdf/types";
+import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
+
+const WATERMARK_LOGO_PATH = path.join(
+  process.cwd(),
+  "public",
+  "logo",
+  "seoul-aqua-logo.jpg",
+);
 
 export type WorkConfLocale = "ko" | "vi" | "en";
+
+// Inline Hangul detector — picks Noto Sans KR for KO data values; default
+// Be Vietnam Pro handles VI diacritics + Latin out of the box.
+const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
+function autoFont(s: string | null | undefined) {
+  return s && HANGUL_RE.test(s)
+    ? { fontFamily: PDF_FONT_FAMILY.ko }
+    : { fontFamily: PDF_DEFAULT_FAMILY };
+}
 
 export interface WorkConfPhoto {
   storageKey: string; // relative path under uploads/
@@ -57,45 +75,49 @@ export interface WorkConfPayload {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 36, fontSize: 9.5, fontFamily: "Helvetica", color: "#111" },
+  page: { padding: 22, fontSize: 9.5, fontFamily: PDF_DEFAULT_FAMILY, color: "#111" },
   brand: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "baseline",
     justifyContent: "space-between",
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderBottomColor: "#0C6BA8",
-    paddingBottom: 8,
-    marginBottom: 12,
+    paddingBottom: 3,
+    marginBottom: 5,
   },
-  brandTitle: { fontSize: 14, fontWeight: "bold", color: "#0C6BA8" },
-  brandLegal: { fontSize: 8, color: "#666" },
+  brandTitle: { fontSize: 12, fontWeight: "bold", color: "#0C6BA8" },
+  brandLegal: { fontSize: 7, color: "#666" },
   docTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    marginTop: 4,
+    marginTop: 2,
     textAlign: "center",
   },
   docTitleSecondary: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "normal",
     color: "#555",
-    marginBottom: 14,
+    marginBottom: 8,
     textAlign: "center",
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "bold",
     color: "#0C6BA8",
-    marginTop: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
-    paddingBottom: 2,
   },
   sectionTitleSecondary: {
-    fontSize: 8.5,
+    fontSize: 8,
     fontWeight: "normal",
     color: "#6AA4C8",
-    marginBottom: 6,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e5e5",
+    paddingBottom: 1,
+    marginBottom: 3,
   },
   card: {
     borderWidth: 1,
@@ -150,6 +172,23 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#888",
   },
+
+  watermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.07,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  watermarkImage: { width: 260, height: 260, objectFit: "contain" },
+
+  // 2-column "visit + customer" row + wide work-block layout.
+  topRow: { flexDirection: "row", gap: 8, marginBottom: 6 },
+  topCol: { flex: 1 },
+  wideBlock: { marginBottom: 6 },
 });
 
 interface LabelDict {
@@ -294,6 +333,234 @@ function formatVnd(value: number | null | undefined): string {
   return `${n < 0 ? "-" : ""}${withDots} VND`;
 }
 
+/**
+ * One A4 sheet's worth of work-confirmation content. Two sheets per
+ * visit (customer + company copies) — both identical, no "Bản ... giữ"
+ * label per Phase-6 customer feedback.
+ *
+ * Layout: 2-column "Visit info | Customer info" row at top, then the
+ * equipment card (full width), then the wide work-performed +
+ * parts-replaced blocks where the technician hand-writes the bulk of
+ * the slip.
+ */
+function SheetContent({
+  payload,
+  P,
+  S,
+  showSite,
+  noneLine,
+  biLabel,
+  section,
+}: Readonly<{
+  payload: WorkConfPayload;
+  P: LabelDict;
+  S: LabelDict;
+  showSite: boolean;
+  noneLine: string;
+  biLabel: (key: keyof LabelDict) => React.ReactElement;
+  section: (k: keyof LabelDict) => React.ReactElement;
+}>) {
+  return (
+    <>
+      <View style={styles.watermark}>
+        <Image src={WATERMARK_LOGO_PATH} style={styles.watermarkImage} />
+      </View>
+      <View style={styles.brand}>
+        <View style={{ flexDirection: "row", alignItems: "baseline", flex: 1 }}>
+          <Text style={styles.brandTitle}>SEOUL AQUA </Text>
+          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)</Text>
+        </View>
+        <Text style={[{ fontSize: 9, color: "#666" }, autoFont(`${P.visitNo}${S.visitNo}`)]}>
+          {P.visitNo} / {S.visitNo}:{" "}
+          <Text style={{ fontSize: 10, fontWeight: "bold", color: "#111" }}>
+            {payload.visitNumber}
+          </Text>
+        </Text>
+      </View>
+
+      <Text style={[styles.docTitle, autoFont(P.title)]}>{P.title}</Text>
+      <Text style={[styles.docTitleSecondary, autoFont(S.title)]}>{S.title}</Text>
+
+      {/* 2-column row: visit info | customer info */}
+      <View style={styles.topRow}>
+        <View style={styles.topCol}>
+          {section("visit")}
+          <View style={styles.card}>
+            <View style={styles.row}>
+              {biLabel("visitType")}
+              <Text style={styles.value}>{payload.visitType}</Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("scheduledFor")}
+              <Text style={styles.value}>{formatDate(payload.scheduledFor)}</Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("startedAt")}
+              <Text style={styles.value}>{formatDate(payload.startedAt)}</Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("completedAt")}
+              <Text style={styles.value}>{formatDate(payload.completedAt)}</Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("technician")}
+              <Text style={[styles.value, autoFont(payload.technicianName)]}>
+                {payload.technicianName}
+              </Text>
+            </View>
+            {payload.collaboratorNames.length > 0 && (
+              <View style={styles.row}>
+                {biLabel("collaborators")}
+                <Text style={[styles.value, autoFont(payload.collaboratorNames.join(", "))]}>
+                  {payload.collaboratorNames.join(", ")}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <View style={styles.topCol}>
+          {section("customer")}
+          <View style={styles.card}>
+            <View style={styles.row}>
+              {biLabel("customer")}
+              <Text style={[styles.value, autoFont(payload.customerName)]}>
+                {payload.customerName}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("customerCode")}
+              <Text style={styles.value}>{payload.customerCode}</Text>
+            </View>
+            {payload.customerType === "B2B" && payload.taxCode && (
+              <View style={styles.row}>
+                {biLabel("taxCode")}
+                <Text style={styles.value}>{payload.taxCode}</Text>
+              </View>
+            )}
+            {showSite && payload.siteName && (
+              <View style={styles.row}>
+                {biLabel("site")}
+                <Text style={[styles.value, autoFont(payload.siteName)]}>
+                  {payload.siteName}
+                </Text>
+              </View>
+            )}
+            <View style={styles.row}>
+              {biLabel("address")}
+              <Text style={[styles.value, autoFont(payload.address)]}>
+                {payload.address || "—"}
+              </Text>
+            </View>
+            {payload.contactName && (
+              <View style={styles.row}>
+                {biLabel("contact")}
+                <Text style={[styles.value, autoFont(payload.contactName)]}>
+                  {payload.contactName}
+                  {payload.contactPhone ? ` · ${payload.contactPhone}` : ""}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      {payload.equipment && (
+        <View style={styles.wideBlock}>
+          {section("equipment")}
+          <View style={styles.card}>
+            <View style={styles.row}>
+              {biLabel("model")}
+              <Text style={[styles.value, autoFont(payload.equipment.modelName)]}>
+                {payload.equipment.modelCode} — {payload.equipment.modelName}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              {biLabel("serial")}
+              <Text style={styles.value}>
+                {payload.equipment.serialNumber ?? "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Wide free-text canvas — tech hand-writes the work here. */}
+      <View style={styles.wideBlock}>
+        {section("findings")}
+        <View style={[styles.card, { minHeight: 110 }]}>
+          <Text style={[styles.findings, autoFont(payload.findings || noneLine)]}>
+            {payload.findings || noneLine}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.wideBlock}>
+        {section("partsReplaced")}
+        <View style={[styles.card, { minHeight: 60 }]}>
+          {payload.partsReplaced.length === 0 ? (
+            <Text style={[styles.value, autoFont(noneLine)]}>{noneLine}</Text>
+          ) : (
+            <View style={styles.chipRow}>
+              {payload.partsReplaced.map((p, i) => (
+                <Text key={`${p}-${i}`} style={[styles.chip, autoFont(p)]}>
+                  {p}
+                </Text>
+              ))}
+            </View>
+          )}
+        </View>
+      </View>
+
+      {payload.photos.length > 0 && (
+        <>
+          {section("photos")}
+          <View style={styles.photoGrid}>
+            {payload.photos.slice(0, 12).map((p, i) => (
+              <View key={`${p.storageKey}-${i}`} style={styles.photoBox}>
+                <Image src={p.absolutePath} style={styles.photoImg} />
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {payload.collectedAmount !== null &&
+        payload.collectedAmount !== undefined && (
+          <>
+            {section("payment")}
+            <View style={styles.card}>
+              <View style={styles.row}>
+                {biLabel("payment")}
+                <Text style={styles.value}>
+                  {formatVnd(payload.collectedAmount)}
+                </Text>
+              </View>
+              {payload.paymentMethod && (
+                <View style={styles.row}>
+                  {biLabel("paymentMethod")}
+                  <Text style={styles.value}>{payload.paymentMethod}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+      <View style={{ flexGrow: 1 }} />
+      {section("signature")}
+      {payload.signaturePhoto ? (
+        <View style={styles.signatureBox}>
+          <Image
+            src={payload.signaturePhoto.absolutePath}
+            style={styles.signatureImg}
+          />
+        </View>
+      ) : (
+        <View style={{ width: 200, height: 70, borderWidth: 1, borderColor: "#111", marginTop: 4 }} />
+      )}
+    </>
+  );
+}
+
 export function WorkConfirmation({ payload }: Readonly<{ payload: WorkConfPayload }>) {
   const { primary, secondary } = splitLangPair(payload.langPair);
   const P = LABELS[primary];
@@ -303,199 +570,35 @@ export function WorkConfirmation({ payload }: Readonly<{ payload: WorkConfPayloa
     <Bi primary={P[key]} secondary={S[key]} style={styles.label} subStyle={styles.labelSecondary} />
   );
   const section = (k: keyof LabelDict) => (
-    <>
-      <Text style={styles.sectionTitle}>{P[k]}</Text>
-      <Text style={styles.sectionTitleSecondary}>{S[k]}</Text>
-    </>
+    <View style={styles.sectionTitleRow}>
+      <Text style={[styles.sectionTitle, autoFont(P[k])]}>{P[k]}</Text>
+      <Text style={[styles.sectionTitleSecondary, autoFont(S[k])]}> / {S[k]}</Text>
+    </View>
   );
+  const noneLine = `${P.none} / ${S.none}`;
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
-        <View style={styles.brand}>
-          <View>
-            <Text style={styles.brandTitle}>SEOUL AQUA</Text>
-            <Text style={styles.brandLegal}>
-              CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)
-            </Text>
-          </View>
-          <View style={{ textAlign: "right" }}>
-            <Text style={{ fontSize: 9, color: "#666" }}>{P.visitNo} / {S.visitNo}</Text>
-            <Text style={{ fontSize: 11, fontWeight: "bold" }}>
-              {payload.visitNumber}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.docTitle}>{P.title}</Text>
-        <Text style={styles.docTitleSecondary}>{S.title}</Text>
-
-        {section("visit")}
-        <View style={styles.card}>
-          <View style={styles.row}>
-            {biLabel("visitType")}
-            <Text style={styles.value}>{payload.visitType}</Text>
-          </View>
-          <View style={styles.row}>
-            {biLabel("scheduledFor")}
-            <Text style={styles.value}>{formatDate(payload.scheduledFor)}</Text>
-          </View>
-          <View style={styles.row}>
-            {biLabel("startedAt")}
-            <Text style={styles.value}>{formatDate(payload.startedAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            {biLabel("completedAt")}
-            <Text style={styles.value}>{formatDate(payload.completedAt)}</Text>
-          </View>
-          <View style={styles.row}>
-            {biLabel("technician")}
-            <Text style={styles.value}>{payload.technicianName}</Text>
-          </View>
-          {payload.collaboratorNames.length > 0 && (
-            <View style={styles.row}>
-              {biLabel("collaborators")}
-              <Text style={styles.value}>
-                {payload.collaboratorNames.join(", ")}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {section("customer")}
-        <View style={styles.card}>
-          <View style={styles.row}>
-            {biLabel("customer")}
-            <Text style={styles.value}>{payload.customerName}</Text>
-          </View>
-          <View style={styles.row}>
-            {biLabel("customerCode")}
-            <Text style={styles.value}>{payload.customerCode}</Text>
-          </View>
-          {payload.customerType === "B2B" && payload.taxCode && (
-            <View style={styles.row}>
-              {biLabel("taxCode")}
-              <Text style={styles.value}>{payload.taxCode}</Text>
-            </View>
-          )}
-          {showSite && payload.siteName && (
-            <View style={styles.row}>
-              {biLabel("site")}
-              <Text style={styles.value}>{payload.siteName}</Text>
-            </View>
-          )}
-          <View style={styles.row}>
-            {biLabel("address")}
-            <Text style={styles.value}>{payload.address || "—"}</Text>
-          </View>
-          {payload.contactName && (
-            <View style={styles.row}>
-              {biLabel("contact")}
-              <Text style={styles.value}>
-                {payload.contactName}
-                {payload.contactPhone ? ` · ${payload.contactPhone}` : ""}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {payload.equipment && (
-          <>
-            {section("equipment")}
-            <View style={styles.card}>
-              <View style={styles.row}>
-                {biLabel("model")}
-                <Text style={styles.value}>
-                  {payload.equipment.modelCode} — {payload.equipment.modelName}
-                </Text>
-              </View>
-              <View style={styles.row}>
-                {biLabel("serial")}
-                <Text style={styles.value}>
-                  {payload.equipment.serialNumber ?? "—"}
-                </Text>
-              </View>
-            </View>
-          </>
-        )}
-
-        {section("findings")}
-        <View style={styles.card}>
-          <Text style={styles.findings}>{payload.findings || `${P.none} / ${S.none}`}</Text>
-        </View>
-
-        {section("partsReplaced")}
-        <View style={styles.card}>
-          {payload.partsReplaced.length === 0 ? (
-            <Text style={styles.value}>{P.none} / {S.none}</Text>
-          ) : (
-            <View style={styles.chipRow}>
-              {payload.partsReplaced.map((p, i) => (
-                <Text key={`${p}-${i}`} style={styles.chip}>
-                  {p}
-                </Text>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {payload.photos.length > 0 && (
-          <>
-            {section("photos")}
-            <View style={styles.photoGrid}>
-              {payload.photos.slice(0, 12).map((p, i) => (
-                <View key={`${p.storageKey}-${i}`} style={styles.photoBox}>
-                  <Image src={p.absolutePath} style={styles.photoImg} />
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {payload.collectedAmount !== null &&
-          payload.collectedAmount !== undefined && (
-            <>
-              {section("payment")}
-              <View style={styles.card}>
-                <View style={styles.row}>
-                  {biLabel("payment")}
-                  <Text style={styles.value}>
-                    {formatVnd(payload.collectedAmount)}
-                  </Text>
-                </View>
-                {payload.paymentMethod && (
-                  <View style={styles.row}>
-                    {biLabel("paymentMethod")}
-                    <Text style={styles.value}>{payload.paymentMethod}</Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-
-        {section("signature")}
-        {payload.signaturePhoto ? (
-          <View style={styles.signatureBox}>
-            <Image
-              src={payload.signaturePhoto.absolutePath}
-              style={styles.signatureImg}
-            />
-          </View>
-        ) : (
-          <Text style={styles.value}>{P.none} / {S.none}</Text>
-        )}
-
-        <View style={styles.footer} fixed>
-          <Text>
-            {P.generated}: {formatDate(payload.generatedAt)}
-          </Text>
-          <Text
-            render={({ pageNumber, totalPages }) =>
-              P.pageOf
-                .replace("{page}", String(pageNumber))
-                .replace("{total}", String(totalPages))
-            }
-          />
-        </View>
+        <SheetContent
+          payload={payload}
+          P={P}
+          S={S}
+          showSite={showSite}
+          noneLine={noneLine}
+          biLabel={biLabel}
+          section={section}
+        />
+      </Page>
+      <Page size="A4" style={styles.page} wrap>
+        <SheetContent
+          payload={payload}
+          P={P}
+          S={S}
+          showSite={showSite}
+          noneLine={noneLine}
+          biLabel={biLabel}
+          section={section}
+        />
       </Page>
     </Document>
   );
