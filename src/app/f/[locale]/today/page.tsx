@@ -29,6 +29,7 @@ interface VisitCard {
     serialNumber: string | null;
     model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
   } | null;
+  signatureDocs: string[];
 }
 
 export default function MobileTodayPage() {
@@ -83,6 +84,7 @@ function VisitSection({
   tone: "info" | "warning";
   locale: string;
 }>) {
+  const t = useTranslations("mobile");
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-medium uppercase tracking-wide text-[#737373]">{tag}</h2>
@@ -113,6 +115,18 @@ function VisitSection({
                   {pickModelName(v.equipment.model, locale)}
                   {v.equipment.serialNumber ? ` · ${v.equipment.serialNumber}` : ""}
                 </p>
+              )}
+              {v.signatureDocs.length > 0 && (
+                <div className="mt-2 rounded-lg border border-[#fcd34d] bg-[#fffbeb] px-2 py-1.5 text-xs text-[#92400e]">
+                  <span className="font-semibold">{t("signRequired")}: </span>
+                  {v.signatureDocs
+                    .map((k) =>
+                      t(
+                        `signatureDocLabels.${k}` as "signatureDocLabels.WORK_CONFIRMATION",
+                      ),
+                    )
+                    .join(", ")}
+                </div>
               )}
             </Link>
           </li>

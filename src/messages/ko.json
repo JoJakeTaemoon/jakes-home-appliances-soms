@@ -99,6 +99,8 @@
     "equipment": "장비",
     "contracts": "계약",
     "visits": "방문",
+    "scheduleBoard": "오늘의 배정",
+    "visitsPrint": "일괄 인쇄",
     "payments": "수금",
     "taxInvoices": "세금계산서",
     "serviceRequests": "서비스 요청",
@@ -116,6 +118,34 @@
     "reports": "보고서",
     "auditLog": "감사 로그",
     "unreadMessageBadge": "확인하지 않은 고객 메시지"
+  },
+  "visitsPrint": {
+    "title": "일괄 인쇄 (지참 서류)",
+    "subtitle": "날짜 + 기사를 선택하면 그 기사의 모든 방문 서류를 한 번에 인쇄합니다.",
+    "pickTechnician": "기사 선택...",
+    "pickPrompt": "날짜와 기사를 선택해주세요.",
+    "loading": "불러오는 중...",
+    "empty": "해당 날짜에 인쇄할 방문이 없습니다.",
+    "ready": "총 {n}개 방문 준비 완료.",
+    "installCount": "설치 {n}건 — 계약서 자동 포함",
+    "openPrintTab": "PDF 새 탭에서 인쇄",
+    "printBtn": "인쇄"
+  },
+  "scheduleBoard": {
+    "title": "오늘의 배정",
+    "subtitle": "미배정 {unassigned}건 · 오늘 배정 {assigned}건",
+    "prev": "이전",
+    "today": "오늘",
+    "next": "다음",
+    "loading": "불러오는 중...",
+    "unassignedTitle": "미배정 ✱ {count}",
+    "noUnassigned": "미배정 방문이 없습니다.",
+    "noVisits": "오늘 일정 없음",
+    "noTechnicians": "활성 기사가 없습니다.",
+    "loadBadge": "{n}건",
+    "assign": "배정",
+    "close": "닫기",
+    "printBtn": "인쇄"
   },
   "dashboard": {
     "greeting": "대시보드",
@@ -681,6 +711,9 @@
     "state": "상태",
     "viewCalendar": "캘린더",
     "viewList": "목록",
+    "viewUnassigned": "미배정",
+    "assign": "배정",
+    "close": "닫기",
     "calendarPrev": "이전 달",
     "calendarNext": "다음 달",
     "calendarToday": "오늘",
@@ -756,6 +789,27 @@
       "photos": "사진",
       "activity": "활동",
       "payments": "결제"
+    },
+    "documents": {
+      "title": "지참 서류",
+      "suggested": "추천 서류",
+      "issue": "발급",
+      "reissue": "재발급",
+      "download": "다운로드",
+      "addOther": "다른 종류 추가 발급",
+      "issuedSoFar": "발급된 서류",
+      "empty": "아직 발급된 서류가 없습니다.",
+      "gateUnassigned": "기사 배정(SCHEDULED) 후부터 서류 발급이 가능합니다.",
+      "gateCancelled": "취소된 방문은 서류를 발급할 수 없습니다.",
+      "gateFailed": "방문 실패(No-show) 상태에서는 서류를 발급할 수 없습니다.",
+      "kindLabels": {
+        "DELIVERY_RECEIPT": "장비 인수증 (B2C 임대)",
+        "SALE_RECEIPT_B2C": "판매 영수증 (B2C)",
+        "DELIVERY_SLIP_B2B": "출고서 (B2B Mẫu 02-VT)",
+        "PERIODIC_CHECK_B2C": "정기 점검표 (B2C)",
+        "PERIODIC_CHECK_B2B": "정기 점검 확인서 (B2B)",
+        "WORK_CONFIRMATION": "작업 확인서"
+      }
     }
   },
   "serviceRequests": {
@@ -899,6 +953,18 @@
     "upcomingTitle": "예정된 방문",
     "noVisitsToday": "오늘 방문 일정이 없습니다.",
     "noVisitsUpcoming": "향후 7일간 일정이 없습니다.",
+    "signRequired": "서명 필요 서류",
+    "docPreviewOpen": "새 탭",
+    "docSignersHint": "고객 + 기사 양쪽 서명 받으세요. 누락 시 사무실로 호출.",
+    "signatureDocLabels": {
+      "DELIVERY_RECEIPT": "장비 인수증 (임대 설치 + 인수 확인)",
+      "SALE_RECEIPT_B2C": "판매 영수증 (B2C)",
+      "DELIVERY_SLIP_B2B": "출고서 (B2B Mẫu 02-VT)",
+      "PERIODIC_CHECK_B2C": "정기 점검표 (B2C)",
+      "PERIODIC_CHECK_B2B": "정기 점검 확인서 (B2B)",
+      "WORK_CONFIRMATION": "작업 확인서",
+      "CONTRACT": "계약서"
+    },
     "lead": "주관",
     "shared": "협업",
     "callHq": "본사로 전화",

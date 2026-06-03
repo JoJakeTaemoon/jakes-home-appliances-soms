@@ -10,10 +10,18 @@
  * taxCode + reference 컬럼은 영수증에서 제거 (사용자 요청 2026-06-01).
  */
 
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import path from "node:path";
+import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
 import { Bi } from "./shared";
 import { splitLangPair, type PdfLangPair } from "@/lib/pdf/types";
 import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
+
+const WATERMARK_LOGO_PATH = path.join(
+  process.cwd(),
+  "public",
+  "logo",
+  "seoul-aqua-logo.jpg",
+);
 
 // Inline Hangul detector — picks Noto Sans KR for KO data values; default
 // Be Vietnam Pro handles VI diacritics + Latin out of the box.
@@ -52,7 +60,7 @@ export interface ReceiptPayload {
   generatedAt: Date;
 }
 
-const SHEET_PAD = 24;
+const SHEET_PAD = 16;
 const COPY_GAP = 12; // 두 부 사이 절취 영역 높이
 
 const styles = StyleSheet.create({
@@ -67,8 +75,9 @@ const styles = StyleSheet.create({
   copy: {
     borderWidth: 1,
     borderColor: "#d4d4d4",
-    borderRadius: 4,
-    padding: 10,
+    borderRadius: 3,
+    padding: 7,
+    position: "relative",
   },
   brand: {
     flexDirection: "row",
@@ -76,11 +85,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "#0C6BA8",
-    paddingBottom: 3,
+    paddingBottom: 2,
     marginBottom: 4,
   },
-  brandTitle: { fontSize: 12, fontWeight: "bold", color: "#0C6BA8" },
-  brandLegal: { fontSize: 7, color: "#666" },
+  brandTitle: { fontSize: 11, fontWeight: "bold", color: "#0C6BA8" },
+  brandLegal: { fontSize: 6.5, color: "#666" },
 
   docTitle: {
     fontSize: 13,
@@ -139,8 +148,8 @@ const styles = StyleSheet.create({
 
 
   amountBox: {
-    marginTop: 3,
-    padding: 6,
+    marginTop: 2,
+    padding: 4,
     borderWidth: 1.5,
     borderColor: "#0C6BA8",
     borderRadius: 3,
@@ -164,7 +173,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderBottomWidth: 1,
     borderBottomColor: "#0C6BA8",
-    height: 22,
+    height: 16,
   },
   amountUnit: {
     fontSize: 15,
@@ -192,7 +201,7 @@ const styles = StyleSheet.create({
   },
   signSpace: {
     width: "100%",
-    height: 44, // 실제 서명할 빈 공간
+    height: 24,
   },
   signLine: {
     width: "100%",
@@ -221,6 +230,18 @@ const styles = StyleSheet.create({
     borderBottomColor: "#999",
     borderBottomStyle: "dashed",
   },
+
+  watermark: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.07,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  watermarkImage: { width: 200, height: 200, objectFit: "contain" },
 });
 
 interface LabelDict {
@@ -384,18 +405,16 @@ function ReceiptCopy({
 
   return (
     <View style={styles.copy}>
+      <View style={styles.watermark}>
+        <Image src={WATERMARK_LOGO_PATH} style={styles.watermarkImage} />
+      </View>
       {/* 브랜드 헤더 */}
       <View style={styles.brand}>
-        <View>
-          <Text style={styles.brandTitle}>SEOUL AQUA</Text>
-          <Text style={styles.brandLegal}>
-            CÔNG TY TNHH MTV TM&DV ĐẠI Á
-          </Text>
+        <View style={{ flexDirection: "row", alignItems: "baseline", flex: 1 }}>
+          <Text style={styles.brandTitle}>SEOUL AQUA </Text>
+          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)</Text>
         </View>
-        <View>
-          <Text style={styles.brandLegal}>cs@seoulaqua.com.vn</Text>
-          <Text style={styles.brandLegal}>{payload.hqPhone}</Text>
-        </View>
+        <Text style={styles.brandLegal}>cs@seoulaqua.com.vn · {payload.hqPhone}</Text>
       </View>
 
       <Text style={[styles.docTitle, autoFont(P.title)]}>{P.title}</Text>
@@ -557,6 +576,7 @@ function ReceiptCopy({
       ) : null}
 
       {/* 서명 — 위쪽 빈 공간 + 서명선 + 라벨 */}
+      <View style={{ flexGrow: 1 }} />
       <View style={styles.signRow}>
         <View style={styles.signBox}>
           <View style={styles.signSpace} />

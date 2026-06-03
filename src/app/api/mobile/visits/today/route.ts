@@ -9,6 +9,11 @@ import prisma from "@/lib/prisma";
 import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 import { dayBounds } from "@/lib/scheduler/availability";
+import {
+  suggestVisitDocumentKind,
+  type CustomerTypeForSuggest,
+  type VisitTypeForSuggest,
+} from "@/lib/visits/document-suggest";
 
 const ACTIVE_STATES = ["SCHEDULED", "IN_PROGRESS", "RESCHEDULED"] as const;
 
@@ -58,10 +63,52 @@ export const GET = defineQuery({
       },
     });
 
-    const lead = visits.filter((v) => v.leadTechnicianId === auth.userId);
-    const collaborator = visits.filter(
-      (v) => v.leadTechnicianId !== auth.userId,
-    );
+    // Resolve the latest active contract type per customer so we can
+    // suggest the right signature document (RENTAL → delivery receipt,
+    // SALE → sale receipt). One query for the whole bundle.
+    const customerIds = Array.from(new Set(visits.map((v) => v.customerId)));
+    const contracts = customerIds.length
+      ? await prisma.contract.findMany({
+          where: {
+            customerId: { in: customerIds },
+            state: { in: ["ACTIVE", "PENDING_SIGNATURE", "AMENDED"] },
+          },
+          orderBy: [{ activatedAt: "desc" }, { createdAt: "desc" }],
+          select: { customerId: true, type: true },
+        })
+      : [];
+    const latestContractTypeByCustomer = new Map<
+      string,
+      "RENTAL" | "SALE" | "MAINTENANCE"
+    >();
+    for (const c of contracts) {
+      if (!latestContractTypeByCustomer.has(c.customerId)) {
+        latestContractTypeByCustomer.set(c.customerId, c.type);
+      }
+    }
+
+    function enrich<V extends (typeof visits)[number]>(v: V) {
+      const contractType =
+        latestContractTypeByCustomer.get(v.customerId) ?? null;
+      const docKind = suggestVisitDocumentKind({
+        visitType: v.type as VisitTypeForSuggest,
+        customerType: v.customer.type as CustomerTypeForSuggest,
+        contractType,
+      });
+      // INSTALLATION visits also need the contract — tech carries both.
+      const signatureDocs: string[] = [docKind];
+      if (v.type === "INSTALLATION" && contractType !== null) {
+        signatureDocs.push("CONTRACT");
+      }
+      return { ...v, signatureDocs };
+    }
+
+    const lead = visits
+      .filter((v) => v.leadTechnicianId === auth.userId)
+      .map(enrich);
+    const collaborator = visits
+      .filter((v) => v.leadTechnicianId !== auth.userId)
+      .map(enrich);
     return { lead, collaborator };
   },
 });

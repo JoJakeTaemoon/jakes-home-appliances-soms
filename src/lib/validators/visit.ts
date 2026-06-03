@@ -231,6 +231,25 @@ export const uploadResponseSchema = z.object({
   mimeType: z.string(),
 });
 
+/**
+ * Track 3 — POST /api/visits/[id]/issue-document
+ * Office STAFF+ manually issues one of the 6 visit-document kinds.
+ * `langPair` defaults to `vi-ko` server-side.
+ */
+export const issueDocumentSchema = z.object({
+  kind: z.enum([
+    "DELIVERY_RECEIPT",
+    "SALE_RECEIPT_B2C",
+    "DELIVERY_SLIP_B2B",
+    "PERIODIC_CHECK_B2C",
+    "PERIODIC_CHECK_B2B",
+    "WORK_CONFIRMATION",
+  ]),
+  langPair: z.enum(["vi-ko", "vi-en"]).optional(),
+});
+
+export type IssueDocumentInput = z.infer<typeof issueDocumentSchema>;
+
 export type CreateVisitInput = z.infer<typeof createVisitSchema>;
 export type UpdateVisitInput = z.infer<typeof updateVisitSchema>;
 export type ScheduleVisitInput = z.infer<typeof scheduleVisitSchema>;

@@ -11,6 +11,8 @@ import {
   Cpu,
   FileText,
   CalendarCheck,
+  LayoutGrid,
+  Printer,
   Wallet,
   Inbox,
   Receipt,
@@ -28,6 +30,8 @@ type LabelKey =
   | "equipment"
   | "contracts"
   | "visits"
+  | "scheduleBoard"
+  | "visitsPrint"
   | "serviceRequests"
   | "payments"
   | "taxInvoices"
@@ -68,7 +72,9 @@ const navItems: NavItem[] = [
   { href: "/o/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
   { href: "/o/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
   { href: "/o/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
+  { href: "/o/schedule-board", labelKey: "scheduleBoard", Icon: LayoutGrid, roles: ALL_OFFICE_ROLES },
   { href: "/o/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
+  { href: "/o/visits/print", labelKey: "visitsPrint", Icon: Printer, roles: ALL_OFFICE_ROLES },
   { href: "/o/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
   { href: "/o/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
   { href: "/o/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
@@ -101,6 +107,32 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+/**
+ * Decide whether a nav item should render as active.
+ *
+ * Two-stage check so a deeper entry (e.g. `/o/visits/print`) doesn't
+ * leave its parent (`/o/visits`) lit up at the same time:
+ *   1. Path must equal the item's href, or start with `${href}/`.
+ *   2. No other listed href may be a more-specific prefix of pathname.
+ */
+function isItemActive(
+  itemHref: string,
+  pathname: string,
+  allHrefs: readonly string[],
+): boolean {
+  const matches =
+    pathname === itemHref || pathname.startsWith(`${itemHref}/`);
+  if (!matches) return false;
+  for (const other of allHrefs) {
+    if (other === itemHref) continue;
+    if (!other.startsWith(`${itemHref}/`)) continue;
+    if (pathname === other || pathname.startsWith(`${other}/`)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function Sidebar() {
   const t = useTranslations("nav");
   const tRoles = useTranslations("roles");
@@ -111,6 +143,11 @@ export function Sidebar() {
   const visibleMain = visibleFor(navItems, role);
   const visibleAdmin = visibleFor(adminNavItems, role);
   const visibleAdminSettings = visibleFor(adminSettingsItems, role);
+  const allHrefs = [
+    ...navItems,
+    ...adminNavItems,
+    ...adminSettingsItems,
+  ].map((i) => i.href);
   const showAdminSection =
     visibleAdmin.length > 0 || visibleAdminSettings.length > 0;
 
@@ -149,8 +186,7 @@ export function Sidebar() {
           {visibleMain.map((item) => {
             const label = t(item.labelKey);
             const Icon = item.Icon;
-            const active =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = isItemActive(item.href, pathname, allHrefs);
 
             if (item.disabled) {
               return (
@@ -208,9 +244,7 @@ export function Sidebar() {
             <ul className="space-y-0.5">
               {visibleAdmin.map((item) => {
                 const Icon = item.Icon;
-                const active =
-                  pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
+                const active = isItemActive(item.href, pathname, allHrefs);
                 return (
                   <li key={item.href}>
                     <Link
@@ -239,9 +273,7 @@ export function Sidebar() {
             <ul className="space-y-0.5">
               {visibleAdminSettings.map((item) => {
                 const Icon = item.Icon;
-                const active =
-                  pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
+                const active = isItemActive(item.href, pathname, allHrefs);
                 return (
                   <li key={item.href}>
                     <Link

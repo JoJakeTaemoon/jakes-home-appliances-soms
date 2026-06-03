@@ -42,7 +42,22 @@ export const GET = defineQuery({
     const collaborators = await VisitWorkflow.loadCollaborators(
       visit.collaboratorTechnicianIds,
     );
-    return { ...visit, collaborators };
+    // Pull the customer's latest active contract type so the
+    // document-suggest mapping (RENTAL → DELIVERY_RECEIPT vs SALE →
+    // SALE_RECEIPT_B2C) is accurate on the visit-detail "지참 서류" card.
+    const latestContract = await prisma.contract.findFirst({
+      where: {
+        customerId: visit.customerId,
+        state: { in: ["ACTIVE", "PENDING_SIGNATURE", "AMENDED"] },
+      },
+      orderBy: [{ activatedAt: "desc" }, { createdAt: "desc" }],
+      select: { type: true },
+    });
+    return {
+      ...visit,
+      collaborators,
+      latestContractType: latestContract?.type ?? null,
+    };
   },
 });
 

@@ -61,6 +61,10 @@ import {
   type WorkConfPayload,
   type WorkConfPhoto,
 } from "@/lib/pdf/templates/work-confirmation";
+import {
+  buildPreviewElement,
+  type PreviewKind,
+} from "@/lib/pdf/visit-preview";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -70,7 +74,25 @@ export type PdfKind =
   | "CONTRACT"
   | "RECEIPT"
   | "TAX_INVOICE"
-  | "WORK_CONFIRMATION";
+  | "WORK_CONFIRMATION"
+  | "DELIVERY_RECEIPT"
+  | "SALE_RECEIPT_B2C"
+  | "DELIVERY_SLIP_B2B"
+  | "PERIODIC_CHECK_B2C"
+  | "PERIODIC_CHECK_B2B";
+
+const VISIT_DOC_KINDS = [
+  "DELIVERY_RECEIPT",
+  "SALE_RECEIPT_B2C",
+  "DELIVERY_SLIP_B2B",
+  "PERIODIC_CHECK_B2C",
+  "PERIODIC_CHECK_B2B",
+] as const satisfies ReadonlyArray<PreviewKind>;
+type VisitDocKind = (typeof VISIT_DOC_KINDS)[number];
+
+function isVisitDocKind(k: PdfKind): k is VisitDocKind {
+  return (VISIT_DOC_KINDS as readonly string[]).includes(k);
+}
 
 export interface RenderRequest {
   kind: PdfKind;
@@ -170,7 +192,40 @@ function pathForKind(
         filename: "work-confirmation.pdf",
       };
     }
+    case "DELIVERY_RECEIPT":
+    case "SALE_RECEIPT_B2C":
+    case "DELIVERY_SLIP_B2B":
+    case "PERIODIC_CHECK_B2C":
+    case "PERIODIC_CHECK_B2B": {
+      return {
+        dir: path.join(process.cwd(), "uploads", "visits", ctx.refId),
+        filename: `${kind.toLowerCase()}.pdf`,
+      };
+    }
   }
+}
+
+/**
+ * Visit-document loader for the 5 new kinds. Re-uses the preview-element
+ * builder (no payload duplication) and looks up the visit's customerId
+ * so the Document row can be scoped correctly.
+ */
+async function loadVisitDocument(
+  kind: VisitDocKind,
+  visitId: string,
+  langPair: PdfLangPair,
+): Promise<{
+  element: React.ReactElement;
+  templateCode: string;
+  customerId: string;
+}> {
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { customerId: true },
+  });
+  if (!visit) throw new NotFoundError("Visit not found");
+  const element = await buildPreviewElement(visitId, kind, langPair);
+  return { element, templateCode: kind, customerId: visit.customerId };
 }
 
 /**
@@ -863,6 +918,38 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
         templateCode: loaded.templateCode,
       };
     }
+
+    case "DELIVERY_RECEIPT":
+    case "SALE_RECEIPT_B2C":
+    case "DELIVERY_SLIP_B2B":
+    case "PERIODIC_CHECK_B2C":
+    case "PERIODIC_CHECK_B2B": {
+      if (!isVisitDocKind(req.kind)) {
+        throw new Error("unreachable");
+      }
+      const loaded = await loadVisitDocument(req.kind, req.refId, langPair);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const buffer = await renderToBuffer(loaded.element as any);
+      const { dir, filename } = pathForKind(req.kind, { refId: req.refId });
+      const storageKey = await persistWithArchive(dir, filename, buffer, now);
+      const documentId = await writeDocumentRow({
+        kind: req.kind,
+        customerId: loaded.customerId,
+        visitId: req.refId,
+        templateCode: loaded.templateCode,
+        langPair,
+        storageKey,
+        filename,
+        sizeBytes: buffer.byteLength,
+        generatedById: req.generatedById,
+      });
+      return {
+        storageKey,
+        sizeBytes: buffer.byteLength,
+        documentId,
+        templateCode: loaded.templateCode,
+      };
+    }
   }
 }
 
@@ -906,6 +993,17 @@ export async function getLatestPdf(
           visitId: refId,
           kind: { in: ["WORK_CONFIRMATION", "PERIODIC_INSPECTION"] },
         },
+        orderBy: { generatedAt: "desc" },
+        select: { storageKey: true, filename: true, sizeBytes: true },
+      });
+      break;
+    case "DELIVERY_RECEIPT":
+    case "SALE_RECEIPT_B2C":
+    case "DELIVERY_SLIP_B2B":
+    case "PERIODIC_CHECK_B2C":
+    case "PERIODIC_CHECK_B2B":
+      doc = await prisma.document.findFirst({
+        where: { visitId: refId, kind: kind },
         orderBy: { generatedAt: "desc" },
         select: { storageKey: true, filename: true, sizeBytes: true },
       });
