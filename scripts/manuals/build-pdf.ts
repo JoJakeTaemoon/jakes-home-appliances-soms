@@ -182,7 +182,7 @@ const HTML_TEMPLATE = (title: string, body: string) => `<!DOCTYPE html>
 <body>
 ${body}
 <div class="footer">
-  Seoul Aqua SOMS · 2026-06-02 발행 · 본 문서는 자동 생성 PDF입니다
+  Seoul Aqua SOMS · 2026-06-02 발행 · 본 문서의 제작자는 Jake Taemoon Jo (whxoans@gmail.com) 입니다.
 </div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
