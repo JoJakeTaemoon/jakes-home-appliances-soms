@@ -78,9 +78,19 @@ function VisitsListPageInner() {
     }
   }, [view, searchParams, router]);
 
+  // Customer-type filter is page-level so calendar, list, and unassigned
+  // views all respect it. Each view appends `&customerType=...` to its
+  // own API query.
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<string | null>(
+    null,
+  );
+
   // Unread-style badge count for the "미배정" tab — refetched every 60s.
+  const customerTypeQs = customerTypeFilter
+    ? `&customerType=${customerTypeFilter}`
+    : "";
   const unassignedCountQuery = useApiPageQuery<VisitRow[]>(
-    "/api/visits?state=SUGGESTED&page=1&pageSize=1",
+    `/api/visits?state=SUGGESTED&page=1&pageSize=1${customerTypeQs}`,
   );
   const unassignedCount =
     (unassignedCountQuery.data?.pagination as { total?: number } | undefined)
@@ -90,7 +100,11 @@ function VisitsListPageInner() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <CustomerTypeFilter
+            value={customerTypeFilter}
+            onChange={setCustomerTypeFilter}
+          />
           <ViewToggle
             value={view}
             onChange={setView}
@@ -102,9 +116,57 @@ function VisitsListPageInner() {
         </div>
       </header>
 
-      {view === "calendar" && <VisitsCalendarView />}
-      {view === "list" && <ListView />}
-      {view === "unassigned" && <UnassignedView />}
+      {view === "calendar" && (
+        <VisitsCalendarView customerTypeFilter={customerTypeFilter} />
+      )}
+      {view === "list" && (
+        <ListView customerTypeFilter={customerTypeFilter} />
+      )}
+      {view === "unassigned" && (
+        <UnassignedView customerTypeFilter={customerTypeFilter} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Small 3-way toggle (All / B2C / B2B). Driving its state from
+ * `VisitsListPageInner` keeps the filter consistent across calendar /
+ * list / unassigned tabs.
+ */
+function CustomerTypeFilter({
+  value,
+  onChange,
+}: Readonly<{
+  value: string | null;
+  onChange: (v: string | null) => void;
+}>) {
+  const t = useTranslations("visits");
+  const btn = (target: string | null, label: string, key: string) => (
+    <button
+      key={key}
+      type="button"
+      aria-pressed={value === target}
+      onClick={() => onChange(target)}
+      className={[
+        "h-8 rounded px-3 text-xs font-medium transition-colors",
+        value === target
+          ? "bg-[var(--brand-blue-50)] text-[var(--brand-blue-700)]"
+          : "text-[#737373] hover:text-[#262626]",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div
+      role="group"
+      aria-label={t("filterCustomerType")}
+      className="inline-flex rounded-md border border-[#e5e5e5] bg-white p-0.5"
+    >
+      {btn(null, t("customerTypeAll"), "all")}
+      {btn("B2C", "B2C", "B2C")}
+      {btn("B2B", "B2B", "B2B")}
     </div>
   );
 }
@@ -160,7 +222,9 @@ function ViewToggle({
   );
 }
 
-function ListView() {
+function ListView({
+  customerTypeFilter,
+}: Readonly<{ customerTypeFilter: string | null }>) {
   const t = useTranslations("visits");
   const locale = useLocale();
   const router = useRouter();
@@ -182,6 +246,7 @@ function ListView() {
     sp.set("pageSize", String(PAGE_SIZE));
     if (stateFilter) sp.set("state", stateFilter);
     if (typeFilter) sp.set("type", typeFilter);
+    if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
     if (from) sp.set("from", new Date(from).toISOString());
     if (to) sp.set("to", new Date(to).toISOString());
     if (sort) {
@@ -189,7 +254,7 @@ function ListView() {
       sp.set("sortDir", sort.direction);
     }
     return `/api/visits?${sp.toString()}`;
-  }, [page, stateFilter, typeFilter, from, to, sort]);
+  }, [page, stateFilter, typeFilter, customerTypeFilter, from, to, sort]);
 
   const query = useApiPageQuery<VisitRow[]>(url);
   const rows = query.data?.data ?? [];
@@ -259,8 +324,15 @@ function ListView() {
       isLoading={loading}
       sort={sort}
       onSortChange={setSort}
-      emptyText={stateFilter || typeFilter ? t("noResults") : t("noVisits")}
+      emptyText={
+        stateFilter || typeFilter || customerTypeFilter
+          ? t("noResults")
+          : t("noVisits")
+      }
       toolbar={
+        // Customer-type filter lives in the page header (see
+        // `CustomerTypeFilter`) so calendar + list + unassigned stay in
+        // sync. The toolbar here just handles list-specific filters.
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <Combobox
             value={stateFilter}
@@ -308,12 +380,17 @@ function ListView() {
  * confirm via SchedulerWidget. Mirrors the queue column of the schedule
  * board but in a flat list form (no per-tech grouping). Office STAFF+ only.
  */
-function UnassignedView() {
+function UnassignedView({
+  customerTypeFilter,
+}: Readonly<{ customerTypeFilter: string | null }>) {
   const t = useTranslations("visits");
   const locale = useLocale();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const url = "/api/visits?state=SUGGESTED&page=1&pageSize=200&sortBy=scheduledFor&sortDir=asc";
+  const customerTypeQs = customerTypeFilter
+    ? `&customerType=${customerTypeFilter}`
+    : "";
+  const url = `/api/visits?state=SUGGESTED&page=1&pageSize=200&sortBy=scheduledFor&sortDir=asc${customerTypeQs}`;
   const query = useApiPageQuery<VisitRow[]>(url);
   const rows = query.data?.data ?? [];
 

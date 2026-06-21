@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
+import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import {
@@ -101,6 +102,7 @@ export default function ContractDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <BreadcrumbLabel value={data.contractNumber} />
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <div className="flex flex-wrap items-center gap-2">

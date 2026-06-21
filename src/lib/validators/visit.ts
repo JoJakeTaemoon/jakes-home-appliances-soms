@@ -209,6 +209,7 @@ export const visitListQuerySchema = z.object({
   customerId: z.string().trim().min(1).optional(),
   state: visitStateEnum.optional(),
   type: visitTypeEnum.optional(),
+  customerType: z.enum(["B2C", "B2B"]).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   sortBy: z.string().trim().min(1).max(60).optional(),

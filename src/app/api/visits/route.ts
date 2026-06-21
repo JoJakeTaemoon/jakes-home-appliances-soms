@@ -29,7 +29,7 @@ export const GET = defineQuery({
   query: visitListQuerySchema,
   paginated: true,
   handler: async ({ auth, query }) => {
-    const { q, technicianId, customerId, state, type, from, to, sortBy, sortDir, page, pageSize } =
+    const { q, technicianId, customerId, state, type, customerType, from, to, sortBy, sortDir, page, pageSize } =
       query;
     const orderBy = resolveOrderBy({ sortBy, sortDir }, VISIT_SORT_MAP, { scheduledFor: "asc" });
 
@@ -37,6 +37,7 @@ export const GET = defineQuery({
     if (customerId) where.customerId = customerId;
     if (state) where.state = state;
     if (type) where.type = type;
+    if (customerType) where.customer = { type: customerType };
     if (from || to) {
       where.scheduledFor = {};
       if (from) (where.scheduledFor as Prisma.DateTimeFilter).gte = from;

@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useApiPageQuery } from "@/lib/api/hooks";
-import { Modal } from "@/components/ui/modal";
 import {
   VisitStateBadge,
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
+import { VisitDetailContent } from "@/components/visits/visit-detail-content";
 import { pickModelName } from "@/lib/products/name";
 
 interface CalendarVisit {
@@ -88,11 +89,20 @@ function buildMonthCells(anchor: Date): Date[] {
   return cells;
 }
 
-export function VisitsCalendarView() {
+export function VisitsCalendarView({
+  customerTypeFilter,
+}: Readonly<{ customerTypeFilter?: string | null }> = {}) {
   const t = useTranslations("visits");
   const locale = useLocale();
   const [anchor, setAnchor] = useState<Date>(() => startOfMonth(new Date()));
   const [openDay, setOpenDay] = useState<string | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | null>(null);
+
+  // Reset the right-drawer when the day list closes so re-opening
+  // a (possibly different) day starts clean.
+  useEffect(() => {
+    if (openDay === null) setSelectedVisitId(null);
+  }, [openDay]);
 
   const cells = useMemo(() => buildMonthCells(anchor), [anchor]);
 
@@ -115,8 +125,9 @@ export function VisitsCalendarView() {
       // average before truncation kicks in (most days have ≤5).
       pageSize: "500",
     });
+    if (customerTypeFilter) sp.set("customerType", customerTypeFilter);
     return `/api/visits?${sp.toString()}`;
-  }, [range.from, range.to]);
+  }, [range.from, range.to, customerTypeFilter]);
 
   const query = useApiPageQuery<CalendarVisit[]>(url);
   const visits = query.data?.data ?? [];
@@ -280,57 +291,255 @@ export function VisitsCalendarView() {
         <p className="px-2 text-sm text-[#737373]">{t("calendarEmpty")}</p>
       )}
 
-      <Modal
+      <CalendarSplitPanel
         open={openDay !== null}
         onClose={() => setOpenDay(null)}
-        title={openDay ? t("calendarDayVisits", { date: dayLabel(openDay) }) : ""}
-        size="md"
-      >
-        {openDayVisits.length === 0 ? (
-          <p className="text-sm text-[#737373]">{t("noVisits")}</p>
-        ) : (
-          <ul className="divide-y divide-[#f0f0f0]">
-            {openDayVisits.map((v) => {
-              const time = v.scheduledFor.slice(11, 16);
-              const equipmentLabel = v.equipment
-                ? pickModelName(v.equipment.model, locale)
-                : null;
-              return (
-                <li key={v.id}>
-                  <Link
-                    href={`/o/visits/${v.id}` as never}
-                    onClick={() => setOpenDay(null)}
-                    className="flex items-start gap-3 py-2 hover:bg-[#fafafa]"
-                  >
-                    <span className="mt-0.5 font-mono text-sm font-semibold text-[var(--brand-blue-700)]">
-                      {time}
-                    </span>
-                    <div className="flex flex-1 flex-col gap-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium text-[#262626]">
-                          {v.customer.name}
-                        </span>
-                        <span className="font-mono text-xs text-[#a3a3a3]">
-                          {v.customer.code}
-                        </span>
-                        <VisitTypeBadge type={v.type} />
-                        <VisitStateBadge state={v.state} />
-                      </div>
-                      <div className="text-xs text-[#737373]">
-                        {equipmentLabel ?? "—"}
-                        {v.leadTechnician
-                          ? ` · ${v.leadTechnician.username}`
-                          : ""}
-                        {v.scheduledWindow ? ` · ${v.scheduledWindow}` : ""}
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Modal>
+        dayLabel={openDay ? dayLabel(openDay) : ""}
+        dayVisits={openDayVisits}
+        selectedVisitId={selectedVisitId}
+        onSelectVisit={(id) => setSelectedVisitId(id)}
+        onCloseDetail={() => setSelectedVisitId(null)}
+        locale={locale}
+        t={t}
+      />
     </div>
+  );
+}
+
+/**
+ * Two-pane overlay used by the calendar:
+ *   - Left panel: the day's visit list (formerly inside <Modal>).
+ *   - Right panel: a right-edge drawer that slides in with the same
+ *     content as the `/o/[locale]/visits/[id]` route.
+ *
+ * Backdrop close dismisses both panes. The drawer's own X button only
+ * closes itself so the user can flip between visits without re-opening
+ * the day list.
+ */
+function CalendarSplitPanel({
+  open,
+  onClose,
+  dayLabel,
+  dayVisits,
+  selectedVisitId,
+  onSelectVisit,
+  onCloseDetail,
+  locale,
+  t,
+}: Readonly<{
+  open: boolean;
+  onClose: () => void;
+  dayLabel: string;
+  dayVisits: CalendarVisit[];
+  selectedVisitId: string | null;
+  onSelectVisit: (id: string) => void;
+  onCloseDetail: () => void;
+  locale: string;
+  t: ReturnType<typeof useTranslations<"visits">>;
+}>) {
+  // Lock body scroll while the overlay is up.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Escape closes the rightmost open layer (drawer first, then day list).
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (selectedVisitId) onCloseDetail();
+      else onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, selectedVisitId, onCloseDetail, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  // The day-list panel is anchored at the viewport center
+  // (`top-1/2 left-1/2`). When a visit is selected, we translate it
+  // so its LEFT edge ends up at 1rem from the viewport's left edge —
+  // the right drawer then takes the remaining space. When the user
+  // dismisses the detail drawer, the same transition runs in reverse
+  // and the panel glides back to the centre. Using `transform` for
+  // both states keeps the move animation smooth (auto margins +
+  // justify-content can't animate).
+  const detailOpen = selectedVisitId !== null;
+  const dayPanelStyle: React.CSSProperties = {
+    transform: detailOpen
+      ? "translate(calc(-50vw + 1rem), -50%)"
+      : "translate(-50%, -50%)",
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 bg-black/40">
+      <button
+        type="button"
+        aria-label={t("closeDayDialog")}
+        className="absolute inset-0 cursor-default bg-transparent"
+        onClick={onClose}
+      />
+
+      {/* Day visits list — centred by default, slides to the left edge
+          when the detail drawer opens. On small screens (<sm) we hide
+          it while the drawer is showing so the drawer takes the full
+          width without overlap. */}
+      <div
+        className={[
+          "absolute inset-x-4 top-4 max-h-[calc(100vh-2rem)]",
+          "sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[80vh] sm:w-full sm:max-w-md",
+          "transition-transform duration-300 ease-out",
+          detailOpen ? "max-sm:invisible" : "",
+        ].join(" ")}
+        style={dayPanelStyle}
+      >
+        <div className="flex max-h-full flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-[#e5e5e5]">
+          <div className="flex items-center justify-between border-b border-[#e5e5e5] px-5 py-4">
+            <h2 className="text-base font-semibold text-[#111111]">
+              {t("calendarDayVisits", { date: dayLabel })}
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("closeDayDialog")}
+              className="rounded-md p-1.5 text-[#737373] hover:bg-[#f5f5f5] hover:text-[#111111]"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            {dayVisits.length === 0 ? (
+              <p className="text-sm text-[#737373]">{t("noVisits")}</p>
+            ) : (
+              <ul className="divide-y divide-[#f0f0f0]">
+                {dayVisits.map((v) => {
+                  const time = v.scheduledFor.slice(11, 16);
+                  const equipmentLabel = v.equipment
+                    ? pickModelName(v.equipment.model, locale)
+                    : null;
+                  const isActive = selectedVisitId === v.id;
+                  return (
+                    <li key={v.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectVisit(v.id)}
+                        className={[
+                          "flex w-full items-start gap-3 py-2 text-left transition-colors",
+                          isActive
+                            ? "bg-[var(--brand-blue-50)]"
+                            : "hover:bg-[#fafafa]",
+                        ].join(" ")}
+                      >
+                        <span className="mt-0.5 font-mono text-sm font-semibold text-[var(--brand-blue-700)]">
+                          {time}
+                        </span>
+                        <div className="flex flex-1 flex-col gap-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium text-[#262626]">
+                              {v.customer.name}
+                            </span>
+                            <span className="font-mono text-xs text-[#a3a3a3]">
+                              {v.customer.code}
+                            </span>
+                            <VisitTypeBadge type={v.type} />
+                            <VisitStateBadge state={v.state} />
+                          </div>
+                          <div className="text-xs text-[#737373]">
+                            {equipmentLabel ?? "—"}
+                            {v.leadTechnician
+                              ? ` · ${v.leadTechnician.username}`
+                              : ""}
+                            {v.scheduledWindow ? ` · ${v.scheduledWindow}` : ""}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Visit detail drawer (slides in from the right edge). */}
+      {detailOpen && (
+        <VisitDetailDrawer
+          key={selectedVisitId}
+          visitId={selectedVisitId}
+          onClose={onCloseDetail}
+          fallbackHref={`/o/visits/${selectedVisitId}`}
+          openFullLabel={t("openFullPage")}
+          closeLabel={t("closeDetailDialog")}
+        />
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+/**
+ * Right-edge drawer that mounts off-screen and slides in next frame, so
+ * each new visit selection re-plays the animation.
+ */
+function VisitDetailDrawer({
+  visitId,
+  onClose,
+  fallbackHref,
+  openFullLabel,
+  closeLabel,
+}: Readonly<{
+  visitId: string;
+  onClose: () => void;
+  fallbackHref: string;
+  openFullLabel: string;
+  closeLabel: string;
+}>) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <aside
+      role="dialog"
+      aria-modal="true"
+      className={[
+        "relative ml-auto flex h-full w-full max-w-3xl flex-col bg-white shadow-2xl transition-transform duration-200 ease-out",
+        entered ? "translate-x-0" : "translate-x-full",
+      ].join(" ")}
+    >
+      <div className="sticky top-0 z-10 flex items-center justify-end gap-2 border-b border-[#e5e5e5] bg-white px-4 py-2">
+        <Link
+          href={fallbackHref as "/o"}
+          className="rounded-md border border-[#e5e5e5] px-2.5 py-1 text-xs font-medium text-[#525252] hover:bg-[#f5f5f5]"
+        >
+          {openFullLabel}
+        </Link>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={closeLabel}
+          className="rounded-md p-1.5 text-[#737373] hover:bg-[#f5f5f5] hover:text-[#111111]"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <VisitDetailContent visitId={visitId} />
+      </div>
+    </aside>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -149,6 +150,7 @@ export default function PaymentDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl">
+      <BreadcrumbLabel value={data.customer.name} />
       <header className="mb-6">
         <button
           type="button"

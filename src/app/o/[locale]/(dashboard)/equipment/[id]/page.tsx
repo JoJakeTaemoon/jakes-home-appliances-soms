@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
 import { Button } from "@/components/ui/button";
@@ -112,6 +113,9 @@ export default function EquipmentDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <BreadcrumbLabel
+        value={data.serialNumber ?? data.model.modelCode ?? null}
+      />
       <header className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
@@ -163,6 +167,14 @@ export default function EquipmentDetailPage() {
           <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
           <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
           <Row label={t("model")} value={`${pickModelName(data.model, locale)} — ${pickModelName(data.model, locale)}`} />
+          <Row
+            label={t("category")}
+            value={
+              data.model.category
+                ? t(`categoryValues.${data.model.category}` as never)
+                : "—"
+            }
+          />
           <Row label={t("ownership")} value={data.ownership} />
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">

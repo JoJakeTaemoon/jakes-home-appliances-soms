@@ -7,6 +7,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -258,6 +259,7 @@ export default function ServiceRequestDetailPage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl">
+      <BreadcrumbLabel value={data.code} />
       <div className="space-y-4">
         <button
           type="button"

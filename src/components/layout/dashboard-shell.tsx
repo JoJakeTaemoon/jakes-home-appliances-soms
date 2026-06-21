@@ -4,6 +4,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "@/i18n/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { OfficeBreadcrumb } from "@/components/nav/office-breadcrumb";
+import { BreadcrumbProvider } from "@/lib/nav/breadcrumb-context";
 
 export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
@@ -27,6 +29,7 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
   }, [sidebarOpen]);
 
   return (
+    <BreadcrumbProvider>
     <div className="flex min-h-screen bg-white">
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
@@ -46,8 +49,12 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
 
       <div className="flex flex-1 flex-col min-w-0">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-8 bg-white">{children}</main>
+        <main className="flex-1 p-4 sm:p-8 bg-white">
+          <OfficeBreadcrumb />
+          {children}
+        </main>
       </div>
     </div>
+    </BreadcrumbProvider>
   );
 }

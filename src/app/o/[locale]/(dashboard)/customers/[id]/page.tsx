@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -8,6 +8,7 @@ import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
+import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import {
@@ -190,6 +191,7 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <BreadcrumbLabel value={data.name} />
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
@@ -244,6 +246,7 @@ export default function CustomerDetailPage() {
                 <Field label={t("taxCode")} value={data.taxCode} />
               </Card>
             )}
+            <OpsContactsSummaryCard contacts={data.contacts} sites={data.sites} />
             <EquipmentSummaryCard equipment={data.equipment} />
             <ContractsSummaryCard contracts={data.contracts} />
             <ServiceSummaryCard customerId={data.id} />
@@ -527,32 +530,95 @@ function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[
   const t = useTranslations("customers");
   const tEq = useTranslations("equipment");
   const locale = useLocale();
-  const grouped = useMemo(() => {
-    const buckets = new Map<string, { modelCode: string; modelName: string; count: number }>();
-    for (const e of equipment) {
-      const name = pickModelName(e.model, locale);
-      const cur = buckets.get(name);
-      if (cur) cur.count++;
-      else buckets.set(name, { modelCode: e.model.modelCode ?? name, modelName: name, count: 1 });
-    }
-    return Array.from(buckets.values()).sort((a, b) => b.count - a.count || a.modelCode.localeCompare(b.modelCode));
-  }, [equipment, locale]);
+
+  const VISIBLE = 5;
+  const visible = equipment.slice(0, VISIBLE);
+  const overflow = equipment.length - visible.length;
 
   return (
     <Card label={`${t("tabs.equipment")} · ${equipment.length}`}>
-      {grouped.length === 0 ? (
+      {equipment.length === 0 ? (
         <p className="text-sm text-[#737373]">{tEq("noEquipment")}</p>
       ) : (
-        <ul className="flex flex-col gap-1.5">
-          {grouped.map((g) => (
-            <li key={g.modelCode} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="flex flex-col">
-                <span className="font-mono text-xs text-[#262626]">{g.modelCode}</span>
-                <span className="text-xs text-[#737373]">{g.modelName}</span>
-              </span>
-              <span className="font-semibold text-[#111111]">
-                {tEq("countUnits", { count: g.count })}
-              </span>
+        <ul className="flex flex-col divide-y divide-[#f5f5f5]">
+          {visible.map((e) => (
+            <li key={e.id}>
+              <Link
+                href={`/o/equipment/${e.id}` as never}
+                className="flex items-baseline justify-between gap-3 py-2 text-sm hover:bg-[#fafafa]"
+              >
+                <span className="flex flex-col">
+                  <span className="font-mono text-xs text-[var(--brand-blue-700)] underline">
+                    {e.serialNumber ?? e.model.modelCode ?? "—"}
+                  </span>
+                  <span className="text-xs text-[#737373]">
+                    {pickModelName(e.model, locale)}
+                    {e.site ? ` · ${e.site.name}` : ""}
+                  </span>
+                </span>
+                <span className="text-xs text-[#737373]">
+                  {tEq(`statusValues.${e.status}` as never)}
+                </span>
+              </Link>
+            </li>
+          ))}
+          {overflow > 0 && (
+            <li className="pt-2 text-xs text-[#737373]">
+              {tEq("countUnits", { count: overflow })} 외
+            </li>
+          )}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Overview-tab card surfacing the OPS_CONTACT contacts so office staff
+ * can call a customer's operations person without bouncing to the
+ * Contacts tab. Sorted by `isPrimary` first; site-scoped contacts get a
+ * subtle site-name tag.
+ */
+function OpsContactsSummaryCard({
+  contacts,
+  sites,
+}: Readonly<{ contacts: CustomerContact[]; sites: SiteRow[] }>) {
+  const t = useTranslations("customers");
+  const ops = contacts
+    .filter((c) => c.role === "OPS_CONTACT")
+    .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+  const siteName = (id: string | null) => sites.find((s) => s.id === id)?.name;
+
+  return (
+    <Card label={`${t("opsContacts")} · ${ops.length}`}>
+      {ops.length === 0 ? (
+        <p className="text-sm text-[#737373]">—</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-[#f5f5f5]">
+          {ops.map((c) => (
+            <li key={c.id} className="flex flex-col gap-0.5 py-2 text-sm">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium text-[#262626]">
+                  {c.name}
+                  {c.title ? (
+                    <span className="ml-1 text-xs text-[#737373]">· {c.title}</span>
+                  ) : null}
+                </span>
+                {c.isPrimary && (
+                  <span className="rounded-full bg-[var(--brand-blue-50)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--brand-blue-700)]">
+                    PRIMARY
+                  </span>
+                )}
+              </div>
+              <a
+                href={`tel:${c.phone1}`}
+                className="font-mono text-xs text-[var(--brand-blue-700)] underline"
+              >
+                {c.phone1}
+              </a>
+              {c.scope === "SITE" && c.siteId && siteName(c.siteId) && (
+                <span className="text-[10px] text-[#737373]">{siteName(c.siteId)}</span>
+              )}
             </li>
           ))}
         </ul>
