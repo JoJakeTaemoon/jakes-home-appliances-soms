@@ -11,24 +11,57 @@ const validContractParty = {
 };
 
 describe("createCustomerSchema (B2C)", () => {
-  it("accepts a minimal B2C customer", () => {
+  // B2C since 2026-06: customer IS the contract party — top-level phone is
+  // the only required contact field. No separate contractParty section.
+  it("accepts a minimal B2C customer with top-level phone", () => {
     const res = createCustomerSchema.safeParse({
       type: "B2C",
       name: "Test Customer",
-      contractParty: validContractParty,
+      phone: "0901234567",
       opsContacts: [],
     });
     expect(res.success).toBe(true);
   });
 
-  it("rejects missing phone in contract party", () => {
+  it("rejects a B2C customer missing the top-level phone", () => {
     const res = createCustomerSchema.safeParse({
       type: "B2C",
-      name: "Test",
-      contractParty: { name: "Anon", language: "vi" },
+      name: "Test Customer",
       opsContacts: [],
     });
     expect(res.success).toBe(false);
+  });
+
+  it("rejects a B2C customer with an invalid phone format", () => {
+    const res = createCustomerSchema.safeParse({
+      type: "B2C",
+      name: "Test Customer",
+      phone: "ab",
+      opsContacts: [],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("accepts a B2C customer without CCCD (optional since 2026-06)", () => {
+    const res = createCustomerSchema.safeParse({
+      type: "B2C",
+      name: "Test Customer",
+      phone: "0901234567",
+      residency: "DOMESTIC",
+      opsContacts: [],
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("accepts a foreign B2C without passport/nationality (optional since 2026-06)", () => {
+    const res = createCustomerSchema.safeParse({
+      type: "B2C",
+      name: "Test Customer",
+      phone: "0901234567",
+      residency: "FOREIGN",
+      opsContacts: [],
+    });
+    expect(res.success).toBe(true);
   });
 });
 
@@ -47,7 +80,7 @@ describe("createCustomerSchema (B2B)", () => {
     expect(res.success).toBe(true);
   });
 
-  it("rejects B2B without OPS contacts", () => {
+  it("accepts B2B without OPS contacts (single-shot sale path since 2026-06)", () => {
     const res = createCustomerSchema.safeParse({
       type: "B2B",
       name: "X",
@@ -56,7 +89,7 @@ describe("createCustomerSchema (B2B)", () => {
       contractParty: validContractParty,
       opsContacts: [],
     });
-    expect(res.success).toBe(false);
+    expect(res.success).toBe(true);
   });
 
   it("rejects bad shortcode format", () => {

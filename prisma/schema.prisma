@@ -169,23 +169,35 @@ model Customer {
   taxCode                String?        // B2B Vietnamese tax code (MST)
 
   // ── Legal-identity block (required for contract issuance) ───────────────
-  /// B2C only: DOMESTIC requires CCCD, FOREIGN requires passport + nationality.
-  /// Defaults to DOMESTIC so existing rows behave like Vietnamese individuals.
-  /// Ignored for B2B (where the legal block is taxCode + representativeName).
+  /// B2C only: DOMESTIC or FOREIGN. Optional — neither CCCD nor passport is
+  /// required at creation (collected later when the contract is issued).
+  /// Ignored for B2B (which uses CONTRACT_PARTY contact as the signatory).
   residency              CustomerResidency? @default(DOMESTIC)
-  /// B2C DOMESTIC: Vietnamese national ID (CCCD / Căn cước công dân).
+  /// B2C DOMESTIC: Vietnamese national ID (CCCD / Căn cước công dân). Optional.
   nationalId             String?
-  /// B2C FOREIGN: passport number, paired with `nationality`.
+  /// B2C FOREIGN: passport number. Optional.
   passportNumber         String?
-  /// B2C FOREIGN: ISO country name (e.g. "Korea", "Japan").
+  /// B2C FOREIGN: ISO country name (e.g. "Korea", "Japan"). Optional.
   nationality            String?
-  /// B2B: legal representative (Người đại diện theo pháp luật). Mirrors the
-  /// equivalent field on the issuing-company side stored in SystemSetting.
-  representativeName     String?
+  /// Issue date for whichever identity document (CCCD or passport) is on file.
+  documentIssueDate      DateTime?
+  /// Issue place for the identity document. Free-text (e.g. "Cục Cảnh sát QLHC ĐKQG").
+  documentIssuePlace     String?
 
-  // Primary address (B2C uses this; B2B HQ address)
+  // Primary address — Shopee VN style: province → district → ward + street.
+  // Legacy `address/district/city` kept nullable for back-compat read-only display.
+  addressProvinceCode    String?
+  addressProvinceName    String?
+  addressDistrictCode    String?
+  addressDistrictName    String?
+  addressWardCode        String?
+  addressWardName        String?
+  addressStreet          String?
+  /// @deprecated Use addressStreet. Populated for legacy rows only.
   address                String?
+  /// @deprecated Use addressDistrictName. Populated for legacy rows only.
   district               String?
+  /// @deprecated Use addressProvinceName. Populated for legacy rows only.
   city                   String?
 
   preferredTechnicianId  String?
@@ -219,8 +231,21 @@ model Site {
   customerId   String
   customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   name         String   // e.g. "본사 사옥", "지점 1"
-  address      String
+
+  // Structured address (Shopee VN style). All optional — legacy rows may carry
+  // only `address` until migrated.
+  addressProvinceCode    String?
+  addressProvinceName    String?
+  addressDistrictCode    String?
+  addressDistrictName    String?
+  addressWardCode        String?
+  addressWardName        String?
+  addressStreet          String?
+  /// @deprecated Use addressStreet.
+  address      String?
+  /// @deprecated Use addressDistrictName.
   district     String?
+  /// @deprecated Use addressProvinceName.
   city         String?
   region       String?  // scheduler input
   notes        String?

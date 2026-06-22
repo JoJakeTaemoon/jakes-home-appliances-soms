@@ -22,6 +22,10 @@ import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import {
+  VnAddressPicker,
+  type VnAddressValue,
+} from "@/components/ui/vn-address-picker";
 import { FormField } from "@/components/ui/form-field";
 import {
   canDeactivateCustomer,
@@ -42,8 +46,24 @@ interface CustomerDetail {
   name: string;
   shortcode: string | null;
   taxCode: string | null;
+  residency: "DOMESTIC" | "FOREIGN" | null;
+  nationalId: string | null;
+  passportNumber: string | null;
+  nationality: string | null;
+  documentIssueDate: string | null;
+  documentIssuePlace: string | null;
+  addressProvinceCode: string | null;
+  addressProvinceName: string | null;
+  addressDistrictCode: string | null;
+  addressDistrictName: string | null;
+  addressWardCode: string | null;
+  addressWardName: string | null;
+  addressStreet: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
   address: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
   district: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
   city: string | null;
   preferredRegion: string | null;
   notes: string | null;
@@ -77,8 +97,18 @@ interface CustomerContact {
 interface SiteRow {
   id: string;
   name: string;
-  address: string;
+  addressProvinceCode: string | null;
+  addressProvinceName: string | null;
+  addressDistrictCode: string | null;
+  addressDistrictName: string | null;
+  addressWardCode: string | null;
+  addressWardName: string | null;
+  addressStreet: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
+  address: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
   district: string | null;
+  /** @deprecated read-only fallback for pre-migration rows */
   city: string | null;
   region: string | null;
   isActive: boolean;
@@ -235,15 +265,32 @@ export default function CustomerDetailPage() {
         <TabPanel value="overview">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card label={tc("address")}>
-              <Field label={tc("address")} value={data.address} />
-              <Field label={tc("district")} value={data.district} />
-              <Field label={tc("city")} value={data.city} />
+              <Field label={t("addressProvince")} value={data.addressProvinceName ?? data.city} />
+              <Field label={t("addressDistrict")} value={data.addressDistrictName ?? data.district} />
+              <Field label={t("addressWard")} value={data.addressWardName} />
+              <Field label={t("addressStreet")} value={data.addressStreet ?? data.address} />
               <Field label={t("preferredRegion")} value={data.preferredRegion} />
             </Card>
+            {data.type === "B2C" && (
+              <Card label={t("residency")}>
+                <Field label={t("residency")} value={residencyLabel(data.residency, t)} />
+                {data.residency === "FOREIGN" && (
+                  <Field label={t("nationality")} value={data.nationality} />
+                )}
+                <Field
+                  label={data.residency === "FOREIGN" ? t("passportNumber") : t("nationalId")}
+                  value={data.passportNumber ?? data.nationalId}
+                />
+                <Field label={t("documentIssueDate")} value={formatDate(data.documentIssueDate, locale)} />
+                <Field label={t("documentIssuePlace")} value={data.documentIssuePlace} />
+              </Card>
+            )}
             {data.type === "B2B" && (
               <Card label="B2B">
                 <Field label={t("shortcode")} value={data.shortcode} />
                 <Field label={t("taxCode")} value={data.taxCode} />
+                <Field label={t("documentIssueDate")} value={formatDate(data.documentIssueDate, locale)} />
+                <Field label={t("documentIssuePlace")} value={data.documentIssuePlace} />
               </Card>
             )}
             <OpsContactsSummaryCard contacts={data.contacts} sites={data.sites} />
@@ -524,6 +571,15 @@ function languageLabel(lang: "vi" | "ko" | "en"): string {
   if (lang === "vi") return "Tiếng Việt 🇻🇳";
   if (lang === "ko") return "한국어 🇰🇷";
   return "English 🇺🇸";
+}
+
+function residencyLabel(
+  residency: "DOMESTIC" | "FOREIGN" | null,
+  t: (k: string) => string,
+): string | null {
+  if (residency === "DOMESTIC") return t("residencyDomestic");
+  if (residency === "FOREIGN") return t("residencyForeign");
+  return null;
 }
 
 function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[] }>) {
@@ -1248,9 +1304,10 @@ function SiteCard({
         </div>
         {!site.isActive && <StatusBadge tone="muted">INACTIVE</StatusBadge>}
       </div>
-      <Field label={tc("address")} value={site.address} />
-      <Field label={tc("district")} value={site.district} />
-      <Field label={tc("city")} value={site.city} />
+      <Field label={tSite("province")} value={site.addressProvinceName ?? site.city} />
+      <Field label={tSite("district")} value={site.addressDistrictName ?? site.district} />
+      <Field label={tSite("ward")} value={site.addressWardName} />
+      <Field label={tSite("street")} value={site.addressStreet ?? site.address} />
       <p className="text-xs text-[#737373]">
         {tSite("equipmentCount", { count: site._count?.equipment ?? 0 })} · {tSite("contactsCount", { count: site._count?.contacts ?? 0 })}
       </p>
@@ -1310,13 +1367,12 @@ function AddSiteModal({
 }) {
   const t = useTranslations("sites");
   const tc = useTranslations("common");
+  const locale = useLocale() as "vi" | "ko" | "en";
   const api = useApi();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [district, setDistrict] = useState("");
-  const [city, setCity] = useState("");
+  const [address, setAddress] = useState<VnAddressValue>({});
   const [region, setRegion] = useState("");
 
   async function submit() {
@@ -1325,9 +1381,13 @@ function AddSiteModal({
     try {
       await api.post(`/api/customers/${customerId}/sites`, {
         name,
-        address,
-        district: district || undefined,
-        city: city || undefined,
+        addressProvinceCode: address.provinceCode ?? undefined,
+        addressProvinceName: address.provinceName ?? undefined,
+        addressDistrictCode: address.districtCode ?? undefined,
+        addressDistrictName: address.districtName ?? undefined,
+        addressWardCode: address.wardCode ?? undefined,
+        addressWardName: address.wardName ?? undefined,
+        addressStreet: address.street ?? undefined,
         region: region || undefined,
       });
       onCreated();
@@ -1347,7 +1407,7 @@ function AddSiteModal({
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>{tc("cancel")}</Button>
-          <Button onClick={submit} isLoading={busy} disabled={!name || !address}>{tc("save")}</Button>
+          <Button onClick={submit} isLoading={busy} disabled={!name}>{tc("save")}</Button>
         </>
       }
     >
@@ -1355,15 +1415,19 @@ function AddSiteModal({
         <FormField label={t("name")} required className="sm:col-span-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label={t("address")} required className="sm:col-span-2">
-          <Input value={address} onChange={(e) => setAddress(e.target.value)} />
-        </FormField>
-        <FormField label={t("district")}>
-          <Input value={district} onChange={(e) => setDistrict(e.target.value)} />
-        </FormField>
-        <FormField label={t("city")}>
-          <Input value={city} onChange={(e) => setCity(e.target.value)} />
-        </FormField>
+        <div className="sm:col-span-2">
+          <VnAddressPicker
+            value={address}
+            onChange={setAddress}
+            locale={locale}
+            labels={{
+              province: t("province"),
+              district: t("district"),
+              ward: t("ward"),
+              street: t("street"),
+            }}
+          />
+        </div>
         <FormField label={t("region")}>
           <Input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="HCMC-D1" />
         </FormField>
@@ -1390,13 +1454,21 @@ function EditSiteModal({
 }) {
   const t = useTranslations("sites");
   const tc = useTranslations("common");
+  const locale = useLocale() as "vi" | "ko" | "en";
   const api = useApi();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [name, setName] = useState(site.name);
-  const [address, setAddress] = useState(site.address);
-  const [district, setDistrict] = useState(site.district ?? "");
-  const [city, setCity] = useState(site.city ?? "");
+  const [address, setAddress] = useState<VnAddressValue>({
+    provinceCode: site.addressProvinceCode,
+    provinceName: site.addressProvinceName,
+    districtCode: site.addressDistrictCode,
+    districtName: site.addressDistrictName,
+    wardCode: site.addressWardCode,
+    wardName: site.addressWardName,
+    // Pre-fill from legacy `address` for unmigrated rows.
+    street: site.addressStreet ?? site.address,
+  });
   const [region, setRegion] = useState(site.region ?? "");
 
   async function submit() {
@@ -1405,9 +1477,13 @@ function EditSiteModal({
     try {
       await api.patch(`/api/customers/${customerId}/sites/${site.id}`, {
         name,
-        address,
-        district: district || undefined,
-        city: city || undefined,
+        addressProvinceCode: address.provinceCode ?? undefined,
+        addressProvinceName: address.provinceName ?? undefined,
+        addressDistrictCode: address.districtCode ?? undefined,
+        addressDistrictName: address.districtName ?? undefined,
+        addressWardCode: address.wardCode ?? undefined,
+        addressWardName: address.wardName ?? undefined,
+        addressStreet: address.street ?? undefined,
         region: region || undefined,
       });
       onSaved();
@@ -1435,15 +1511,19 @@ function EditSiteModal({
         <FormField label={t("name")} required className="sm:col-span-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label={t("address")} required className="sm:col-span-2">
-          <Input value={address} onChange={(e) => setAddress(e.target.value)} />
-        </FormField>
-        <FormField label={t("district")}>
-          <Input value={district} onChange={(e) => setDistrict(e.target.value)} />
-        </FormField>
-        <FormField label={t("city")}>
-          <Input value={city} onChange={(e) => setCity(e.target.value)} />
-        </FormField>
+        <div className="sm:col-span-2">
+          <VnAddressPicker
+            value={address}
+            onChange={setAddress}
+            locale={locale}
+            labels={{
+              province: t("province"),
+              district: t("district"),
+              ward: t("ward"),
+              street: t("street"),
+            }}
+          />
+        </div>
         <FormField label={t("region")}>
           <Input value={region} onChange={(e) => setRegion(e.target.value)} placeholder="HCMC-D1" />
         </FormField>

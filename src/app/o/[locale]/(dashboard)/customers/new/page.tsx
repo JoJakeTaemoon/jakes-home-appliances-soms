@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
+import {
+  VnAddressPicker,
+  type VnAddressValue,
+} from "@/components/ui/vn-address-picker";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { createCustomerSchema } from "@/lib/validators/customer";
 
@@ -25,21 +29,34 @@ type Residency = "DOMESTIC" | "FOREIGN";
 interface FormValues {
   type: "B2C" | "B2B";
   name: string;
-  address?: string;
-  district?: string;
-  city?: string;
+  // B2C only — customer IS the contract party, so phone/email/language live
+  // on the customer top-level. Forked into a CONTRACT_PARTY contact server-side.
+  phone?: string;
+  email?: string;
+  language?: "vi" | "ko" | "en";
+  // Structured Vietnamese address
+  addressProvinceCode?: string | null;
+  addressProvinceName?: string | null;
+  addressDistrictCode?: string | null;
+  addressDistrictName?: string | null;
+  addressWardCode?: string | null;
+  addressWardName?: string | null;
+  addressStreet?: string | null;
   preferredRegion?: string;
   notes?: string;
-  // B2B legal block
+  // B2B legal block (representativeName removed — CONTRACT_PARTY is canonical signatory)
   shortcode?: string;
   taxCode?: string;
-  representativeName?: string;
-  // B2C legal block
+  // B2C legal block — all optional now
   residency?: Residency;
   nationalId?: string;
   passportNumber?: string;
   nationality?: string;
-  contractParty: {
+  // Identity document issue info (shared across CCCD / passport)
+  documentIssueDate?: string;
+  documentIssuePlace?: string;
+  // B2B only — CONTRACT_PARTY is a separate person from the company name.
+  contractParty?: {
     name: string;
     title?: string;
     phone1: string;
@@ -53,6 +70,7 @@ export default function NewCustomerPage() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const tv = useTranslations("validation");
+  const locale = useLocale() as "vi" | "ko" | "en";
   const router = useRouter();
   const api = useApi();
 
@@ -65,6 +83,26 @@ export default function NewCustomerPage() {
   });
   const { register, handleSubmit, control, reset, setValue, formState } = form;
   const { errors } = formState;
+
+  const address = useWatch({ control, name: ["addressProvinceCode", "addressProvinceName", "addressDistrictCode", "addressDistrictName", "addressWardCode", "addressWardName", "addressStreet"] });
+  const addressValue: VnAddressValue = {
+    provinceCode: address?.[0] ?? null,
+    provinceName: address?.[1] ?? null,
+    districtCode: address?.[2] ?? null,
+    districtName: address?.[3] ?? null,
+    wardCode: address?.[4] ?? null,
+    wardName: address?.[5] ?? null,
+    street: address?.[6] ?? null,
+  };
+  function setAddress(next: VnAddressValue) {
+    setValue("addressProvinceCode", next.provinceCode ?? null);
+    setValue("addressProvinceName", next.provinceName ?? null);
+    setValue("addressDistrictCode", next.districtCode ?? null);
+    setValue("addressDistrictName", next.districtName ?? null);
+    setValue("addressWardCode", next.wardCode ?? null);
+    setValue("addressWardName", next.wardName ?? null);
+    setValue("addressStreet", next.street ?? null);
+  }
 
   const opsArray = useFieldArray<FormValues, "opsContacts">({
     control,
@@ -104,7 +142,11 @@ export default function NewCustomerPage() {
     }
   });
 
-  const language = useWatch({ control, name: "contractParty.language" });
+  // B2C uses the top-level `language`; B2B reads from contractParty.language.
+  const language = useWatch({
+    control,
+    name: tab === "B2C" ? "language" : "contractParty.language",
+  });
   const residency = useWatch({ control, name: "residency" });
 
   return (
@@ -148,6 +190,36 @@ export default function NewCustomerPage() {
             <Input {...register("name", { required: tv("required") })} />
           </FormField>
 
+          {tab === "B2C" && (
+            <>
+              <FormField label={tc("phone")} required error={errors.phone?.message}>
+                <Input
+                  {...register("phone", { required: tv("required") })}
+                  placeholder="0901234567"
+                  inputMode="tel"
+                />
+              </FormField>
+              <FormField label={tc("email")} error={errors.email?.message}>
+                <Input {...register("email")} type="email" />
+              </FormField>
+              <FormField label={tc("language")} className="sm:col-span-2">
+                <Combobox
+                  value={(language ?? "vi") as string}
+                  onChange={(v) =>
+                    setValue("language", (v ?? "vi") as "vi" | "ko" | "en")
+                  }
+                  options={[
+                    { value: "vi", label: "Tiếng Việt" },
+                    { value: "ko", label: "한국어" },
+                    { value: "en", label: "English" },
+                  ]}
+                  searchable={false}
+                  allowClear={false}
+                />
+              </FormField>
+            </>
+          )}
+
           {tab === "B2B" && (
             <>
               <FormField
@@ -170,17 +242,6 @@ export default function NewCustomerPage() {
               >
                 <Input {...register("taxCode", { required: tv("required") })} placeholder="03XXXXXXXX" />
               </FormField>
-              <FormField
-                label={t("representativeName")}
-                required
-                error={errors.representativeName?.message}
-                className="sm:col-span-2"
-              >
-                <Input
-                  {...register("representativeName", { required: tv("required") })}
-                  placeholder={t("representativeNamePlaceholder")}
-                />
-              </FormField>
             </>
           )}
 
@@ -190,20 +251,31 @@ export default function NewCustomerPage() {
               setResidency={(v) => setValue("residency", v)}
               register={register}
               errors={errors}
-              tv={tv}
               t={t}
             />
           )}
 
-          <FormField label={tc("address")} className="sm:col-span-2">
-            <Input {...register("address")} />
+          <FormField label={t("documentIssueDate")} error={errors.documentIssueDate?.message}>
+            <Input type="date" {...register("documentIssueDate")} />
           </FormField>
-          <FormField label={tc("district")}>
-            <Input {...register("district")} />
+          <FormField label={t("documentIssuePlace")} error={errors.documentIssuePlace?.message}>
+            <Input {...register("documentIssuePlace")} placeholder={t("documentIssuePlacePlaceholder")} />
           </FormField>
-          <FormField label={tc("city")}>
-            <Input {...register("city")} />
-          </FormField>
+
+          <div className="sm:col-span-2 flex flex-col gap-2">
+            <span className="text-xs font-medium text-[#525252]">{tc("address")}</span>
+            <VnAddressPicker
+              value={addressValue}
+              onChange={setAddress}
+              locale={locale}
+              labels={{
+                province: t("addressProvince"),
+                district: t("addressDistrict"),
+                ward: t("addressWard"),
+                street: t("addressStreet"),
+              }}
+            />
+          </div>
           <FormField label={t("preferredRegion")}>
             <Input {...register("preferredRegion")} placeholder="HCMC-D1" />
           </FormField>
@@ -212,51 +284,53 @@ export default function NewCustomerPage() {
           </FormField>
         </section>
 
-        {/* CONTRACT PARTY */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-[#111111]">
-            {t("form.contractPartySection")} <span className="text-red-600">*</span>
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormField label={tc("name")} required error={errors.contractParty?.name?.message}>
-              <Input {...register("contractParty.name", { required: tv("required") })} />
-            </FormField>
-            <FormField label={tc("title")}>
-              <Input {...register("contractParty.title")} />
-            </FormField>
-            <FormField label={tc("phone")} required error={errors.contractParty?.phone1?.message}>
-              <Input
-                {...register("contractParty.phone1", { required: tv("required") })}
-                placeholder="0901234567"
-              />
-            </FormField>
-            <FormField label={tc("email")}>
-              <Input {...register("contractParty.email")} type="email" />
-            </FormField>
-            <FormField label={tc("language")}>
-              <Combobox
-                value={language ?? "vi"}
-                onChange={(v) =>
-                  setValue("contractParty.language", (v ?? "vi") as "vi" | "ko" | "en")
-                }
-                options={[
-                  { value: "vi", label: "Tiếng Việt" },
-                  { value: "ko", label: "한국어" },
-                  { value: "en", label: "English" },
-                ]}
-                searchable={false}
-                allowClear={false}
-              />
-            </FormField>
-          </div>
-        </section>
+        {/* CONTRACT PARTY — B2B only. For B2C the customer's name + phone +
+            email + language ARE the contract party (collected at the top). */}
+        {tab === "B2B" && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-semibold text-[#111111]">
+              {t("form.contractPartySection")} <span className="text-red-600">*</span>
+            </h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <FormField label={tc("name")} required error={errors.contractParty?.name?.message}>
+                <Input {...register("contractParty.name", { required: tv("required") })} />
+              </FormField>
+              <FormField label={tc("title")}>
+                <Input {...register("contractParty.title")} />
+              </FormField>
+              <FormField label={tc("phone")} required error={errors.contractParty?.phone1?.message}>
+                <Input
+                  {...register("contractParty.phone1", { required: tv("required") })}
+                  placeholder="0901234567"
+                />
+              </FormField>
+              <FormField label={tc("email")}>
+                <Input {...register("contractParty.email")} type="email" />
+              </FormField>
+              <FormField label={tc("language")}>
+                <Combobox
+                  value={language ?? "vi"}
+                  onChange={(v) =>
+                    setValue("contractParty.language", (v ?? "vi") as "vi" | "ko" | "en")
+                  }
+                  options={[
+                    { value: "vi", label: "Tiếng Việt" },
+                    { value: "ko", label: "한국어" },
+                    { value: "en", label: "English" },
+                  ]}
+                  searchable={false}
+                  allowClear={false}
+                />
+              </FormField>
+            </div>
+          </section>
+        )}
 
         {/* OPS CONTACTS */}
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[#111111]">
               {tab === "B2B" ? t("form.opsContactSectionMulti") : t("form.opsContactSection")}
-              {tab === "B2B" && <span className="ml-1 text-red-600">*</span>}
             </h2>
             <Button
               type="button"
@@ -275,12 +349,6 @@ export default function NewCustomerPage() {
             </Button>
           </div>
           <p className="text-xs text-[#737373]">{t("form.primaryHint")}</p>
-
-          {opsArray.fields.length === 0 && tab === "B2B" && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              {tv("atLeastOneOps")}
-            </div>
-          )}
 
           {opsArray.fields.map((field, idx) => (
             <div
@@ -357,14 +425,12 @@ function ResidencyBlock({
   setResidency,
   register,
   errors,
-  tv,
   t,
 }: Readonly<{
   residency: Residency;
   setResidency: (v: Residency) => void;
   register: any;
   errors: any;
-  tv: (k: string) => string;
   t: (k: string) => string;
 }>) {
   return (
@@ -390,25 +456,19 @@ function ResidencyBlock({
         </div>
       </div>
       {residency === "DOMESTIC" ? (
-        <FormField label={t("nationalId")} required error={errors.nationalId?.message}>
-          <Input
-            {...register("nationalId", { required: tv("required") })}
-            placeholder="012345678901"
-          />
+        <FormField label={t("nationalId")} error={errors.nationalId?.message}>
+          <Input {...register("nationalId")} placeholder="012345678901" />
         </FormField>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label={t("nationality")} required error={errors.nationality?.message}>
+          <FormField label={t("nationality")} error={errors.nationality?.message}>
             <Input
-              {...register("nationality", { required: tv("required") })}
+              {...register("nationality")}
               placeholder={t("nationalityPlaceholder")}
             />
           </FormField>
-          <FormField label={t("passportNumber")} required error={errors.passportNumber?.message}>
-            <Input
-              {...register("passportNumber", { required: tv("required") })}
-              placeholder="M12345678"
-            />
+          <FormField label={t("passportNumber")} error={errors.passportNumber?.message}>
+            <Input {...register("passportNumber")} placeholder="M12345678" />
           </FormField>
         </div>
       )}
@@ -421,28 +481,30 @@ function defaultsFor(tab: "B2C" | "B2B"): FormValues {
   return {
     type: tab,
     name: "",
-    address: "",
-    district: "",
-    city: "",
+    phone: tab === "B2C" ? "" : undefined,
+    email: tab === "B2C" ? "" : undefined,
+    language: tab === "B2C" ? "vi" : undefined,
+    addressProvinceCode: null,
+    addressProvinceName: null,
+    addressDistrictCode: null,
+    addressDistrictName: null,
+    addressWardCode: null,
+    addressWardName: null,
+    addressStreet: null,
     preferredRegion: "",
     notes: "",
     shortcode: tab === "B2B" ? "" : undefined,
     taxCode: tab === "B2B" ? "" : undefined,
-    representativeName: tab === "B2B" ? "" : undefined,
     residency: tab === "B2C" ? "DOMESTIC" : undefined,
     nationalId: tab === "B2C" ? "" : undefined,
     passportNumber: tab === "B2C" ? "" : undefined,
     nationality: tab === "B2C" ? "" : undefined,
-    contractParty: {
-      name: "",
-      title: "",
-      phone1: "",
-      email: "",
-      language: "vi",
-    },
-    opsContacts:
+    documentIssueDate: "",
+    documentIssuePlace: "",
+    contractParty:
       tab === "B2B"
-        ? [{ name: "", title: "", phone1: "", email: "", language: "vi", isPrimary: true }]
-        : [],
+        ? { name: "", title: "", phone1: "", email: "", language: "vi" }
+        : undefined,
+    opsContacts: [],
   };
 }

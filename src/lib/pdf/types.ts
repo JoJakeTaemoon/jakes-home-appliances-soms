@@ -52,8 +52,6 @@ export interface PdfCustomerSummary {
   type: "B2C" | "B2B";
   shortcode: string | null;
   taxCode: string | null;
-  /** B2B: legal representative. */
-  representativeName: string | null;
   /** B2C: DOMESTIC / FOREIGN (null for B2B). */
   residency: "DOMESTIC" | "FOREIGN" | null;
   /** B2C DOMESTIC: Vietnamese CCCD. */

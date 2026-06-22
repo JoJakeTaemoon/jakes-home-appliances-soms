@@ -144,39 +144,55 @@ export async function POST(request: NextRequest) {
       name: data.name,
       shortcode: data.type === "B2B" ? data.shortcode : null,
       taxCode: data.type === "B2B" ? data.taxCode : null,
-      representativeName: data.type === "B2B" ? data.representativeName : null,
       residency: data.type === "B2C" ? data.residency : null,
-      nationalId:
-        data.type === "B2C" && data.residency === "DOMESTIC"
-          ? data.nationalId ?? null
-          : null,
-      passportNumber:
-        data.type === "B2C" && data.residency === "FOREIGN"
-          ? data.passportNumber ?? null
-          : null,
-      nationality:
-        data.type === "B2C" && data.residency === "FOREIGN"
-          ? data.nationality ?? null
-          : null,
-      address: data.address ?? null,
-      district: data.district ?? null,
-      city: data.city ?? null,
+      nationalId: data.type === "B2C" ? data.nationalId ?? null : null,
+      passportNumber: data.type === "B2C" ? data.passportNumber ?? null : null,
+      nationality: data.type === "B2C" ? data.nationality ?? null : null,
+      documentIssueDate: data.documentIssueDate ?? null,
+      documentIssuePlace: data.documentIssuePlace ?? null,
+      addressProvinceCode: data.addressProvinceCode ?? null,
+      addressProvinceName: data.addressProvinceName ?? null,
+      addressDistrictCode: data.addressDistrictCode ?? null,
+      addressDistrictName: data.addressDistrictName ?? null,
+      addressWardCode: data.addressWardCode ?? null,
+      addressWardName: data.addressWardName ?? null,
+      addressStreet: data.addressStreet ?? null,
+      // Mirror structured address into deprecated columns so legacy read paths
+      // (PDF templates, list search) keep working until they're migrated.
+      address: data.addressStreet ?? null,
+      district: data.addressDistrictName ?? null,
+      city: data.addressProvinceName ?? null,
       preferredRegion: data.preferredRegion ?? null,
       preferredTechnicianId: data.preferredTechnicianId ?? null,
       notes: data.notes ?? null,
       contacts: {
         create: [
-          {
-            role: "CONTRACT_PARTY" as const,
-            scope: "CUSTOMER" as const,
-            isPrimary: false,
-            name: data.contractParty.name,
-            title: data.contractParty.title ?? null,
-            phone1: data.contractParty.phone1,
-            phone2: data.contractParty.phone2 ?? null,
-            email: data.contractParty.email ?? null,
-            language: data.contractParty.language,
-          },
+          // For B2C the customer IS the contract party — fork name/phone/email
+          // /language from the top-level customer fields. For B2B the form
+          // collects a separate CONTRACT_PARTY (different person, e.g. CEO).
+          data.type === "B2C"
+            ? {
+                role: "CONTRACT_PARTY" as const,
+                scope: "CUSTOMER" as const,
+                isPrimary: false,
+                name: data.name,
+                title: null,
+                phone1: data.phone,
+                phone2: null,
+                email: data.email ?? null,
+                language: data.language,
+              }
+            : {
+                role: "CONTRACT_PARTY" as const,
+                scope: "CUSTOMER" as const,
+                isPrimary: false,
+                name: data.contractParty.name,
+                title: data.contractParty.title ?? null,
+                phone1: data.contractParty.phone1,
+                phone2: data.contractParty.phone2 ?? null,
+                email: data.contractParty.email ?? null,
+                language: data.contractParty.language,
+              },
           ...opsContacts.map((c) => ({
             role: "OPS_CONTACT" as const,
             scope: "CUSTOMER" as const,

@@ -64,7 +64,6 @@ async function main() {
     type: contract.customer.type,
     shortcode: contract.customer.shortcode,
     taxCode: contract.customer.taxCode,
-    representativeName: contract.customer.representativeName,
     residency: contract.customer.residency,
     nationalId: contract.customer.nationalId,
     passportNumber: contract.customer.passportNumber,

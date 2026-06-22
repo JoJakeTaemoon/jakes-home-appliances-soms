@@ -109,19 +109,51 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       if (dup) throw new ConflictError(`Shortcode in use (customer ${dup.code})`);
     }
 
-    const updated = await prisma.customer.update({
-      where: { id },
-      data: {
-        name: data.name,
-        shortcode: data.shortcode,
-        taxCode: data.taxCode,
-        address: data.address,
-        district: data.district,
-        city: data.city,
-        preferredRegion: data.preferredRegion,
-        preferredTechnicianId: data.preferredTechnicianId ?? null,
-        notes: data.notes,
-      },
+    // B2C only: customer IS the contract party. When name or phone change,
+    // propagate to the CONTRACT_PARTY contact so the two stay in sync.
+    const syncContractParty =
+      before.type === "B2C" &&
+      (data.name !== undefined || data.phone !== undefined);
+
+    const [updated] = await prisma.$transaction(async (tx) => {
+      const u = await tx.customer.update({
+        where: { id },
+        data: {
+          name: data.name,
+          shortcode: data.shortcode,
+          taxCode: data.taxCode,
+          residency: data.residency,
+          nationalId: data.nationalId,
+          passportNumber: data.passportNumber,
+          nationality: data.nationality,
+          documentIssueDate: data.documentIssueDate ?? null,
+          documentIssuePlace: data.documentIssuePlace,
+          addressProvinceCode: data.addressProvinceCode,
+          addressProvinceName: data.addressProvinceName,
+          addressDistrictCode: data.addressDistrictCode,
+          addressDistrictName: data.addressDistrictName,
+          addressWardCode: data.addressWardCode,
+          addressWardName: data.addressWardName,
+          addressStreet: data.addressStreet,
+          // Mirror into deprecated columns for legacy read paths.
+          address: data.addressStreet,
+          district: data.addressDistrictName,
+          city: data.addressProvinceName,
+          preferredRegion: data.preferredRegion,
+          preferredTechnicianId: data.preferredTechnicianId ?? null,
+          notes: data.notes,
+        },
+      });
+      if (syncContractParty) {
+        await tx.customerContact.updateMany({
+          where: { customerId: id, role: "CONTRACT_PARTY" },
+          data: {
+            ...(data.name !== undefined ? { name: data.name } : {}),
+            ...(data.phone !== undefined ? { phone1: data.phone } : {}),
+          },
+        });
+      }
+      return [u];
     });
 
     await logAudit({

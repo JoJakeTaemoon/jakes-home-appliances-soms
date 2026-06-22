@@ -8,20 +8,26 @@ function optStr(max: number) {
   }, z.string().max(max).optional());
 }
 
+const structuredAddressFields = {
+  addressProvinceCode: optStr(20),
+  addressProvinceName: optStr(120),
+  addressDistrictCode: optStr(20),
+  addressDistrictName: optStr(120),
+  addressWardCode: optStr(20),
+  addressWardName: optStr(120),
+  addressStreet: optStr(255),
+} as const;
+
 export const createSiteSchema = z.object({
   name: z.string().trim().min(1).max(180),
-  address: z.string().trim().min(1).max(255),
-  district: optStr(120),
-  city: optStr(120),
+  ...structuredAddressFields,
   region: optStr(60),
   notes: optStr(2000),
 });
 
 export const updateSiteSchema = z.object({
   name: z.string().trim().min(1).max(180).optional(),
-  address: z.string().trim().min(1).max(255).optional(),
-  district: optStr(120),
-  city: optStr(120),
+  ...structuredAddressFields,
   region: optStr(60),
   notes: optStr(2000),
   isActive: z.boolean().optional(),

@@ -36,9 +36,26 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       );
     }
 
+    const d = parsed.data;
     const updated = await prisma.site.update({
       where: { id: siteId },
-      data: parsed.data,
+      data: {
+        name: d.name,
+        addressProvinceCode: d.addressProvinceCode,
+        addressProvinceName: d.addressProvinceName,
+        addressDistrictCode: d.addressDistrictCode,
+        addressDistrictName: d.addressDistrictName,
+        addressWardCode: d.addressWardCode,
+        addressWardName: d.addressWardName,
+        addressStreet: d.addressStreet,
+        // Mirror into deprecated columns for legacy read paths.
+        address: d.addressStreet,
+        district: d.addressDistrictName,
+        city: d.addressProvinceName,
+        region: d.region,
+        notes: d.notes,
+        isActive: d.isActive,
+      },
     });
 
     await logAudit({

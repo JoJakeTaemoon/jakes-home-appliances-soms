@@ -300,7 +300,6 @@ async function loadContract(
     type: row.customer.type,
     shortcode: row.customer.shortcode,
     taxCode: row.customer.taxCode,
-    representativeName: row.customer.representativeName,
     residency: row.customer.residency,
     nationalId: row.customer.nationalId,
     passportNumber: row.customer.passportNumber,

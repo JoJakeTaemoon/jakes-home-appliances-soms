@@ -293,16 +293,30 @@ Phía trên màn hình chọn **B2C (Hộ gia đình)** hoặc **B2B (Doanh nghi
 | Mục | Mô tả | Ví dụ |
 |---|---|---|
 | **Tên** | Tên khách hàng | `Nguyễn Văn A` hoặc `김철수` |
-| **Số điện thoại 1** | Liên lạc chính (di động) | `0901234567` |
-| **Địa chỉ đầy đủ** | Địa chỉ lắp đặt | `Số 123, P. Tân Hưng, Quận 7, HCMC` |
-| **Thành phố** | Tách từ địa chỉ | `Hồ Chí Minh` |
+| **Số điện thoại** | Liên lạc chính (di động) — ngay dưới Tên | `0901234567` |
 
-#### Bước 3: Nhập tùy chọn (khuyến khích)
+> **Cập nhật 2026-06-22:** CCCD/Hộ chiếu, Liên hệ vận hành (OPS) và Người đại diện pháp luật (B2B) đều **chuyển sang tùy chọn**. Với B2C **phần Bên ký hợp đồng đã được loại bỏ** — Tên + Số điện thoại + Email + Ngôn ngữ ở trên cùng được tự động dùng làm Bên ký hợp đồng.
+
+#### Bước 3: Nhập địa chỉ — Cascading kiểu Shopee
+
+Địa chỉ nhập theo 4 cấp (giống Shopee VN):
+
+1. **Tỉnh / Thành phố** — chọn từ dropdown. VD: `Thành phố Hồ Chí Minh`
+2. **Quận / Huyện** — kích hoạt sau khi chọn Tỉnh. VD: `Quận 1`
+3. **Phường / Xã** — kích hoạt sau khi chọn Quận. VD: `Phường Bến Nghé`
+4. **Địa chỉ chi tiết** — số nhà, tòa nhà, tầng. VD: `123 Lê Lợi`
+
+> Nếu không có trong danh sách, gõ trực tiếp rồi nhấn tùy chọn **"\"giá trị\""** để nhập tự do.
+
+#### Bước 4: Nhập tùy chọn (khuyến khích)
 
 | Mục | Mô tả |
 |---|---|
+| **CCCD / Hộ chiếu** | Theo cư trú — có thể bổ sung khi phát hành hợp đồng |
+| **Ngày cấp · Nơi cấp** | Thông tin cấp CCCD/Hộ chiếu (in lên hợp đồng) |
 | **Số điện thoại 2** | Liên lạc phụ |
 | **Email** | Để gửi hóa đơn thu tiền · phiếu xác nhận |
+| **Liên hệ vận hành (OPS)** | Người nhận thông báo lịch hẹn (cho phép 0 người) |
 | **Khu vực ưu tiên** | Ưu tiên khi xếp KTV bảo trì định kỳ (ví dụ: `HCMC-D1`) |
 | **KTV ưu tiên** | Khi khách hàng chỉ định KTV cụ thể |
 | **Ghi chú** | Thông tin đặc biệt (mã ra vào, vị trí cây nước, dị ứng, v.v.) |
@@ -328,6 +342,8 @@ Khác với B2C:
 | **Tên** | Không phải tên người mà là **tên doanh nghiệp** (ví dụ: `CÔNG TY TNHH SHV`) |
 | **Mã số thuế (taxCode)** | Mã số đăng ký kinh doanh Việt Nam **bắt buộc** (ví dụ: `0301234567`) |
 | **Viết tắt (shortcode)** | 2~5 chữ cái viết tắt (ví dụ: `SHV`) — dùng trong mã hợp đồng |
+
+> **Cập nhật 2026-06-22:** Đã loại bỏ trường **Người đại diện pháp luật**. Người ký hợp đồng là người trong vai **CONTRACT_PARTY**. **Cho phép 0 liên hệ OPS** để hỗ trợ bán lẻ một lần.
 
 #### Thêm Cơ sở (Site) — chỉ B2B
 

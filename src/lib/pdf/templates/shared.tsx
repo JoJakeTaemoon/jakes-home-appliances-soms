@@ -341,10 +341,10 @@ export function PdfPartiesBlock({ customer, company, hqPhone, primary, secondary
             <Text style={styles.metaValue}>{customer.taxCode}</Text>
           </View>
         )}
-        {customer.type === "B2B" && customer.representativeName && (
+        {customer.type === "B2B" && customer.contractParty?.name && (
           <View style={styles.metaRow}>
             <Bi primary={primary.labels.customerRepresentative} secondary={secondary.labels.customerRepresentative} style={styles.metaLabel} subStyle={styles.metaLabelSecondary} />
-            <Text style={[styles.metaValue, autoFontStyle(customer.representativeName)]}>{customer.representativeName}</Text>
+            <Text style={[styles.metaValue, autoFontStyle(customer.contractParty.name)]}>{customer.contractParty.name}</Text>
           </View>
         )}
         {customer.type === "B2C" && customer.residency === "DOMESTIC" && customer.nationalId && (
@@ -596,9 +596,7 @@ interface SignaturesProps extends PairProps {
  */
 export function PdfSignatures({ customer, company, primary, secondary }: Readonly<SignaturesProps>) {
   const customerSignerName =
-    customer.type === "B2B"
-      ? customer.representativeName ?? customer.contractParty?.name ?? customer.name
-      : customer.contractParty?.name ?? customer.name;
+    customer.contractParty?.name ?? customer.name;
   return (
     <View style={styles.signatureRow}>
       <View style={styles.signatureBox}>

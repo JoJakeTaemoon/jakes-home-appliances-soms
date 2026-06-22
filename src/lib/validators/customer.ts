@@ -51,9 +51,21 @@ export const opsContactInputSchema = contactBase.extend({
 });
 
 const addressFields = {
-  address: optString(255),
-  district: optString(120),
-  city: optString(120),
+  addressProvinceCode: optString(20),
+  addressProvinceName: optString(120),
+  addressDistrictCode: optString(20),
+  addressDistrictName: optString(120),
+  addressWardCode: optString(20),
+  addressWardName: optString(120),
+  addressStreet: optString(255),
+} as const;
+
+const identityIssueFields = {
+  documentIssueDate: z.preprocess((v) => {
+    if (v === null || v === undefined || v === "") return undefined;
+    return v;
+  }, z.coerce.date().optional()),
+  documentIssuePlace: optString(200),
 } as const;
 
 const shortcodeRegex = /^[A-Z][A-Z0-9]{1,4}$/;
@@ -68,46 +80,31 @@ const createBaseFields = {
 
 export const residencyEnum = z.enum(["DOMESTIC", "FOREIGN"]);
 
-export const createB2CCustomerSchema = z
-  .object({
-    type: z.literal("B2C"),
-    ...createBaseFields,
-    residency: residencyEnum.default("DOMESTIC"),
-    /** DOMESTIC residents: Vietnamese CCCD (national ID). */
-    nationalId: optString(40),
-    /** FOREIGN residents: passport number. */
-    passportNumber: optString(40),
-    /** FOREIGN residents: nationality (free-form). */
-    nationality: optString(80),
-    contractParty: contractPartyInputSchema,
-    opsContacts: z.array(opsContactInputSchema).default([]),
-  })
-  .superRefine((val, ctx) => {
-    if (val.residency === "DOMESTIC") {
-      if (!val.nationalId || val.nationalId.trim() === "") {
-        ctx.addIssue({
-          code: "custom",
-          path: ["nationalId"],
-          message: "CCCD is required for domestic residents",
-        });
-      }
-    } else if (val.residency === "FOREIGN") {
-      if (!val.passportNumber || val.passportNumber.trim() === "") {
-        ctx.addIssue({
-          code: "custom",
-          path: ["passportNumber"],
-          message: "Passport number is required for foreign residents",
-        });
-      }
-      if (!val.nationality || val.nationality.trim() === "") {
-        ctx.addIssue({
-          code: "custom",
-          path: ["nationality"],
-          message: "Nationality is required for foreign residents",
-        });
-      }
-    }
-  });
+export const createB2CCustomerSchema = z.object({
+  type: z.literal("B2C"),
+  ...createBaseFields,
+  /**
+   * For B2C the customer IS the contract party. We collect phone + email +
+   * language at the top of the form (no separate CONTRACT_PARTY section) and
+   * the API forks them into a CustomerContact row at create time.
+   */
+  phone: z.string().trim().regex(phoneRegex, "Invalid phone").min(6).max(20),
+  email: z.preprocess((v) => {
+    if (typeof v !== "string") return v;
+    const t = v.trim();
+    return t === "" ? undefined : t;
+  }, z.string().email().optional()),
+  language: localeEnum.default("vi"),
+  residency: residencyEnum.default("DOMESTIC"),
+  /** Vietnamese CCCD (national ID). Optional — collected at contract issuance. */
+  nationalId: optString(40),
+  /** Passport number for foreign residents. Optional. */
+  passportNumber: optString(40),
+  /** Nationality for foreign residents. Optional. */
+  nationality: optString(80),
+  ...identityIssueFields,
+  opsContacts: z.array(opsContactInputSchema).default([]),
+});
 
 export const createB2BCustomerSchema = z.object({
   type: z.literal("B2B"),
@@ -117,9 +114,9 @@ export const createB2BCustomerSchema = z.object({
     .trim()
     .regex(shortcodeRegex, "Shortcode must be 2-5 chars starting A-Z (A-Z0-9)"),
   taxCode: z.string().trim().min(6).max(40),
-  representativeName: z.string().trim().min(1).max(200),
+  ...identityIssueFields,
   contractParty: contractPartyInputSchema,
-  opsContacts: z.array(opsContactInputSchema).min(1, "B2B requires at least one OPS contact"),
+  opsContacts: z.array(opsContactInputSchema).default([]),
 });
 
 export const createCustomerSchema = z.discriminatedUnion("type", [
@@ -135,9 +132,22 @@ export const updateCustomerSchema = z.object({
     return t === "" ? undefined : t;
   }, z.string().regex(shortcodeRegex).optional()),
   taxCode: optString(40),
-  address: optString(255),
-  district: optString(120),
-  city: optString(120),
+  /**
+   * B2C only: customer phone IS the CONTRACT_PARTY contact's phone1. When
+   * present, the PATCH route forwards it to the customer's CONTRACT_PARTY
+   * contact and updates phone1 there. Ignored for B2B (use the contacts tab).
+   */
+  phone: z.preprocess((v) => {
+    if (typeof v !== "string") return v;
+    const t = v.trim();
+    return t === "" ? undefined : t;
+  }, z.string().regex(phoneRegex).min(6).max(20).optional()),
+  ...addressFields,
+  residency: residencyEnum.optional(),
+  nationalId: optString(40),
+  passportNumber: optString(40),
+  nationality: optString(80),
+  ...identityIssueFields,
   preferredRegion: optString(60),
   preferredTechnicianId: optString(60),
   notes: optString(2000),
