@@ -315,6 +315,7 @@
   "equipment": {
     "title": "장비",
     "installNew": "+ 신규 설치",
+    "installViaContract": "+ 계약 생성으로 설치",
     "code": "코드",
     "customer": "고객",
     "site": "사업장",
@@ -368,12 +369,33 @@
       "terminate": "해지",
       "replace": "교체",
       "relocate": "사업장 이동",
-      "reactivate": "재활성화"
+      "reactivate": "재활성화",
+      "logRetrieval": "회수 일자 기록"
     },
     "confirm": {
       "deactivate": "이 장비를 비활성화하시겠습니까? 정기 점검 일정에서 제외되지만 이력은 보존됩니다.",
       "terminate": "이 장비를 해지하시겠습니까? 되돌릴 수 없는 최종 처리입니다.",
       "reactivate": "이 장비를 다시 활성화하시겠습니까?"
+    },
+    "deactivatedAt": "비활성 시작일",
+    "terminatedAt": "해지일",
+    "retrievedAt": "실제 회수일",
+    "deactivateModal": {
+      "billingWarning": "⚠ 비활성 기간 동안 이 장비가 들어 있는 활성 임대·관리 계약의 청구가 일할 계산으로 중단되고, 같은 일수만큼 해당 장비의 해지 일자가 뒤로 연장됩니다.",
+      "effectiveAt": "비활성 시작일자",
+      "effectiveAtHint": "현장에서 실제로 멈춘 날짜로 입력하세요. 과거 날짜도 가능합니다.",
+      "reasonHint": "예: 고객 요청으로 사용 중단, 누수 점검 대기 등"
+    },
+    "terminateModal": {
+      "finalWarning": "⚠ 해지 후에는 청구가 중단되고 이 장비는 더 이상 점검 일정에 포함되지 않습니다. 되돌릴 수 없습니다.",
+      "effectiveAt": "해지 일자",
+      "effectiveAtHint": "현장에서 결정된 실제 해지일을 입력하세요. 과거 날짜도 가능합니다.",
+      "reasonHint": "예: 계약 만료, 분실, 회수 결정 등"
+    },
+    "retrievalModal": {
+      "intro": "이 장비는 이미 해지 상태입니다. 실제 회수가 끝났다면 회수 일자를 기록하세요. 나중에 다시 수정 가능합니다.",
+      "retrievedAt": "회수 일자",
+      "retrievedAtHint": "현장에서 장비를 회수한 실제 날짜를 입력합니다. 해지일보다 이전 날짜는 불가능합니다."
     },
     "replaceTitle": "장비 교체",
     "replaceConfirm": "기존 장비는 교체됨으로 표시됩니다. 새 모델과 시리얼 번호를 선택하세요.",
@@ -434,6 +456,13 @@
       "serialStartHint": "예: PTS-2100-000010 → 수량만큼 연속 시리얼 자동 부여",
       "addRow": "+ 모델 추가",
       "installCta": "{total}대 설치"
+    },
+    "pause": {
+      "colState": "일시정지/해지",
+      "colEffectiveEnd": "유효 해지일",
+      "statePaused": "일시정지 ({days}일 누적)",
+      "stateRestored": "활성 (누적 {days}일 일시정지 적용)",
+      "stateSettled": "해지 완료"
     },
     "noContracts": "등록된 계약이 없습니다",
     "noResults": "조건에 맞는 계약이 없습니다",
@@ -575,6 +604,16 @@
       "newCustomerTitle": "신규 고객 등록 (간편)",
       "pickType": "계약 유형 선택",
       "pickEquipment": "장비 선택",
+      "monthlyFeePerUnit": "월 관리비",
+      "deliveryDate": "설치 인도일",
+      "pickModel": "신규 모델 추가",
+      "pickModelPlaceholder": "카탈로그에서 모델 선택",
+      "pickSite": "사업장 선택",
+      "pickExistingEquipment": "고객의 기존 장비 (선택)",
+      "siteRequiredNotice": "이 고객은 사업장이 {count}곳입니다. 각 행마다 사업장을 지정하세요.",
+      "serialStartAuto": "비워두면 자동 채번",
+      "filterBrand": "브랜드 필터",
+      "filterCategory": "제품군 필터",
       "addLine": "장비 추가",
       "removeLine": "제거",
       "unitPrice": "단가 (₫)",

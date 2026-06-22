@@ -37,7 +37,10 @@ export const GET = defineQuery({
         orderBy: { modelCode: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { brand: { select: { id: true, name: true } } },
+        include: {
+          brand: { select: { id: true, name: true } },
+          productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
+        },
       }),
     ]);
     return { rows, pagination: { page, limit: pageSize, total } };

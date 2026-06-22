@@ -465,6 +465,13 @@ Khi khách hàng ngừng giao dịch (đóng cửa · chuyển đi · kết thú
 > - **SMS hết hạn không tự gửi**: Văn phòng phải bấm nút [Gửi SMS hết hạn] thì SMS mới được gửi cho khách.
 > - **Hợp đồng bảo trì cho thiết bị bên ngoài**: Có thể tạo hợp đồng MAINTENANCE cho thiết bị không có trong catalog. Trong modal thêm thiết bị, bật "Thiết bị bên ngoài" và nhập mô tả + chu kỳ bảo trì trực tiếp.
 
+> **Cập nhật bổ sung 2026-06-22 — Tạm ngừng thiết bị = Gia hạn kết thúc (độc lập theo thiết bị)**
+>
+> - **Tài liệu hợp đồng KHÔNG đổi**: Phí thuê, phí bảo trì, ngày kết thúc trong hợp đồng giữ nguyên. Thời gian tạm ngừng chỉ được ghi nhận và xử lý **theo từng thiết bị nội bộ**.
+> - **Vô hiệu hóa thiết bị → tạm ngừng tính phí**: Khi bấm [Vô hiệu hóa] trên chi tiết thiết bị, dòng tương ứng trong các hợp đồng RENTAL/MAINTENANCE đang ACTIVE/AMENDED sẽ ghi nhận thời điểm bắt đầu tạm ngừng. Khi kích hoạt lại, số ngày tạm ngừng được cộng dồn.
+> - **Ngày kết thúc thực tế theo thiết bị = endDate hợp đồng + tổng số ngày tạm ngừng**: Tab Thiết bị trong chi tiết hợp đồng hiển thị cột [Ngày kết thúc thực tế] cho từng dòng. Nhiều thiết bị trong cùng một hợp đồng có thể kết thúc vào những ngày khác nhau.
+> - **Xử lý kết thúc theo từng thiết bị, độc lập**: Cron kiểm tra từng dòng; thiết bị nào đến hạn thực tế thì xử lý dòng đó (chuyển sở hữu hoặc tạo lượt thu hồi). Hợp đồng chỉ chuyển sang COMPLETED khi mọi dòng đã settle.
+
 > **Cập nhật bổ sung 2026-06-22 — Lắp đặt theo hợp đồng + Cơ sở**
 >
 > - **Lắp đặt thiết bị phải chọn hợp đồng trước**: Luồng "Thiết bị → Lắp đặt mới" cũ đã được thay bằng luồng chọn hợp đồng trước. Bấm [+ Lắp đặt thiết bị] trong tab Thiết bị của chi tiết hợp đồng, hoặc vào trang Lắp đặt và chọn hợp đồng. Không còn lắp đặt thiết bị tự do ngoài hợp đồng.

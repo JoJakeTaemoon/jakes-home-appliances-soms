@@ -17,7 +17,16 @@ export interface NameableModel {
   modelCode?: string | null;
 }
 
-export function pickModelName(model: NameableModel, locale: string | undefined): string {
+export function pickModelName(
+  model: NameableModel | null | undefined,
+  locale: string | undefined,
+): string {
+  // Null-safe: off-catalog ("external") devices ship with `model = null`
+  // and a `customDescription` instead. Callers that want the description
+  // should use `pickEquipmentLabel(equipment, locale)` — `pickModelName`
+  // is the wrong tool there, and returning "—" is a soft fallback that
+  // prevents a hard runtime crash everywhere it's called.
+  if (!model) return "—";
   const ko = model.nameKo;
   const vi = model.nameVi;
   const en = model.nameEn;

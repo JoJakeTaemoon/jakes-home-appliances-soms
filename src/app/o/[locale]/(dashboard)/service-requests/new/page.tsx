@@ -16,6 +16,7 @@ import { useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/input";
@@ -117,9 +118,7 @@ export default function ServiceRequestNewPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("newPageTitle")}</h1>
-        <Button variant="ghost" onClick={() => router.push("/o/service-requests")}>
-          {tc("cancel")}
-        </Button>
+        <BackButton fallback="/o/service-requests">{tc("cancel")}</BackButton>
       </header>
 
       <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[#e5e5e5] bg-white p-6 sm:grid-cols-2">
@@ -213,9 +212,9 @@ export default function ServiceRequestNewPage() {
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={() => router.push("/o/service-requests")} disabled={busy}>
+        <BackButton fallback="/o/service-requests" disabled={busy}>
           {tc("cancel")}
-        </Button>
+        </BackButton>
         <Button
           onClick={submit}
           isLoading={busy}

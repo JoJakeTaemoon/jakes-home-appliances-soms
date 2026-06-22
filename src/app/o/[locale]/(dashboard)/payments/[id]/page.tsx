@@ -9,6 +9,7 @@ import { useApiQuery } from "@/lib/api/hooks";
 import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -152,13 +153,14 @@ export default function PaymentDetailPage() {
     <div className="mx-auto max-w-5xl">
       <BreadcrumbLabel value={data.customer.name} />
       <header className="mb-6">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="text-sm text-[var(--brand-blue-700)] hover:underline"
+        <BackButton
+          fallback="/o/payments"
+          variant="ghost"
+          size="sm"
+          className="text-[var(--brand-blue-700)]"
         >
           ← Back
-        </button>
+        </BackButton>
         <div className="mt-2 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-[#002A4D]">

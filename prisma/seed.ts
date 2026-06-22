@@ -1934,7 +1934,15 @@ async function main() {
       equipment: {
         create: [
           { equipmentId: b2c.equipment[0].id, unitPrice: 250_000 },
-          { equipmentId: b2c.equipment[1].id, unitPrice: 100_000 },
+          // Demo: the bidet line carries 14 paused days of accumulated
+          // deactivation history so the contract detail equipment tab
+          // surfaces a non-zero "유효 해지일" (= 2028-06-15 + 14 days)
+          // distinct from the purifier line.
+          {
+            equipmentId: b2c.equipment[1].id,
+            unitPrice: 100_000,
+            cumulativePausedDays: 14,
+          },
         ],
       },
     },

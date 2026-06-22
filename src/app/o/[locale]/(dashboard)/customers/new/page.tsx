@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
@@ -153,9 +154,7 @@ export default function NewCustomerPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("createCustomer")}</h1>
-        <Button variant="ghost" onClick={() => router.push("/o/customers")}>
-          {tc("cancel")}
-        </Button>
+        <BackButton fallback="/o/customers">{tc("cancel")}</BackButton>
       </header>
 
       <div className="flex w-full items-center gap-2 rounded-xl bg-[#f5f5f5] p-1">
@@ -407,9 +406,7 @@ export default function NewCustomerPage() {
         )}
 
         <div className="flex items-center justify-end gap-2">
-          <Button variant="ghost" type="button" onClick={() => router.push("/o/customers")}>
-            {tc("cancel")}
-          </Button>
+          <BackButton fallback="/o/customers">{tc("cancel")}</BackButton>
           <Button type="submit" isLoading={submitting}>
             {tc("save")}
           </Button>

@@ -146,13 +146,36 @@ export const replaceEquipmentSchema = z.object({
 export const equipmentStatusSchema = z.object({
   status: z.enum(["ACTIVE", "DEACTIVATED", "TERMINATED", "RELOCATED", "REPLACED"]),
   reason: z.string().trim().max(500).optional(),
+  /**
+   * Effective moment the new status takes hold. Office staff can
+   * back-date (the device was actually deactivated last Tuesday) or
+   * leave undefined → server uses now(). Applied to:
+   *   - DEACTIVATED → ContractEquipment.currentPauseStartedAt
+   *   - TERMINATED → Equipment.terminatedAt + ContractEquipment.settledAt
+   *   - ACTIVE     → closes the open pause window as of this moment
+   */
+  effectiveAt: z.coerce.date().optional(),
 });
+
+/**
+ * POST /api/equipment/[id]/retrieval — sets Equipment.retrievedAt for a
+ * unit that's already in TERMINATED state. Past dates are allowed
+ * because retrieval is often logged after the field visit.
+ */
+export const equipmentRetrievalSchema = z.object({
+  retrievedAt: z.coerce.date(),
+  notes: optStr(500),
+});
+
+export type EquipmentRetrievalInput = z.infer<typeof equipmentRetrievalSchema>;
 
 export const equipmentListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   customerId: z.string().trim().min(1).optional(),
   siteId: z.string().trim().min(1).optional(),
   modelId: z.string().trim().min(1).optional(),
+  brandId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).optional(),
   status: z.enum(["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"]).optional(),
   region: z.string().trim().max(60).optional(),
   sortBy: z.string().trim().min(1).max(60).optional(),

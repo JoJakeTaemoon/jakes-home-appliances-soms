@@ -365,8 +365,8 @@ export default function CustomerDetailPage() {
                 </div>
               )}
               {canManageEquipment(role) && (
-                <Link href={`/o/equipment/new?customerId=${data.id}`}>
-                  <Button>{tEq("installNew")}</Button>
+                <Link href={`/o/contracts/new?customerId=${data.id}`}>
+                  <Button variant="secondary">{tEq("installViaContract")}</Button>
                 </Link>
               )}
             </div>

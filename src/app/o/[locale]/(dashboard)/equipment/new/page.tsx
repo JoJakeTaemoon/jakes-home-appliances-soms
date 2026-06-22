@@ -1,52 +1,43 @@
 "use client";
 
 /**
- * Equipment install — contract-first entry point (2026-06 redesign).
+ * Retired 2026-06-22. The standalone "equipment install" entry point has
+ * been removed — equipment is now always installed via the contract
+ * creation wizard (`/o/contracts/new`). This page exists only to bounce
+ * legacy bookmarks / sidebar links onto the new flow so the user doesn't
+ * land on a 404.
  *
- * Previously this page asked the user to pick a customer and then
- * register a single device. The new policy ("신규 설치는 반드시 계약에
- * 종속") makes the contract the canonical owner of equipment, so this
- * page hosts the `BulkInstallEquipmentForm` with the contract picker
- * enabled.
+ * If `?contractId=…` survives the redirect (e.g. someone shared the
+ * pre-fill link from the contract detail page) we hand it off to the
+ * contract detail page's install modal — that's where contract-scoped
+ * additional installs now live.
  */
 
-import { Suspense } from "react";
-import { useTranslations } from "next-intl";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import { BulkInstallEquipmentForm } from "@/components/contracts/bulk-install-equipment-form";
 
-export default function NewEquipmentPage() {
+export default function RetiredEquipmentNewPage() {
   return (
-    <Suspense fallback={<div className="text-sm text-[#737373]">Loading…</div>}>
-      <NewEquipmentInner />
+    <Suspense fallback={<div className="text-sm text-[#737373]">Redirecting…</div>}>
+      <Redirector />
     </Suspense>
   );
 }
 
-function NewEquipmentInner() {
-  const t = useTranslations("equipment");
-  const tc = useTranslations("common");
-  const router = useRouter();
+function Redirector() {
   const sp = useSearchParams();
-  const presetContract = sp.get("contractId");
-
-  return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[#002A4D]">
-          {t("installNew")}
-        </h1>
-        <Button variant="ghost" onClick={() => router.push("/o/equipment")}>
-          {tc("cancel")}
-        </Button>
-      </header>
-
-      <BulkInstallEquipmentForm
-        lockedContractId={presetContract ?? undefined}
-        onSuccess={({ contractId }) => router.push(`/o/contracts/${contractId}`)}
-      />
-    </div>
-  );
+  const router = useRouter();
+  useEffect(() => {
+    const contractId = sp.get("contractId");
+    if (contractId) {
+      router.replace(`/o/contracts/${contractId}`);
+      return;
+    }
+    const customerId = sp.get("customerId");
+    router.replace(
+      customerId ? `/o/contracts/new?customerId=${customerId}` : "/o/contracts/new",
+    );
+  }, [router, sp]);
+  return <div className="text-sm text-[#737373]">Redirecting to contract flow…</div>;
 }

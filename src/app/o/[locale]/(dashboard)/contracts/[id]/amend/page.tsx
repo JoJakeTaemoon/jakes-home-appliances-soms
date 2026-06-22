@@ -8,6 +8,7 @@ import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/input";
@@ -193,9 +194,9 @@ export default function AmendContractPage() {
       )}
 
       <footer className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={() => router.back()} disabled={busy}>
+        <BackButton fallback={`/o/contracts/${id}`} disabled={busy}>
           {tc("cancel")}
-        </Button>
+        </BackButton>
         <Button onClick={submit} isLoading={busy} disabled={!reason.trim()}>
           {t("amend.submit")}
         </Button>

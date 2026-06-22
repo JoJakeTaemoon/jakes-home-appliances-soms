@@ -30,13 +30,19 @@ export const GET = defineQuery({
   query: equipmentListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, customerId, siteId, modelId, status, region, sortBy, sortDir, page, pageSize } =
+    const { q, customerId, siteId, modelId, brandId, categoryId, status, region, sortBy, sortDir, page, pageSize } =
       query;
     const orderBy = resolveOrderBy({ sortBy, sortDir }, EQUIPMENT_SORT_MAP, { createdAt: "desc" });
     const where: Prisma.EquipmentWhereInput = {};
     if (customerId) where.customerId = customerId;
     if (siteId) where.siteId = siteId;
     if (modelId) where.modelId = modelId;
+    if (brandId || categoryId) {
+      const modelFilter: Prisma.EquipmentModelWhereInput = {};
+      if (brandId) modelFilter.brandId = brandId;
+      if (categoryId) modelFilter.categoryId = categoryId;
+      where.model = modelFilter;
+    }
     if (status) where.status = status;
     if (region)
       where.OR = [{ site: { region } }, { customer: { preferredRegion: region } }];
@@ -68,7 +74,18 @@ export const GET = defineQuery({
           },
           site: { select: { id: true, name: true, region: true } },
           model: {
-            select: { id: true, modelCode: true, nameKo: true, nameVi: true, nameEn: true, category: true },
+            select: {
+              id: true,
+              modelCode: true,
+              nameKo: true,
+              nameVi: true,
+              nameEn: true,
+              category: true,
+              categoryId: true,
+              brandId: true,
+              brand: { select: { id: true, name: true } },
+              productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
+            },
           },
         },
       }),

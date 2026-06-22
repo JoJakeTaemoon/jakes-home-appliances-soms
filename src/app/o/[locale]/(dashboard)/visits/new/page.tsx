@@ -9,6 +9,7 @@ import { useApiQuery } from "@/lib/api/hooks";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { NumberInput } from "@/components/ui/number-input";
 
@@ -200,9 +201,7 @@ export default function NewVisitPage() {
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" onClick={() => router.back()}>
-          Cancel
-        </Button>
+        <BackButton fallback="/o/visits">Cancel</BackButton>
         <Button onClick={submit} disabled={submitting || !customerId || !scheduledFor}>
           {submitting ? t("saving") : t("createForm.submit")}
         </Button>

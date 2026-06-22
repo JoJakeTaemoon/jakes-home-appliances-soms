@@ -22,7 +22,12 @@ export type AmendmentChangeType =
   | "SCOPE_CHANGE";
 
 export interface AmendmentEquipmentLine {
-  equipmentId: string;
+  /** Amendment paths only support attaching existing Equipment rows
+   *  for now — materialise-mode (modelId + serial sweep) is the
+   *  contract-create flow's job. The validator's `modelId` field is
+   *  ignored here; passing it on this path raises ValidationError. */
+  equipmentId?: string | null;
+  modelId?: string | null;
   unitPrice?: number | null;
   quantity?: number;
   notes?: string | null;
@@ -93,8 +98,22 @@ export async function createAmendment(
       throw new ValidationError("Amendment requires at least one equipment line");
     }
 
+    // Amendment paths only attach existing Equipment. The contract-create
+    // validator allows `modelId` materialise-mode; reject that here so a
+    // mistakenly-routed payload doesn't silently slip through.
+    for (const [i, line] of baseEquipment.entries()) {
+      const modelId = "modelId" in line ? line.modelId : null;
+      if (modelId) {
+        throw new ValidationError(
+          `equipment[${i}] — modelId not allowed on amendment; use the contract install flow instead`,
+        );
+      }
+      if (!line.equipmentId) {
+        throw new ValidationError(`equipment[${i}].equipmentId — required`);
+      }
+    }
     // Validate all referenced equipment belong to the customer (and same site rule defer to caller).
-    const equipmentIds = baseEquipment.map((l) => l.equipmentId);
+    const equipmentIds = baseEquipment.map((l) => l.equipmentId!);
     const owned = await prisma.equipment.findMany({
       where: { id: { in: equipmentIds }, customerId: customer.id },
       select: { id: true },
@@ -129,7 +148,7 @@ export async function createAmendment(
         activatedAt: new Date(),
         equipment: {
           create: baseEquipment.map((l) => ({
-            equipmentId: l.equipmentId,
+            equipmentId: l.equipmentId!,
             unitPrice: l.unitPrice ?? undefined,
             quantity: l.quantity ?? 1,
             notes: l.notes ?? undefined,

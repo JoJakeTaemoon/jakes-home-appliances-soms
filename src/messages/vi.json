@@ -315,6 +315,7 @@
   "equipment": {
     "title": "Thiết bị",
     "installNew": "+ Lắp đặt",
+    "installViaContract": "+ Lắp đặt qua hợp đồng",
     "code": "Mã",
     "customer": "Khách hàng",
     "site": "Cơ sở",
@@ -368,12 +369,33 @@
       "terminate": "Kết thúc",
       "replace": "Thay thế",
       "relocate": "Chuyển cơ sở",
-      "reactivate": "Kích hoạt lại"
+      "reactivate": "Kích hoạt lại",
+      "logRetrieval": "Ghi nhận ngày thu hồi"
     },
     "confirm": {
       "deactivate": "Vô hiệu hóa thiết bị này? Sẽ không còn lên lịch bảo trì định kỳ nhưng lịch sử vẫn được giữ.",
       "terminate": "Kết thúc thiết bị này? Thao tác này là vĩnh viễn và không thể hoàn tác.",
       "reactivate": "Kích hoạt lại thiết bị này?"
+    },
+    "deactivatedAt": "Ngày bắt đầu tạm ngừng",
+    "terminatedAt": "Ngày kết thúc",
+    "retrievedAt": "Ngày thu hồi thực tế",
+    "deactivateModal": {
+      "billingWarning": "⚠ Trong thời gian tạm ngừng, việc tính phí của thiết bị trên các hợp đồng thuê/bảo trì đang ACTIVE sẽ tạm dừng pro-rata, đồng thời ngày kết thúc thực tế của thiết bị bị đẩy lùi đúng bằng số ngày tạm ngừng.",
+      "effectiveAt": "Ngày bắt đầu tạm ngừng",
+      "effectiveAtHint": "Hãy nhập ngày thiết bị thực sự ngừng tại hiện trường. Cho phép ngày trong quá khứ.",
+      "reasonHint": "Ví dụ: Khách yêu cầu tạm ngừng, chờ kiểm tra rò rỉ…"
+    },
+    "terminateModal": {
+      "finalWarning": "⚠ Sau khi kết thúc, việc tính phí dừng và thiết bị này sẽ không còn trong lịch bảo trì. Không thể hoàn tác.",
+      "effectiveAt": "Ngày kết thúc",
+      "effectiveAtHint": "Hãy nhập ngày kết thúc thực tế theo quyết định tại hiện trường. Cho phép ngày trong quá khứ.",
+      "reasonHint": "Ví dụ: Hết hạn hợp đồng, thất lạc, quyết định thu hồi…"
+    },
+    "retrievalModal": {
+      "intro": "Thiết bị đã ở trạng thái kết thúc. Sau khi thực sự thu hồi xong, vui lòng ghi nhận ngày thu hồi. Có thể chỉnh sửa sau.",
+      "retrievedAt": "Ngày thu hồi",
+      "retrievedAtHint": "Nhập ngày kỹ thuật viên thực sự thu hồi thiết bị. Không được sớm hơn ngày kết thúc."
     },
     "replaceTitle": "Thay thế thiết bị",
     "replaceConfirm": "Thiết bị hiện tại sẽ được đánh dấu Đã thay thế. Chọn mẫu mới và số sê-ri.",
@@ -434,6 +456,13 @@
       "serialStartHint": "Ví dụ PTS-2100-000010 → tự động tăng theo số lượng",
       "addRow": "+ Thêm model",
       "installCta": "Lắp đặt {total} thiết bị"
+    },
+    "pause": {
+      "colState": "Tạm ngừng/Kết thúc",
+      "colEffectiveEnd": "Ngày kết thúc thực tế",
+      "statePaused": "Đang tạm ngừng ({days} ngày tích lũy)",
+      "stateRestored": "Đang hoạt động (cộng dồn {days} ngày tạm ngừng)",
+      "stateSettled": "Đã kết thúc"
     },
     "noContracts": "Chưa có hợp đồng",
     "noResults": "Không có hợp đồng nào khớp với bộ lọc",
@@ -575,6 +604,16 @@
       "newCustomerTitle": "Tạo nhanh khách hàng",
       "pickType": "Chọn loại hợp đồng",
       "pickEquipment": "Chọn dòng thiết bị",
+      "monthlyFeePerUnit": "Phí bảo trì hàng tháng",
+      "deliveryDate": "Ngày bàn giao",
+      "pickModel": "Thêm model mới",
+      "pickModelPlaceholder": "Chọn model từ danh mục",
+      "pickSite": "Chọn cơ sở",
+      "pickExistingEquipment": "Thiết bị sẵn có của khách hàng (tùy chọn)",
+      "siteRequiredNotice": "Khách hàng này có {count} cơ sở. Vui lòng chọn cơ sở cho từng dòng.",
+      "serialStartAuto": "Để trống = tự động đánh số",
+      "filterBrand": "Lọc theo hãng",
+      "filterCategory": "Lọc theo nhóm sản phẩm",
       "addLine": "Thêm dòng thiết bị",
       "removeLine": "Xoá",
       "unitPrice": "Đơn giá (₫)",

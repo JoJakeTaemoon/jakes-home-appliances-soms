@@ -48,7 +48,11 @@ export const GET = defineQuery({
         equipment: {
           include: {
             equipment: {
-              include: {
+              select: {
+                id: true,
+                serialNumber: true,
+                status: true,
+                ownership: true,
                 model: {
                   select: {
                     id: true,

@@ -2,27 +2,34 @@
  * Rental completion cron (UC-EQ-07 / B.3 confirmed).
  *
  *   RENTAL contracts where:
- *     - state = ACTIVE
- *     - endDate < now()
- *     - all Payments are RECONCILED (or there are no Payment rows yet)
+ *     - state ∈ { ACTIVE, AMENDED }
+ *     - contract.endDate < now (initial cheap filter)
  *
- *   → transition contract state to COMPLETED
- *   → flip every Equipment in the contract from ownership=COMPANY to ownership=CUSTOMER
- *     (only those still ACTIVE; equipment in REPLACED/TERMINATED stays as-is)
- *   → dispatch EMAIL_RENTAL_COMPLETED via the notification factory
+ *   For each ContractEquipment line under such a contract:
+ *     - Skip if it already has settledAt set.
+ *     - Compute the line's per-equipment effective end date
+ *       (contract.endDate + cumulativePausedDays + any in-flight pause).
+ *     - Skip if effectiveEndDate > now (line still in pause-extended period).
+ *     - If endOfTermAction = TRANSFER_OWNERSHIP: flip the underlying
+ *       Equipment.ownership to CUSTOMER and mark the line's settledAt.
+ *     - If endOfTermAction = RETRIEVE_DEVICE: spawn a SUGGESTED
+ *       RETRIEVAL visit bound to this specific equipment and mark the
+ *       line's settledAt.
  *
- * Phase 6 will schedule this via Vercel Cron; for now expose it as a manual
- * trigger usable via `npx tsx scripts/cron-rental-completion.ts`.
+ *   When ALL lines under a contract have settledAt set, the contract
+ *   transitions to COMPLETED and the rental-completed notification is
+ *   queued. Mixed-state contracts (some settled, some still pending)
+ *   stay ACTIVE/AMENDED.
  *
- * Phase 3.5 update: notification dispatch moved off the inline
- * NotificationLog write and onto `sendNotification()` — the mock provider
- * still writes a status=MOCKED row, but production will swap to Resend via
- * EMAIL_PROVIDER env without touching this file.
+ * This implementation honours the 2026-06 policy: the Contract document
+ * (endDate, totalContractValue, monthly fee) is IMMUTABLE. All
+ * per-equipment delays are tracked on ContractEquipment.
  */
 
 import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import type { NotificationLocale } from "@/lib/notifications/types";
+import { effectiveEndDate } from "@/lib/contracts/pause-period";
 
 export interface RentalCompletionSummary {
   contractsScanned: number;
@@ -48,17 +55,23 @@ export async function runRentalCompletionCheck(
   const candidates = await prisma.contract.findMany({
     where: {
       type: "RENTAL",
-      state: "ACTIVE",
+      state: { in: ["ACTIVE", "AMENDED"] },
       endDate: { lt: now },
     },
     include: {
-      equipment: { include: { equipment: { select: { id: true, status: true, ownership: true } } } },
+      equipment: {
+        include: {
+          equipment: {
+            select: { id: true, status: true, ownership: true },
+          },
+        },
+      },
       payments: { select: { id: true, state: true } },
       visits: {
-        // De-dup guard for RETRIEVAL: don't spawn a second visit on the
-        // next cron run if one already exists for this contract.
+        // De-dup guard: don't re-spawn a RETRIEVAL visit on subsequent
+        // cron runs for an equipment line that already has one.
         where: { type: "RETRIEVAL" },
-        select: { id: true, state: true },
+        select: { id: true, equipmentId: true, state: true },
       },
       customer: {
         select: {
@@ -77,8 +90,8 @@ export async function runRentalCompletionCheck(
   summary.contractsScanned = candidates.length;
 
   for (const c of candidates) {
-    // All payments must be in a settled state. Treat absence-of-payments as OK
-    // (in v1 payment rows are not always created up front).
+    // Payment gate: all outstanding rows must be settled / written-off
+    // before we hand a device over (whether by transfer or retrieval).
     const hasUnsettled = c.payments.some((p) =>
       ["EXPECTED", "COLLECTED", "HANDED_OVER", "OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"].includes(p.state),
     );
@@ -87,102 +100,170 @@ export async function runRentalCompletionCheck(
       continue;
     }
 
-    // RETRIEVE_DEVICE: don't flip ownership; spawn a SUGGESTED RETRIEVAL
-    // visit (idempotent — skip if one already exists for this contract) and
-    // park the contract state at ACTIVE until the retrieval visit completes.
-    if (c.endOfTermAction === "RETRIEVE_DEVICE") {
-      if (c.visits.length > 0) {
-        summary.skipped.push({
-          contractId: c.id,
-          reason: "Retrieval visit already exists",
-        });
-        continue;
-      }
-      await prisma.$transaction(async (tx) => {
-        await tx.visit.create({
-          data: {
-            customerId: c.customerId,
-            contractId: c.id,
-            type: "RETRIEVAL",
-            state: "SUGGESTED",
-            scheduledFor: now,
-          },
-        });
-        await tx.auditLog.create({
-          data: {
-            actorType: "SYSTEM",
-            action: "CONTRACT_RETRIEVAL_VISIT_AUTO",
-            entityType: "Contract",
-            entityId: c.id,
-            after: { contractNumber: c.contractNumber },
-          },
-        });
-      });
-      summary.retrievalVisitsCreated++;
+    if (c.equipment.length === 0) {
+      summary.skipped.push({ contractId: c.id, reason: "No equipment lines" });
       continue;
     }
 
-    let flipped = 0;
-    await prisma.$transaction(async (tx) => {
-      await tx.contract.update({
-        where: { id: c.id },
-        data: { state: "COMPLETED" },
-      });
+    const visitsByEquipmentId = new Map<string, (typeof c.visits)[number]>();
+    for (const v of c.visits) {
+      if (v.equipmentId) visitsByEquipmentId.set(v.equipmentId, v);
+    }
 
-      for (const ce of c.equipment) {
-        if (ce.equipment.status === "ACTIVE" && ce.equipment.ownership === "COMPANY") {
+    let flippedThisContract = 0;
+    let retrievalsThisContract = 0;
+    let newlySettledThisContract = 0;
+
+    for (const ce of c.equipment) {
+      if (ce.settledAt) continue;
+      const eff = effectiveEndDate(
+        c.endDate,
+        {
+          cumulativePausedDays: ce.cumulativePausedDays,
+          currentPauseStartedAt: ce.currentPauseStartedAt,
+        },
+        now,
+      );
+      if (!eff || eff > now) continue; // pause-extended; settle later
+
+      if (c.endOfTermAction === "RETRIEVE_DEVICE") {
+        // One retrieval visit per equipment line. Idempotent guard:
+        // skip if there's already a RETRIEVAL visit on this contract for
+        // this exact equipment id.
+        if (visitsByEquipmentId.has(ce.equipmentId)) {
+          // Still mark settled — the previous retrieval visit covers it.
+          await prisma.contractEquipment.update({
+            where: { id: ce.id },
+            data: { settledAt: now },
+          });
+          newlySettledThisContract++;
+          continue;
+        }
+        await prisma.$transaction(async (tx) => {
+          await tx.visit.create({
+            data: {
+              customerId: c.customerId,
+              contractId: c.id,
+              equipmentId: ce.equipmentId,
+              type: "RETRIEVAL",
+              state: "SUGGESTED",
+              scheduledFor: now,
+            },
+          });
+          await tx.contractEquipment.update({
+            where: { id: ce.id },
+            data: { settledAt: now },
+          });
+          await tx.auditLog.create({
+            data: {
+              actorType: "SYSTEM",
+              action: "CONTRACT_RETRIEVAL_VISIT_AUTO",
+              entityType: "ContractEquipment",
+              entityId: ce.id,
+              after: {
+                contractNumber: c.contractNumber,
+                equipmentId: ce.equipmentId,
+                pausedDaysApplied: ce.cumulativePausedDays,
+              },
+            },
+          });
+        });
+        retrievalsThisContract++;
+        newlySettledThisContract++;
+        continue;
+      }
+
+      // TRANSFER_OWNERSHIP: flip ownership of THIS equipment only.
+      if (
+        ce.equipment.status === "ACTIVE" &&
+        ce.equipment.ownership === "COMPANY"
+      ) {
+        await prisma.$transaction(async (tx) => {
           await tx.equipment.update({
             where: { id: ce.equipment.id },
             data: { ownership: "CUSTOMER" },
           });
-          flipped++;
-        }
-      }
-      summary.equipmentTransferred += flipped;
-
-      await tx.auditLog.create({
-        data: {
-          actorType: "SYSTEM",
-          action: "CONTRACT_COMPLETED_AUTO",
-          entityType: "Contract",
-          entityId: c.id,
-          after: {
-            contractNumber: c.contractNumber,
-            equipmentFlipped: flipped,
-          },
-        },
-      });
-    });
-
-    // Dispatch notification outside the transaction so a provider blip can't
-    // roll back the contract state change. The notification log row is its
-    // own forensic record.
-    const contact = c.customer.contacts[0];
-    if (contact) {
-      try {
-        await sendNotification({
-          templateCode: "EMAIL_RENTAL_COMPLETED",
-          customerContactId: contact.id,
-          locale: (contact.language ?? "vi") as NotificationLocale,
-          vars: {
-            name: c.customer.name,
-            contract_no: c.contractNumber,
-            completed_at: now.toISOString().slice(0, 10),
-            equipment_count: String(flipped),
-            url: "https://portal.seoulaqua.com.vn",
-            hq_phone: "028-1234-5678",
-          },
-          actorType: "SYSTEM",
+          await tx.contractEquipment.update({
+            where: { id: ce.id },
+            data: { settledAt: now },
+          });
         });
-        summary.notificationsQueued++;
-      } catch (err) {
-        console.error(
-          `[cron-completion] Failed to send EMAIL_RENTAL_COMPLETED for ${c.id}: ${err}`,
-        );
+        flippedThisContract++;
+        newlySettledThisContract++;
+      } else {
+        // Equipment isn't ACTIVE/COMPANY — record settle anyway so the
+        // contract can wrap.
+        await prisma.contractEquipment.update({
+          where: { id: ce.id },
+          data: { settledAt: now },
+        });
+        newlySettledThisContract++;
       }
     }
 
-    summary.contractsCompleted++;
+    summary.equipmentTransferred += flippedThisContract;
+    summary.retrievalVisitsCreated += retrievalsThisContract;
+
+    // Re-read settledAt to decide whether the contract is done.
+    const allLines = await prisma.contractEquipment.findMany({
+      where: { contractId: c.id },
+      select: { settledAt: true },
+    });
+    const allSettled = allLines.every((l) => l.settledAt !== null);
+
+    if (allSettled) {
+      await prisma.$transaction(async (tx) => {
+        await tx.contract.update({
+          where: { id: c.id },
+          data: { state: "COMPLETED" },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorType: "SYSTEM",
+            action: "CONTRACT_COMPLETED_AUTO",
+            entityType: "Contract",
+            entityId: c.id,
+            after: {
+              contractNumber: c.contractNumber,
+              equipmentFlipped: flippedThisContract,
+              retrievalsCreated: retrievalsThisContract,
+            },
+          },
+        });
+      });
+
+      const contact = c.customer.contacts[0];
+      if (contact) {
+        try {
+          await sendNotification({
+            templateCode: "EMAIL_RENTAL_COMPLETED",
+            customerContactId: contact.id,
+            locale: (contact.language ?? "vi") as NotificationLocale,
+            vars: {
+              name: c.customer.name,
+              contract_no: c.contractNumber,
+              completed_at: now.toISOString().slice(0, 10),
+              equipment_count: String(flippedThisContract),
+              url: "https://portal.seoulaqua.com.vn",
+              hq_phone: "028-1234-5678",
+            },
+            actorType: "SYSTEM",
+          });
+          summary.notificationsQueued++;
+        } catch (err) {
+          console.error(
+            `[cron-completion] Failed to send EMAIL_RENTAL_COMPLETED for ${c.id}: ${err}`,
+          );
+        }
+      }
+
+      summary.contractsCompleted++;
+    } else if (newlySettledThisContract === 0) {
+      summary.skipped.push({
+        contractId: c.id,
+        reason: "All remaining lines still within pause-extended period",
+      });
+    }
   }
 
   return summary;

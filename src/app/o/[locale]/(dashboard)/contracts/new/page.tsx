@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { pickModelName } from "@/lib/products/name";
+import { pickEquipmentLabel } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
@@ -35,8 +35,36 @@ interface EquipmentOption {
 
 type ContractType = "SALE" | "RENTAL" | "MAINTENANCE";
 
-interface EquipmentLine {
+/**
+ * Two mutually-exclusive flavours of a contract equipment line:
+ *
+ * - `ExistingEquipmentLine` attaches a pre-installed Equipment row that
+ *   the customer already owns (MAINTENANCE on an off-catalog bidet,
+ *   for example). Mostly used as a fallback path now.
+ * - `NewModelLine` registers brand-new equipment that the Contract API
+ *   materialises on save — server picks `quantity` Equipment rows of
+ *   `modelId`, optionally site-scoped, and generates sequential serials
+ *   starting from `serialStart` (or the next value after the customer's
+ *   last serial for the same model when `serialStart` is blank).
+ */
+type EquipmentLine = ExistingEquipmentLine | NewModelLine;
+
+interface ExistingEquipmentLine {
+  kind: "existing";
   equipmentId: string;
+  unitPrice: number | null;
+  quantity: number;
+}
+
+interface NewModelLine {
+  kind: "new";
+  /** Stable client-side key (modelId + siteId + tally) for React. */
+  rowId: string;
+  modelId: string;
+  /** Required when customer.sites.length >= 2; otherwise null. */
+  siteId: string | null;
+  /** Blank = server picks "(last serial)+1" or "MODEL-000001". */
+  serialStart: string;
   unitPrice: number | null;
   quantity: number;
 }
@@ -62,9 +90,16 @@ function NewContractPageInner() {
   const [customerId, setCustomerId] = useState<string | null>(preselectCustomer);
   const [type, setType] = useState<ContractType | null>(null);
   const [lines, setLines] = useState<EquipmentLine[]>([]);
-  const [monthlyFee, setMonthlyFee] = useState<number | null>(null);
+  /**
+   * Every contract type now derives its top-line money from the sum of
+   * per-equipment line prices (`linesValueSum` below):
+   *   - RENTAL / MAINTENANCE → Contract.monthlyMaintenanceFee
+   *   - SALE                → Contract.totalContractValue
+   * The dedicated `monthlyFee` + `totalValue` inputs at the top of step 3
+   * are gone — office staff edits the per-line price directly in the
+   * equipment table and the wizard shows the rolled-up total.
+   */
   const [termMonths, setTermMonths] = useState<number>(36);
-  const [totalValue, setTotalValue] = useState<number | null>(null);
   // RENTAL-only — deposit collected at the installation visit and
   // refundable on early termination; endOfTermAction drives the rental-end
   // cron + retrieval auto-visit.
@@ -96,31 +131,117 @@ function NewContractPageInner() {
   interface EquipmentApiRow {
     id: string;
     model: {
+      id: string;
       modelCode: string | null;
       nameKo: string | null;
       nameVi: string | null;
       nameEn: string | null;
-    };
+      brandId: string | null;
+      brand: { id: string; name: string } | null;
+      categoryId: string | null;
+      productCategory: { id: string; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+    } | null;
+    customDescription: string | null;
     serialNumber: string | null;
     siteId: string | null;
     site: { id: string; name: string } | null;
+    status: string;
   }
+  const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const equipmentQuery = useApiQuery<EquipmentApiRow[]>(
     customerId
-      ? `/api/equipment?customerId=${customerId}&status=ACTIVE&pageSize=200`
+      ? `/api/equipment?customerId=${customerId}&pageSize=500`
       : null,
   );
+
+  // Full catalog — every active EquipmentModel, regardless of whether
+  // this customer already owns one. Step 2 picks from the full catalog
+  // so a contract can install brand-new units (the workflow materialises
+  // them on submit).
+  interface CatalogModel {
+    id: string;
+    modelCode: string | null;
+    nameKo: string | null;
+    nameVi: string | null;
+    nameEn: string | null;
+    brandId: string | null;
+    brand: { id: string; name: string } | null;
+    categoryId: string | null;
+    productCategory: {
+      id: string;
+      nameKo: string | null;
+      nameVi: string | null;
+      nameEn: string | null;
+    } | null;
+    monthlyRentalPrice: string | null;
+    retailPrice: string | null;
+  }
+  const catalogQuery = useApiQuery<CatalogModel[]>(
+    "/api/equipment-models?pageSize=500&isActive=true",
+  );
+  const catalog = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
+
+  // Customer sites (B2B) — drives the per-row site picker when there
+  // are ≥2 sites; also feeds the existing AddEquipmentQuickModal.
+  interface SiteOpt { id: string; name: string }
+  const sitesQuery = useApiQuery<SiteOpt[]>(
+    customer?.type === "B2B" ? `/api/customers/${customerId}/sites` : null,
+  );
+  const customerSites = sitesQuery.data ?? [];
+  const requireSiteOnLine = customerSites.length >= 2;
+  // Brand + category options derived from the loaded rows so the
+  // dropdowns only ever show values that actually filter to something.
+  // Both are sorted by display label so the order stays stable across
+  // re-renders.
+  // Filters derive from the FULL catalog so brand/category dropdowns
+  // surface every option even when the customer doesn't own a model
+  // of that kind yet.
+  function localizedCategoryName(pc: {
+    id: string;
+    nameKo: string | null;
+    nameVi: string | null;
+    nameEn: string | null;
+  }): string {
+    if (locale === "ko") return pc.nameKo ?? pc.nameVi ?? pc.nameEn ?? pc.id;
+    if (locale === "en") return pc.nameEn ?? pc.nameVi ?? pc.nameKo ?? pc.id;
+    return pc.nameVi ?? pc.nameKo ?? pc.nameEn ?? pc.id;
+  }
+  const brandOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cm of catalog) {
+      if (cm.brand) m.set(cm.brand.id, cm.brand.name);
+    }
+    return Array.from(m.entries())
+      .map(([id, name]) => ({ value: id, label: name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [catalog]);
+  const categoryOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cm of catalog) {
+      const pc = cm.productCategory;
+      if (pc) m.set(pc.id, localizedCategoryName(pc));
+    }
+    return Array.from(m.entries())
+      .map(([id, label]) => ({ value: id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [catalog, locale]);
   const equipment = useMemo<EquipmentOption[]>(
     () =>
-      (equipmentQuery.data ?? []).map((e) => ({
-        id: e.id,
-        modelCode: pickModelName(e.model, locale),
-        modelName: pickModelName(e.model, locale),
-        serialNumber: e.serialNumber,
-        siteId: e.siteId,
-        site: e.site,
-      })),
-    [equipmentQuery.data, locale],
+      (equipmentQuery.data ?? [])
+        .filter((e) => (brandFilter ? e.model?.brandId === brandFilter : true))
+        .filter((e) =>
+          categoryFilter ? e.model?.categoryId === categoryFilter : true,
+        )
+        .map((e) => ({
+          id: e.id,
+          modelCode: e.model?.modelCode ?? "EXT",
+          modelName: pickEquipmentLabel(e, locale),
+          serialNumber: e.serialNumber,
+          siteId: e.siteId,
+          site: e.site,
+        })),
+    [equipmentQuery.data, brandFilter, categoryFilter, locale],
   );
   const loadingEquipment = equipmentQuery.isLoading;
   const loadEquipment = async () => {
@@ -129,21 +250,65 @@ function NewContractPageInner() {
 
   function addLine(equipmentId: string) {
     setLines((prev) =>
-      prev.some((l) => l.equipmentId === equipmentId)
+      prev.some((l) => l.kind === "existing" && l.equipmentId === equipmentId)
         ? prev
-        : [...prev, { equipmentId, unitPrice: null, quantity: 1 }],
+        : [...prev, { kind: "existing", equipmentId, unitPrice: null, quantity: 1 }],
     );
   }
 
   function removeLine(equipmentId: string) {
-    setLines((prev) => prev.filter((l) => l.equipmentId !== equipmentId));
-  }
-
-  function updateLine(equipmentId: string, patch: Partial<EquipmentLine>) {
     setLines((prev) =>
-      prev.map((l) => (l.equipmentId === equipmentId ? { ...l, ...patch } : l)),
+      prev.filter((l) => !(l.kind === "existing" && l.equipmentId === equipmentId)),
     );
   }
+
+  function updateExistingLine(equipmentId: string, patch: Partial<ExistingEquipmentLine>) {
+    setLines((prev) =>
+      prev.map((l) =>
+        l.kind === "existing" && l.equipmentId === equipmentId ? { ...l, ...patch } : l,
+      ),
+    );
+  }
+
+  // Add a brand-new modelId line. Picker default: empty siteId — the
+  // user fills in per-row site if the customer has ≥2 sites.
+  function addModelLine(modelId: string) {
+    setLines((prev) => [
+      ...prev,
+      {
+        kind: "new",
+        rowId: `${modelId}-${prev.length + 1}-${Date.now().toString(36).slice(-4)}`,
+        modelId,
+        siteId: null,
+        serialStart: "",
+        unitPrice: null,
+        quantity: 1,
+      },
+    ]);
+  }
+
+  function removeNewLine(rowId: string) {
+    setLines((prev) =>
+      prev.filter((l) => !(l.kind === "new" && l.rowId === rowId)),
+    );
+  }
+
+  function updateNewLine(rowId: string, patch: Partial<NewModelLine>) {
+    setLines((prev) =>
+      prev.map((l) =>
+        l.kind === "new" && l.rowId === rowId ? { ...l, ...patch } : l,
+      ),
+    );
+  }
+
+  // Rolled-up money for every contract type. RENTAL / MAINTENANCE feed
+  // this into Contract.monthlyMaintenanceFee, SALE feeds it into
+  // Contract.totalContractValue. Always recomputed from `lines` so the
+  // wizard never carries stale state.
+  const linesValueSum = lines.reduce(
+    (acc, l) => acc + (l.unitPrice ?? 0) * l.quantity,
+    0,
+  );
 
   function next() {
     setError(null);
@@ -160,6 +325,14 @@ function NewContractPageInner() {
         setError(t("validation.atLeastOneEquipment"));
         return;
       }
+      // Multi-site B2B: every NEW model line must specify a site.
+      if (requireSiteOnLine) {
+        const missing = lines.some((l) => l.kind === "new" && !l.siteId);
+        if (missing) {
+          setError(t("wizard.siteRequiredNotice", { count: customerSites.length }));
+          return;
+        }
+      }
     }
     setStep((s) => Math.min(4, s + 1));
   }
@@ -175,23 +348,33 @@ function NewContractPageInner() {
       const payload: Record<string, unknown> = {
         customerId,
         type,
-        equipment: lines.map((l) => ({
-          equipmentId: l.equipmentId,
-          unitPrice: l.unitPrice,
-          quantity: l.quantity,
-        })),
+        equipment: lines.map((l) =>
+          l.kind === "existing"
+            ? {
+                equipmentId: l.equipmentId,
+                unitPrice: l.unitPrice,
+                quantity: l.quantity,
+              }
+            : {
+                modelId: l.modelId,
+                siteId: l.siteId || undefined,
+                serialStart: l.serialStart.trim() || undefined,
+                unitPrice: l.unitPrice,
+                quantity: l.quantity,
+              },
+        ),
         notes: notes.trim() || undefined,
         startDate: startDate ? new Date(startDate).toISOString() : undefined,
       };
       if (type === "RENTAL") {
         payload.termMonths = termMonths;
-        payload.monthlyMaintenanceFee = monthlyFee;
+        payload.monthlyMaintenanceFee = linesValueSum;
         payload.deposit = deposit;
         payload.endOfTermAction = endOfTermAction;
       } else if (type === "MAINTENANCE") {
-        payload.monthlyMaintenanceFee = monthlyFee;
+        payload.monthlyMaintenanceFee = linesValueSum;
       } else {
-        payload.totalContractValue = totalValue;
+        payload.totalContractValue = linesValueSum;
       }
       const res = await api.post<{ id: string; contractNumber: string }>(
         "/api/contracts",
@@ -294,51 +477,175 @@ function NewContractPageInner() {
             />
           </FormField>
 
-          <FormField label={t("wizard.pickEquipment")} required>
-            <div className="flex flex-col gap-2">
-              {equipment.length === 0 && (
-                <p className="text-xs text-[#737373]">
-                  {loadingEquipment ? tc("loading") : tc("noData")}
-                </p>
+          {/* Brand / category filters (apply to BOTH the catalog picker and
+              the existing-equipment list below). */}
+          {(brandOptions.length > 0 || categoryOptions.length > 0) && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {brandOptions.length > 0 && (
+                <Combobox
+                  value={brandFilter}
+                  onChange={setBrandFilter}
+                  options={brandOptions}
+                  placeholder={t("wizard.filterBrand")}
+                  allowClear
+                  searchable={brandOptions.length > 5}
+                />
               )}
-              {equipment.map((e) => {
-                const picked = lines.find((l) => l.equipmentId === e.id);
-                return (
-                  <label
-                    key={e.id}
-                    className="flex items-center gap-3 rounded-lg border border-[#e5e5e5] p-2 hover:bg-[#fafafa]"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!picked}
-                      onChange={(ev) => {
-                        if (ev.target.checked) addLine(e.id);
-                        else removeLine(e.id);
-                      }}
-                    />
-                    <div className="flex flex-1 flex-col">
-                      <span className="text-sm">
-                        {e.modelCode} — {e.modelName}
-                      </span>
-                      <span className="text-xs text-[#737373]">
-                        {e.serialNumber ? `Serial: ${e.serialNumber}` : "—"}
-                        {e.site?.name ? ` · ${e.site.name}` : ""}
-                      </span>
-                    </div>
-                  </label>
-                );
-              })}
-              {customer && (
-                <button
-                  type="button"
-                  onClick={() => setShowAddEquipment(true)}
-                  className="self-start text-xs text-[var(--brand-blue-700)] underline"
-                >
-                  + {t("wizard.addLine")}
-                </button>
+              {categoryOptions.length > 0 && (
+                <Combobox
+                  value={categoryFilter}
+                  onChange={setCategoryFilter}
+                  options={categoryOptions}
+                  placeholder={t("wizard.filterCategory")}
+                  allowClear
+                  searchable={categoryOptions.length > 5}
+                />
               )}
             </div>
+          )}
+
+          {/* Multi-site B2B notice — every NEW model line must specify
+              which site the device is being installed at. */}
+          {requireSiteOnLine && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              {t("wizard.siteRequiredNotice", { count: customerSites.length })}
+            </div>
+          )}
+
+          {/* Catalog picker — add a brand-new modelId line. Server
+              materialises Equipment rows on submit. */}
+          <FormField label={t("wizard.pickModel")}>
+            <Combobox
+              value={null}
+              onChange={(v) => v && addModelLine(v)}
+              options={catalog
+                .filter((cm) =>
+                  brandFilter ? cm.brandId === brandFilter : true,
+                )
+                .filter((cm) =>
+                  categoryFilter ? cm.categoryId === categoryFilter : true,
+                )
+                .map((cm) => ({
+                  value: cm.id,
+                  label: `${cm.modelCode ?? ""} — ${pickEquipmentLabel({ model: cm }, locale)}`,
+                  description: cm.brand?.name ?? "",
+                }))}
+              placeholder={t("wizard.pickModelPlaceholder")}
+              searchable
+            />
           </FormField>
+
+          {/* New model lines list. Each row gets quantity + (site when
+              multi-site) + optional starting serial (server picks
+              "(last serial)+1" when blank). */}
+          {lines.some((l) => l.kind === "new") && (
+            <div className="flex flex-col gap-2">
+              {lines
+                .filter((l): l is NewModelLine => l.kind === "new")
+                .map((l) => {
+                  const cm = catalog.find((c) => c.id === l.modelId);
+                  return (
+                    <div
+                      key={l.rowId}
+                      className="grid grid-cols-1 gap-2 rounded-lg border border-[#e5e5e5] bg-[#fafafa] p-3 sm:grid-cols-[1fr_80px_140px_180px_auto]"
+                    >
+                      <div className="flex flex-col text-sm">
+                        <span className="font-medium">
+                          {cm?.modelCode} — {pickEquipmentLabel({ model: cm ?? null }, locale)}
+                        </span>
+                        <span className="text-xs text-[#737373]">
+                          {cm?.brand?.name ?? ""}
+                        </span>
+                      </div>
+                      <NumberInput
+                        value={l.quantity}
+                        onChange={(v) => updateNewLine(l.rowId, { quantity: v ?? 1 })}
+                        min={1}
+                        max={500}
+                      />
+                      {requireSiteOnLine ? (
+                        <Combobox
+                          value={l.siteId}
+                          onChange={(v) => updateNewLine(l.rowId, { siteId: v })}
+                          options={customerSites.map((s) => ({
+                            value: s.id,
+                            label: s.name,
+                          }))}
+                          placeholder={t("wizard.pickSite")}
+                          searchable={customerSites.length > 5}
+                        />
+                      ) : (
+                        <div />
+                      )}
+                      <Input
+                        value={l.serialStart}
+                        onChange={(e) =>
+                          updateNewLine(l.rowId, { serialStart: e.target.value })
+                        }
+                        placeholder={t("wizard.serialStartAuto")}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeNewLine(l.rowId)}
+                      >
+                        {t("wizard.removeLine")}
+                      </Button>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Existing equipment list — pick already-installed units to
+              attach (MAINTENANCE on customer-owned bidet, etc.). */}
+          {equipment.length > 0 && (
+            <FormField label={t("wizard.pickExistingEquipment")}>
+              <div className="flex flex-col gap-2">
+                {loadingEquipment && (
+                  <p className="text-xs text-[#737373]">{tc("loading")}</p>
+                )}
+                {equipment.map((e) => {
+                  const picked = lines.find(
+                    (l) => l.kind === "existing" && l.equipmentId === e.id,
+                  );
+                  return (
+                    <label
+                      key={e.id}
+                      className="flex items-center gap-3 rounded-lg border border-[#e5e5e5] p-2 hover:bg-[#fafafa]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!picked}
+                        onChange={(ev) => {
+                          if (ev.target.checked) addLine(e.id);
+                          else removeLine(e.id);
+                        }}
+                      />
+                      <div className="flex flex-1 flex-col">
+                        <span className="text-sm">
+                          {e.modelCode} — {e.modelName}
+                        </span>
+                        <span className="text-xs text-[#737373]">
+                          {e.serialNumber ? `Serial: ${e.serialNumber}` : "—"}
+                          {e.site?.name ? ` · ${e.site.name}` : ""}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
+                {customer && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddEquipment(true)}
+                    className="self-start text-xs text-[var(--brand-blue-700)] underline"
+                  >
+                    + {t("wizard.addLine")}
+                  </button>
+                )}
+              </div>
+            </FormField>
+          )}
         </section>
       )}
 
@@ -346,10 +653,12 @@ function NewContractPageInner() {
         <section className="flex flex-col gap-4 rounded-xl border border-[#e5e5e5] bg-white p-4">
           {type === "RENTAL" && (
             <>
+              {/* For RENTAL the per-equipment monthly maintenance fee is
+                  entered in the table below as `unitPrice`; the total
+                  monthly fee is derived from the sum of all lines. The
+                  contract-level monthly-fee input has therefore been
+                  removed for RENTAL. */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <FormField label={t("monthlyFee")} required>
-                  <NumberInput value={monthlyFee ?? 0} onChange={(v) => setMonthlyFee(v)} min={0} />
-                </FormField>
                 <FormField label={t("termMonths")} required>
                   <NumberInput value={termMonths} onChange={setTermMonths} min={1} max={120} />
                 </FormField>
@@ -392,21 +701,21 @@ function NewContractPageInner() {
           )}
           {type === "MAINTENANCE" && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <FormField label={t("monthlyFee")} required>
-                <NumberInput value={monthlyFee ?? 0} onChange={(v) => setMonthlyFee(v)} min={0} />
-              </FormField>
+              {/* Monthly fee is derived from sum(관리비 × 수량) of the
+                  per-equipment lines; office staff edits the per-line
+                  관리비 directly in the equipment table below. */}
               <FormField label={t("termMonths")}>
                 <NumberInput value={termMonths} onChange={setTermMonths} min={1} max={120} />
               </FormField>
             </div>
           )}
-          {type === "SALE" && (
-            <FormField label={t("totalValue")}>
-              <NumberInput value={totalValue ?? 0} onChange={(v) => setTotalValue(v)} min={0} />
-            </FormField>
-          )}
+          {/* SALE total value is now derived from sum(unitPrice × quantity)
+              of the lines; office staff edits the per-line unitPrice
+              directly in the equipment table instead. */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <FormField label={t("startDate")}>
+            <FormField
+              label={type === "SALE" ? t("wizard.deliveryDate") : t("startDate")}
+            >
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </FormField>
           </div>
@@ -417,35 +726,65 @@ function NewContractPageInner() {
                   <thead className="bg-[#fafafa] text-xs text-[#525252]">
                     <tr>
                       <th className="px-2 py-1.5 text-left">{tc("name")}</th>
-                      <th className="w-40 px-2 py-1.5 text-left">{t("wizard.unitPrice")}</th>
+                      <th className="w-40 px-2 py-1.5 text-left">
+                        {type === "RENTAL" || type === "MAINTENANCE"
+                          ? t("wizard.monthlyFeePerUnit")
+                          : t("wizard.unitPrice")}
+                      </th>
                       <th className="w-28 px-2 py-1.5 text-left">{t("wizard.quantity")}</th>
                       <th className="w-20 px-2 py-1.5"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {lines.map((l) => {
-                      const eq = equipment.find((e) => e.id === l.equipmentId);
+                      const isExisting = l.kind === "existing";
+                      const key = isExisting ? l.equipmentId : l.rowId;
+                      const label = isExisting
+                        ? (() => {
+                            const eq = equipment.find((e) => e.id === l.equipmentId);
+                            return eq
+                              ? `${eq.modelCode} — ${eq.modelName}`
+                              : l.equipmentId;
+                          })()
+                        : (() => {
+                            const cm = catalog.find((c) => c.id === l.modelId);
+                            return cm
+                              ? `${cm.modelCode ?? ""} — ${pickEquipmentLabel({ model: cm }, locale)}`
+                              : l.modelId;
+                          })();
                       return (
-                        <tr key={l.equipmentId} className="border-t border-[#f5f5f5]">
-                          <td className="px-2 py-1.5">
-                            {eq ? `${eq.modelCode} — ${eq.modelName}` : l.equipmentId}
-                          </td>
+                        <tr key={key} className="border-t border-[#f5f5f5]">
+                          <td className="px-2 py-1.5">{label}</td>
                           <td className="px-2 py-1.5">
                             <NumberInput
                               value={l.unitPrice ?? 0}
-                              onChange={(v) => updateLine(l.equipmentId, { unitPrice: v })}
+                              onChange={(v) =>
+                                isExisting
+                                  ? updateExistingLine(l.equipmentId, { unitPrice: v })
+                                  : updateNewLine(l.rowId, { unitPrice: v })
+                              }
                               min={0}
                             />
                           </td>
                           <td className="px-2 py-1.5">
                             <NumberInput
                               value={l.quantity}
-                              onChange={(v) => updateLine(l.equipmentId, { quantity: v })}
+                              onChange={(v) =>
+                                isExisting
+                                  ? updateExistingLine(l.equipmentId, { quantity: v })
+                                  : updateNewLine(l.rowId, { quantity: v })
+                              }
                               min={1}
                             />
                           </td>
                           <td className="px-2 py-1.5 text-right">
-                            <Button variant="ghost" size="sm" onClick={() => removeLine(l.equipmentId)}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                isExisting ? removeLine(l.equipmentId) : removeNewLine(l.rowId)
+                              }
+                            >
                               {t("wizard.removeLine")}
                             </Button>
                           </td>
@@ -483,7 +822,7 @@ function NewContractPageInner() {
                 </div>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-xs text-[#737373]">{t("monthlyFee")}</span>
-                  <span>{formatVnd(monthlyFee)}</span>
+                  <span>{formatVnd(linesValueSum)}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-xs text-[#737373]">{t("deposit")}</span>
@@ -498,13 +837,13 @@ function NewContractPageInner() {
             {type === "MAINTENANCE" && (
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-xs text-[#737373]">{t("monthlyFee")}</span>
-                <span>{formatVnd(monthlyFee)}</span>
+                <span>{formatVnd(linesValueSum)}</span>
               </div>
             )}
             {type === "SALE" && (
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-xs text-[#737373]">{t("totalValue")}</span>
-                <span>{formatVnd(totalValue)}</span>
+                <span>{formatVnd(linesValueSum)}</span>
               </div>
             )}
             <div className="mt-2 flex items-center justify-between">

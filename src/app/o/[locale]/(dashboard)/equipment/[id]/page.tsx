@@ -46,6 +46,12 @@ interface EquipmentDetail {
   status: string;
   ownership: string;
   installedAt: string | null;
+  /// Effective deactivation moment (set when status DEACTIVATED). Null otherwise.
+  deactivatedAt: string | null;
+  /// Effective termination moment (set when status TERMINATED). Null otherwise.
+  terminatedAt: string | null;
+  /// Physical retrieval moment. Only meaningful while TERMINATED.
+  retrievedAt: string | null;
   filterPolicyOverride: { filters?: { type: string; replaceEveryDays: number }[] } | null;
   notes: string | null;
   replacedByEquipmentId: string | null;
@@ -81,8 +87,9 @@ export default function EquipmentDetailPage() {
   const [busy, setBusy] = useState(false);
   const [showRelocate, setShowRelocate] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
-  const [confirmTerminate, setConfirmTerminate] = useState(false);
+  const [showDeactivate, setShowDeactivate] = useState(false);
+  const [showTerminate, setShowTerminate] = useState(false);
+  const [showRetrieval, setShowRetrieval] = useState(false);
   const [confirmReactivate, setConfirmReactivate] = useState(false);
 
   const load = async () => {
@@ -102,8 +109,6 @@ export default function EquipmentDetailPage() {
       if (e instanceof ApiClientError) alert(e.message);
     } finally {
       setBusy(false);
-      setConfirmDeactivate(false);
-      setConfirmTerminate(false);
       setConfirmReactivate(false);
     }
   }
@@ -143,7 +148,7 @@ export default function EquipmentDetailPage() {
               {t("actions.replace")}
             </Button>
             {data.status === "ACTIVE" && (
-              <Button variant="ghost" onClick={() => setConfirmDeactivate(true)}>
+              <Button variant="ghost" onClick={() => setShowDeactivate(true)}>
                 {t("actions.deactivate")}
               </Button>
             )}
@@ -152,11 +157,20 @@ export default function EquipmentDetailPage() {
                 {t("actions.reactivate")}
               </Button>
             )}
-            <Button variant="danger" onClick={() => setConfirmTerminate(true)}>
+            <Button variant="danger" onClick={() => setShowTerminate(true)}>
               {t("actions.terminate")}
             </Button>
           </div>
         )}
+        {canManageEquipment(role) &&
+          data.status === "TERMINATED" &&
+          !data.retrievedAt && (
+            <div>
+              <Button variant="secondary" onClick={() => setShowRetrieval(true)}>
+                {t("actions.logRetrieval")}
+              </Button>
+            </div>
+          )}
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -176,6 +190,24 @@ export default function EquipmentDetailPage() {
             }
           />
           <Row label={t("ownership")} value={data.ownership} />
+          {data.deactivatedAt && (
+            <Row
+              label={t("deactivatedAt")}
+              value={formatDate(data.deactivatedAt, locale)}
+            />
+          )}
+          {data.terminatedAt && (
+            <Row
+              label={t("terminatedAt")}
+              value={formatDate(data.terminatedAt, locale)}
+            />
+          )}
+          {data.retrievedAt && (
+            <Row
+              label={t("retrievedAt")}
+              value={formatDate(data.retrievedAt, locale)}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">
           <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
@@ -246,24 +278,38 @@ export default function EquipmentDetailPage() {
         />
       )}
 
-      <ConfirmDialog
-        open={confirmDeactivate}
-        title={t("actions.deactivate")}
-        message={t("confirm.deactivate")}
-        variant="danger"
-        busy={busy}
-        onCancel={() => setConfirmDeactivate(false)}
-        onConfirm={() => changeStatus("DEACTIVATED")}
-      />
-      <ConfirmDialog
-        open={confirmTerminate}
-        title={t("actions.terminate")}
-        message={t("confirm.terminate")}
-        variant="danger"
-        busy={busy}
-        onCancel={() => setConfirmTerminate(false)}
-        onConfirm={() => changeStatus("TERMINATED")}
-      />
+      {showDeactivate && (
+        <DeactivateModal
+          equipmentId={data.id}
+          onClose={() => setShowDeactivate(false)}
+          onDone={() => {
+            setShowDeactivate(false);
+            void load();
+          }}
+        />
+      )}
+      {showTerminate && (
+        <TerminateModal
+          equipmentId={data.id}
+          deactivatedAt={data.deactivatedAt}
+          onClose={() => setShowTerminate(false)}
+          onDone={() => {
+            setShowTerminate(false);
+            void load();
+          }}
+        />
+      )}
+      {showRetrieval && (
+        <RetrievalLogModal
+          equipmentId={data.id}
+          terminatedAt={data.terminatedAt}
+          onClose={() => setShowRetrieval(false)}
+          onDone={() => {
+            setShowRetrieval(false);
+            void load();
+          }}
+        />
+      )}
       <ConfirmDialog
         open={confirmReactivate}
         title={t("actions.reactivate")}
@@ -282,6 +328,270 @@ function Row({ label, value, mono }: { label: string; value: React.ReactNode; mo
       <span className="text-xs text-[#737373]">{label}</span>
       <span className={mono ? "font-mono text-xs" : "text-[#111111]"}>{value}</span>
     </div>
+  );
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function DeactivateModal({
+  equipmentId,
+  onClose,
+  onDone,
+}: Readonly<{
+  equipmentId: string;
+  onClose: () => void;
+  onDone: () => void;
+}>) {
+  const t = useTranslations("equipment");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [effectiveAt, setEffectiveAt] = useState(todayIso());
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/equipment/${equipmentId}/status`, {
+        status: "DEACTIVATED",
+        effectiveAt: new Date(effectiveAt).toISOString(),
+        reason: reason.trim() || undefined,
+      });
+      onDone();
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("actions.deactivate")}
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button variant="danger" onClick={submit} isLoading={busy}>
+            {t("actions.deactivate")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {t("deactivateModal.billingWarning")}
+        </div>
+        <FormField label={t("deactivateModal.effectiveAt")} required>
+          <Input
+            type="date"
+            value={effectiveAt}
+            onChange={(e) => setEffectiveAt(e.target.value)}
+          />
+        </FormField>
+        <p className="text-xs text-[#737373]">
+          {t("deactivateModal.effectiveAtHint")}
+        </p>
+        <FormField label={tc("reason")}>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={2}
+            placeholder={t("deactivateModal.reasonHint")}
+          />
+        </FormField>
+        {err && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function TerminateModal({
+  equipmentId,
+  deactivatedAt,
+  onClose,
+  onDone,
+}: Readonly<{
+  equipmentId: string;
+  deactivatedAt: string | null;
+  onClose: () => void;
+  onDone: () => void;
+}>) {
+  const t = useTranslations("equipment");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [effectiveAt, setEffectiveAt] = useState(todayIso());
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  // Termination can't predate the deactivation moment when one exists —
+  // the cron / billing logic would otherwise produce negative pause days.
+  const minDate = deactivatedAt ? deactivatedAt.slice(0, 10) : undefined;
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/equipment/${equipmentId}/status`, {
+        status: "TERMINATED",
+        effectiveAt: new Date(effectiveAt).toISOString(),
+        reason: reason.trim() || undefined,
+      });
+      onDone();
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("actions.terminate")}
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button variant="danger" onClick={submit} isLoading={busy}>
+            {t("actions.terminate")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+          {t("terminateModal.finalWarning")}
+        </div>
+        <FormField label={t("terminateModal.effectiveAt")} required>
+          <Input
+            type="date"
+            value={effectiveAt}
+            min={minDate}
+            onChange={(e) => setEffectiveAt(e.target.value)}
+          />
+        </FormField>
+        <p className="text-xs text-[#737373]">
+          {t("terminateModal.effectiveAtHint")}
+        </p>
+        <FormField label={tc("reason")}>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={2}
+            placeholder={t("terminateModal.reasonHint")}
+          />
+        </FormField>
+        {err && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function RetrievalLogModal({
+  equipmentId,
+  terminatedAt,
+  onClose,
+  onDone,
+}: Readonly<{
+  equipmentId: string;
+  terminatedAt: string | null;
+  onClose: () => void;
+  onDone: () => void;
+}>) {
+  const t = useTranslations("equipment");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [retrievedAt, setRetrievedAt] = useState(todayIso());
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const minDate = terminatedAt ? terminatedAt.slice(0, 10) : undefined;
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/equipment/${equipmentId}/retrieval`, {
+        retrievedAt: new Date(retrievedAt).toISOString(),
+        notes: notes.trim() || undefined,
+      });
+      onDone();
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("actions.logRetrieval")}
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy}>
+            {tc("save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-[#525252]">{t("retrievalModal.intro")}</p>
+        <FormField label={t("retrievalModal.retrievedAt")} required>
+          <Input
+            type="date"
+            value={retrievedAt}
+            min={minDate}
+            onChange={(e) => setRetrievedAt(e.target.value)}
+          />
+        </FormField>
+        <p className="text-xs text-[#737373]">
+          {t("retrievalModal.retrievedAtHint")}
+        </p>
+        <FormField label={tc("notes")}>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+          />
+        </FormField>
+        {err && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }
 

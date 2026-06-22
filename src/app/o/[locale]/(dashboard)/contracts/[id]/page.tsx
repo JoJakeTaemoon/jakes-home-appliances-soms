@@ -62,9 +62,16 @@ interface ContractDetail {
     unitPrice: string | null;
     quantity: number;
     notes: string | null;
+    /** Cumulative days this line has been paused (DEACTIVATED). */
+    cumulativePausedDays: number;
+    /** Non-null while currently paused. */
+    currentPauseStartedAt: string | null;
+    /** Per-equipment settlement timestamp (set by cron). */
+    settledAt: string | null;
     equipment: {
       id: string;
       serialNumber: string | null;
+      status: string;
       model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
       site: { id: string; name: string } | null;
     };
@@ -304,18 +311,25 @@ export default function ContractDetailPage() {
                   <th className="px-3 py-2 text-right">Qty</th>
                   <th className="px-3 py-2 text-right">Unit price</th>
                   <th className="px-3 py-2 text-right">Line total</th>
+                  <th className="px-3 py-2 text-left">{t("pause.colState")}</th>
+                  <th className="px-3 py-2 text-left">{t("pause.colEffectiveEnd")}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.equipment.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-6 text-center text-sm text-[#a3a3a3]">
+                    <td colSpan={8} className="px-3 py-6 text-center text-sm text-[#a3a3a3]">
                       {tc("noData")}
                     </td>
                   </tr>
                 )}
                 {data.equipment.map((ce) => {
                   const total = ce.unitPrice !== null ? Number(ce.unitPrice) * ce.quantity : null;
+                  const eff = computeEffectiveEndDateForLine(
+                    data.endDate,
+                    ce.cumulativePausedDays,
+                    ce.currentPauseStartedAt,
+                  );
                   return (
                     <tr
                       key={ce.id}
@@ -335,6 +349,17 @@ export default function ContractDetailPage() {
                       <td className="px-3 py-2 text-right">{ce.quantity}</td>
                       <td className="px-3 py-2 text-right">{formatVnd(ce.unitPrice)}</td>
                       <td className="px-3 py-2 text-right">{formatVnd(total)}</td>
+                      <td className="px-3 py-2">
+                        <PauseStateBadge
+                          settledAt={ce.settledAt}
+                          currentPauseStartedAt={ce.currentPauseStartedAt}
+                          cumulativePausedDays={ce.cumulativePausedDays}
+                          t={t}
+                        />
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        {eff ? formatDate(eff.toISOString(), locale) : "—"}
+                      </td>
                     </tr>
                   );
                 })}
@@ -412,6 +437,64 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-[#111111]">{value}</span>
     </div>
   );
+}
+
+/** Per-equipment effective settlement date = endDate + cumulativePausedDays
+ *  + any open pause window. Mirrors the server-side `effectiveEndDate`
+ *  helper at `src/lib/contracts/pause-period.ts`. */
+function computeEffectiveEndDateForLine(
+  endDate: string | null,
+  cumulativePausedDays: number,
+  currentPauseStartedAt: string | null,
+): Date | null {
+  if (!endDate) return null;
+  const base = new Date(endDate);
+  let pausedDays = cumulativePausedDays;
+  if (currentPauseStartedAt) {
+    const elapsedMs = Date.now() - new Date(currentPauseStartedAt).getTime();
+    pausedDays += Math.max(0, Math.floor(elapsedMs / (24 * 60 * 60 * 1000)));
+  }
+  const out = new Date(base);
+  out.setDate(out.getDate() + pausedDays);
+  return out;
+}
+
+/** Status pill for the per-equipment pause ledger on the contract
+ *  detail Equipment tab. Encapsulates the four mutually-exclusive
+ *  states so the JSX doesn't carry a nested ternary chain. */
+function PauseStateBadge({
+  settledAt,
+  currentPauseStartedAt,
+  cumulativePausedDays,
+  t,
+}: Readonly<{
+  settledAt: string | null;
+  currentPauseStartedAt: string | null;
+  cumulativePausedDays: number;
+  t: ReturnType<typeof useTranslations<"contracts">>;
+}>) {
+  if (settledAt) {
+    return (
+      <span className="rounded-full bg-[#e5e7eb] px-2 py-0.5 text-xs text-[#374151]">
+        {t("pause.stateSettled")}
+      </span>
+    );
+  }
+  if (currentPauseStartedAt) {
+    return (
+      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+        {t("pause.statePaused", { days: cumulativePausedDays })}
+      </span>
+    );
+  }
+  if (cumulativePausedDays > 0) {
+    return (
+      <span className="text-xs text-[#737373]">
+        {t("pause.stateRestored", { days: cumulativePausedDays })}
+      </span>
+    );
+  }
+  return <span className="text-xs text-[#a3a3a3]">—</span>;
 }
 
 // Mid-term RENTAL→SALE conversion. Office-triggered, MANAGER+ only.

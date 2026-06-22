@@ -586,6 +586,19 @@ model Equipment {
   ownership             EquipmentOwnership @default(COMPANY)
   installedAt           DateTime?
   installedByTechnicianId String?
+  /// Effective deactivation moment chosen by office staff. Past dates
+  /// are allowed (back-dated DEACTIVATE) and feed the per-equipment
+  /// pause ledger. Null while ACTIVE / never deactivated.
+  deactivatedAt         DateTime?
+  /// Effective termination moment chosen by office staff. Past dates
+  /// are allowed. Independent from `retrievedAt` — termination decides
+  /// "no more billing"; retrieval records when the physical device
+  /// actually came back.
+  terminatedAt          DateTime?
+  /// Date the device was physically retrieved. Set only AFTER the unit
+  /// is in TERMINATED state. Past dates allowed (the retrieval often
+  /// happens in the field and is logged later).
+  retrievedAt           DateTime?
   filterPolicyOverride  Json?              // per-unit override
   replacedByEquipmentId String?            @unique
   notes                 String?
@@ -705,8 +718,30 @@ model ContractEquipment {
   notes        String?
   createdAt    DateTime   @default(now())
 
+  // ── Per-equipment pause tracking (added 2026-06) ──────────────────
+  // Policy: the Contract document (endDate, totalContractValue, monthly
+  // fee) is IMMUTABLE. When an Equipment is DEACTIVATED its rental /
+  // maintenance billing is paused pro-rata, and the per-equipment
+  // settlement (retrieval OR ownership-transfer) is pushed back by the
+  // exact paused duration. Each ContractEquipment row carries its own
+  // pause ledger, so device A and device B in the same contract can
+  // settle on different dates.
+  /// Days this line has been paused (DEACTIVATED) within this contract,
+  /// rolled up at each reactivation. Used by the billing pro-rata logic
+  /// and the per-equipment effectiveEndDate calculation.
+  cumulativePausedDays   Int        @default(0)
+  /// Set while the line is currently paused; null while billing is on.
+  /// Reactivation rolls the elapsed days into cumulativePausedDays.
+  currentPauseStartedAt  DateTime?
+  /// Per-equipment settlement timestamp — set when this specific line
+  /// reaches its effectiveEndDate (= contract.endDate + cumulativePausedDays)
+  /// and the cron flips ownership / spawns a RETRIEVAL visit for it.
+  /// Independent of sibling lines in the same contract.
+  settledAt              DateTime?
+
   @@unique([contractId, equipmentId])
   @@index([equipmentId])
+  @@index([currentPauseStartedAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

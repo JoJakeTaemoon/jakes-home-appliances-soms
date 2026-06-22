@@ -55,12 +55,54 @@ export const endOfTermActionEnum = z.enum([
   "RETRIEVE_DEVICE",
 ]);
 
-const equipmentLineSchema = z.object({
-  equipmentId: z.string().trim().min(1),
-  unitPrice: moneyOptional,
-  quantity: z.coerce.number().int().min(1).max(10_000).default(1),
-  notes: optStr(500),
-});
+const equipmentLineSchema = z
+  .object({
+    /**
+     * Existing Equipment row to attach. Mutually exclusive with
+     * `modelId` — pre-installed devices already live on a customer
+     * (e.g. MAINTENANCE on a customer-owned bidet) and the office
+     * picks them rather than registering new ones.
+     */
+    equipmentId: optStr(60),
+    /**
+     * Catalog model id for brand-new equipment that the contract
+     * creates and installs. The server materialises `quantity`
+     * Equipment rows under the customer + optional siteId, generates
+     * sequential serials starting from `serialStart` (or the next
+     * value after the customer's last serial for the same model
+     * when `serialStart` is blank), and links every row via
+     * ContractEquipment.
+     */
+    modelId: optStr(60),
+    /** Required when modelId is supplied for a multi-site customer. */
+    siteId: optStr(60),
+    /**
+     * Starting serial for the auto-generated sweep. When blank, the
+     * server scans the customer's existing Equipment for the same
+     * model and starts one above the last numeric suffix it finds
+     * (falling back to "MODEL-000001" when none exist yet).
+     */
+    serialStart: optStr(60),
+    unitPrice: moneyOptional,
+    quantity: z.coerce.number().int().min(1).max(10_000).default(1),
+    notes: optStr(500),
+  })
+  .superRefine((v, ctx) => {
+    if (!v.equipmentId && !v.modelId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Either equipmentId or modelId is required",
+        path: ["modelId"],
+      });
+    }
+    if (v.equipmentId && v.modelId) {
+      ctx.addIssue({
+        code: "custom",
+        message: "equipmentId and modelId are mutually exclusive",
+        path: ["modelId"],
+      });
+    }
+  });
 
 const contractBase = z.object({
   customerId: z.string().trim().min(1),

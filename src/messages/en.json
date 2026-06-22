@@ -315,6 +315,7 @@
   "equipment": {
     "title": "Equipment",
     "installNew": "+ Install",
+    "installViaContract": "+ Install via contract",
     "code": "Code",
     "customer": "Customer",
     "site": "Site",
@@ -368,12 +369,33 @@
       "terminate": "Terminate",
       "replace": "Replace unit",
       "relocate": "Move to other site",
-      "reactivate": "Reactivate"
+      "reactivate": "Reactivate",
+      "logRetrieval": "Log retrieval date"
     },
     "confirm": {
       "deactivate": "Deactivate this unit? It will be skipped by periodic-inspection scheduling but its history is preserved.",
       "terminate": "Terminate this unit? This is final and cannot be reversed.",
       "reactivate": "Reactivate this unit?"
+    },
+    "deactivatedAt": "Deactivated on",
+    "terminatedAt": "Terminated on",
+    "retrievedAt": "Retrieved on",
+    "deactivateModal": {
+      "billingWarning": "⚠ While deactivated, billing on every active rental / maintenance contract that carries this unit is paused pro-rata, and the unit's effective settlement date is extended by the same number of days.",
+      "effectiveAt": "Effective deactivation date",
+      "effectiveAtHint": "Enter the date the device actually stopped on site. Past dates are allowed.",
+      "reasonHint": "e.g. Customer requested suspension, awaiting leak inspection…"
+    },
+    "terminateModal": {
+      "finalWarning": "⚠ After termination billing stops and this unit is removed from inspection scheduling. This cannot be reversed.",
+      "effectiveAt": "Termination date",
+      "effectiveAtHint": "Enter the date the termination actually took effect in the field. Past dates are allowed.",
+      "reasonHint": "e.g. Contract expired, lost, retrieval decision…"
+    },
+    "retrievalModal": {
+      "intro": "This unit is already TERMINATED. Once the device is physically back, log the retrieval date. You can edit it later.",
+      "retrievedAt": "Retrieval date",
+      "retrievedAtHint": "Enter the date the technician physically picked up the device. Must not be earlier than the termination date."
     },
     "replaceTitle": "Replace unit",
     "replaceConfirm": "The current unit will be marked REPLACED. Choose the new model and serial number.",
@@ -434,6 +456,13 @@
       "serialStartHint": "e.g. PTS-2100-000010 — auto-increments per quantity",
       "addRow": "+ Add model",
       "installCta": "Install {total}"
+    },
+    "pause": {
+      "colState": "Pause / Settle",
+      "colEffectiveEnd": "Effective end",
+      "statePaused": "Paused ({days} d cumulative)",
+      "stateRestored": "Active (carries {days} d paused)",
+      "stateSettled": "Settled"
     },
     "noContracts": "No contracts yet",
     "noResults": "No contracts match your filters",
@@ -575,6 +604,16 @@
       "newCustomerTitle": "Quick customer create",
       "pickType": "Pick contract type",
       "pickEquipment": "Pick equipment line(s)",
+      "monthlyFeePerUnit": "Monthly fee",
+      "deliveryDate": "Delivery / install date",
+      "pickModel": "Add new model",
+      "pickModelPlaceholder": "Pick a model from the catalog",
+      "pickSite": "Pick a site",
+      "pickExistingEquipment": "Customer's existing equipment (optional)",
+      "siteRequiredNotice": "This customer has {count} sites. Specify a site per row.",
+      "serialStartAuto": "Leave blank for auto-numbering",
+      "filterBrand": "Filter by brand",
+      "filterCategory": "Filter by category",
       "addLine": "Add equipment line",
       "removeLine": "Remove",
       "unitPrice": "Unit price (₫)",

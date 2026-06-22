@@ -70,12 +70,15 @@ const ADMIN_MANAGER: readonly RoleKey[] = ["ADMIN", "MANAGER"];
 const navItems: NavItem[] = [
   { href: "/o/dashboard", labelKey: "dashboard", Icon: LayoutDashboard, roles: ALL_OFFICE_ROLES },
   { href: "/o/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
-  { href: "/o/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
   { href: "/o/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
   { href: "/o/schedule-board", labelKey: "scheduleBoard", Icon: LayoutGrid, roles: ALL_OFFICE_ROLES },
   { href: "/o/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
   { href: "/o/visits/print", labelKey: "visitsPrint", Icon: Printer, roles: ALL_OFFICE_ROLES },
   { href: "/o/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
+  // Equipment moved below service-requests (2026-06-22) — equipment is
+  // installed via the contract creation flow now, not as a standalone
+  // entry point, so it belongs further down the day-to-day list.
+  { href: "/o/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
   { href: "/o/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
   { href: "/o/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
   { href: "/o/reports", labelKey: "reports", Icon: BarChart3, roles: ALL_OFFICE_ROLES },
