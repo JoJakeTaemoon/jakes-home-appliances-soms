@@ -198,6 +198,16 @@ export const POST = defineMutation({
       }
     }
 
+    if (body.siteId) {
+      const site = await prisma.site.findUnique({
+        where: { id: body.siteId },
+        select: { customerId: true },
+      });
+      if (!site || site.customerId !== body.customerId) {
+        throw new ValidationError("Site does not belong to the selected customer");
+      }
+    }
+
     const { customerId, contactId, ...input } = body;
     return ServiceRequestWorkflow.create({
       customerId,

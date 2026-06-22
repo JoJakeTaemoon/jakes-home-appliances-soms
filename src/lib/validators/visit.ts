@@ -214,6 +214,7 @@ export const visitListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   technicianId: z.string().trim().min(1).optional(),
   customerId: z.string().trim().min(1).optional(),
+  siteId: z.string().trim().min(1).optional(),
   state: visitStateEnum.optional(),
   type: visitTypeEnum.optional(),
   customerType: z.enum(["B2C", "B2B"]).optional(),

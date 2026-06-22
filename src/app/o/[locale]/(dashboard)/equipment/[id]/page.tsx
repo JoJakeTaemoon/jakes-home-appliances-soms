@@ -249,7 +249,7 @@ export default function EquipmentDetailPage() {
       <ConfirmDialog
         open={confirmDeactivate}
         title={t("actions.deactivate")}
-        message="Deactivate this unit?"
+        message={t("confirm.deactivate")}
         variant="danger"
         busy={busy}
         onCancel={() => setConfirmDeactivate(false)}
@@ -258,7 +258,7 @@ export default function EquipmentDetailPage() {
       <ConfirmDialog
         open={confirmTerminate}
         title={t("actions.terminate")}
-        message="Terminate this unit? This is final and cannot be reversed."
+        message={t("confirm.terminate")}
         variant="danger"
         busy={busy}
         onCancel={() => setConfirmTerminate(false)}
@@ -267,7 +267,7 @@ export default function EquipmentDetailPage() {
       <ConfirmDialog
         open={confirmReactivate}
         title={t("actions.reactivate")}
-        message="Reactivate this unit?"
+        message={t("confirm.reactivate")}
         busy={busy}
         onCancel={() => setConfirmReactivate(false)}
         onConfirm={() => changeStatus("ACTIVE")}

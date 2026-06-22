@@ -128,10 +128,40 @@ export const POST = defineMutation({
       }
     }
 
+    // Site-scope check on explicit siteId (added 2026-06). Always optional —
+    // if the contact is SITE-scoped, force the SR to their site even when
+    // the body doesn't specify it.
+    let resolvedSiteId = body.siteId ?? null;
+    if (resolvedSiteId) {
+      const site = await prisma.site.findUnique({
+        where: { id: resolvedSiteId },
+        select: { customerId: true },
+      });
+      if (!site || site.customerId !== auth.customerId) {
+        throw new ValidationError("Site does not belong to your customer");
+      }
+      const allowed = canViewEquipmentAtSite(
+        {
+          contactId: auth.contactId,
+          customerId: auth.customerId,
+          role: auth.role,
+          scope: auth.scope,
+          siteId: auth.siteId,
+        },
+        resolvedSiteId,
+      );
+      if (!allowed) {
+        throw new ValidationError("You cannot submit requests for this site");
+      }
+    } else if (auth.scope === "SITE" && auth.siteId) {
+      // Site-scoped contacts always submit against their own site.
+      resolvedSiteId = auth.siteId;
+    }
+
     return ServiceRequestWorkflow.create({
       customerId: auth.customerId,
       contactId: auth.contactId,
-      input: body,
+      input: { ...body, siteId: resolvedSiteId ?? undefined },
       actor: {
         actorType: "CUSTOMER",
         actorContactId: auth.contactId,

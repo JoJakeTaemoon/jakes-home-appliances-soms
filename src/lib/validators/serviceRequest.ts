@@ -56,6 +56,10 @@ export const srAttachmentSchema = z.object({
 
 export const createServiceRequestSchema = z.object({
   equipmentId: optStr(60),
+  /// Multi-site B2B customers can flag which site the request belongs to.
+  /// Always optional — the customer may not remember, and the office will
+  /// reconcile when they assign a technician.
+  siteId: optStr(60),
   type: srTypeEnum,
   description: z
     .string()
@@ -79,6 +83,7 @@ export const listServiceRequestQuerySchema = z.object({
   state: srStateEnum.optional(),
   type: srTypeEnum.optional(),
   customerId: optStr(60),
+  siteId: optStr(60),
   isPaid: z
     .union([z.literal("true"), z.literal("false")])
     .optional()

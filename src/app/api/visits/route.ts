@@ -29,12 +29,13 @@ export const GET = defineQuery({
   query: visitListQuerySchema,
   paginated: true,
   handler: async ({ auth, query }) => {
-    const { q, technicianId, customerId, state, type, customerType, from, to, sortBy, sortDir, page, pageSize } =
+    const { q, technicianId, customerId, siteId, state, type, customerType, from, to, sortBy, sortDir, page, pageSize } =
       query;
     const orderBy = resolveOrderBy({ sortBy, sortDir }, VISIT_SORT_MAP, { scheduledFor: "asc" });
 
     const where: Prisma.VisitWhereInput = {};
     if (customerId) where.customerId = customerId;
+    if (siteId) where.siteId = siteId;
     if (state) where.state = state;
     if (type) where.type = type;
     if (customerType) where.customer = { type: customerType };
@@ -85,6 +86,7 @@ export const GET = defineQuery({
         take: pageSize,
         include: {
           customer: { select: { id: true, code: true, name: true, type: true } },
+          site: { select: { id: true, name: true } },
           leadTechnician: { select: { id: true, username: true } },
           equipment: {
             select: {

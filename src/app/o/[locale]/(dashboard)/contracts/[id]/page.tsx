@@ -22,6 +22,8 @@ import {
 } from "@/components/contracts/contract-state-badge";
 import { ContractActions } from "@/components/contracts/contract-actions";
 import { ContractPdfPreview } from "@/components/contracts/contract-pdf-preview";
+import { BulkInstallEquipmentForm } from "@/components/contracts/bulk-install-equipment-form";
+import { canManageEquipment } from "@/lib/customers/access";
 import { formatDate, formatVnd } from "@/lib/format";
 
 interface ContractDetail {
@@ -89,6 +91,7 @@ export default function ContractDetailPage() {
   const router = useRouter();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
+  const [installOpen, setInstallOpen] = useState(false);
 
   const query = useApiQuery<ContractDetail>(
     id ? `/api/contracts/${id}` : null,
@@ -282,6 +285,13 @@ export default function ContractDetailPage() {
         </TabPanel>
 
         <TabPanel value="equipment">
+          <div className="mb-3 flex items-center justify-end">
+            {canManageEquipment(user?.role ?? "STAFF") && (
+              <Button onClick={() => setInstallOpen(true)}>
+                {t("install.cta")}
+              </Button>
+            )}
+          </div>
           <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-white">
             <table className="w-full text-sm">
               <thead className="bg-[#fafafa] text-xs text-[#525252]">
@@ -375,6 +385,22 @@ export default function ContractDetailPage() {
           </ul>
         </TabPanel>
       </Tabs>
+      {installOpen && (
+        <Modal
+          open
+          onClose={() => setInstallOpen(false)}
+          title={t("install.modalTitle")}
+          size="xl"
+        >
+          <BulkInstallEquipmentForm
+            lockedContractId={data.id}
+            onSuccess={async () => {
+              setInstallOpen(false);
+              await reload();
+            }}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

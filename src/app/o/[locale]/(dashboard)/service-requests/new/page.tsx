@@ -55,6 +55,7 @@ export default function ServiceRequestNewPage() {
   const [customerId, setCustomerIdRaw] = useState<string | null>(null);
   const [contactId, setContactId] = useState<string | null>(null);
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
   const [type, setType] = useState<SrType>("INSPECTION");
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
@@ -68,15 +69,18 @@ export default function ServiceRequestNewPage() {
   const customerDetailQuery = useApiQuery<{
     contacts: ContactOpt[];
     equipment: EquipmentOpt[];
+    sites?: { id: string; name: string }[];
   }>(customerId ? `/api/customers/${customerId}` : null);
   const contacts = customerDetailQuery.data?.contacts ?? [];
   const equipment = customerDetailQuery.data?.equipment ?? [];
+  const sites = customerDetailQuery.data?.sites ?? [];
 
-  // Clear contact/equipment picks when the customer changes.
+  // Clear contact/equipment/site picks when the customer changes.
   const setCustomerId = (id: string | null) => {
     setCustomerIdRaw(id);
     setContactId(null);
     setEquipmentId(null);
+    setSiteId(null);
   };
 
   async function submit() {
@@ -90,6 +94,7 @@ export default function ServiceRequestNewPage() {
           customerId,
           contactId: contactId || undefined,
           equipmentId: equipmentId || undefined,
+          siteId: siteId || undefined,
           type,
           description,
         },
@@ -160,6 +165,23 @@ export default function ServiceRequestNewPage() {
                 allowClear
               />
             </FormField>
+
+            {sites.length >= 2 && (
+              <FormField
+                label={t("siteLabel")}
+                className="sm:col-span-2"
+                hint={t("siteHint")}
+              >
+                <Combobox
+                  value={siteId}
+                  onChange={setSiteId}
+                  options={sites.map((s) => ({ value: s.id, label: s.name }))}
+                  placeholder={t("sitePlaceholder")}
+                  searchable={sites.length > 5}
+                  allowClear
+                />
+              </FormField>
+            )}
           </>
         )}
 

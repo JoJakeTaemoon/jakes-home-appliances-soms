@@ -465,6 +465,14 @@ Khi khách hàng ngừng giao dịch (đóng cửa · chuyển đi · kết thú
 > - **SMS hết hạn không tự gửi**: Văn phòng phải bấm nút [Gửi SMS hết hạn] thì SMS mới được gửi cho khách.
 > - **Hợp đồng bảo trì cho thiết bị bên ngoài**: Có thể tạo hợp đồng MAINTENANCE cho thiết bị không có trong catalog. Trong modal thêm thiết bị, bật "Thiết bị bên ngoài" và nhập mô tả + chu kỳ bảo trì trực tiếp.
 
+> **Cập nhật bổ sung 2026-06-22 — Lắp đặt theo hợp đồng + Cơ sở**
+>
+> - **Lắp đặt thiết bị phải chọn hợp đồng trước**: Luồng "Thiết bị → Lắp đặt mới" cũ đã được thay bằng luồng chọn hợp đồng trước. Bấm [+ Lắp đặt thiết bị] trong tab Thiết bị của chi tiết hợp đồng, hoặc vào trang Lắp đặt và chọn hợp đồng. Không còn lắp đặt thiết bị tự do ngoài hợp đồng.
+> - **Số lượng theo model + số serial liên tiếp**: Modal lắp đặt cho phép mỗi dòng có model + số lượng + số serial bắt đầu + cơ sở + sở hữu. Nếu số serial bắt đầu kết thúc bằng số (ví dụ `PTS-2100-000010`), hệ thống tự sinh các serial liên tiếp (`...000010`, `...000011`, `...000012`).
+> - **Khách hàng nhiều cơ sở: bắt buộc chọn cơ sở**: Với khách hàng có ≥2 cơ sở, mỗi dòng lắp đặt phải chỉ định cơ sở. Khách hàng B2C / một cơ sở có thể để trống.
+> - **Yêu cầu dịch vụ — tuỳ chọn cơ sở**: Khách hàng nhiều cơ sở thấy ô chọn cơ sở khi gửi yêu cầu. Nếu họ không nhớ, có thể bỏ trống; văn phòng sẽ bổ sung khi phân kỹ thuật viên.
+> - **Lượt thăm gắn cơ sở tự động**: Nếu lượt thăm có thiết bị, cơ sở của thiết bị sẽ tự gán vào lượt thăm. Tên cơ sở hiển thị trên danh sách lượt thăm và Phiếu xác nhận công việc PDF.
+
 ### 6.1 Các loại hợp đồng
 
 | Loại | Tiếng Hàn | Tiếng Việt | Mô tả |

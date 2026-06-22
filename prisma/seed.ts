@@ -1355,6 +1355,15 @@ async function main() {
             status: "ACTIVE",
             ownership: "COMPANY",
           },
+          // Anchor B2C carries a 2nd device (bidet) — exercises the
+          // multi-equipment contract path on the showcase customer.
+          {
+            modelId: bidet.id,
+            serialNumber: "SA-J430-000002",
+            installedAt: new Date("2025-06-15"),
+            status: "ACTIVE",
+            ownership: "COMPANY",
+          },
         ],
       },
     },
@@ -1531,22 +1540,32 @@ async function main() {
     modelId: purifier.id,
     installedAt: new Date("2025-08-01"),
   });
-  await ensureEquipment({
+  const b2bHcmcAir = await ensureEquipment({
     serialNumber: "AC-700-000005",
     customerId: b2b.id,
     siteId: hcmcSite.id,
     modelId: air.id,
     installedAt: new Date("2025-08-01"),
   });
-  await ensureEquipment({
+  const b2bHnPurifier = await ensureEquipment({
     serialNumber: "PTS-2100-000011",
     customerId: b2b.id,
     siteId: hnSite.id,
     modelId: purifier.id,
     installedAt: new Date("2025-09-01"),
   });
+  // Add a 4th device at the HN site (bidet) so the Appendix
+  // amendment "Thêm thiết bị cho chi nhánh Hà Nội" has 2 devices
+  // attached when the contract page renders.
+  const b2bHnBidet = await ensureEquipment({
+    serialNumber: "SA-J430-000010",
+    customerId: b2b.id,
+    siteId: hnSite.id,
+    modelId: bidet.id,
+    installedAt: new Date("2025-09-01"),
+  });
 
-  console.log(`  ✓ B2B customer ${b2b.code} (with 2 sites, 3 equipment)`);
+  console.log(`  ✓ B2B customer ${b2b.code} (with 2 sites, 4 equipment)`);
 
   // ─── B2C customer #2 (post-rental, equipment owned by customer) ─────
   const b2c2 = await prisma.customer.upsert({
@@ -1595,6 +1614,15 @@ async function main() {
             installedAt: new Date("2022-03-01"),
             status: "ACTIVE",
             ownership: "CUSTOMER", // post-rental transfer (B.3)
+          },
+          // Same household has a 2nd post-rental device — exercises
+          // multi-equipment rental-completed history view.
+          {
+            modelId: purifier.id,
+            serialNumber: "PTS-2100-000003",
+            installedAt: new Date("2022-03-01"),
+            status: "ACTIVE",
+            ownership: "CUSTOMER",
           },
         ],
       },
@@ -1757,6 +1785,15 @@ async function main() {
               status: "ACTIVE",
               ownership: "COMPANY",
             },
+            // 3rd device varies by customer index so the catalog mix
+            // (bidet vs premium purifier) is visible across B2B accounts.
+            {
+              modelId: c.code.endsWith("1") || c.code.endsWith("4") ? purifierPro.id : bidet.id,
+              serialNumber: `${c.code.endsWith("1") || c.code.endsWith("4") ? "PTS-3500" : "SA-J430"}-0001${c.code.slice(-2)}`,
+              installedAt: monthsFromNow(-5),
+              status: "ACTIVE",
+              ownership: "COMPANY",
+            },
           ],
         },
       },
@@ -1764,6 +1801,115 @@ async function main() {
     b2bCustomers[c.code] = cust;
   }
   console.log(`  ✓ bulk B2B customers (${bulkB2b.length})`);
+
+  // ─── Multi-site bulk B2B fixtures ───────────────────────────────────
+  // Several bulk B2B accounts get 2-4 sites each so the install /
+  // service-request / visit flows can be exercised with multi-site
+  // customers in dev. Equipment counts grow per site; serials extend the
+  // bulk-B2B serial space (`{prefix}-0001{code-suffix}{site-idx}`).
+  type SiteFixture = {
+    name: string;
+    region: string;
+    provinceCode: string;
+    provinceName: string;
+    districtCode: string;
+    districtName: string;
+    addressStreet: string;
+  };
+  const multiSiteB2b: Array<{ code: string; sites: SiteFixture[]; equipmentMix: Array<"purifier" | "air" | "bidet" | "purifierPro"> }> = [
+    {
+      code: "KH00011", // ABC FOODS — 3 production sites
+      sites: [
+        { name: "Nhà máy HCMC Bình Tân", region: "HCMC-D1", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-BT", districtName: "Quận Bình Tân", addressStreet: "Lô 12, Khu công nghiệp Tân Tạo" },
+        { name: "Nhà máy Hà Nội Long Biên", region: "HN-LB", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-LB", districtName: "Quận Long Biên", addressStreet: "Số 88 Đường Nguyễn Văn Linh" },
+        { name: "Nhà máy Đà Nẵng", region: "DN-LC", provinceCode: "DN", provinceName: "Thành phố Đà Nẵng", districtCode: "DN-LC", districtName: "Quận Liên Chiểu", addressStreet: "Lô 5, Khu công nghiệp Hòa Khánh" },
+      ],
+      equipmentMix: ["purifier", "purifier", "air"],
+    },
+    {
+      code: "KH00012", // XYZ LOGISTICS — 2 warehouses
+      sites: [
+        { name: "Kho phân phối HCMC Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 100 Đường Nguyễn Lương Bằng" },
+        { name: "Kho phân phối Hà Nội Gia Lâm", region: "HN-GL", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-GL", districtName: "Huyện Gia Lâm", addressStreet: "Số 200 Đường Ngô Xuân Quảng" },
+      ],
+      equipmentMix: ["purifier", "purifier"],
+    },
+    {
+      code: "KH00014", // GMA International School — 2 campuses
+      sites: [
+        { name: "Cơ sở Quận 3 (Tiểu học)", region: "HCMC-D3", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q3", districtName: "Quận 3", addressStreet: "Số 12 Đường Võ Văn Tần" },
+        { name: "Cơ sở Quận 7 (Trung học)", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 50 Đường Nguyễn Hữu Thọ" },
+      ],
+      equipmentMix: ["purifier", "bidet"],
+    },
+    {
+      code: "KH00016", // LOTTE MART VIỆT NAM — 4 stores
+      sites: [
+        { name: "Lotte Mart Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 469 Đường Nguyễn Hữu Thọ" },
+        { name: "Lotte Mart Gò Vấp", region: "HCMC-GV", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-GV", districtName: "Quận Gò Vấp", addressStreet: "Số 242 Đường Nguyễn Văn Lượng" },
+        { name: "Lotte Mart Cần Thơ", region: "CT-NK", provinceCode: "CT", provinceName: "Thành phố Cần Thơ", districtCode: "CT-NK", districtName: "Quận Ninh Kiều", addressStreet: "Số 84 Mậu Thân" },
+        { name: "Lotte Mart Hà Nội Đống Đa", region: "HN-DD", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-DD", districtName: "Quận Đống Đa", addressStreet: "Số 229 Phố Tây Sơn" },
+      ],
+      equipmentMix: ["purifier", "air", "bidet"],
+    },
+  ];
+
+  for (const ms of multiSiteB2b) {
+    const customer = b2bCustomers[ms.code];
+    if (!customer) continue;
+    for (const [siteIdx, sf] of ms.sites.entries()) {
+      const site = await prisma.site.upsert({
+        where: { id: `seed-site-${ms.code}-${siteIdx + 1}` },
+        update: {},
+        create: {
+          id: `seed-site-${ms.code}-${siteIdx + 1}`,
+          customerId: customer.id,
+          name: sf.name,
+          addressProvinceCode: sf.provinceCode,
+          addressProvinceName: sf.provinceName,
+          addressDistrictCode: sf.districtCode,
+          addressDistrictName: sf.districtName,
+          addressStreet: sf.addressStreet,
+          address: sf.addressStreet,
+          district: sf.districtName,
+          city: sf.provinceName,
+          region: sf.region,
+        },
+      });
+      // Site-scoped OPS contact for each site so visit-reminder routing
+      // (site OPS → customer OPS → CP) can be exercised.
+      await prisma.customerContact.upsert({
+        where: { id: `seed-${ms.code}-site${siteIdx + 1}-ops` },
+        update: {},
+        create: {
+          id: `seed-${ms.code}-site${siteIdx + 1}-ops`,
+          customerId: customer.id,
+          siteId: site.id,
+          role: "OPS_CONTACT",
+          scope: "SITE",
+          isPrimary: true,
+          name: `Quản lý ${sf.name.slice(0, 30)}`,
+          title: "Quản lý cơ sở",
+          phone1: `090${ms.code.slice(-2)}${String(siteIdx + 1).padStart(2, "0")}${String(siteIdx + 1).padStart(2, "0")}`,
+          language: "vi",
+        },
+      });
+      // Per-site equipment based on the customer's equipmentMix.
+      for (const [eqIdx, kind] of ms.equipmentMix.entries()) {
+        const modelMap = { purifier, air, bidet, purifierPro } as const;
+        const prefixMap = { purifier: "PTS-2100", air: "AC-700", bidet: "SA-J430", purifierPro: "PTS-3500" } as const;
+        const serial = `${prefixMap[kind]}-${ms.code.slice(-2)}${String(siteIdx + 1).padStart(2, "0")}${String(eqIdx + 1).padStart(2, "0")}`;
+        await ensureEquipment({
+          serialNumber: serial,
+          customerId: customer.id,
+          siteId: site.id,
+          modelId: modelMap[kind].id,
+          installedAt: monthsFromNow(-3),
+        });
+      }
+    }
+  }
+  console.log(`  ✓ multi-site B2B (${multiSiteB2b.length} customers, ${multiSiteB2b.reduce((acc, m) => acc + m.sites.length, 0)} sites, ${multiSiteB2b.reduce((acc, m) => acc + m.sites.length * m.equipmentMix.length, 0)} equipment)`);
 
   // ─── Contracts (covering all states) ────────────────────────────────
   // KH00001 B2C rental — ACTIVE, mid-term.
@@ -1785,7 +1931,12 @@ async function main() {
       signedByCustomerAt: new Date("2025-06-15"),
       signedByCompanyAt: new Date("2025-06-15"),
       activatedAt: new Date("2025-06-15"),
-      equipment: { create: [{ equipmentId: b2c.equipment[0].id, unitPrice: 350_000 }] },
+      equipment: {
+        create: [
+          { equipmentId: b2c.equipment[0].id, unitPrice: 250_000 },
+          { equipmentId: b2c.equipment[1].id, unitPrice: 100_000 },
+        ],
+      },
     },
   });
 
@@ -1810,7 +1961,12 @@ async function main() {
       signedByCustomerAt: new Date("2025-08-01"),
       signedByCompanyAt: new Date("2025-08-01"),
       activatedAt: new Date("2025-08-01"),
-      equipment: { create: [{ equipmentId: b2bEq1.id, unitPrice: 350_000 }] },
+      equipment: {
+        create: [
+          { equipmentId: b2bEq1.id, unitPrice: 350_000 },
+          { equipmentId: b2bHcmcAir.id, unitPrice: 280_000 },
+        ],
+      },
     },
   });
   await prisma.contract.upsert({
@@ -1832,6 +1988,12 @@ async function main() {
       signedByCustomerAt: new Date("2025-09-01"),
       signedByCompanyAt: new Date("2025-09-01"),
       activatedAt: new Date("2025-09-01"),
+      equipment: {
+        create: [
+          { equipmentId: b2bHnPurifier.id, unitPrice: 350_000 },
+          { equipmentId: b2bHnBidet.id, unitPrice: 180_000 },
+        ],
+      },
     },
   });
 
@@ -2198,6 +2360,309 @@ async function main() {
   console.log(
     `  ✓ contracts (9 anchor + ${bulkContracts.length} bulk = ${9 + bulkContracts.length}: full state matrix incl. 6 B2B and 6 SALE)`,
   );
+
+  // ─── Contract ↔ equipment links for contracts that the original seed
+  // left bare. Anchor contracts c1 / c2parent / Appendix / MAINTENANCE
+  // already attach their equipment inline above; this section back-fills
+  // every ACTIVE / AMENDED / COMPLETED / TERMINATED contract that the
+  // user would otherwise see with an empty "기기 0대" badge.
+  async function ensureContractEquipment(
+    contractNumber: string,
+    serial: string,
+    unitPrice?: number,
+  ) {
+    const contract = await prisma.contract.findUnique({
+      where: { contractNumber },
+      select: { id: true },
+    });
+    if (!contract) return;
+    const equipment = await prisma.equipment.findFirst({
+      where: { serialNumber: serial },
+      select: { id: true },
+    });
+    if (!equipment) return;
+    const existing = await prisma.contractEquipment.findFirst({
+      where: { contractId: contract.id, equipmentId: equipment.id },
+      select: { id: true },
+    });
+    if (existing) return;
+    await prisma.contractEquipment.create({
+      data: {
+        contractId: contract.id,
+        equipmentId: equipment.id,
+        unitPrice: unitPrice ?? null,
+      },
+    });
+  }
+
+  const contractEquipmentLinks: Array<{ contract: string; serial: string; unitPrice?: number }> = [
+    // ── Anchor contracts left bare originally ─────────────────────────
+    { contract: "HD-20220301/SA-KH0003", serial: "SA-J430-000001", unitPrice: 50_000 },
+    { contract: "HD-20220301/SA-KH0003", serial: "PTS-2100-000003", unitPrice: 30_000 },
+    { contract: "HD-20260101/SA-KH0004", serial: "SA-J430-000020", unitPrice: 12_000_000 },
+    { contract: "HD-20251001/SA-KH0007", serial: "PTS-3500-000001", unitPrice: 150_000 },
+    { contract: "HD-20251101/SA-ABC", serial: "PTS-2100-000111", unitPrice: 120_000 },
+    { contract: "HD-20251101/SA-ABC", serial: "AC-700-000111", unitPrice: 60_000 },
+    { contract: "HD-20251101/SA-ABC", serial: "PTS-3500-000111", unitPrice: 40_000 },
+    // ── Bulk AMENDED ─────────────────────────────────────────────────
+    { contract: "HD-20260120/SA-GMA", serial: "PTS-2100-000114", unitPrice: 130_000 },
+    { contract: "HD-20260120/SA-GMA", serial: "AC-700-000114", unitPrice: 90_000 },
+    { contract: "HD-20260120/SA-GMA", serial: "PTS-3500-000114", unitPrice: 90_000 },
+    { contract: "HD-20260225/SA-KH0008", serial: "PTS-2100-000031", unitPrice: 110_000 },
+    // ── Bulk COMPLETED ───────────────────────────────────────────────
+    { contract: "HD-20230315/SA-KH0005", serial: "PTS-2100-000030", unitPrice: 100_000 },
+    { contract: "HD-20230420/SA-KH0006", serial: "AC-700-000020", unitPrice: 8_500_000 },
+    { contract: "HD-20230510/SA-XYZ", serial: "PTS-2100-000112", unitPrice: 11_000_000 },
+    { contract: "HD-20230510/SA-XYZ", serial: "AC-700-000112", unitPrice: 8_000_000 },
+    // ── Bulk TERMINATED ──────────────────────────────────────────────
+    { contract: "HD-20250105/SA-KH0009", serial: "SA-J430-000021", unitPrice: 120_000 },
+    { contract: "HD-20250215/SA-ABC", serial: "AC-700-000111", unitPrice: 120_000 },
+  ];
+  for (const link of contractEquipmentLinks) {
+    await ensureContractEquipment(link.contract, link.serial, link.unitPrice);
+  }
+  console.log(`  ✓ contract↔equipment links (${contractEquipmentLinks.length} back-filled)`);
+
+  // ─── Payment history per contract (kind-classified) ──────────────────
+  // Generates a small but realistic ledger per non-CANCELLED/DRAFT
+  // contract: 1 DEPOSIT (RENTAL) + N monthly RENTAL_FEE / SALE_PAYMENT /
+  // MAINTENANCE_FEE rows. Surfaces the new "결제 이력" tab with non-empty
+  // totals + kind breakdowns. Deterministic dates derived from
+  // startDate so re-seed is stable.
+  async function ensurePaymentRow(
+    id: string,
+    data: Parameters<typeof prisma.payment.create>[0]["data"],
+  ) {
+    const existing = await prisma.payment.findUnique({ where: { id } });
+    if (existing) return existing;
+    return prisma.payment.create({ data: { ...data, id } });
+  }
+
+  function dateOffsetMonths(base: Date, months: number): Date {
+    const d = new Date(base);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
+  type PaymentPlan = {
+    contractNumber: string;
+    customerId: string;
+    deposit?: number;
+    monthlyFee?: number;
+    monthsToBill?: number;
+    salePrice?: number;
+    serviceCharge?: number;
+    serviceLabel?: string;
+    // Cap "RECONCILED" rows to keep some EXPECTED tails so the
+    // collection / payment-due dashboards have varied state.
+    expectedTrailingCount?: number;
+  };
+
+  const paymentPlans: PaymentPlan[] = [
+    // KH00001 RENTAL ACTIVE — deposit + 12 months billed + 1 ad-hoc service.
+    {
+      contractNumber: "HD-20250615/SA-KH0001",
+      customerId: b2c.id,
+      deposit: 1_500_000,
+      monthlyFee: 350_000,
+      monthsToBill: 12,
+      serviceCharge: 250_000,
+      serviceLabel: "Vệ sinh chuyên sâu (lần đặc biệt)",
+      expectedTrailingCount: 2,
+    },
+    // KH00002 B2B parent RENTAL — deposit + 10 monthly + 1 trailing EXPECTED.
+    {
+      contractNumber: "HD-20250801/SA-SHV",
+      customerId: b2b.id,
+      deposit: 3_000_000,
+      monthlyFee: 630_000,
+      monthsToBill: 10,
+      expectedTrailingCount: 1,
+    },
+    // KH00002 B2B Appendix RENTAL — newer add-on, 8 monthly.
+    {
+      contractNumber: "HD-20250901/SA-SHV",
+      customerId: b2b.id,
+      monthlyFee: 530_000,
+      monthsToBill: 8,
+      expectedTrailingCount: 1,
+    },
+    // KH00003 B2C RENTAL COMPLETED — full 36 → 12 representative monthly + final return.
+    {
+      contractNumber: "HD-20220301/SA-KH0003",
+      customerId: b2c2.id,
+      deposit: 1_000_000,
+      monthlyFee: 80_000,
+      monthsToBill: 12,
+    },
+    // KH00003 MAINTENANCE — 4 monthly (started 2026-02).
+    {
+      contractNumber: "HD-20260201/SA-KH0003-MTN",
+      customerId: b2c2.id,
+      monthlyFee: 60_000,
+      monthsToBill: 4,
+    },
+    // KH00004 SALE — single payment.
+    {
+      contractNumber: "HD-20260101/SA-KH0004",
+      customerId: b2cCustomers["KH00004"].id,
+      salePrice: 12_000_000,
+    },
+    // KH00007 RENTAL TERMINATED — partial.
+    {
+      contractNumber: "HD-20251001/SA-KH0007",
+      customerId: b2cCustomers["KH00007"].id,
+      deposit: 1_500_000,
+      monthlyFee: 150_000,
+      monthsToBill: 4,
+    },
+    // KH00011 RENTAL ACTIVE.
+    {
+      contractNumber: "HD-20251101/SA-ABC",
+      customerId: b2bCustomers["KH00011"].id,
+      deposit: 2_500_000,
+      monthlyFee: 220_000,
+      monthsToBill: 6,
+      expectedTrailingCount: 1,
+    },
+    // ── Bulk AMENDED ────────────────────────────────────────────────
+    {
+      contractNumber: "HD-20260120/SA-GMA",
+      customerId: b2bCustomers["KH00014"].id,
+      deposit: 3_000_000,
+      monthlyFee: 310_000,
+      monthsToBill: 4,
+      expectedTrailingCount: 1,
+    },
+    {
+      contractNumber: "HD-20260225/SA-KH0008",
+      customerId: b2cCustomers["KH00008"].id,
+      deposit: 1_100_000,
+      monthlyFee: 110_000,
+      monthsToBill: 3,
+    },
+    // ── Bulk COMPLETED ──────────────────────────────────────────────
+    {
+      contractNumber: "HD-20230315/SA-KH0005",
+      customerId: b2cCustomers["KH00005"].id,
+      deposit: 1_000_000,
+      monthlyFee: 100_000,
+      monthsToBill: 12,
+    },
+    {
+      contractNumber: "HD-20230420/SA-KH0006",
+      customerId: b2cCustomers["KH00006"].id,
+      salePrice: 8_500_000,
+    },
+    {
+      contractNumber: "HD-20230510/SA-XYZ",
+      customerId: b2bCustomers["KH00012"].id,
+      salePrice: 22_000_000,
+    },
+    // ── Bulk TERMINATED ─────────────────────────────────────────────
+    {
+      contractNumber: "HD-20250105/SA-KH0009",
+      customerId: b2cCustomers["KH00009"].id,
+      deposit: 1_200_000,
+      monthlyFee: 120_000,
+      monthsToBill: 8,
+    },
+    {
+      contractNumber: "HD-20250215/SA-ABC",
+      customerId: b2bCustomers["KH00011"].id,
+      deposit: 2_400_000,
+      monthlyFee: 240_000,
+      monthsToBill: 9,
+    },
+  ];
+
+  let pmtCount = 0;
+  for (const plan of paymentPlans) {
+    const contract = await prisma.contract.findUnique({
+      where: { contractNumber: plan.contractNumber },
+      select: { id: true, startDate: true, activatedAt: true },
+    });
+    if (!contract) continue;
+    const baseDate = contract.activatedAt ?? contract.startDate ?? daysFromNow(-180);
+    const slug = plan.contractNumber.replace(/[^A-Za-z0-9]/g, "").slice(-12).toLowerCase();
+
+    if (plan.deposit) {
+      await ensurePaymentRow(`seed-pay-${slug}-dep`, {
+        customerId: plan.customerId,
+        contractId: contract.id,
+        kind: "DEPOSIT",
+        method: "BANK_TRANSFER",
+        state: "RECONCILED",
+        expectedAmount: plan.deposit,
+        actualAmount: plan.deposit,
+        reference: `DEP-${slug}`,
+        collectedAt: baseDate,
+        handedOverAt: dateOffsetMonths(baseDate, 0),
+        reconciledAt: dateOffsetMonths(baseDate, 0),
+      });
+      pmtCount++;
+    }
+
+    if (plan.monthlyFee && plan.monthsToBill) {
+      const trailingExpected = plan.expectedTrailingCount ?? 0;
+      const reconciledCount = Math.max(0, plan.monthsToBill - trailingExpected);
+      const kind = plan.contractNumber.includes("-MTN") ? "MAINTENANCE_FEE" : "RENTAL_FEE";
+      for (let i = 0; i < plan.monthsToBill; i++) {
+        const dueAt = dateOffsetMonths(baseDate, i + 1);
+        const isReconciled = i < reconciledCount;
+        await ensurePaymentRow(`seed-pay-${slug}-m${String(i + 1).padStart(2, "0")}`, {
+          customerId: plan.customerId,
+          contractId: contract.id,
+          kind,
+          method: i % 2 === 0 ? "BANK_TRANSFER" : "CASH",
+          state: isReconciled ? "RECONCILED" : "EXPECTED",
+          expectedAmount: plan.monthlyFee,
+          actualAmount: isReconciled ? plan.monthlyFee : 0,
+          reference: isReconciled ? `VCB-${slug}-${i + 1}` : null,
+          collectedAt: isReconciled ? dueAt : null,
+          handedOverAt: isReconciled ? dueAt : null,
+          reconciledAt: isReconciled ? dueAt : null,
+          dueDate: isReconciled ? null : dueAt,
+        });
+        pmtCount++;
+      }
+    }
+
+    if (plan.salePrice) {
+      await ensurePaymentRow(`seed-pay-${slug}-sale`, {
+        customerId: plan.customerId,
+        contractId: contract.id,
+        kind: "SALE_PAYMENT",
+        method: "BANK_TRANSFER",
+        state: "RECONCILED",
+        expectedAmount: plan.salePrice,
+        actualAmount: plan.salePrice,
+        reference: `SALE-${slug}`,
+        collectedAt: baseDate,
+        handedOverAt: baseDate,
+        reconciledAt: baseDate,
+      });
+      pmtCount++;
+    }
+
+    if (plan.serviceCharge) {
+      await ensurePaymentRow(`seed-pay-${slug}-svc`, {
+        customerId: plan.customerId,
+        contractId: contract.id,
+        kind: "SERVICE_FEE",
+        method: "CASH",
+        state: "RECONCILED",
+        expectedAmount: plan.serviceCharge,
+        actualAmount: plan.serviceCharge,
+        notes: plan.serviceLabel ?? null,
+        collectedAt: dateOffsetMonths(baseDate, 4),
+        handedOverAt: dateOffsetMonths(baseDate, 4),
+        reconciledAt: dateOffsetMonths(baseDate, 4),
+      });
+      pmtCount++;
+    }
+  }
+  console.log(`  ✓ contract payment history (${pmtCount} rows across ${paymentPlans.length} contracts)`);
 
   // ─── Service requests (covering all states) ─────────────────────────
   const b2cPrimaryContact = b2c.contacts.find((c) => c.role === "CONTRACT_PARTY")!;
@@ -2838,7 +3303,7 @@ async function main() {
   console.log("  KH00002 CP   phone 0901112233 / vi / mustChange=true  (Trần Văn Minh, B2B 사장님)");
   console.log("  KH00002 OPS  phone 0901112234 / vi / mustChange=true  (Lê Thị Mai, B2B 운영담당)");
   console.log("  KH00003 CP   phone 0901555000 / ko / mustChange=false (김민수, 한국어 — 바로 진입)");
-  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 147 visits, 10 payments.");
+  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 147 visits, 116 payments (10 anchor + 106 per-contract history).");
 }
 
 main()

@@ -47,6 +47,10 @@ export function NewRequestClient() {
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [equipment, setEquipment] = useState<EquipmentOption[] | null>(null);
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
+  // Optional site picker (added 2026-06). Visible only for multi-site
+  // customers when no equipment has been selected. Never required — the
+  // customer may not remember which site, and the office reconciles.
+  const [siteId, setSiteId] = useState<string | null>(null);
   const [type, setType] = useState<SrType | null>(null);
   const [description, setDescription] = useState("");
   const [preferredVisitAt, setPreferredVisitAt] = useState("");
@@ -92,6 +96,21 @@ export function NewRequestClient() {
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [equipment]);
+
+  // Distinct sites surfaced via equipment payload. The portal endpoint
+  // returns `equipment[].site` so we don't need an extra round-trip.
+  const siteOptions = useMemo(() => {
+    if (!equipment) return [];
+    const map = new Map<string, string>();
+    for (const e of equipment) {
+      if (e.site) map.set(e.site.id, e.site.name);
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [equipment]);
+  const multiSite = siteOptions.length >= 2;
+  const selectedSiteId = equipmentId
+    ? equipment?.find((e) => e.id === equipmentId)?.site?.id ?? null
+    : siteId;
 
   async function handleFile(file: File) {
     if (!accessToken) return;
@@ -139,6 +158,7 @@ export function NewRequestClient() {
         credentials: "include",
         body: JSON.stringify({
           equipmentId,
+          siteId: selectedSiteId ?? undefined,
           type,
           description: description.trim(),
           preferredVisitAt: preferredVisitAt
@@ -229,6 +249,30 @@ export function NewRequestClient() {
 
       {step === 1 && (
         <section className="space-y-3">
+          {multiSite && (
+            <div className="space-y-2 rounded-2xl border border-[var(--brand-blue-100)] bg-[var(--brand-blue-50)]/40 p-3">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-blue-700)]">
+                {t("siteOptional")}
+              </label>
+              <select
+                value={siteId ?? ""}
+                onChange={(e) => {
+                  setSiteId(e.target.value || null);
+                  setEquipmentId(null);
+                }}
+                disabled={!!equipmentId}
+                className="w-full rounded-md border border-[#e5e5e5] bg-white p-3 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)] disabled:bg-[#f5f5f5] disabled:text-[#a3a3a3]"
+              >
+                <option value="">{t("siteAny")}</option>
+                {siteOptions.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              {equipmentId && (
+                <p className="text-xs text-[#737373]">{t("siteFromEquipment")}</p>
+              )}
+            </div>
+          )}
           <h2 className="text-sm font-semibold text-[#262626]">
             {t("stepEquipment")}
           </h2>

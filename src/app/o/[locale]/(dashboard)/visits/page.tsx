@@ -25,6 +25,7 @@ interface VisitRow {
   scheduledFor: string;
   scheduledWindow: string | null;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B" };
+  site: { id: string; name: string } | null;
   leadTechnician: { id: string; username: string } | null;
   equipment: {
     id: string;
@@ -284,6 +285,9 @@ function ListView({
         <div className="flex flex-col">
           <span className="font-medium">{r.customer.name}</span>
           <span className="font-mono text-xs text-[#737373]">{r.customer.code}</span>
+          {r.site && (
+            <span className="text-xs text-[var(--brand-blue-700)]">@ {r.site.name}</span>
+          )}
         </div>
       ),
     },

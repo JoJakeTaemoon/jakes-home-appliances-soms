@@ -77,6 +77,7 @@ interface PricingContext {
   equipment: {
     id: string;
     installedAt: Date | null;
+    siteId: string | null;
     contracts: { contract: { type: "SALE" | "RENTAL" | "MAINTENANCE"; state: string } }[];
   } | null;
   hadPriorRelocation: boolean;
@@ -101,6 +102,7 @@ async function loadPricingContext(
       select: {
         id: true,
         installedAt: true,
+        siteId: true,
         contracts: {
           select: {
             contract: { select: { type: true, state: true } },
@@ -112,6 +114,7 @@ async function loadPricingContext(
       equipment = {
         id: eq.id,
         installedAt: eq.installedAt ?? null,
+        siteId: eq.siteId ?? null,
         contracts: eq.contracts,
       };
     }
@@ -164,6 +167,18 @@ export async function createServiceRequest(
     }
   }
 
+  // Site ownership check — siteId is always optional but, when supplied,
+  // must belong to the same customer.
+  if (input.siteId) {
+    const site = await prisma.site.findUnique({
+      where: { id: input.siteId },
+      select: { customerId: true },
+    });
+    if (!site || site.customerId !== customerId) {
+      throw new Error("Site does not belong to this customer");
+    }
+  }
+
   // Pricing
   const ctx = await loadPricingContext(
     customerId,
@@ -189,6 +204,7 @@ export async function createServiceRequest(
     customerId,
     contactId,
     equipmentId: input.equipmentId ?? null,
+    siteId: input.siteId ?? null,
     type: input.type,
     isPaid: decision.isPaid,
     state: decision.isPaid ? "PENDING_REVIEW" : "APPROVED",
@@ -223,9 +239,16 @@ export async function createServiceRequest(
   // fall back to T+3 days when none was given.
   let visitId: string | null = null;
   if (!decision.isPaid) {
+    // Derive siteId for the spawned visit: explicit SR siteId wins;
+    // else use the equipment's site if equipment was specified.
+    let visitSiteId: string | null = input.siteId ?? null;
+    if (!visitSiteId && input.equipmentId && ctx.equipment) {
+      visitSiteId = ctx.equipment.siteId ?? null;
+    }
     const visit = await prisma.visit.create({
       data: {
         customerId,
+        siteId: visitSiteId,
         equipmentId: input.equipmentId ?? null,
         serviceRequestId: created.id,
         type: srTypeToVisitType(input.type),

@@ -43,6 +43,10 @@ export async function getVisitOr404(visitId: string) {
           },
         },
       },
+      // Top-level site relation — set when the visit is bound to a
+      // specific B2B site (auto-derived from equipment.siteId or
+      // explicit on SR submission).
+      site: { select: { id: true, name: true, region: true, address: true, addressStreet: true } },
       equipment: {
         select: {
           id: true,

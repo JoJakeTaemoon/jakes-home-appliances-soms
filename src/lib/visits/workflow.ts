@@ -136,20 +136,28 @@ async function create(
       throw new ValidationError("Site does not belong to this customer");
     }
   }
+  // When equipmentId is provided, auto-derive siteId from the equipment
+  // if the caller didn't explicitly pass one. Keeps site grouping
+  // consistent across the visit + work-confirmation PDF + scheduler
+  // routing.
+  let resolvedSiteId: string | null = input.siteId ?? null;
   if (input.equipmentId) {
     const eq = await prisma.equipment.findUnique({
       where: { id: input.equipmentId },
-      select: { customerId: true },
+      select: { customerId: true, siteId: true },
     });
     if (!eq || eq.customerId !== customer.id) {
       throw new ValidationError("Equipment does not belong to this customer");
+    }
+    if (!resolvedSiteId && eq.siteId) {
+      resolvedSiteId = eq.siteId;
     }
   }
 
   const visit = await prisma.visit.create({
     data: {
       customerId: input.customerId,
-      siteId: input.siteId ?? null,
+      siteId: resolvedSiteId,
       equipmentId: input.equipmentId ?? null,
       type: input.type,
       state: "SUGGESTED",

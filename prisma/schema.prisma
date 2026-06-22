@@ -253,8 +253,10 @@ model Site {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  contacts     CustomerContact[]
-  equipment    Equipment[]
+  contacts        CustomerContact[]
+  equipment       Equipment[]
+  visits          Visit[]
+  serviceRequests ServiceRequest[]
 
   @@index([customerId])
   @@index([region])
@@ -733,6 +735,12 @@ model ServiceRequest {
   code          String              @unique  // SR-####
   customerId    String
   customer      Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// Optional site picker (added 2026-06). Multi-site customers can
+  /// specify which site the request belongs to; B2C / single-site
+  /// customers leave it null. Always nullable — the customer may not
+  /// remember which site, and the office will reconcile later.
+  siteId        String?
+  site          Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
   contactId     String?
   contact       CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
   equipmentId   String?
@@ -767,6 +775,7 @@ model ServiceRequest {
 
   @@index([customerId, state])
   @@index([state, submittedAt])
+  @@index([siteId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -802,6 +811,10 @@ model Visit {
   customerId               String
   customer                 Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
   siteId                   String?
+  /// Site relation — added 2026-06 so multi-site B2B visits can be
+  /// grouped + filtered by location. SetNull preserves visit history if
+  /// the site is later removed.
+  site                     Site?      @relation(fields: [siteId], references: [id], onDelete: SetNull)
   equipmentId              String?
   equipment                Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   /// Set when the visit was auto-spawned by a contract lifecycle event

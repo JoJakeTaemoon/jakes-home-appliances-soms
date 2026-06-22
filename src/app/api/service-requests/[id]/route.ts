@@ -53,6 +53,7 @@ export const GET = defineQuery({
           },
         },
         contact: { select: { id: true, name: true, phone1: true, role: true } },
+        site: { select: { id: true, name: true } },
         equipment: {
           select: {
             id: true,

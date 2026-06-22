@@ -417,9 +417,9 @@ function NewContractPageInner() {
                   <thead className="bg-[#fafafa] text-xs text-[#525252]">
                     <tr>
                       <th className="px-2 py-1.5 text-left">{tc("name")}</th>
-                      <th className="px-2 py-1.5 text-right">{t("wizard.unitPrice")}</th>
-                      <th className="px-2 py-1.5 text-right">{t("wizard.quantity")}</th>
-                      <th className="px-2 py-1.5"></th>
+                      <th className="w-40 px-2 py-1.5 text-left">{t("wizard.unitPrice")}</th>
+                      <th className="w-28 px-2 py-1.5 text-left">{t("wizard.quantity")}</th>
+                      <th className="w-20 px-2 py-1.5"></th>
                     </tr>
                   </thead>
                   <tbody>

@@ -37,6 +37,7 @@ interface VisitDetail {
   failureReason: string | null;
   customerId: string;
   siteId: string | null;
+  site: { id: string; name: string; region: string | null; address: string | null; addressStreet: string | null } | null;
   equipmentId: string | null;
   leadTechnicianId: string | null;
   collaboratorTechnicianIds: string[];
@@ -251,7 +252,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
                 : "—"}
             </DetailCard>
             <DetailCard label={t("site")}>
-              {data.equipment?.site?.name ?? "—"}
+              {data.site?.name ?? data.equipment?.site?.name ?? "—"}
             </DetailCard>
             <DetailCard label={t("expectedAmount")}>
               {formatVnd(data.expectedAmount) || "—"}
