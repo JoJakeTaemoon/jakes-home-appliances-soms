@@ -119,14 +119,13 @@ afterAll(async () => {
 
 describe("POST /api/customers (B2C)", () => {
   it("creates a B2C customer with auto-allocated KH code", async () => {
+    // B2C since 2026-06: customer IS the contract party — phone/email/language
+    // live on the customer top-level, not in a contractParty object.
     const req = await buildReq("/api/customers", "POST", adminToken, {
       type: "B2C",
       name: "TEST_PHASE2_B2C_Alpha",
-      contractParty: {
-        name: "Nguyễn Alpha",
-        phone1: "0900000100",
-        language: "vi",
-      },
+      phone: "0900000100",
+      language: "vi",
       opsContacts: [],
     });
     const res = await customersPost(req);
@@ -138,11 +137,11 @@ describe("POST /api/customers (B2C)", () => {
     expect(data.type).toBe("B2C");
   });
 
-  it("rejects creates without a contract party phone", async () => {
+  it("rejects creates without a customer phone", async () => {
     const req = await buildReq("/api/customers", "POST", adminToken, {
       type: "B2C",
       name: "TEST_PHASE2_invalid",
-      contractParty: { name: "X", language: "vi" },
+      language: "vi",
       opsContacts: [],
     });
     const res = await customersPost(req);
@@ -175,8 +174,8 @@ describe("POST /api/customers (B2B)", () => {
     const siteRes = await sitesPost(
       await buildReq(`/api/customers/${created.id}/sites`, "POST", adminToken, {
         name: "TPB HQ",
-        address: "1 Test St",
-        city: "HCMC",
+        addressStreet: "1 Test St",
+        addressProvinceName: "HCMC",
         region: "HCMC-D1",
       }),
       { params: Promise.resolve({ id: created.id }) },
@@ -191,7 +190,8 @@ describe("POST /api/customers (B2B)", () => {
       await buildReq("/api/customers", "POST", adminToken, {
         type: "B2C",
         name: "TEST_PHASE2_NoSites",
-        contractParty: { name: "Y", phone1: "0900000300", language: "vi" },
+        phone: "0900000300",
+        language: "vi",
         opsContacts: [],
       }),
     );
@@ -200,7 +200,7 @@ describe("POST /api/customers (B2B)", () => {
     const res = await sitesPost(
       await buildReq(`/api/customers/${id}/sites`, "POST", adminToken, {
         name: "Should fail",
-        address: "X",
+        addressStreet: "X",
       }),
       { params: Promise.resolve({ id }) },
     );
@@ -268,7 +268,8 @@ describe("Customer deactivate / reactivate", () => {
       await buildReq("/api/customers", "POST", adminToken, {
         type: "B2C",
         name: `TEST_PHASE2_DeactTarget_${Date.now()}`,
-        contractParty: { name: "X", phone1: "0900000500", language: "vi" },
+        phone: "0900000500",
+        language: "vi",
         opsContacts: [],
       }),
     );
@@ -351,7 +352,8 @@ describe("PATCH /api/customers/[id]", () => {
       await buildReq("/api/customers", "POST", adminToken, {
         type: "B2C",
         name: "TEST_PHASE2_PatchTarget",
-        contractParty: { name: "X", phone1: "0900000700", language: "vi" },
+        phone: "0900000700",
+        language: "vi",
         opsContacts: [],
       }),
     );
@@ -400,14 +402,14 @@ describe("Equipment install + replace + relocate", () => {
     const s1Res = await sitesPost(
       await buildReq(`/api/customers/${cId}/sites`, "POST", adminToken, {
         name: "Site 1",
-        address: "Addr 1",
+        addressStreet: "Addr 1",
       }),
       { params: Promise.resolve({ id: cId }) },
     );
     const s2Res = await sitesPost(
       await buildReq(`/api/customers/${cId}/sites`, "POST", adminToken, {
         name: "Site 2",
-        address: "Addr 2",
+        addressStreet: "Addr 2",
       }),
       { params: Promise.resolve({ id: cId }) },
     );

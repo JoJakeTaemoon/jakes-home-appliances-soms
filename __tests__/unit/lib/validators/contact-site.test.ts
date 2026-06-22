@@ -39,9 +39,15 @@ describe("createContactSchema", () => {
 });
 
 describe("createSiteSchema", () => {
-  it("requires name + address", () => {
+  it("requires name; structured address fields are all optional (since 2026-06)", () => {
+    // Empty body: no name → rejected.
     expect(createSiteSchema.safeParse({}).success).toBe(false);
-    expect(createSiteSchema.safeParse({ name: "X" }).success).toBe(false);
-    expect(createSiteSchema.safeParse({ name: "X", address: "Y" }).success).toBe(true);
+    // Name alone: accepted (address can be filled in later, e.g. site shell
+    // for an unstaged B2B customer).
+    expect(createSiteSchema.safeParse({ name: "X" }).success).toBe(true);
+    // Name + a structured address field: accepted.
+    expect(
+      createSiteSchema.safeParse({ name: "X", addressStreet: "Y" }).success,
+    ).toBe(true);
   });
 });

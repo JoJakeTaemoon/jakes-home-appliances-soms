@@ -9,7 +9,7 @@
  *   - The language-pair helpers resolve the right primary/secondary dicts
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { B2bContract } from "@/lib/pdf/templates/b2b-contract";
@@ -19,6 +19,15 @@ import { AppendixContract } from "@/lib/pdf/templates/appendix";
 import { MaintenanceContract } from "@/lib/pdf/templates/maintenance-contract";
 import { splitLangPair, langPairForLocale } from "@/lib/pdf/types";
 import { pickPdfPair } from "@/lib/pdf/messages";
+import { registerFonts } from "@/lib/pdf/fonts";
+
+// React-pdf rejects render-time references to unregistered font families
+// even when a graceful fallback is available; the production renderer wires
+// fonts up before any render. Mirror that here so the smoke tests don't
+// depend on Helvetica-only fallback chains.
+beforeAll(() => {
+  registerFonts();
+});
 import type {
   PdfContractView,
   PdfCustomerSummary,
@@ -137,8 +146,8 @@ describe("bilingual language-pair helpers", () => {
   });
   it("pickPdfPair resolves two distinct dictionaries", () => {
     const ko = pickPdfPair("vi-ko");
-    expect(ko.primary.documentTitle.RENTAL_B2C).toBe("Hợp đồng thuê máy lọc nước (Hộ gia đình)");
-    expect(ko.secondary.documentTitle.RENTAL_B2C).toBe("가정집 정수기 임대 계약서");
+    expect(ko.primary.documentTitle.RENTAL_B2C).toBe("Hợp đồng thuê");
+    expect(ko.secondary.documentTitle.RENTAL_B2C).toBe("임대 계약서");
     const en = pickPdfPair("vi-en");
     expect(en.primary).toBe(ko.primary); // same Vietnamese primary
     expect(en.secondary).not.toBe(ko.secondary); // English secondary differs

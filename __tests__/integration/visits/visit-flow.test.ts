@@ -21,7 +21,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
-import { signStaffAccessToken } from "@/lib/auth/jwt";
+import { signStaffAccessToken, signFieldAccessToken } from "@/lib/auth/jwt";
 
 // Stub the heavy PDF renderer to keep this integration test fast + isolated
 // from font/file-system requirements. The render result still touches the
@@ -203,17 +203,19 @@ beforeAll(async () => {
     username: staff.username,
     role: staff.role,
   });
-  leadToken = await signStaffAccessToken({
+  // Technicians authenticate against the `aud='field'` realm — mobile routes
+  // (start / complete / today) reject staff-realm tokens with 401.
+  leadToken = await signFieldAccessToken({
     userId: lead.id,
     username: lead.username,
     role: lead.role,
   });
-  collabToken = await signStaffAccessToken({
+  collabToken = await signFieldAccessToken({
     userId: collab.id,
     username: collab.username,
     role: collab.role,
   });
-  otherToken = await signStaffAccessToken({
+  otherToken = await signFieldAccessToken({
     userId: other.id,
     username: other.username,
     role: other.role,
@@ -552,20 +554,17 @@ describe("Listing scope", () => {
     );
     expect((await staffList.json()).data.length).toBeGreaterThan(0);
 
-    // Other tech sees zero
+    // /api/visits is a staff-realm endpoint — technicians shouldn't be able
+    // to call it at all (their mobile-realm equivalent is
+    // /api/mobile/visits/today). Confirm the route rejects field-realm tokens.
     const otherList = await visitsGet(
       await buildReq(`/api/visits?${sp.toString()}`, "GET", otherToken),
     );
-    const otherBody = await otherList.json();
-    const otherIds = (otherBody.data as { id: string }[]).map((v) => v.id);
-    expect(otherIds).not.toContain(created.id);
+    expect(otherList.status).toBe(401);
 
-    // Collab sees it
     const collabList = await visitsGet(
       await buildReq(`/api/visits?${sp.toString()}`, "GET", collabToken),
     );
-    const collabBody = await collabList.json();
-    const collabIds = (collabBody.data as { id: string }[]).map((v) => v.id);
-    expect(collabIds).toContain(created.id);
+    expect(collabList.status).toBe(401);
   });
 });

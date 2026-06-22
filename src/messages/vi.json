@@ -1534,6 +1534,7 @@
       "filterAll": "Tất cả",
       "filterByBrand": "Lọc theo thương hiệu",
       "filterByModel": "Lọc theo mẫu",
+      "bulkSelectHint": "Chọn thương hiệu hoặc nhóm sản phẩm để chọn hàng loạt các mẫu tương ứng. Bấm từng mẫu để thêm hoặc bỏ chọn.",
       "colNameLocaleAware": "Tên ({locale})",
       "addConsumable": "Thêm vật tư",
       "addAccessory": "Thêm phụ kiện",

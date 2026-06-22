@@ -1557,6 +1557,7 @@
       "filterAll": "전체",
       "filterByBrand": "브랜드로 필터",
       "filterByModel": "모델로 필터",
+      "bulkSelectHint": "브랜드·제품군을 선택하면 해당되는 모델이 일괄 선택됩니다. 개별 모델을 클릭하면 추가·해제할 수 있어요.",
       "colNameLocaleAware": "이름({locale})",
       "addConsumable": "소모품 추가",
       "addAccessory": "부속품 추가",

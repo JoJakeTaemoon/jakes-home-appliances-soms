@@ -1209,18 +1209,21 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     return out;
   }, [models, tEq]);
 
-  // Models shown in the create-form CompatibilityPicker: filtered by the
-  // create-form brand/category. Already-selected models stay visible so the
-  // user can unselect them even after narrowing the filter.
-  const createFormModels = useMemo(() => {
-    const sel = new Set(form.compatibleModelIds);
-    return models.filter((m) => {
-      if (sel.has(m.id)) return true;
-      if (formBrand && m.brand?.id !== formBrand) return false;
-      if (formCategory && m.category !== formCategory) return false;
-      return true;
-    });
-  }, [models, form.compatibleModelIds, formBrand, formCategory]);
+  // Bulk selector — replaces the create-form's compatibleModelIds with every
+  // model matching the current (brand, category) tuple. When both are cleared,
+  // the user's hand-curated selection is preserved (no destructive reset).
+  // The user can then fine-tune by toggling individual model chips.
+  function applyBulkSelect(brand: string | null, category: string | null) {
+    if (!brand && !category) return;
+    const matching = models
+      .filter(
+        (m) =>
+          (!brand || m.brand?.id === brand) &&
+          (!category || m.category === category),
+      )
+      .map((m) => m.id);
+    setForm((f) => ({ ...f, compatibleModelIds: matching }));
+  }
 
   const sorted = useMemo(
     () =>
@@ -1311,29 +1314,27 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
                   value={formBrand}
                   onChange={(v) => {
                     setFormBrand(v);
-                    if (
-                      v &&
-                      formCategory &&
-                      !models.some((m) => m.brand?.id === v && m.category === formCategory)
-                    ) {
-                      setFormCategory(null);
-                    }
+                    applyBulkSelect(v, formCategory);
                   }}
                   options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                  placeholder={t("filterByBrand")}
+                  placeholder={t("colBrand")}
                   allowClear
-                  ariaLabel={t("filterByBrand")}
+                  ariaLabel={t("colBrand")}
                 />
                 <Combobox
                   value={formCategory}
-                  onChange={setFormCategory}
+                  onChange={(v) => {
+                    setFormCategory(v);
+                    applyBulkSelect(formBrand, v);
+                  }}
                   options={categoryOptions}
                   placeholder={t("colCategory")}
                   allowClear
                   ariaLabel={t("colCategory")}
                 />
               </div>
-              <CompatibilityPicker models={createFormModels} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
+              <p className="text-xs text-text-secondary">{t("bulkSelectHint")}</p>
+              <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
             </div>
           </FormField>
           <div className="flex gap-2">
@@ -1444,17 +1445,22 @@ function ConsumableEditModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Models exposed in CompatibilityPicker: those matching the brand/category
-  // narrowing, plus anything already selected (so users can always unselect).
-  const visibleModels = useMemo(() => {
-    const sel = new Set(compatibleModelIds);
-    return models.filter((m) => {
-      if (sel.has(m.id)) return true;
-      if (pickBrand && m.brand?.id !== pickBrand) return false;
-      if (pickCategory && m.category !== pickCategory) return false;
-      return true;
-    });
-  }, [models, compatibleModelIds, pickBrand, pickCategory]);
+  // Bulk selector — replaces compatibleModelIds with every model matching the
+  // current (brand, category) tuple. When both are cleared, the user's hand-
+  // curated selection is preserved (no destructive reset). After bulk-select
+  // the user can fine-tune by toggling individual model chips.
+  function applyBulkSelect(brand: string | null, category: string | null) {
+    if (!brand && !category) return;
+    setCompatibleModelIds(
+      models
+        .filter(
+          (m) =>
+            (!brand || m.brand?.id === brand) &&
+            (!category || m.category === category),
+        )
+        .map((m) => m.id),
+    );
+  }
   async function save() {
     setBusy(true);
     setErr(null);
@@ -1517,29 +1523,27 @@ function ConsumableEditModal({
                 value={pickBrand}
                 onChange={(v) => {
                   setPickBrand(v);
-                  if (
-                    v &&
-                    pickCategory &&
-                    !models.some((m) => m.brand?.id === v && m.category === pickCategory)
-                  ) {
-                    setPickCategory(null);
-                  }
+                  applyBulkSelect(v, pickCategory);
                 }}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                placeholder={t("filterByBrand")}
+                placeholder={t("colBrand")}
                 allowClear
-                ariaLabel={t("filterByBrand")}
+                ariaLabel={t("colBrand")}
               />
               <Combobox
                 value={pickCategory}
-                onChange={setPickCategory}
+                onChange={(v) => {
+                  setPickCategory(v);
+                  applyBulkSelect(pickBrand, v);
+                }}
                 options={categoryOptions}
                 placeholder={t("colCategory")}
                 allowClear
                 ariaLabel={t("colCategory")}
               />
             </div>
-            <CompatibilityPicker models={visibleModels} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
+            <p className="text-xs text-text-secondary">{t("bulkSelectHint")}</p>
+            <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
           </div>
         </FormField>
         <label className="flex items-center gap-2 text-sm">

@@ -1534,6 +1534,7 @@
       "filterAll": "All",
       "filterByBrand": "Filter by brand",
       "filterByModel": "Filter by model",
+      "bulkSelectHint": "Selecting a brand or category bulk-selects all matching models. Click individual models to add or remove.",
       "colNameLocaleAware": "Name ({locale})",
       "addConsumable": "Add consumable",
       "addAccessory": "Add accessory",

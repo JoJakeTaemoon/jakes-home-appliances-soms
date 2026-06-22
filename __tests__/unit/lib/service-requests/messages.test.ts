@@ -46,14 +46,20 @@ describe("appendSrMessage", () => {
       actorId: "contact1",
       authorName: "Customer A",
     });
+    // CUSTOMER actors don't have a User.id, so actorId is null and the
+    // contact id is recorded under `after.actorContactId` instead.
     expect(logAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "SR_MESSAGE",
         entityType: "ServiceRequest",
         entityId: "sr1",
         actorType: "CUSTOMER",
-        actorId: "contact1",
-        after: { message: "Hello", authorName: "Customer A" },
+        actorId: null,
+        after: expect.objectContaining({
+          message: "Hello",
+          authorName: "Customer A",
+          actorContactId: "contact1",
+        }),
       }),
     );
   });

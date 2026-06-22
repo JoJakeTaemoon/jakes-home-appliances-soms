@@ -20,6 +20,7 @@ import { hashPassword } from "@/lib/auth/password";
 import {
   signCustomerAccessToken,
   signStaffAccessToken,
+  signFieldAccessToken,
 } from "@/lib/auth/jwt";
 
 vi.mock("@/lib/pdf/renderer", async () => {
@@ -193,7 +194,9 @@ beforeAll(async () => {
     username: manager.username,
     role: manager.role,
   });
-  leadToken = await signStaffAccessToken({
+  // Technicians authenticate against the `aud='field'` realm — the mobile
+  // routes reject staff-realm tokens with 401.
+  leadToken = await signFieldAccessToken({
     userId: tech.id,
     username: tech.username,
     role: tech.role,

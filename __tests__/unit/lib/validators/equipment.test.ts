@@ -64,10 +64,10 @@ describe("filterPolicySchema", () => {
 });
 
 describe("createEquipmentModelSchema", () => {
-  it("requires name (category + brand are optional)", () => {
+  it("requires at least one localized name (category + brand are optional)", () => {
     expect(
       createEquipmentModelSchema.safeParse({
-        name: "Test",
+        nameVi: "Test",
         category: "WATER_PURIFIER",
       }).success,
     ).toBe(true);
@@ -76,9 +76,17 @@ describe("createEquipmentModelSchema", () => {
   it("accepts a model with no category or brand", () => {
     expect(
       createEquipmentModelSchema.safeParse({
-        name: "Test",
+        nameVi: "Test",
       }).success,
     ).toBe(true);
+  });
+
+  it("rejects a model with no localized name in any locale", () => {
+    expect(
+      createEquipmentModelSchema.safeParse({
+        category: "WATER_PURIFIER",
+      }).success,
+    ).toBe(false);
   });
 });
 
