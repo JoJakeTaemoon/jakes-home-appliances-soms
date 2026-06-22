@@ -36,6 +36,25 @@ const moneyOptional = z
     return n;
   });
 
+const moneyRequired = z
+  .union([z.number(), z.string()])
+  .transform((v, ctx) => {
+    const n = typeof v === "number" ? v : Number(v);
+    if (!Number.isFinite(n) || n < 0) {
+      ctx.addIssue({
+        code: "custom" as const,
+        message: "Invalid money value (must be a non-negative number)",
+      });
+      return z.NEVER;
+    }
+    return n;
+  });
+
+export const endOfTermActionEnum = z.enum([
+  "TRANSFER_OWNERSHIP",
+  "RETRIEVE_DEVICE",
+]);
+
 const equipmentLineSchema = z.object({
   equipmentId: z.string().trim().min(1),
   unitPrice: moneyOptional,
@@ -61,6 +80,19 @@ export const createContractSchema = z.discriminatedUnion("type", [
     type: z.literal("RENTAL"),
     monthlyMaintenanceFee: moneyOptional,
     termMonths: z.coerce.number().int().min(1).max(120).default(36),
+    /**
+     * Deposit collected up-front at the installation visit. Always present
+     * on RENTAL contracts since 2026-06; refundable via a DEPOSIT_REFUND
+     * payment row at mid-term cancellation or RENTAL→SALE conversion.
+     */
+    deposit: moneyRequired,
+    /**
+     * What happens to the equipment at end-of-term. Defaults to
+     * TRANSFER_OWNERSHIP (matches historical behavior); RETRIEVE_DEVICE
+     * means the cron skips the ownership flip and auto-spawns a RETRIEVAL
+     * visit at end date.
+     */
+    endOfTermAction: endOfTermActionEnum.default("TRANSFER_OWNERSHIP"),
   }),
   contractBase.extend({
     type: z.literal("MAINTENANCE"),
@@ -76,11 +108,44 @@ export const updateContractSchema = z.object({
   termMonths: z.coerce.number().int().min(1).max(120).nullable().optional(),
   monthlyMaintenanceFee: moneyOptional,
   totalContractValue: moneyOptional,
+  deposit: moneyOptional,
+  endOfTermAction: endOfTermActionEnum.optional(),
 });
 
 export const contractStateTransitionSchema = z.object({
   to: z.enum(["PENDING_SIGNATURE", "ACTIVE", "CANCELLED", "TERMINATED", "COMPLETED"]),
   reason: optStr(500),
+});
+
+/**
+ * Mid-term cancellation. Drives the TERMINATED transition plus optional
+ * DEPOSIT_REFUND payment row + RETRIEVAL visit auto-spawn. Reason is
+ * required (≥5 chars) so the audit trail stays useful.
+ */
+export const contractTerminateSchema = z.object({
+  reason: z.string().trim().min(5).max(500),
+  refundAmount: moneyOptional,
+  /**
+   * When true, an auto-spawned SUGGESTED RETRIEVAL visit gets created so
+   * the office can dispatch a technician to collect the device. Defaults
+   * to whatever endOfTermAction the contract has at the API layer.
+   */
+  requireRetrieval: z.boolean().optional(),
+});
+
+/**
+ * RENTAL → SALE in-place conversion (decided 2026-06). The contract row
+ * keeps its id; `type` flips to SALE, totalContractValue replaces the
+ * rental fee, `convertedFromType` + `convertedAt` get stamped. A
+ * DEPOSIT_REFUND payment row may be generated when `refundDeposit` is
+ * true.
+ */
+export const contractConvertSchema = z.object({
+  targetType: z.literal("SALE"),
+  salePrice: moneyRequired,
+  refundDeposit: z.boolean(),
+  refundAmount: moneyOptional,
+  reason: z.string().trim().min(5).max(500),
 });
 
 const amendBase = z.object({
@@ -165,3 +230,5 @@ export type ContractAmendInput = z.infer<typeof contractAmendSchema>;
 export type ContractRenewInput = z.infer<typeof contractRenewSchema>;
 export type ContractListQuery = z.infer<typeof contractListQuerySchema>;
 export type ContractEmailInput = z.infer<typeof contractEmailSchema>;
+export type ContractTerminateInput = z.infer<typeof contractTerminateSchema>;
+export type ContractConvertInput = z.infer<typeof contractConvertSchema>;

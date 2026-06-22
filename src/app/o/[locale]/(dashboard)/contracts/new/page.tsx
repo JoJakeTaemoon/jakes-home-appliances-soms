@@ -65,6 +65,12 @@ function NewContractPageInner() {
   const [monthlyFee, setMonthlyFee] = useState<number | null>(null);
   const [termMonths, setTermMonths] = useState<number>(36);
   const [totalValue, setTotalValue] = useState<number | null>(null);
+  // RENTAL-only — deposit collected at the installation visit and
+  // refundable on early termination; endOfTermAction drives the rental-end
+  // cron + retrieval auto-visit.
+  const [deposit, setDeposit] = useState<number | null>(null);
+  const [endOfTermAction, setEndOfTermAction] =
+    useState<"TRANSFER_OWNERSHIP" | "RETRIEVE_DEVICE">("TRANSFER_OWNERSHIP");
   const [startDate, setStartDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
@@ -180,6 +186,8 @@ function NewContractPageInner() {
       if (type === "RENTAL") {
         payload.termMonths = termMonths;
         payload.monthlyMaintenanceFee = monthlyFee;
+        payload.deposit = deposit;
+        payload.endOfTermAction = endOfTermAction;
       } else if (type === "MAINTENANCE") {
         payload.monthlyMaintenanceFee = monthlyFee;
       } else {
@@ -337,14 +345,50 @@ function NewContractPageInner() {
       {step === 3 && (
         <section className="flex flex-col gap-4 rounded-xl border border-[#e5e5e5] bg-white p-4">
           {type === "RENTAL" && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <FormField label={t("monthlyFee")} required>
-                <NumberInput value={monthlyFee ?? 0} onChange={(v) => setMonthlyFee(v)} min={0} />
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField label={t("monthlyFee")} required>
+                  <NumberInput value={monthlyFee ?? 0} onChange={(v) => setMonthlyFee(v)} min={0} />
+                </FormField>
+                <FormField label={t("termMonths")} required>
+                  <NumberInput value={termMonths} onChange={setTermMonths} min={1} max={120} />
+                </FormField>
+                <FormField label={t("deposit")} required hint={t("wizard.depositHint")}>
+                  <NumberInput value={deposit ?? 0} onChange={(v) => setDeposit(v)} min={0} />
+                </FormField>
+              </div>
+              <FormField label={t("endOfTermAction")} required>
+                <div className="flex flex-col gap-2">
+                  {(["TRANSFER_OWNERSHIP", "RETRIEVE_DEVICE"] as const).map((value) => (
+                    <label
+                      key={value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 text-sm ${
+                        endOfTermAction === value
+                          ? "border-[var(--brand-blue-500)] bg-[var(--brand-blue-50)]"
+                          : "border-[#e5e5e5] bg-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="endOfTermAction"
+                        value={value}
+                        checked={endOfTermAction === value}
+                        onChange={() => setEndOfTermAction(value)}
+                        className="mt-1"
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-[#111111]">
+                          {t(`endOfTermActions.${value}` as never)}
+                        </span>
+                        <span className="text-xs text-[#737373]">
+                          {t(`wizard.endOfTermHint.${value}` as never)}
+                        </span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </FormField>
-              <FormField label={t("termMonths")} required>
-                <NumberInput value={termMonths} onChange={setTermMonths} min={1} max={120} />
-              </FormField>
-            </div>
+            </>
           )}
           {type === "MAINTENANCE" && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -440,6 +484,14 @@ function NewContractPageInner() {
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-xs text-[#737373]">{t("monthlyFee")}</span>
                   <span>{formatVnd(monthlyFee)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-[#737373]">{t("deposit")}</span>
+                  <span>{formatVnd(deposit)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-[#737373]">{t("endOfTermAction")}</span>
+                  <span>{t(`endOfTermActions.${endOfTermAction}` as never)}</span>
                 </div>
               </>
             )}
@@ -702,6 +754,12 @@ function AddEquipmentQuickModal({
     new Date().toISOString().slice(0, 10),
   );
   const [ownership, setOwnership] = useState<"COMPANY" | "CUSTOMER">("COMPANY");
+  // 외부 (타사) 기기 mode for MAINTENANCE contracts: hide the catalog
+  // model picker and accept a free-text description + cycle instead.
+  const [isExternal, setIsExternal] = useState(false);
+  const [customDescription, setCustomDescription] = useState("");
+  const [customMaintenanceCycle, setCustomMaintenanceCycle] =
+    useState<number>(3);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -716,18 +774,26 @@ function AddEquipmentQuickModal({
   const sites = sitesQuery.data ?? [];
 
   async function submit() {
-    if (!modelId) return;
+    if (!isExternal && !modelId) return;
+    if (isExternal && customDescription.trim().length === 0) return;
     setBusy(true);
     setErr(null);
     try {
-      const res = await api.post<{ id: string }>(`/api/equipment`, {
+      const payload: Record<string, unknown> = {
         customerId,
         siteId: siteId || undefined,
-        modelId,
         serialNumber: serialNumber.trim() || undefined,
-        ownership,
+        // External devices are by definition owned by the customer.
+        ownership: isExternal ? "CUSTOMER" : ownership,
         installedAt: installedAt ? new Date(installedAt).toISOString() : undefined,
-      });
+      };
+      if (isExternal) {
+        payload.customDescription = customDescription.trim();
+        payload.customMaintenanceCycle = customMaintenanceCycle || undefined;
+      } else {
+        payload.modelId = modelId;
+      }
+      const res = await api.post<{ id: string }>(`/api/equipment`, payload);
       await onCreated(res.data.id);
     } catch (e) {
       if (e instanceof ApiClientError) setErr(e.message);
@@ -748,25 +814,67 @@ function AddEquipmentQuickModal({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             {tc("cancel")}
           </Button>
-          <Button onClick={submit} isLoading={busy} disabled={!modelId}>
+          <Button
+            onClick={submit}
+            isLoading={busy}
+            disabled={
+              isExternal ? customDescription.trim().length === 0 : !modelId
+            }
+          >
             {tc("save")}
           </Button>
         </>
       }
     >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label={t("model")} required className="sm:col-span-2">
-          <Combobox
-            value={modelId}
-            onChange={setModelId}
-            options={models.map((m) => ({
-              value: m.id,
-              label: m.nameKo ?? m.nameVi ?? m.nameEn ?? m.name,
-            }))}
-            placeholder={t("model")}
-            searchable
+        <label className="sm:col-span-2 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isExternal}
+            onChange={(e) => setIsExternal(e.target.checked)}
           />
-        </FormField>
+          {t("external.toggle")}
+        </label>
+        {isExternal ? (
+          <>
+            <FormField
+              label={t("external.customDescription")}
+              required
+              className="sm:col-span-2"
+              hint={t("external.customDescriptionHint")}
+            >
+              <Input
+                value={customDescription}
+                onChange={(e) => setCustomDescription(e.target.value)}
+                placeholder="예: 타사 정수기 모델 XYZ"
+              />
+            </FormField>
+            <FormField label={t("external.customMaintenanceCycle")}>
+              <Input
+                type="number"
+                value={customMaintenanceCycle}
+                onChange={(e) =>
+                  setCustomMaintenanceCycle(Number(e.target.value))
+                }
+                min={1}
+                max={120}
+              />
+            </FormField>
+          </>
+        ) : (
+          <FormField label={t("model")} required className="sm:col-span-2">
+            <Combobox
+              value={modelId}
+              onChange={setModelId}
+              options={models.map((m) => ({
+                value: m.id,
+                label: m.nameKo ?? m.nameVi ?? m.nameEn ?? m.name,
+              }))}
+              placeholder={t("model")}
+              searchable
+            />
+          </FormField>
+        )}
         {customerType === "B2B" && sites.length > 0 && (
           <FormField label={t("site")} className="sm:col-span-2">
             <Combobox

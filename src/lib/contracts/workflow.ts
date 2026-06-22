@@ -81,6 +81,10 @@ export interface CreateContractInput {
   termMonths?: number | null;
   monthlyMaintenanceFee?: number | null;
   totalContractValue?: number | null;
+  /** RENTAL only — required at creation; null/undefined for SALE/MAINTENANCE. */
+  deposit?: number | null;
+  /** RENTAL only — TRANSFER_OWNERSHIP (default) or RETRIEVE_DEVICE. */
+  endOfTermAction?: "TRANSFER_OWNERSHIP" | "RETRIEVE_DEVICE" | null;
 }
 
 // ── Mutators ───────────────────────────────────────────────────────────────
@@ -136,6 +140,12 @@ async function create(input: CreateContractInput, actor: ContractActor, request?
       termMonths,
       monthlyMaintenanceFee: monthlyFee ?? undefined,
       totalContractValue: totalValue ?? undefined,
+      // RENTAL-only fields; NULL for SALE / MAINTENANCE.
+      deposit: input.type === "RENTAL" ? input.deposit ?? undefined : null,
+      endOfTermAction:
+        input.type === "RENTAL"
+          ? input.endOfTermAction ?? "TRANSFER_OWNERSHIP"
+          : null,
       equipment: {
         create: input.equipment.map((l) => ({
           equipmentId: l.equipmentId,

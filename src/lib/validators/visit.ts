@@ -60,6 +60,8 @@ export const visitTypeEnum = z.enum([
   "FILTER_REPLACEMENT",
   "RELOCATION",
   "PAYMENT_COLLECTION",
+  /** End-of-rental device recovery, auto-spawned by contract cron. */
+  "RETRIEVAL",
   "OTHER",
 ]);
 
@@ -89,6 +91,11 @@ export const createVisitSchema = z.object({
   customerId: z.string().trim().min(1),
   siteId: optStr(60),
   equipmentId: optStr(60),
+  /**
+   * Optional FK to the contract that spawned this visit (set by the
+   * RETRIEVAL auto-create flow + future INSTALLATION wiring).
+   */
+  contractId: optStr(60),
   type: visitTypeEnum,
   scheduledFor: z.coerce.date(),
   scheduledWindow: optStr(40),

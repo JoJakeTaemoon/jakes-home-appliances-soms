@@ -101,17 +101,25 @@ export const POST = defineMutation({
       if (!site) throw new NotFoundError("Site not found for customer");
     }
 
-    const model = await prisma.equipmentModel.findUnique({
-      where: { id: body.modelId },
-      select: { id: true },
-    });
-    if (!model) throw new NotFoundError("Model not found");
+    // Catalog model is optional since 2026-06 — MAINTENANCE contracts on
+    // off-catalog (customer-owned) devices skip the model and provide a
+    // free-text customDescription instead. Verify the model exists only when
+    // it was supplied.
+    if (body.modelId) {
+      const model = await prisma.equipmentModel.findUnique({
+        where: { id: body.modelId },
+        select: { id: true },
+      });
+      if (!model) throw new NotFoundError("Model not found");
+    }
 
     return prisma.equipment.create({
       data: {
         customerId: body.customerId,
         siteId: body.siteId ?? null,
-        modelId: body.modelId,
+        modelId: body.modelId ?? null,
+        customDescription: body.customDescription ?? null,
+        customMaintenanceCycle: body.customMaintenanceCycle ?? null,
         serialNumber: body.serialNumber ?? null,
         ownership: body.ownership,
         installedAt: body.installedAt ?? null,

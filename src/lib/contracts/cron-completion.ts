@@ -28,6 +28,7 @@ export interface RentalCompletionSummary {
   contractsScanned: number;
   contractsCompleted: number;
   equipmentTransferred: number;
+  retrievalVisitsCreated: number;
   notificationsQueued: number;
   skipped: { contractId: string; reason: string }[];
 }
@@ -39,6 +40,7 @@ export async function runRentalCompletionCheck(
     contractsScanned: 0,
     contractsCompleted: 0,
     equipmentTransferred: 0,
+    retrievalVisitsCreated: 0,
     notificationsQueued: 0,
     skipped: [],
   };
@@ -52,6 +54,12 @@ export async function runRentalCompletionCheck(
     include: {
       equipment: { include: { equipment: { select: { id: true, status: true, ownership: true } } } },
       payments: { select: { id: true, state: true } },
+      visits: {
+        // De-dup guard for RETRIEVAL: don't spawn a second visit on the
+        // next cron run if one already exists for this contract.
+        where: { type: "RETRIEVAL" },
+        select: { id: true, state: true },
+      },
       customer: {
         select: {
           id: true,
@@ -76,6 +84,41 @@ export async function runRentalCompletionCheck(
     );
     if (hasUnsettled) {
       summary.skipped.push({ contractId: c.id, reason: "Unsettled payments" });
+      continue;
+    }
+
+    // RETRIEVE_DEVICE: don't flip ownership; spawn a SUGGESTED RETRIEVAL
+    // visit (idempotent — skip if one already exists for this contract) and
+    // park the contract state at ACTIVE until the retrieval visit completes.
+    if (c.endOfTermAction === "RETRIEVE_DEVICE") {
+      if (c.visits.length > 0) {
+        summary.skipped.push({
+          contractId: c.id,
+          reason: "Retrieval visit already exists",
+        });
+        continue;
+      }
+      await prisma.$transaction(async (tx) => {
+        await tx.visit.create({
+          data: {
+            customerId: c.customerId,
+            contractId: c.id,
+            type: "RETRIEVAL",
+            state: "SUGGESTED",
+            scheduledFor: now,
+          },
+        });
+        await tx.auditLog.create({
+          data: {
+            actorType: "SYSTEM",
+            action: "CONTRACT_RETRIEVAL_VISIT_AUTO",
+            entityType: "Contract",
+            entityId: c.id,
+            after: { contractNumber: c.contractNumber },
+          },
+        });
+      });
+      summary.retrievalVisitsCreated++;
       continue;
     }
 

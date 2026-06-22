@@ -17,15 +17,32 @@ describe("createContractSchema", () => {
     });
     expect(res.success).toBe(true);
   });
-  it("accepts a RENTAL contract and defaults termMonths to 36", () => {
+  it("accepts a RENTAL contract and defaults termMonths to 36 + endOfTermAction to TRANSFER_OWNERSHIP", () => {
+    const res = createContractSchema.safeParse({
+      type: "RENTAL",
+      customerId: "c1",
+      equipment: [{ equipmentId: "e1", unitPrice: null, quantity: 1 }],
+      monthlyMaintenanceFee: 150_000,
+      // RENTAL deposit is required since 2026-06.
+      deposit: 1_500_000,
+    });
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect((res.data as { termMonths: number }).termMonths).toBe(36);
+      expect(
+        (res.data as { endOfTermAction: string }).endOfTermAction,
+      ).toBe("TRANSFER_OWNERSHIP");
+    }
+  });
+
+  it("rejects a RENTAL contract without a deposit", () => {
     const res = createContractSchema.safeParse({
       type: "RENTAL",
       customerId: "c1",
       equipment: [{ equipmentId: "e1", unitPrice: null, quantity: 1 }],
       monthlyMaintenanceFee: 150_000,
     });
-    expect(res.success).toBe(true);
-    if (res.success) expect((res.data as { termMonths: number }).termMonths).toBe(36);
+    expect(res.success).toBe(false);
   });
   it("rejects empty equipment array", () => {
     const res = createContractSchema.safeParse({

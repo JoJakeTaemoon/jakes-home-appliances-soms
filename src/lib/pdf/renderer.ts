@@ -339,10 +339,16 @@ async function loadContract(
 
   const equipment: PdfEquipmentLine[] = row.equipment.map((ce) => {
     const m = ce.equipment.model;
-    const modelName = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    // External (off-catalog) devices have no EquipmentModel; fall back to
+    // the equipment's customDescription so MAINTENANCE contracts still
+    // render a usable line item.
+    const fallback = ce.equipment.customDescription ?? "";
+    const modelName = m
+      ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? ""
+      : fallback;
     return {
       equipmentId: ce.equipmentId,
-      modelCode: m.modelCode ?? modelName,
+      modelCode: m?.modelCode ?? modelName,
       modelName,
       serialNumber: ce.equipment.serialNumber,
       siteName: ce.equipment.site?.name ?? null,
@@ -667,12 +673,17 @@ async function loadWorkConfirmation(
   const lead = visit.leadTechnician;
   const equipmentInfo = visit.equipment
     ? (() => {
-        const m = visit.equipment.model;
-        const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+        const eq = visit.equipment;
+        if (!eq) return null;
+        const m = eq.model;
+        const fallback = eq.customDescription ?? "";
+        const name = m
+          ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? ""
+          : fallback;
         return {
-          modelCode: m.modelCode ?? name,
+          modelCode: m?.modelCode ?? name,
           modelName: name,
-          serialNumber: visit.equipment.serialNumber,
+          serialNumber: eq.serialNumber,
         };
       })()
     : null;

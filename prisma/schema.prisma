@@ -567,8 +567,18 @@ model Equipment {
   customer              Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
   siteId                String?
   site                  Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  modelId               String
-  model                 EquipmentModel     @relation(fields: [modelId], references: [id])
+  /// Optional since 2026-06: MAINTENANCE contracts can register a customer's
+  /// externally-purchased (off-catalog) device with no EquipmentModel — see
+  /// `customDescription` + `customMaintenanceCycle` below.
+  modelId               String?
+  model                 EquipmentModel?    @relation(fields: [modelId], references: [id])
+  /// Free-text description of the device when modelId is null
+  /// (e.g. "타사 정수기 모델 XYZ"). Required when modelId is null —
+  /// enforced at the validator layer.
+  customDescription     String?            @db.VarChar(500)
+  /// Periodic inspection cycle in months for external equipment. Used by the
+  /// scheduler when EquipmentModel.inspectionEveryMonths is unavailable.
+  customMaintenanceCycle Int?
   serialNumber          String?
   status                EquipmentStatus    @default(ACTIVE)
   ownership             EquipmentOwnership @default(COMPANY)
@@ -610,6 +620,15 @@ enum ContractState {
   CANCELLED        // never activated
 }
 
+/// RENTAL contracts only — what happens to the leased equipment when the
+/// rental term ends naturally. Default = transfer to customer (current
+/// historical behavior). Setting RETRIEVE_DEVICE means the cron skips the
+/// ownership flip and auto-creates a RETRIEVAL visit at term end.
+enum EndOfTermAction {
+  TRANSFER_OWNERSHIP
+  RETRIEVE_DEVICE
+}
+
 model Contract {
   id                     String         @id @default(cuid())
   contractNumber         String         @unique  // HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode}
@@ -625,6 +644,13 @@ model Contract {
 
   monthlyMaintenanceFee  Decimal?       @db.Decimal(14, 2)
   totalContractValue     Decimal?       @db.Decimal(14, 2)
+  /// RENTAL: deposit collected up-front at the installation visit and
+  /// refundable on early termination per business rules. Null for SALE /
+  /// MAINTENANCE.
+  deposit                Decimal?       @db.Decimal(14, 2)
+  /// RENTAL only: what happens at end-of-term (TRANSFER_OWNERSHIP or
+  /// RETRIEVE_DEVICE). Defaults to TRANSFER_OWNERSHIP for back-compat.
+  endOfTermAction        EndOfTermAction? @default(TRANSFER_OWNERSHIP)
   filterPolicy           Json?          // override of EquipmentModel.filterPolicy
 
   // B2B amendment chain (B.2 + B.5)
@@ -639,6 +665,15 @@ model Contract {
   activatedAt            DateTime?
   terminatedAt           DateTime?
   terminationReason      String?
+  /// Refund returned to customer at early termination (recorded for audit
+  /// alongside any DEPOSIT_REFUND payment row generated).
+  terminationRefundAmount Decimal?      @db.Decimal(14, 2)
+
+  /// In-place RENTAL→SALE conversion bookkeeping. When set, the contract's
+  /// current `type` reflects the post-conversion shape; `convertedFromType`
+  /// preserves the pre-conversion type for audit/UI surfacing.
+  convertedFromType      ContractType?
+  convertedAt            DateTime?
 
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
@@ -646,10 +681,15 @@ model Contract {
   equipment              ContractEquipment[]
   payments               Payment[]
   documents              Document[]
+  /// Visits auto-spawned by the contract lifecycle (RETRIEVAL at end of
+  /// term, plus future INSTALLATION wiring). Optional on Visit so existing
+  /// historical visits stay valid.
+  visits                 Visit[]
 
   @@index([customerId, state])
   @@index([state])
   @@index([parentContractId])
+  @@index([endDate])
 }
 
 model ContractEquipment {
@@ -750,6 +790,10 @@ enum VisitType {
   FILTER_REPLACEMENT
   RELOCATION
   PAYMENT_COLLECTION
+  /// End-of-rental device recovery — auto-spawned by the contract cron when
+  /// a RENTAL contract with endOfTermAction=RETRIEVE_DEVICE reaches its end
+  /// date, or by a mid-term cancellation flagged for retrieval.
+  RETRIEVAL
   OTHER
 }
 
@@ -760,6 +804,12 @@ model Visit {
   siteId                   String?
   equipmentId              String?
   equipment                Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  /// Set when the visit was auto-spawned by a contract lifecycle event
+  /// (RETRIEVAL at end-of-term, or potential future INSTALLATION wiring).
+  /// Optional + onDelete: SetNull so the contract can be soft-purged without
+  /// losing visit history.
+  contractId               String?
+  contract                 Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
   serviceRequestId         String?    @unique
   serviceRequest           ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
   type                     VisitType
@@ -798,6 +848,7 @@ model Visit {
   @@index([customerId, state])
   @@index([scheduledFor])
   @@index([state, scheduledFor])
+  @@index([contractId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -822,6 +873,18 @@ enum PaymentState {
   WRITTEN_OFF
 }
 
+/// What this payment row represents in the contract's financial story.
+/// Drives the per-contract payment history view + reporting aggregates.
+/// Defaults to RENTAL_FEE so legacy rows remain interpretable.
+enum PaymentKind {
+  DEPOSIT             // RENTAL up-front deposit (refundable)
+  RENTAL_FEE          // RENTAL monthly fee
+  SALE_PAYMENT        // SALE outright purchase or post-conversion balance
+  MAINTENANCE_FEE     // MAINTENANCE monthly/periodic fee
+  SERVICE_FEE         // ad-hoc paid service charge (out-of-warranty repairs)
+  DEPOSIT_REFUND      // refund returned at termination / RENTAL→SALE conversion
+}
+
 model Payment {
   id                  String        @id @default(cuid())
   customerId          String
@@ -833,6 +896,7 @@ model Payment {
   collectedById       String?       // technician
   collectedBy         User?         @relation(fields: [collectedById], references: [id], onDelete: SetNull)
 
+  kind                PaymentKind   @default(RENTAL_FEE)
   method              PaymentMethod
   state               PaymentState  @default(EXPECTED)
   expectedAmount      Decimal       @db.Decimal(14, 2)
@@ -855,6 +919,7 @@ model Payment {
   documents           Document[]
 
   @@index([customerId, state])
+  @@index([contractId, kind])
   @@index([state, dueDate])
   @@index([collectedById])
 }

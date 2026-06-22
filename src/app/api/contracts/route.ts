@@ -124,6 +124,9 @@ export const POST = defineMutation({
           body.type === "SALE" ? null : (body.monthlyMaintenanceFee ?? null),
         totalContractValue:
           body.type === "SALE" ? (body.totalContractValue ?? null) : null,
+        deposit: body.type === "RENTAL" ? body.deposit : null,
+        endOfTermAction:
+          body.type === "RENTAL" ? body.endOfTermAction : null,
       },
       { userId: auth.userId, role: auth.role },
       request,

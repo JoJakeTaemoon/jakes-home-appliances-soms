@@ -86,7 +86,19 @@ export async function runRentalRenewalReminder(
       },
       equipment: {
         select: {
-          equipment: { select: { model: { select: { nameKo: true, nameVi: true, nameEn: true, modelCode: true } } } },
+          equipment: {
+            select: {
+              customDescription: true,
+              model: {
+                select: {
+                  nameKo: true,
+                  nameVi: true,
+                  nameEn: true,
+                  modelCode: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -114,8 +126,11 @@ export async function runRentalRenewalReminder(
     const equipmentList = c.equipment
       .map((ce) => {
         const m = ce.equipment.model;
-        const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
-        return `${name} (${m.modelCode ?? ""})`;
+        const fallback = ce.equipment.customDescription ?? "";
+        const name = m
+          ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? ""
+          : fallback;
+        return m ? `${name} (${m.modelCode ?? ""})` : name;
       })
       .join(", ");
     const maintenanceFee = c.monthlyMaintenanceFee

@@ -349,6 +349,12 @@
       "COMPANY": "Company (rental)",
       "CUSTOMER": "Customer-owned"
     },
+    "external": {
+      "toggle": "External device — customer-owned, off-catalog",
+      "customDescription": "Device description",
+      "customDescriptionHint": "e.g. XYZ-brand water purifier — include model + install location",
+      "customMaintenanceCycle": "Maintenance cycle (months)"
+    },
     "form": {
       "pickCustomer": "Pick customer",
       "pickSite": "Pick site (B2B only)",
@@ -422,6 +428,79 @@
     "termMonths": "Term (months)",
     "monthlyFee": "Monthly fee",
     "totalValue": "Total value",
+    "deposit": "Deposit",
+    "endOfTermAction": "End-of-term action",
+    "endOfTermActions": {
+      "TRANSFER_OWNERSHIP": "Transfer ownership to customer",
+      "RETRIEVE_DEVICE": "Retrieve device"
+    },
+    "convertedFrom": "Converted from",
+    "terminationRefundAmount": "Termination refund",
+    "notify": {
+      "renewalTitle": "End-of-term reminder",
+      "renewalHint": "Sends one SMS to the contract party. Not automatic — office triggers it explicitly.",
+      "sendRenewalSms": "Send renewal SMS",
+      "confirm": "Send the end-of-term SMS to the contract party?",
+      "sentAt": "Sent at {time}"
+    },
+    "convert": {
+      "title": "Convert to SALE",
+      "hint": "Flip a rental contract to a sale in place + decide on deposit refund.",
+      "openButton": "Start conversion",
+      "salePrice": "Sale price",
+      "refundDeposit": "Refund deposit",
+      "refundAmount": "Refund amount",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. Customer wants to settle the remainder of the rental in one payment",
+      "reasonTooShort": "Reason must be at least 5 characters.",
+      "refundAmountRequired": "Refund amount must be > 0.",
+      "submit": "Apply conversion"
+    },
+    "terminate": {
+      "title": "Mid-term cancellation",
+      "hint": "Cancel the active contract and handle deposit refund + device retrieval together.",
+      "openButton": "Start cancellation",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. Customer requested mid-term rental cancellation with partial deposit refund",
+      "refundAmount": "Refund amount (optional)",
+      "requireRetrieval": "Auto-create retrieval visit",
+      "reasonTooShort": "Reason must be at least 5 characters.",
+      "submit": "Apply cancellation"
+    },
+    "paymentKinds": {
+      "DEPOSIT": "Deposit",
+      "RENTAL_FEE": "Rental fee",
+      "SALE_PAYMENT": "Sale payment",
+      "MAINTENANCE_FEE": "Maintenance fee",
+      "SERVICE_FEE": "Service fee",
+      "DEPOSIT_REFUND": "Deposit refund"
+    },
+    "payments": {
+      "empty": "No payments recorded for this contract.",
+      "collectedAt": "Collected",
+      "kind": "Kind",
+      "method": "Method",
+      "expected": "Expected",
+      "actual": "Actual",
+      "state": "State",
+      "collectedBy": "Collected by",
+      "methods": {
+        "CASH": "Cash",
+        "BANK_TRANSFER": "Bank transfer",
+        "CARD": "Card",
+        "OTHER": "Other"
+      },
+      "states": {
+        "EXPECTED": "Expected",
+        "COLLECTED": "Collected",
+        "HANDED_OVER": "Handed over",
+        "RECONCILED": "Reconciled",
+        "OVERDUE_D7": "Overdue D+7",
+        "OVERDUE_D14": "Overdue D+14",
+        "OVERDUE_D30": "Overdue D+30",
+        "WRITTEN_OFF": "Written off"
+      }
+    },
     "amendmentRevision": "Revision",
     "parentContract": "Parent contract",
     "amendmentReason": "Amendment reason",
@@ -483,6 +562,11 @@
       "unitPrice": "Unit price (₫)",
       "quantity": "Qty",
       "reviewIntro": "Review the contract data below before submitting. The contract will be created in DRAFT state.",
+      "depositHint": "Collected at the installation visit; refundable on mid-term cancellation or RENTAL→SALE conversion.",
+      "endOfTermHint": {
+        "TRANSFER_OWNERSHIP": "Equipment ownership transfers to the customer when the rental term ends (default).",
+        "RETRIEVE_DEVICE": "A RETRIEVAL visit is auto-spawned at the end date and the office is alerted."
+      },
       "submit": "Create draft contract"
     },
     "amend": {

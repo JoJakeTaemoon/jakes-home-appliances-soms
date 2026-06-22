@@ -1,13 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
+import { useApi, ApiClientError } from "@/lib/api/client";
 import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Input, Textarea } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { FormField } from "@/components/ui/form-field";
+import { canAmendContract } from "@/lib/contracts/access";
 import {
   ContractStateBadge,
   ContractTypeBadge,
@@ -26,6 +34,11 @@ interface ContractDetail {
   termMonths: number | null;
   monthlyMaintenanceFee: string | null;
   totalContractValue: string | null;
+  /** RENTAL only — deposit collected at installation, refundable on
+   *  early termination or RENTAL→SALE conversion. */
+  deposit: string | null;
+  /** RENTAL only — TRANSFER_OWNERSHIP (default) or RETRIEVE_DEVICE. */
+  endOfTermAction: "TRANSFER_OWNERSHIP" | "RETRIEVE_DEVICE" | null;
   notes: string | null;
   amendmentRevision: number;
   amendmentReason: string | null;
@@ -34,6 +47,11 @@ interface ContractDetail {
   activatedAt: string | null;
   terminatedAt: string | null;
   terminationReason: string | null;
+  /** Refund returned on mid-term cancellation (set when state=TERMINATED). */
+  terminationRefundAmount: string | null;
+  /** When non-null, contract was converted from this type (RENTAL→SALE). */
+  convertedFromType: "SALE" | "RENTAL" | "MAINTENANCE" | null;
+  convertedAt: string | null;
   updatedAt: string;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B"; shortcode: string | null };
   equipment: Array<{
@@ -160,6 +178,27 @@ export default function ContractDetailPage() {
               {data.totalContractValue !== null && (
                 <Row label={t("totalValue")} value={formatVnd(data.totalContractValue)} />
               )}
+              {data.type === "RENTAL" && data.deposit !== null && (
+                <Row label={t("deposit")} value={formatVnd(data.deposit)} />
+              )}
+              {data.type === "RENTAL" && data.endOfTermAction && (
+                <Row
+                  label={t("endOfTermAction")}
+                  value={t(`endOfTermActions.${data.endOfTermAction}` as never)}
+                />
+              )}
+              {data.convertedFromType && (
+                <Row
+                  label={t("convertedFrom")}
+                  value={t(`types.${data.convertedFromType}`)}
+                />
+              )}
+              {data.terminationRefundAmount !== null && (
+                <Row
+                  label={t("terminationRefundAmount")}
+                  value={formatVnd(data.terminationRefundAmount)}
+                />
+              )}
             </div>
             <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">
               <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
@@ -208,6 +247,37 @@ export default function ContractDetailPage() {
             <div className="sm:col-span-2">
               <ContractPdfPreview contractId={data.id} cacheBuster={version} />
             </div>
+            {data.type === "RENTAL" && data.state === "ACTIVE" && (
+              <div className="sm:col-span-2">
+                <NotifyRenewalCard contractId={data.id} />
+              </div>
+            )}
+            {data.type === "RENTAL" && data.state === "ACTIVE" && (
+              <div className="sm:col-span-2">
+                <ConvertToSaleCard
+                  contractId={data.id}
+                  deposit={data.deposit}
+                  monthlyMaintenanceFee={data.monthlyMaintenanceFee}
+                  termMonths={data.termMonths}
+                  role={role}
+                  onConverted={reload}
+                />
+              </div>
+            )}
+            {data.state === "ACTIVE" && (
+              <div className="sm:col-span-2">
+                <TerminateCard
+                  contractId={data.id}
+                  contractType={data.type}
+                  deposit={data.deposit}
+                  defaultRequireRetrieval={
+                    data.endOfTermAction === "RETRIEVE_DEVICE"
+                  }
+                  role={role}
+                  onTerminated={reload}
+                />
+              </div>
+            )}
           </div>
         </TabPanel>
 
@@ -286,9 +356,7 @@ export default function ContractDetailPage() {
         </TabPanel>
 
         <TabPanel value="payments">
-          <div className="rounded-xl border border-dashed border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-4 text-sm text-[var(--brand-blue-700)]">
-            Phase 6 will surface payments here.
-          </div>
+          <ContractPaymentsTab contractId={data.id} />
         </TabPanel>
 
         <TabPanel value="activity">
@@ -316,6 +384,526 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
     <div className="flex items-baseline justify-between gap-3 text-sm">
       <span className="text-xs text-[#737373]">{label}</span>
       <span className="text-[#111111]">{value}</span>
+    </div>
+  );
+}
+
+// Mid-term RENTAL→SALE conversion. Office-triggered, MANAGER+ only.
+// Captures sale price + deposit refund decision + free-text reason; the
+// API flips the contract row in place + audits the action.
+function ConvertToSaleCard({
+  contractId,
+  deposit,
+  monthlyMaintenanceFee,
+  termMonths,
+  role,
+  onConverted,
+}: Readonly<{
+  contractId: string;
+  deposit: string | null;
+  monthlyMaintenanceFee: string | null;
+  termMonths: number | null;
+  role: string;
+  onConverted: () => void;
+}>) {
+  const t = useTranslations("contracts");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [open, setOpen] = useState(false);
+  if (!canAmendContract(role)) return null;
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-[#111111]">
+            {t("convert.title")}
+          </span>
+          <span className="text-xs text-[#737373]">{t("convert.hint")}</span>
+        </div>
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          {t("convert.openButton")}
+        </Button>
+      </div>
+      {open && (
+        <ConvertModal
+          contractId={contractId}
+          deposit={deposit}
+          monthlyMaintenanceFee={monthlyMaintenanceFee}
+          termMonths={termMonths}
+          onClose={() => setOpen(false)}
+          onConverted={() => {
+            setOpen(false);
+            onConverted();
+          }}
+          t={t}
+          tc={tc}
+          api={api}
+        />
+      )}
+    </>
+  );
+}
+
+function ConvertModal({
+  contractId,
+  deposit,
+  monthlyMaintenanceFee,
+  termMonths,
+  onClose,
+  onConverted,
+  t,
+  tc,
+  api,
+}: Readonly<{
+  contractId: string;
+  deposit: string | null;
+  monthlyMaintenanceFee: string | null;
+  termMonths: number | null;
+  onClose: () => void;
+  onConverted: () => void;
+  t: (k: string, vars?: Record<string, string | number>) => string;
+  tc: (k: string) => string;
+  api: ReturnType<typeof useApi>;
+}>) {
+  // Suggested sale price = remaining months × monthly fee. The user can
+  // override the value; this just primes the input with a reasonable default.
+  const suggested =
+    monthlyMaintenanceFee && termMonths
+      ? Math.max(0, Math.round(Number(monthlyMaintenanceFee) * termMonths * 0.6))
+      : 0;
+  const [salePrice, setSalePrice] = useState<number>(suggested);
+  const [refundDeposit, setRefundDeposit] = useState<boolean>(!!deposit);
+  const [refundAmount, setRefundAmount] = useState<number>(
+    deposit ? Number(deposit) : 0,
+  );
+  const [reason, setReason] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    if (busy) return;
+    if (reason.trim().length < 5) {
+      setErr(t("convert.reasonTooShort"));
+      return;
+    }
+    if (refundDeposit && refundAmount <= 0) {
+      setErr(t("convert.refundAmountRequired"));
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/contracts/${contractId}/convert`, {
+        targetType: "SALE",
+        salePrice,
+        refundDeposit,
+        refundAmount: refundDeposit ? refundAmount : undefined,
+        reason: reason.trim(),
+      });
+      onConverted();
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("convert.title")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy}>
+            {t("convert.submit")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <FormField label={t("convert.salePrice")} required>
+          <NumberInput value={salePrice} onChange={setSalePrice} min={0} />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={refundDeposit}
+            onChange={(e) => setRefundDeposit(e.target.checked)}
+          />
+          {t("convert.refundDeposit")}
+        </label>
+        {refundDeposit && (
+          <FormField label={t("convert.refundAmount")} required>
+            <NumberInput
+              value={refundAmount}
+              onChange={setRefundAmount}
+              min={0}
+            />
+          </FormField>
+        )}
+        <FormField label={t("convert.reason")} required>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder={t("convert.reasonPlaceholder")}
+          />
+        </FormField>
+        {err && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Mid-term cancellation — captures reason + optional refund + retrieval
+// decision in one modal. Pre-checks the retrieval box when the contract
+// was created with endOfTermAction=RETRIEVE_DEVICE so operators don't
+// have to remember the original setup.
+function TerminateCard({
+  contractId,
+  contractType,
+  deposit,
+  defaultRequireRetrieval,
+  role,
+  onTerminated,
+}: Readonly<{
+  contractId: string;
+  contractType: "SALE" | "RENTAL" | "MAINTENANCE";
+  deposit: string | null;
+  defaultRequireRetrieval: boolean;
+  role: string;
+  onTerminated: () => void;
+}>) {
+  const t = useTranslations("contracts");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [open, setOpen] = useState(false);
+  if (!canAmendContract(role)) return null;
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-red-800">
+            {t("terminate.title")}
+          </span>
+          <span className="text-xs text-red-600">{t("terminate.hint")}</span>
+        </div>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          {t("terminate.openButton")}
+        </Button>
+      </div>
+      {open && (
+        <TerminateModal
+          contractId={contractId}
+          contractType={contractType}
+          deposit={deposit}
+          defaultRequireRetrieval={defaultRequireRetrieval}
+          onClose={() => setOpen(false)}
+          onTerminated={() => {
+            setOpen(false);
+            onTerminated();
+          }}
+          t={t}
+          tc={tc}
+          api={api}
+        />
+      )}
+    </>
+  );
+}
+
+function TerminateModal({
+  contractId,
+  contractType,
+  deposit,
+  defaultRequireRetrieval,
+  onClose,
+  onTerminated,
+  t,
+  tc,
+  api,
+}: Readonly<{
+  contractId: string;
+  contractType: "SALE" | "RENTAL" | "MAINTENANCE";
+  deposit: string | null;
+  defaultRequireRetrieval: boolean;
+  onClose: () => void;
+  onTerminated: () => void;
+  t: (k: string) => string;
+  tc: (k: string) => string;
+  api: ReturnType<typeof useApi>;
+}>) {
+  const [reason, setReason] = useState("");
+  const [refundAmount, setRefundAmount] = useState<number>(
+    deposit ? Number(deposit) : 0,
+  );
+  const [requireRetrieval, setRequireRetrieval] = useState<boolean>(
+    defaultRequireRetrieval,
+  );
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    if (busy) return;
+    if (reason.trim().length < 5) {
+      setErr(t("terminate.reasonTooShort"));
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/contracts/${contractId}/terminate`, {
+        reason: reason.trim(),
+        refundAmount: refundAmount > 0 ? refundAmount : undefined,
+        requireRetrieval,
+      });
+      onTerminated();
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("terminate.title")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            {tc("cancel")}
+          </Button>
+          <Button onClick={submit} isLoading={busy}>
+            {t("terminate.submit")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <FormField label={t("terminate.reason")} required>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder={t("terminate.reasonPlaceholder")}
+          />
+        </FormField>
+        {contractType === "RENTAL" && (
+          <>
+            <FormField label={t("terminate.refundAmount")}>
+              <NumberInput
+                value={refundAmount}
+                onChange={setRefundAmount}
+                min={0}
+              />
+            </FormField>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={requireRetrieval}
+                onChange={(e) => setRequireRetrieval(e.target.checked)}
+              />
+              {t("terminate.requireRetrieval")}
+            </label>
+          </>
+        )}
+        {err && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {err}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+// Renewal SMS — explicit, one-click action for office staff to ping the
+// CONTRACT_PARTY contact about an upcoming RENTAL term end. We deliberately
+// don't auto-send these (per the 2026-06 plan); the office decides when.
+function NotifyRenewalCard({ contractId }: Readonly<{ contractId: string }>) {
+  const t = useTranslations("contracts");
+  const api = useApi();
+  const [busy, setBusy] = useState(false);
+  const [sentAt, setSentAt] = useState<Date | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function send() {
+    if (busy) return;
+    if (!window.confirm(t("notify.confirm"))) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.post(`/api/contracts/${contractId}/notify-renewal`, {});
+      setSentAt(new Date());
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-medium text-[#111111]">
+            {t("notify.renewalTitle")}
+          </span>
+          <span className="text-xs text-[#737373]">
+            {t("notify.renewalHint")}
+          </span>
+        </div>
+        <Button onClick={send} isLoading={busy}>
+          {t("notify.sendRenewalSms")}
+        </Button>
+      </div>
+      {sentAt && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+          {t("notify.sentAt", { time: sentAt.toLocaleString() })}
+        </div>
+      )}
+      {err && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {err}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Per-contract payment history. Hits the new
+// GET /api/contracts/[id]/payments endpoint and renders kind-grouped
+// total chips above a chronological table.
+interface PaymentRow {
+  id: string;
+  kind:
+    | "DEPOSIT"
+    | "RENTAL_FEE"
+    | "SALE_PAYMENT"
+    | "MAINTENANCE_FEE"
+    | "SERVICE_FEE"
+    | "DEPOSIT_REFUND";
+  method: "CASH" | "BANK_TRANSFER" | "CARD" | "OTHER";
+  state: string;
+  expectedAmount: string;
+  actualAmount: string;
+  collectedAt: string | null;
+  notes: string | null;
+  collectedBy: { id: string; username: string } | null;
+  visit: { id: string; type: string; scheduledFor: string } | null;
+}
+
+interface PaymentsResponse {
+  rows: PaymentRow[];
+  totals: {
+    byKind: Record<string, number>;
+    byState: Record<string, number>;
+  };
+}
+
+function ContractPaymentsTab({ contractId }: Readonly<{ contractId: string }>) {
+  const t = useTranslations("contracts");
+  const tc = useTranslations("common");
+  const locale = useLocale();
+  const query = useApiQuery<PaymentsResponse>(
+    `/api/contracts/${contractId}/payments`,
+  );
+
+  if (query.isLoading) {
+    return <div className="text-sm text-[#737373]">{tc("loading")}</div>;
+  }
+  if (!query.data) {
+    return (
+      <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 text-sm text-[#737373]">
+        {tc("noData")}
+      </div>
+    );
+  }
+  const { rows, totals } = query.data;
+  const kindEntries = Object.entries(totals.byKind);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {kindEntries.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {kindEntries.map(([k, sum]) => (
+            <div
+              key={k}
+              className="flex items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-xs"
+            >
+              <span className="text-[#737373]">
+                {t(`paymentKinds.${k}` as never)}
+              </span>
+              <span className="font-medium text-[#111111]">
+                {formatVnd(sum)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {rows.length === 0 ? (
+        <div className="rounded-xl border border-[#e5e5e5] bg-white p-4 text-sm text-[#737373]">
+          {t("payments.empty")}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-[#fafafa] text-left text-xs text-[#737373]">
+              <tr>
+                <th className="px-3 py-2">{t("payments.collectedAt")}</th>
+                <th className="px-3 py-2">{t("payments.kind")}</th>
+                <th className="px-3 py-2">{t("payments.method")}</th>
+                <th className="px-3 py-2 text-right">{t("payments.expected")}</th>
+                <th className="px-3 py-2 text-right">{t("payments.actual")}</th>
+                <th className="px-3 py-2">{t("payments.state")}</th>
+                <th className="px-3 py-2">{t("payments.collectedBy")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f5f5f5]">
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-3 py-2 text-[#525252]">
+                    {r.collectedAt ? formatDate(r.collectedAt, locale) : "—"}
+                  </td>
+                  <td className="px-3 py-2">
+                    {t(`paymentKinds.${r.kind}` as never)}
+                  </td>
+                  <td className="px-3 py-2 text-[#525252]">
+                    {t(`payments.methods.${r.method}` as never)}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {formatVnd(r.expectedAmount)}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {formatVnd(r.actualAmount)}
+                  </td>
+                  <td className="px-3 py-2 text-[#525252]">
+                    {t(`payments.states.${r.state}` as never)}
+                  </td>
+                  <td className="px-3 py-2 text-[#525252]">
+                    {r.collectedBy?.username ?? "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

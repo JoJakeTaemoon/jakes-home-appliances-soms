@@ -349,6 +349,12 @@
       "COMPANY": "Công ty (thuê)",
       "CUSTOMER": "KH sở hữu"
     },
+    "external": {
+      "toggle": "Thiết bị bên ngoài — khách hàng tự mua, không có trong catalog",
+      "customDescription": "Mô tả thiết bị",
+      "customDescriptionHint": "VD: Máy lọc nước hãng XYZ — ghi rõ model và vị trí lắp đặt",
+      "customMaintenanceCycle": "Chu kỳ bảo trì (tháng)"
+    },
     "form": {
       "pickCustomer": "Chọn khách hàng",
       "pickSite": "Chọn cơ sở (chỉ B2B)",
@@ -422,6 +428,79 @@
     "termMonths": "Thời hạn (tháng)",
     "monthlyFee": "Phí tháng",
     "totalValue": "Tổng giá trị",
+    "deposit": "Tiền đặt cọc",
+    "endOfTermAction": "Khi hết hạn",
+    "endOfTermActions": {
+      "TRANSFER_OWNERSHIP": "Chuyển quyền sở hữu cho khách hàng",
+      "RETRIEVE_DEVICE": "Thu hồi thiết bị"
+    },
+    "convertedFrom": "Loại hợp đồng cũ",
+    "terminationRefundAmount": "Số tiền hoàn khi huỷ",
+    "notify": {
+      "renewalTitle": "Nhắc hết hạn",
+      "renewalHint": "Gửi một SMS nhắc hết hạn cho người ký hợp đồng (không tự động).",
+      "sendRenewalSms": "Gửi SMS hết hạn",
+      "confirm": "Gửi SMS nhắc hết hạn cho người ký hợp đồng?",
+      "sentAt": "Đã gửi lúc {time}"
+    },
+    "convert": {
+      "title": "Chuyển sang Bán",
+      "hint": "Chuyển hợp đồng thuê sang hợp đồng bán tại chỗ và quyết định việc hoàn tiền cọc.",
+      "openButton": "Bắt đầu chuyển",
+      "salePrice": "Giá bán",
+      "refundDeposit": "Hoàn tiền cọc",
+      "refundAmount": "Số tiền hoàn",
+      "reason": "Lý do chuyển",
+      "reasonPlaceholder": "VD: Khách hàng muốn thanh toán phần còn lại của hợp đồng thuê một lần",
+      "reasonTooShort": "Nhập ít nhất 5 ký tự cho lý do.",
+      "refundAmountRequired": "Số tiền hoàn phải > 0.",
+      "submit": "Áp dụng chuyển"
+    },
+    "terminate": {
+      "title": "Huỷ hợp đồng giữa kỳ",
+      "hint": "Huỷ hợp đồng đang hoạt động và xử lý hoàn tiền cọc + thu hồi thiết bị.",
+      "openButton": "Bắt đầu huỷ",
+      "reason": "Lý do huỷ",
+      "reasonPlaceholder": "VD: Khách hàng yêu cầu huỷ hợp đồng thuê giữa kỳ, hoàn một phần tiền cọc",
+      "refundAmount": "Số tiền hoàn (tuỳ chọn)",
+      "requireRetrieval": "Tự tạo lượt thu hồi thiết bị",
+      "reasonTooShort": "Nhập ít nhất 5 ký tự cho lý do.",
+      "submit": "Áp dụng huỷ"
+    },
+    "paymentKinds": {
+      "DEPOSIT": "Tiền cọc",
+      "RENTAL_FEE": "Phí thuê",
+      "SALE_PAYMENT": "Tiền bán",
+      "MAINTENANCE_FEE": "Phí bảo trì",
+      "SERVICE_FEE": "Phí dịch vụ",
+      "DEPOSIT_REFUND": "Hoàn tiền cọc"
+    },
+    "payments": {
+      "empty": "Hợp đồng này chưa có khoản thanh toán nào.",
+      "collectedAt": "Ngày thu",
+      "kind": "Loại",
+      "method": "Hình thức",
+      "expected": "Số dự kiến",
+      "actual": "Thực thu",
+      "state": "Trạng thái",
+      "collectedBy": "Người thu",
+      "methods": {
+        "CASH": "Tiền mặt",
+        "BANK_TRANSFER": "Chuyển khoản",
+        "CARD": "Thẻ",
+        "OTHER": "Khác"
+      },
+      "states": {
+        "EXPECTED": "Dự kiến",
+        "COLLECTED": "Đã thu",
+        "HANDED_OVER": "Đã nộp",
+        "RECONCILED": "Đã đối soát",
+        "OVERDUE_D7": "Quá hạn D+7",
+        "OVERDUE_D14": "Quá hạn D+14",
+        "OVERDUE_D30": "Quá hạn D+30",
+        "WRITTEN_OFF": "Xoá nợ"
+      }
+    },
     "amendmentRevision": "Bản sửa đổi",
     "parentContract": "Hợp đồng gốc",
     "amendmentReason": "Lý do sửa đổi",
@@ -483,6 +562,11 @@
       "unitPrice": "Đơn giá (₫)",
       "quantity": "SL",
       "reviewIntro": "Vui lòng kiểm tra trước khi tạo. Hợp đồng sẽ được tạo ở trạng thái DRAFT.",
+      "depositHint": "Thu vào lượt lắp đặt đầu tiên. Có thể hoàn trả khi huỷ giữa kỳ hoặc chuyển sang Bán.",
+      "endOfTermHint": {
+        "TRANSFER_OWNERSHIP": "Khi hết hạn thuê, quyền sở hữu thiết bị tự động chuyển cho khách hàng (mặc định).",
+        "RETRIEVE_DEVICE": "Hệ thống sẽ tự tạo lượt thăm thu hồi vào ngày hết hạn và báo cho văn phòng."
+      },
       "submit": "Tạo hợp đồng nháp"
     },
     "amend": {

@@ -107,10 +107,14 @@ async function main() {
 
   const equipment: PdfEquipmentLine[] = contract.equipment.map((ce) => {
     const m = ce.equipment.model;
-    const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    // External (off-catalog) devices have no EquipmentModel; fall back to
+    // the equipment's customDescription so MAINTENANCE contracts still
+    // render a usable line item.
+    const fallback = ce.equipment.customDescription ?? "";
+    const name = m ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "" : fallback;
     return {
       equipmentId: ce.equipmentId,
-      modelCode: m.modelCode ?? name,
+      modelCode: m?.modelCode ?? name,
       modelName: name,
       serialNumber: ce.equipment.serialNumber,
       siteName: ce.equipment.site?.name ?? null,

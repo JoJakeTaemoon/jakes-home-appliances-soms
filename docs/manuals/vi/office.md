@@ -456,13 +456,22 @@ Khi khách hàng ngừng giao dịch (đóng cửa · chuyển đi · kết thú
 
 ## Chương 6. Quản lý Hợp đồng
 
+> **Cập nhật 2026-06-22 — Contract Domain v2**
+>
+> - **Tiền cọc thuê + Xử lý khi hết hạn**: Khi tạo hợp đồng thuê, nhập tiền cọc và chọn cách xử lý cuối kỳ — "Chuyển sở hữu cho khách (mặc định)" hoặc "Thu hồi thiết bị". Nếu chọn thu hồi, hệ thống tự tạo lượt thăm RETRIEVAL vào ngày hết hạn và báo cho văn phòng.
+> - **Tab Thanh toán**: Tab [Thanh toán] trong chi tiết hợp đồng hiển thị tổng theo từng loại (cọc, phí thuê, phí dịch vụ, hoàn tiền…).
+> - **Chuyển Thuê → Bán**: Trên hợp đồng thuê đang ACTIVE bấm [Chuyển sang Bán] để chuyển tại chỗ và quyết định việc hoàn cọc. Sau chuyển, thiết bị tự chuyển sang sở hữu khách (MANAGER+).
+> - **Huỷ giữa kỳ**: Trên hợp đồng ACTIVE bấm [Huỷ hợp đồng giữa kỳ]. Số tiền hoàn và lượt thu hồi thiết bị được xử lý trong cùng một dialog (MANAGER+).
+> - **SMS hết hạn không tự gửi**: Văn phòng phải bấm nút [Gửi SMS hết hạn] thì SMS mới được gửi cho khách.
+> - **Hợp đồng bảo trì cho thiết bị bên ngoài**: Có thể tạo hợp đồng MAINTENANCE cho thiết bị không có trong catalog. Trong modal thêm thiết bị, bật "Thiết bị bên ngoài" và nhập mô tả + chu kỳ bảo trì trực tiếp.
+
 ### 6.1 Các loại hợp đồng
 
 | Loại | Tiếng Hàn | Tiếng Việt | Mô tả |
 |---|---|---|---|
 | **SALE** | 판매 | Bán | Trả một lần và thuộc sở hữu khách hàng |
-| **RENTAL** | 임대 | Thuê | Thuê 36 tháng, thu tiền hàng tháng, hết hạn chuyển sở hữu cho khách |
-| **MAINTENANCE** | 유지관리 | Bảo trì | Chỉ kiểm tra — Thiết bị đã thuộc khách hàng |
+| **RENTAL** | 임대 | Thuê | Thuê 36 tháng, thu tiền hàng tháng — chọn **Chuyển sở hữu (mặc định)** hoặc **Thu hồi thiết bị** khi hết hạn |
+| **MAINTENANCE** | 유지관리 | Bảo trì | Chỉ kiểm tra — thiết bị thuộc khách hàng (gồm cả thiết bị bên ngoài catalog) |
 
 ### 6.2 Màn hình Danh sách Hợp đồng
 

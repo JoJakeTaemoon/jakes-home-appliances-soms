@@ -159,8 +159,12 @@ async function fetchVisit(visitId: string): Promise<FetchedVisit> {
   const c = v.customer;
   const contact = c.contacts[0] ?? null;
   const eq = v.equipment;
+  const eqModel = eq?.model ?? null;
+  const eqFallback = eq?.customDescription ?? "";
   const modelName = eq
-    ? eq.model.nameVi ?? eq.model.nameKo ?? eq.model.nameEn ?? eq.model.modelCode ?? ""
+    ? eqModel
+      ? eqModel.nameVi ?? eqModel.nameKo ?? eqModel.nameEn ?? eqModel.modelCode ?? ""
+      : eqFallback
     : "";
 
   return {
@@ -190,7 +194,7 @@ async function fetchVisit(visitId: string): Promise<FetchedVisit> {
     equipment: eq
       ? {
           id: eq.id,
-          modelCode: eq.model.modelCode ?? modelName,
+          modelCode: eqModel?.modelCode ?? modelName,
           modelName,
           serialNumber: eq.serialNumber,
         }
@@ -241,10 +245,13 @@ async function pickContract(
   if (!row) return null;
   const lines = row.equipment.map((ce) => {
     const m = ce.equipment.model;
-    const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    const fallback = ce.equipment.customDescription ?? "";
+    const name = m
+      ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? ""
+      : fallback;
     return {
       equipmentId: ce.equipmentId,
-      modelCode: m.modelCode ?? name,
+      modelCode: m?.modelCode ?? name,
       modelName: name,
       serialNumber: ce.equipment.serialNumber,
       unitPrice: decToNum(ce.unitPrice),
@@ -501,9 +508,12 @@ async function buildPeriodicCheckB2b(
   });
   const equipment = equipmentRows.map((e) => {
     const m = e.model;
-    const name = m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? "";
+    const fallback = e.customDescription ?? "";
+    const name = m
+      ? m.nameVi ?? m.nameKo ?? m.nameEn ?? m.modelCode ?? ""
+      : fallback;
     return {
-      modelCode: m.modelCode ?? name,
+      modelCode: m?.modelCode ?? name,
       modelName: name,
       serialNumber: e.serialNumber,
       location: e.site?.name ?? v.site?.name ?? null,

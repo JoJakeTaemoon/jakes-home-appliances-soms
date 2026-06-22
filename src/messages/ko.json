@@ -349,6 +349,12 @@
       "COMPANY": "회사 (임대)",
       "CUSTOMER": "고객 소유"
     },
+    "external": {
+      "toggle": "외부(타사) 기기 등록 — 카탈로그에 없는 고객 소유 기기",
+      "customDescription": "기기 설명",
+      "customDescriptionHint": "예: 타사 정수기 모델 XYZ — 정확한 모델명과 설치 위치 포함",
+      "customMaintenanceCycle": "정기점검 주기 (개월)"
+    },
     "form": {
       "pickCustomer": "고객 선택",
       "pickSite": "사업장 선택 (B2B 전용)",
@@ -422,6 +428,79 @@
     "termMonths": "계약 기간 (개월)",
     "monthlyFee": "월 유지관리비",
     "totalValue": "총 계약 금액",
+    "deposit": "보증금",
+    "endOfTermAction": "만기 시 처리",
+    "endOfTermActions": {
+      "TRANSFER_OWNERSHIP": "고객에게 소유권 이전",
+      "RETRIEVE_DEVICE": "기기 회수"
+    },
+    "convertedFrom": "변환 전 유형",
+    "terminationRefundAmount": "해지 환불액",
+    "notify": {
+      "renewalTitle": "만기 임박 알림",
+      "renewalHint": "계약 주체 담당자에게 만기 안내 SMS를 한 번 발송합니다 (자동 발송 없음).",
+      "sendRenewalSms": "만기 SMS 발송",
+      "confirm": "이 계약의 계약 주체에게 만기 알림 SMS를 보내시겠습니까?",
+      "sentAt": "{time}에 발송됨"
+    },
+    "convert": {
+      "title": "판매로 변환",
+      "hint": "임대 계약을 판매 계약으로 in-place 변경합니다. 보증금 환불 처리도 함께 결정합니다.",
+      "openButton": "변환 시작",
+      "salePrice": "판매가",
+      "refundDeposit": "보증금 환불",
+      "refundAmount": "환불 금액",
+      "reason": "변환 사유",
+      "reasonPlaceholder": "예: 고객이 잔여 임대 기간을 일시불로 정산 요청",
+      "reasonTooShort": "사유는 5자 이상 입력하세요.",
+      "refundAmountRequired": "환불 금액을 0보다 크게 입력하세요.",
+      "submit": "변환 적용"
+    },
+    "terminate": {
+      "title": "중도 해지",
+      "hint": "활성 계약을 즉시 해지합니다. 환불 금액과 기기 회수 여부를 함께 처리합니다.",
+      "openButton": "해지 시작",
+      "reason": "해지 사유",
+      "reasonPlaceholder": "예: 고객 요청으로 임대 중도 해지, 보증금 일부 환불",
+      "refundAmount": "환불 금액 (선택)",
+      "requireRetrieval": "기기 회수 방문 자동 생성",
+      "reasonTooShort": "사유는 5자 이상 입력하세요.",
+      "submit": "해지 적용"
+    },
+    "paymentKinds": {
+      "DEPOSIT": "보증금",
+      "RENTAL_FEE": "임대료",
+      "SALE_PAYMENT": "판매대금",
+      "MAINTENANCE_FEE": "유지관리비",
+      "SERVICE_FEE": "서비스 수수료",
+      "DEPOSIT_REFUND": "보증금 환불"
+    },
+    "payments": {
+      "empty": "이 계약에 등록된 결제 내역이 없습니다.",
+      "collectedAt": "수금일",
+      "kind": "분류",
+      "method": "방법",
+      "expected": "예정 금액",
+      "actual": "실수금액",
+      "state": "상태",
+      "collectedBy": "수금자",
+      "methods": {
+        "CASH": "현금",
+        "BANK_TRANSFER": "계좌이체",
+        "CARD": "카드",
+        "OTHER": "기타"
+      },
+      "states": {
+        "EXPECTED": "예정",
+        "COLLECTED": "수금완료",
+        "HANDED_OVER": "입금완료",
+        "RECONCILED": "정산완료",
+        "OVERDUE_D7": "연체 D+7",
+        "OVERDUE_D14": "연체 D+14",
+        "OVERDUE_D30": "연체 D+30",
+        "WRITTEN_OFF": "대손처리"
+      }
+    },
     "amendmentRevision": "수정본",
     "parentContract": "원본 계약",
     "amendmentReason": "변경 사유",
@@ -483,6 +562,11 @@
       "unitPrice": "단가 (₫)",
       "quantity": "수량",
       "reviewIntro": "제출 전 내용을 확인하세요. 계약은 DRAFT 상태로 생성됩니다.",
+      "depositHint": "첫 설치 방문에서 수금됩니다. 중도 해지 또는 판매 변환 시 환불 절차가 가능합니다.",
+      "endOfTermHint": {
+        "TRANSFER_OWNERSHIP": "임대 종료 시 장비 소유권이 고객에게 자동 이전됩니다 (기본).",
+        "RETRIEVE_DEVICE": "임대 종료일에 회수 방문이 자동 생성되고 사무실에 알림이 갑니다."
+      },
       "submit": "초안 생성"
     },
     "amend": {

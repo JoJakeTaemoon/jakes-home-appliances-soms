@@ -27,3 +27,23 @@ export function pickModelName(model: NameableModel, locale: string | undefined):
   // Default + explicit "vi" both fall back through Vietnamese first.
   return vi || ko || en || code || "—";
 }
+
+/**
+ * Equipment-level label resolver that handles off-catalog ("external")
+ * devices. Use this anywhere a UI needs to label an Equipment row — list
+ * cards, contract line items, visit cards, etc. — so external devices
+ * show their customDescription instead of an awkward dash.
+ */
+export interface EquipmentLikeForLabel {
+  model?: NameableModel | null;
+  customDescription?: string | null;
+  serialNumber?: string | null;
+}
+
+export function pickEquipmentLabel(
+  eq: EquipmentLikeForLabel,
+  locale: string | undefined,
+): string {
+  if (eq.model) return pickModelName(eq.model, locale);
+  return eq.customDescription || eq.serialNumber || "—";
+}

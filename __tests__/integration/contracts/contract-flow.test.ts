@@ -210,6 +210,7 @@ describe("Full lifecycle — DRAFT → PENDING_SIGNATURE → ACTIVE → AMEND �
         equipment: [{ equipmentId: equipment.id, unitPrice: 200_000, quantity: 1 }],
         monthlyMaintenanceFee: 200_000,
         termMonths: 36,
+        deposit: 1_500_000,
       }),
     );
     const { body: cBody } = await readJson(create);
@@ -282,6 +283,7 @@ describe("Full lifecycle — DRAFT → PENDING_SIGNATURE → ACTIVE → AMEND �
         equipment: [{ equipmentId: equipment.id, unitPrice: 100_000, quantity: 1 }],
         monthlyMaintenanceFee: 100_000,
         termMonths: 36,
+        deposit: 800_000,
       }),
     );
     const { body } = await readJson(create);

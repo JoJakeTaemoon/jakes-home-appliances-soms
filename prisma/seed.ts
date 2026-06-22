@@ -1780,6 +1780,8 @@ async function main() {
       termMonths: 36,
       monthlyMaintenanceFee: 120_000,
       totalContractValue: 12_600_000,
+      deposit: 1_500_000,
+      endOfTermAction: "TRANSFER_OWNERSHIP",
       signedByCustomerAt: new Date("2025-06-15"),
       signedByCompanyAt: new Date("2025-06-15"),
       activatedAt: new Date("2025-06-15"),
@@ -1801,6 +1803,10 @@ async function main() {
       termMonths: 36,
       monthlyMaintenanceFee: 240_000,
       totalContractValue: 25_200_000,
+      deposit: 3_000_000,
+      // Demo B2B with RETRIEVE so the cron flow + dashboard alert can be
+      // exercised end-to-end.
+      endOfTermAction: "RETRIEVE_DEVICE",
       signedByCustomerAt: new Date("2025-08-01"),
       signedByCompanyAt: new Date("2025-08-01"),
       activatedAt: new Date("2025-08-01"),
@@ -1844,6 +1850,39 @@ async function main() {
       monthlyMaintenanceFee: 80_000,
       totalContractValue: 17_280_000,
       activatedAt: new Date("2022-03-01"),
+    },
+  });
+
+  // ── 2026-06 demo: MAINTENANCE contract on an off-catalog external
+  // device. Demonstrates the new flow where modelId is null and the
+  // device is described via customDescription + customMaintenanceCycle.
+  const externalDevice = await prisma.equipment.upsert({
+    where: { id: "demo-ext-equipment-001" },
+    update: {},
+    create: {
+      id: "demo-ext-equipment-001",
+      customerId: b2c2.id,
+      modelId: null,
+      customDescription: "타사 정수기 모델 XYZ (외부 카탈로그 외)",
+      customMaintenanceCycle: 3,
+      ownership: "CUSTOMER",
+      status: "ACTIVE",
+    },
+  });
+  await prisma.contract.upsert({
+    where: { contractNumber: "HD-20260201/SA-KH0003-MTN" },
+    update: {},
+    create: {
+      contractNumber: "HD-20260201/SA-KH0003-MTN",
+      customerId: b2c2.id,
+      type: "MAINTENANCE",
+      state: "ACTIVE",
+      startDate: new Date("2026-02-01"),
+      monthlyMaintenanceFee: 60_000,
+      signedByCustomerAt: new Date("2026-02-01"),
+      signedByCompanyAt: new Date("2026-02-01"),
+      activatedAt: new Date("2026-02-01"),
+      equipment: { create: [{ equipmentId: externalDevice.id }] },
     },
   });
 

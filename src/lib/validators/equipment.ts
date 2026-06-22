@@ -20,12 +20,38 @@ export const filterPolicySchema = z.object({
 export const createEquipmentSchema = z.object({
   customerId: z.string().trim().min(1),
   siteId: optStr(60),
-  modelId: z.string().trim().min(1),
+  /**
+   * Catalog EquipmentModel id. Optional since 2026-06 to support MAINTENANCE
+   * contracts on customer-owned external (off-catalog) devices. When null,
+   * `customDescription` must be filled in.
+   */
+  modelId: optStr(60),
+  /**
+   * Free-text description of an external device (e.g. "타사 정수기 모델 XYZ").
+   * Required exactly when `modelId` is null — enforced by the superRefine
+   * below.
+   */
+  customDescription: optStr(500),
+  /**
+   * Periodic inspection cycle (months) for external equipment when there's
+   * no EquipmentModel.inspectionEveryMonths to inherit. Optional.
+   */
+  customMaintenanceCycle: z.coerce.number().int().min(1).max(120).optional(),
   serialNumber: optStr(60),
   ownership: z.enum(["COMPANY", "CUSTOMER"]).default("COMPANY"),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
   notes: optStr(2000),
+}).superRefine((v, ctx) => {
+  // Exactly one of (catalog modelId) / (customDescription) must be present.
+  if (!v.modelId && !v.customDescription) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["customDescription"],
+      message:
+        "Either modelId (catalog) or customDescription (external device) is required",
+    });
+  }
 });
 
 export const updateEquipmentSchema = z.object({
@@ -34,6 +60,14 @@ export const updateEquipmentSchema = z.object({
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
   filterPolicyOverride: filterPolicySchema.nullable().optional(),
+  customDescription: optStr(500),
+  customMaintenanceCycle: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(120)
+    .nullable()
+    .optional(),
   notes: optStr(2000),
 });
 

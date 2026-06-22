@@ -205,6 +205,9 @@ export async function suggestConsumablesForVisit(
   });
   if (!equipment) return [];
 
+  // External (off-catalog) equipment has no consumables list — return empty.
+  if (!equipment.model) return [];
+
   const consumables: ConsumableMeta[] = equipment.model.consumables
     .map((c) => c.consumable)
     .filter((c) => c.isActive)
