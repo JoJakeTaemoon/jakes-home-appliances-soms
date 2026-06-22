@@ -224,14 +224,14 @@ export function TaxInvoiceTemplate({ payload }: Readonly<TaxInvoiceProps>) {
       <Page size="A4" style={styles.page}>
         <View style={styles.brand}>
           <View>
-            <Text style={styles.brandTitle}>SEOUL AQUA</Text>
+            <Text style={styles.brandTitle}>JAKE'S HOME APPLIANCES</Text>
             <Text style={styles.brandLegal}>
-              CÔNG TY TNHH MTV TM&DV ĐẠI Á
+              CÔNG TY TNHH MTV TM&DV JAKE'S HA
             </Text>
             <Text style={styles.brandLegal}>MST: 0312345678</Text>
           </View>
           <View>
-            <Text style={styles.brandLegal}>cs@seoulaqua.com.vn</Text>
+            <Text style={styles.brandLegal}>cs@jakeshomeappliances.com.vn</Text>
             <Text style={styles.brandLegal}>+84-28-1234-5678</Text>
           </View>
         </View>

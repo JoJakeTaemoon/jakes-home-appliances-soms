@@ -1,4 +1,4 @@
-# SPEC — Seoul Aqua Service Operation Management System (SOMS)
+# SPEC — Jake's Home Appliances Service Operation Management System (SOMS)
 
 **Version:** v0.1 (Bootstrap draft, 2026-05-25)
 **Status:** Awaiting client answers (see `docs/QUESTIONS.docx`); sections marked `[TBC]` are blocked on specific question IDs.
@@ -11,11 +11,11 @@
 
 ### 1.1 Client
 
-**CÔNG TY TNHH MTV TM&DV ĐẠI Á** — operating brand **Seoul Aqua (서울 아쿠아)**. Vietnam-based, head office at Số 47 Hoàng Trọng Mậu, P. Tân Hưng, TP. Hồ Chí Minh. Sells / rents / maintains household water-treatment and air-quality products.
+**CÔNG TY TNHH MTV TM&DV JAKE'S HA** — operating brand **Jake's Home Appliances (제이크 홈 어플라이언스)**. Vietnam-based, head office at Số 47 Hoàng Trọng Mậu, P. Tân Hưng, TP. Hồ Chí Minh. Sells / rents / maintains household water-treatment and air-quality products.
 
 ### 1.2 What we're building
 
-A **customer-centric service operation management system** replacing the current per-device spreadsheet workflow. It covers the full lifecycle a Seoul Aqua product goes through with a customer:
+A **customer-centric service operation management system** replacing the current per-device spreadsheet workflow. It covers the full lifecycle a Jake's Home Appliances product goes through with a customer:
 
 1. **Sale or rental contract** signed
 2. **Device installation** by a field technician
@@ -72,7 +72,7 @@ The intended outcome is **one customer search → see everything → bulk update
 
 ### 2.1 Role model — 3-tier HQ hierarchy + TECHNICIAN + CUSTOMER
 
-Seoul Aqua office is small (~10 people) and operations cross departments daily. The role model is **deliberately flat** — three hierarchical ranks for HQ, one separate field role, one customer role:
+Jake's Home Appliances office is small (~10 people) and operations cross departments daily. The role model is **deliberately flat** — three hierarchical ranks for HQ, one separate field role, one customer role:
 
 | Role | Tier | Scope | Notes |
 |---|---|---|---|
@@ -209,7 +209,7 @@ Where multiple OPS contacts exist, one is flagged `isPrimary=true` (must be exac
 
 ### 3.3.2 Customer portal access model
 
-Each `CustomerContact` with `portalEnabled=true` is a **portal account** that logs in independently. The portal is a mobile-first PWA at **`portal.seoulaqua.com.vn`** (subdomain confirmed by client A.10, 2026-05-26).
+Each `CustomerContact` with `portalEnabled=true` is a **portal account** that logs in independently. The portal is a mobile-first PWA at **`portal.jakeshomeappliances.com.vn`** (subdomain confirmed by client A.10, 2026-05-26).
 
 | Field on CustomerContact | Purpose |
 |---|---|
@@ -302,7 +302,7 @@ Inferred from `reference/data/정수기등록-26-05-21.csv`:
 
 | Field | Notes |
 |---|---|
-| `code` | **B2C**: `HD-YYYYmmDD/SA-KH####` (e.g. `HD-20260526/SA-KH0001`). **B2B**: `HD-YYYYmmDD/SA-{shortcode}` (e.g. `HD-20260526/SA-SHV`). Format confirmed by client B.2 2026-05-26. |
+| `code` | **B2C**: `HD-YYYYmmDD/JH-KH####` (e.g. `HD-20260526/JH-KH0001`). **B2B**: `HD-YYYYmmDD/JH-{shortcode}` (e.g. `HD-20260526/JH-SHV`). Format confirmed by client B.2 2026-05-26. |
 | `customerId` | FK |
 | `type` | `SALE` / `RENTAL` / `MAINTENANCE` |
 | `startDate` | Installation date (rental term clock starts here) |
@@ -515,7 +515,7 @@ Issuance is **always manual** (office STAFF+ clicks "발급" on the visit detail
 
 - VI primary + KO secondary, stacked via the shared `<Bi>` component (`primary / secondary`)
 - Section titles on a single line: e.g. `Khách hàng / 고객`, `Phí dịch vụ / 청구 항목`
-- Headers compressed to one line: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
+- Headers compressed to one line: `JAKE'S HOME APPLIANCES · CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)`
 - Watermark = company logo (200×200 pt, opacity 0.07) **placed inside each copy block** so it survives the tear line
 - Signature blocks bottom-aligned via `marginTop: auto`; when vertical space is tight, the spacer collapses
 - All tear-line docs MUST fit on one A4 sheet; 1-page compaction is applied across padding, font sizes, sign-row heights uniformly
@@ -537,14 +537,10 @@ TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print
 ### 9.1 Channels (v1) — confirmed 2026-05-26
 
 - **In-app** — bell notification for office staff (new visit, customer call, payment received, etc.). Carry forward PMIS notification shell.
-- **SMS** (eSMS.vn Brandname `SeoulAqua`, F.1 + F.4 + Q17 confirmed) — urgent/security/dunning-final/D-1 messages. 7 templates in `docs/DOCUMENT_TEMPLATES.md` §A. Phase 3.5 dev uses mock (`SMS_PROVIDER=mock`).
-- **Transactional Email** (Resend, F.7 confirmed) — receipts, acknowledgments, early-stage reminders, summaries with PDF attachments. 9 templates in `docs/DOCUMENT_TEMPLATES.md` §B. Phase 3.5 dev uses mock (`EMAIL_PROVIDER=mock`). Sender `noreply@seoulaqua.com.vn` + Reply-To `cs@seoulaqua.com.vn` (A.14).
-<!-- portfolio:drop-start -->
-- **Operational Email** (vhost.vn Email Relay, F.2 confirmed) — tax invoice attachment delivery (Phase 6+) and future marketing campaigns. Same sender domain, different provider, different audit log.
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+- **SMS** (eSMS.vn Brandname `JakeApp`, F.1 + F.4 + Q17 confirmed) — urgent/security/dunning-final/D-1 messages. 7 templates in `docs/DOCUMENT_TEMPLATES.md` §A. Phase 3.5 dev uses mock (`SMS_PROVIDER=mock`).
+- **Transactional Email** (Resend, F.7 confirmed) — receipts, acknowledgments, early-stage reminders, summaries with PDF attachments. 9 templates in `docs/DOCUMENT_TEMPLATES.md` §B. Phase 3.5 dev uses mock (`EMAIL_PROVIDER=mock`). Sender `noreply@jakeshomeappliances.com.vn` + Reply-To `cs@jakeshomeappliances.com.vn` (A.14).
+
 - **Operational Email** (Resend, single ESP) — tax invoice attachment delivery (Phase 6+) and future marketing campaigns. Same sender domain, same provider as transactional, separate audit log tag.
-portfolio:add-end -->
 
 **Per-channel opt-out (F.3 confirmed)**: `CustomerContact.smsOptOut` + `CustomerContact.emailOptOut` flags independent. **System messages (password reset, payment receipt) ignore opt-out** — always delivered.
 
@@ -577,7 +573,7 @@ Both responsive; the priorities just inform which breakpoint gets the polish.
 
 ## 11. Customer Portal (Phase 3.5)
 
-A **mobile-first public-internet portal** at **`https://portal.seoulaqua.com.vn`** (subdomain confirmed by client A.10, 2026-05-26) for B2C and B2B customers. Each `CustomerContact` with `portalEnabled=true` (see §3.3.2) is a login. Authentication uses phone number + password (separate session table from staff).
+A **mobile-first public-internet portal** at **`https://portal.jakeshomeappliances.com.vn`** (subdomain confirmed by client A.10, 2026-05-26) for B2C and B2B customers. Each `CustomerContact` with `portalEnabled=true` (see §3.3.2) is a login. Authentication uses phone number + password (separate session table from staff).
 
 ### 11.1 Audience
 
@@ -628,18 +624,10 @@ Automatic; not user-initiated. See §3.3.2 for the trigger + SMS sequence. There
 | **Concurrent users (steady)** | ~10 office staff + ~30 technicians simultaneously typing into visits at end-of-day. Spikes to ~50 unique concurrent. |
 | **Database size (year 1)** | Customers ~10K, Equipment ~30K, Visits ~150K (assuming 80 techs × 5 visits/day × 365), Payments ~150K. Conservatively < 5 GB. |
 | **Storage (uploads, year 1)** | Photos (visits): 80 techs × 5 visits/day × 2 photos × 200 KB × 365 = ~117 GB/year. Signed-paper photos: similar. Use lifecycle: hot 3 months → archive 12 months → backup. |
-<!-- portfolio:drop-start -->
-| **Hosting** | Vercel (Next.js) + Supabase (Postgres) for v0; **vhost.vn migration confirmed (H.1, 2026-05-26)** before production launch. |
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 | **Hosting** | Vercel (Next.js) + Supabase (Postgres) for production. |
-portfolio:add-end -->
-<!-- portfolio:drop-start -->
-| **Region** | HCMC primary. Vietnamese Personal Data Protection law applies — vhost.vn satisfies data residency. |
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 | **Region** | HCMC primary. Vietnamese Personal Data Protection law applies — Supabase regional placement covers residency in v1. |
-portfolio:add-end -->
 | **Backup** | Supabase auto-backup (daily, 7-day retention). Plus weekly `pg_dump` archived to object storage. **Daily backup window VST 03:00 (H.3, 2026-05-26)**. |
 | **Uptime target** | 99 % during business hours (Mon–Sat 08:00–18:00 VST). Acceptable downtime: <2 h scheduled maintenance per month, off-hours. |
 | **PII handling** | Customer phone + address encrypted at rest (Postgres TDE / column-level encryption to be evaluated in Phase 1) |
@@ -700,23 +688,15 @@ See `.claude/CLAUDE.md` § "Domain Vocabulary" for the canonical KR / VI / EN te
   - §3.2 KH-code derivation rule (A.2: `8918` → `KH08918`)
   - §3.2.1 NEW Site model (A.4 + A.8) — Customer > Site > Equipment 3-level hierarchy
   - §3.3.1 Site-scoped OPS contacts; A.13 shared phone allowed; A.7 language fallback to Contract Party
-  - §3.3.2 portal URL = `portal.seoulaqua.com.vn` (subdomain — A.10)
+  - §3.3.2 portal URL = `portal.jakeshomeappliances.com.vn` (subdomain — A.10)
   - §4 Equipment: `siteId` + new status enum values (A.3: DEACTIVATED/TERMINATED preserve history); `ownership` field (B.3); §B.1 sale → maintenance transition note
   - §5.2 Contract code format B2C/B2B (B.2); Appendix `parentContractId` + `amendmentRevision` (B2B only, B.5); `monthlyMaintenanceFee` (B.4); `filterPolicy` JSON (E.2)
   - §6 Visit: `siteId`, `leadTechnicianId` + `collaboratorTechnicianIds[]` (K.3 multi-tech); §6.4.1 scheduler ranking with preferred tech + region (C.1, C.2); §6.4 map deferred (C.5)
-<!-- portfolio:drop-start -->
-  - §9 Notifications: SMS = eSMS.vn confirmed; transactional Email = Resend (F.7); operational Email = vhost.vn (F.2); opt-out per channel (F.3); Zalo TODO (F.1)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - §9 Notifications: SMS = eSMS.vn confirmed; Email = Resend (transactional + operational); opt-out per channel; Zalo TODO
-portfolio:add-end -->
+
+- §9 Notifications: SMS = eSMS.vn confirmed; Email = Resend (transactional + operational); opt-out per channel; Zalo TODO
   - §11 portal URL update
-<!-- portfolio:drop-start -->
-  - §12 NFR: vhost.vn hosting (H.1), 24-month audit retention (H.2), 03:00 backup (H.3), 10y/5y document retention (E.4), 1y paper disposal (E.5), online-first PWA + Phase 7 offline (C.4), device targets (K.1)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - §12 NFR: Vercel + Supabase hosting, 24-month audit retention, Supabase backups, 10y/5y document retention (E.4), 1y paper disposal (E.5), online-first PWA + Phase 7 offline (C.4), device targets (K.1)
-portfolio:add-end -->
+
+- §12 NFR: Vercel + Supabase hosting, 24-month audit retention, Supabase backups, 10y/5y document retention (E.4), 1y paper disposal (E.5), online-first PWA + Phase 7 offline (C.4), device targets (K.1)
 - **2026-05-26 (v0.3)** — Customer portal moves IN-scope (§11 new, Phase 3.5). CustomerContact now 1:N for OPS (§3.3.1). Portal auth model §3.3.2 added (phone login + bcrypt + SMS-driven signup). ServiceRequest lifecycle §6.5 added. **Role model collapsed** to 3-tier (`ADMIN > MANAGER > STAFF`) + `TECHNICIAN` parallel + `CUSTOMER` external (§2.1). Q11 (role matrix) resolved inline. Sections renumbered: NFR §12, Open Questions §13, Glossary §14.
 - **2026-05-26** — v0.2. Two-contact customer model added (§3.3.1).
 - **2026-05-25** — v0.1 initial draft. Based on `reference/process/회사 운영 프로세스 종합 정리.pdf` + `프로세스 질의와 응답.pdf` + the 7 CSV samples + 10 form templates. All sections marked `[TBC]` await client answers to the corresponding `QUESTIONS.docx` items.

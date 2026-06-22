@@ -1,4 +1,4 @@
-// Seoul Aqua SOMS — Prisma schema
+// Jake's Home Appliances SOMS — Prisma schema
 // Generated 2026-05-27 for Phase 1-7 local-first implementation.
 // Source: docs/DATA_MODEL_NOTES.md + docs/SPEC.md + docs/PRD.md.
 
@@ -341,7 +341,7 @@ enum EquipmentStatus {
 }
 
 enum EquipmentOwnership {
-  COMPANY        // rental — owned by Seoul Aqua
+  COMPANY        // rental — owned by Jake's Home Appliances
   CUSTOMER       // sold or post-rental transfer (B.3)
 }
 
@@ -646,7 +646,7 @@ enum EndOfTermAction {
 
 model Contract {
   id                     String         @id @default(cuid())
-  contractNumber         String         @unique  // HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode}
+  contractNumber         String         @unique  // HD-YYYYmmDD/JH-KH#### or HD-YYYYmmDD/JH-{shortcode}
   legacyContractNumber   String?        @unique
   customerId             String
   customer               Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)

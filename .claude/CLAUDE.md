@@ -1,8 +1,8 @@
-# Seoul Aqua SOMS — Claude Code Configuration
+# Jake's Home Appliances SOMS — Claude Code Configuration
 
 ## Project Overview
 
-**Seoul Aqua Service Operation Management System (SOMS)** — customer + service-operation management system for **CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)**, a Vietnam-based seller / renter / maintainer of water purifiers, air purifiers, bidets, and related household water-treatment products. ~10 office staff + up to 80 field technicians. Multi-language (ko/vi/en), customer-centric (B2C + B2B), mobile-first for field technicians, desktop-first for office.
+**Jake's Home Appliances Service Operation Management System (SOMS)** — customer + service-operation management system for **CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)**, a Vietnam-based seller / renter / maintainer of water purifiers, air purifiers, bidets, and related household water-treatment products. ~10 office staff + up to 80 field technicians. Multi-language (ko/vi/en), customer-centric (B2C + B2B), mobile-first for field technicians, desktop-first for office.
 
 ## Tech Stack
 - Next.js 16 (App Router) + TypeScript (strict)
@@ -13,14 +13,10 @@
 - TanStack React Query + React Context
 - Zod + react-hook-form
 - Vitest + React Testing Library + Playwright (testing)
-<!-- portfolio:drop-start -->
-- Hosting: **Vercel + Supabase** (initial); vhost.vn migration deferred
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-- Hosting: **Vercel + Supabase** (production target)
-portfolio:add-end -->
 
-> The framework, agent team, build pipeline, and conventions are **inherited from MegaDnC PMIS** (`/Users/jake/Works/MegaDnC/mega_dnc_pmis`). Reference that repo for "how things are done" — but do NOT carry over any domain code (construction project / daily report / equipment / etc.). All schema, all routes, all messages, and the design system are rebuilt for Seoul Aqua.
+- Hosting: **Vercel + Supabase** (production target)
+
+> The framework, agent team, build pipeline, and conventions are **inherited from MegaDnC PMIS** (`/Users/jake/Works/MegaDnC/mega_dnc_pmis`). Reference that repo for "how things are done" — but do NOT carry over any domain code (construction project / daily report / equipment / etc.). All schema, all routes, all messages, and the design system are rebuilt for Jake's Home Appliances.
 
 ## Agent Team: TDD Full-Stack Development Pipeline
 
@@ -81,7 +77,7 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
 - **Components**: Server Components by default, `"use client"` only when needed
 - **Exports**: Named exports preferred
 - **Tests**: `__tests__/` directory structure (unit/integration/components), Vitest (node + jsdom projects) + Playwright E2E
-- **Design System**: **Intercom-frame + Seoul Aqua blue** (`.claude/skills/DESIGN.md`) — warm cream canvas, sharp 4px borders, scale(1.1) hover on primary CTA, Seoul Aqua brand-blue as the primary accent (NOT grayscale, NOT orange)
+- **Design System**: **Intercom-frame + Jake's Home Appliances blue** (`.claude/skills/DESIGN.md`) — warm cream canvas, sharp 4px borders, scale(1.1) hover on primary CTA, Jake's Home Appliances brand-blue as the primary accent (NOT grayscale, NOT orange)
 - **UI Rule**: All components must be custom-built with Tailwind CSS. No shadcn/ui, no native system elements (select, dialog, confirm, alert). Custom dropdowns must include search when options > 5.
 - **Database**: Prisma v7 with `@prisma/adapter-pg` + `pg.Pool` (required for Supabase compatibility)
 - **Cookie Path**: `refreshToken` cookie uses `Path=/` (not `/api/auth`) so middleware can read it on all routes
@@ -114,7 +110,7 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
 | 관리자 | Quản trị viên | Admin | `ADMIN` — full system + user management |
 | 매니저 | Quản lý | Manager | `MANAGER` — operations + price changes + tax invoice issuance + customer password reset |
 | 직원 | Nhân viên | Staff | `STAFF` — day-to-day ops; sees all menus incl. sales + accounting |
-| 고객 포털 | Cổng khách hàng | Customer portal | Mobile-first PWA at **`portal.seoulaqua.com.vn`** subdomain (A.10 client answer 2026-05-26; Phase 3.5+) |
+| 고객 포털 | Cổng khách hàng | Customer portal | Mobile-first PWA at **`portal.jakeshomeappliances.com.vn`** subdomain (A.10 client answer 2026-05-26; Phase 3.5+) |
 | 선호 기사 | Kỹ thuật viên ưu tiên | Preferred technician | `Customer.preferredTechnicianId` — soft hint for scheduler (C.2 client answer 2026-05-26) |
 | 주관 기사 / 협업 기사 | KTV chính / KTV phụ | Lead / collaborator technician | `Visit.leadTechnicianId` (required, primary responsibility) + `Visit.collaboratorTechnicianIds[]` (helpers). Payment + signature = lead only (K.3 client answer 2026-05-26) |
 | 부록서 | Phụ lục hợp đồng | Contract Appendix | B2B amendment alternative — `Contract.parentContractId` + `Contract.amendmentRevision` instead of issuing new contract (B.2 + B.5 client answer 2026-05-26) |
@@ -135,7 +131,7 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
 - `npm run db:reset` deletes all data and re-seeds — **NEVER run on production** (always use `db:reset:dev`)
 - Use the shared `<NumberInput>` component from `src/components/ui/number-input.tsx` for all numeric form fields — raw `<input type="number">` has a can't-clear-last-digit UX bug
 
-## Seoul Aqua-specific Conventions (added during phases — initially empty)
+## Jake's Home Appliances-specific Conventions (added during phases — initially empty)
 
 - **Staff role hierarchy (3-tier + parallel)**: `ADMIN > MANAGER > STAFF` for HQ + `TECHNICIAN` parallel (field, mobile-first). No department roles (no SALES, no ACCOUNTANT — sales/accounting menus visible to all HQ users; sensitive ops gated by rank). Customer role is NOT in `StaffRole` enum — customers log in via `CustomerContact` + `CustomerSession`. See `docs/SPEC.md` §2.1 for the canonical permission matrix.
 
@@ -146,11 +142,11 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
   - 모바일 "고객 전화" 기본 → primary OPS_CONTACT
   See `docs/SPEC.md` §3.3.1 and mockup screen 12 for the canonical UI.
 
-- **Customer portal (Phase 3.5+)**: mobile-first PWA at **`portal.seoulaqua.com.vn`** subdomain (A.10 confirmed). Each `CustomerContact` with `portalEnabled=true` is a portal account. Phone-based login (`phone1`). Sign-up auto-triggered by contract activation or sale finalization — system generates 10-char random password, bcrypt-hashes, and sends `SMS_PORTAL_WELCOME`. First login forces password change (`mustChangePassword=true`). MANAGER+ can reset password anytime (`SMS_PASSWORD_RESET` queued). Separate JWT (`aud='customer'`) and separate `CustomerSession` table from staff sessions. Customer can submit `ServiceRequest`s — free types auto-create Visit, paid types route to office STAFF+ review.
+- **Customer portal (Phase 3.5+)**: mobile-first PWA at **`portal.jakeshomeappliances.com.vn`** subdomain (A.10 confirmed). Each `CustomerContact` with `portalEnabled=true` is a portal account. Phone-based login (`phone1`). Sign-up auto-triggered by contract activation or sale finalization — system generates 10-char random password, bcrypt-hashes, and sends `SMS_PORTAL_WELCOME`. First login forces password change (`mustChangePassword=true`). MANAGER+ can reset password anytime (`SMS_PASSWORD_RESET` queued). Separate JWT (`aud='customer'`) and separate `CustomerSession` table from staff sessions. Customer can submit `ServiceRequest`s — free types auto-create Visit, paid types route to office STAFF+ review.
 
 - **Customer hierarchy — Customer > Site > Equipment (A.4 + A.8 confirmed 2026-05-26)**: B2C customers usually have no Sites (equipment + contacts attach directly to Customer). B2B customers usually have 1+ Sites for multi-building deployments. New Prisma `Site` model + `CustomerContact.scope` enum (`CUSTOMER` | `SITE`). CONTRACT_PARTY is always `scope=CUSTOMER`; OPS_CONTACT can be either. Visit reminders route to site-scoped Ops first, then customer-scoped Ops, then CONTRACT_PARTY. See `docs/SPEC.md` §3.2.1 + `docs/PROCESS_NOTES.md` §8.7.
 
-- **Contract code format (B.2 confirmed 2026-05-26)**: B2C `HD-YYYYmmDD/SA-KH####` (e.g. `HD-20260526/SA-KH0001`). B2B `HD-YYYYmmDD/SA-{shortcode}` (e.g. `HD-20260526/SA-SHV`). B2B can use **Appendix** (parentContractId + amendmentRevision) instead of issuing new contracts when adding equipment. B2C amendments update price in-place + AuditLog; B2B amendments increment revision counter.
+- **Contract code format (B.2 confirmed 2026-05-26)**: B2C `HD-YYYYmmDD/JH-KH####` (e.g. `HD-20260526/JH-KH0001`). B2B `HD-YYYYmmDD/JH-{shortcode}` (e.g. `HD-20260526/JH-SHV`). B2B can use **Appendix** (parentContractId + amendmentRevision) instead of issuing new contracts when adding equipment. B2C amendments update price in-place + AuditLog; B2B amendments increment revision counter.
 
 - **Multi-technician visits (K.3 confirmed 2026-05-26)**: each Visit has one required `leadTechnicianId` (primary owner — handles payment, signature, work-confirmation PDF signoff) and 0..N optional `collaboratorTechnicianIds[]` (helpers — see visit on mobile queue as "Shared with you", contribute notes/photos, but cannot mark complete or accept payment). The previous `VisitTechnician` join table is deprecated; migration folds first row → lead, rest → collaborators.
 
@@ -158,20 +154,14 @@ User Request → orchestrator → git-flow(START) → designer → tdd-guide(RED
 
 - **Notification providers (mock-first, Phase 3.5)**: Both SMS and Email use a factory + interface pattern with mock-first defaults. Env vars `SMS_PROVIDER` / `EMAIL_PROVIDER` choose between `mock` (default in dev/staging — `src/lib/sms/mock-client.ts` / `src/lib/email/mock-provider.ts`: console log + DB `*Log.status='MOCKED'`) and real adapters (`esms-client.ts`, `resend-client.ts` — populated when F.4 / F.7 / A.14 credentials arrive). Production flip is env-only — no code rewrite. **Phase 3.5 dev unblocked from eSMS Brandname 2-3 week approval lead-time.** SMS templates in `src/lib/sms/templates.ts` keyed by `SMS_PORTAL_WELCOME` / `SMS_PASSWORD_RESET` / `SMS_VISIT_REMINDER` / `SMS_SR_APPROVED` / `SMS_SR_REJECTED` / `SMS_PAYMENT_OVERDUE_FINAL` / `SMS_CONTRACT_RENEWAL_FINAL` (7 codes); email templates in `src/lib/email/templates.ts` (9 codes incl. multi-stage variants). Each has KO + VI + EN variants; recipient's `CustomerContact.language` selects. Verified eSMS rate: 830 VND/seg + 50K/mo per network maintenance (4 networks). Canonical bodies + char counts in `docs/DOCUMENT_TEMPLATES.md` §A (SMS) + §B (Email).
 
-- **Notification channel rule (SMS vs Email — Phase 3.5)**: Two-channel system. **SMS-only** for: security/credentials (password reset, portal welcome), ≤24h-window events (visit reminder D-1), service-request final decisions (approved-paid, rejected), and final-stage escalation (payment D+30, rental D-7). **Email-only** for: receipts, acknowledgments (SR received), early-stage reminders (filter due D-14, payment D+7/D+14, rental D-60/D-30), and detailed summaries with attachments (visit completed with signed PDF). **Hybrid (SMS+Email)** for: portal welcome (SMS short + email long-form), SR approved paid (SMS price+date + email itemized breakdown). Implemented in `src/lib/notifications/router.ts` selecting channel per template based on contact's `phone1`/`email` availability. Fallback rule: when chosen channel unavailable, fall back to the other; when both unavailable, log admin error. **Per-channel opt-out** via `CustomerContact.smsOptOut` + `emailOptOut` flags (F.3 confirmed); system messages (password reset, payment receipt) **ignore opt-out** — always delivered. Email provider = **Resend** (transactional, F.7 confirmed); <!-- portfolio:drop-start -->**vhost.vn Email Relay** (operational/tax-invoice/marketing, F.2 confirmed) — two separate rails.<!-- portfolio:drop-end --> <!-- portfolio:add-start **Resend** also covers operational/tax-invoice/marketing (single ESP). portfolio:add-end --> Email sender domain = `noreply@seoulaqua.com.vn` + Reply-To `cs@seoulaqua.com.vn` (A.14 confirmed) — requires DKIM/SPF/DMARC setup (1-day infra task before production launch). **Password reset is intentionally SMS-only** even when email present (an attacker with email-only access shouldn't receive the new password). Full matrix in `docs/DOCUMENT_TEMPLATES.md` §C; per-template bodies in §A (SMS) + §B (Email).
+- **Notification channel rule (SMS vs Email — Phase 3.5)**: Two-channel system. **SMS-only** for: security/credentials (password reset, portal welcome), ≤24h-window events (visit reminder D-1), service-request final decisions (approved-paid, rejected), and final-stage escalation (payment D+30, rental D-7). **Email-only** for: receipts, acknowledgments (SR received), early-stage reminders (filter due D-14, payment D+7/D+14, rental D-60/D-30), and detailed summaries with attachments (visit completed with signed PDF). **Hybrid (SMS+Email)** for: portal welcome (SMS short + email long-form), SR approved paid (SMS price+date + email itemized breakdown). Implemented in `src/lib/notifications/router.ts` selecting channel per template based on contact's `phone1`/`email` availability. Fallback rule: when chosen channel unavailable, fall back to the other; when both unavailable, log admin error. **Per-channel opt-out** via `CustomerContact.smsOptOut` + `emailOptOut` flags (F.3 confirmed); system messages (password reset, payment receipt) **ignore opt-out** — always delivered. Email provider = **Resend** (transactional, F.7 confirmed);  **Resend** also covers operational/tax-invoice/marketing (single ESP). Email sender domain = `noreply@jakeshomeappliances.com.vn` + Reply-To `cs@jakeshomeappliances.com.vn` (A.14 confirmed) — requires DKIM/SPF/DMARC setup (1-day infra task before production launch). **Password reset is intentionally SMS-only** even when email present (an attacker with email-only access shouldn't receive the new password). Full matrix in `docs/DOCUMENT_TEMPLATES.md` §C; per-template bodies in §A (SMS) + §B (Email).
 
 - **Future Vietnamese channels (Phase 8+ TODO, F.1 client request 2026-05-26)**: **Zalo OA** (Zalo Official Account messaging — alternative to SMS, cheaper and richer in VN) + **Zalo Mini App** (alternative customer portal UI hosted inside Zalo, very popular in Vietnam). Both deferred; placeholder in `docs/PROJECT_PLAN.md` Phase 8.
 
-<!-- portfolio:add-start
 - **Portfolio safety (mock-only)**: this is a portfolio mirror, NOT the production system. **No real SMS or email is ever sent.** `SMS_PROVIDER=mock` and `EMAIL_PROVIDER=mock` are the only supported values; the real eSMS/Resend adapters are intentionally not wired in this mirror. Mock providers log payloads to `console` + DB `*Log.status='MOCKED'`. Any production credentials would be ignored — see `src/lib/sms/mock-client.ts` / `src/lib/email/mock-provider.ts`.
-portfolio:add-end -->
 
-<!-- portfolio:drop-start -->
-- **Hosting (H.1 confirmed 2026-05-26)**: v0 ships on Vercel + Supabase for fast iteration; **vhost.vn migration before production launch** (data residency requirement). Audit log retention 24 months (H.2); daily backup at VST 03:00 (H.3).
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 - **Hosting**: Production on Vercel + Supabase. Audit log retention 24 months (H.2); Supabase-managed daily backups.
-portfolio:add-end -->
 
 ## Key Documents
 
@@ -181,7 +171,7 @@ portfolio:add-end -->
 - `docs/DATA_MODEL_NOTES.md` — Schema derived from client CSVs
 - `docs/DOCUMENT_TEMPLATES.md` — Paper-form to digital-flow mapping
 - `docs/QUESTIONS.docx` — Open questions awaiting client answers
-- `.claude/skills/DESIGN.md` — Design system (Intercom-frame + Seoul Aqua blue)
+- `.claude/skills/DESIGN.md` — Design system (Intercom-frame + Jake's Home Appliances blue)
 - `reference/` — Original client materials (PDFs + CSVs + logo) — READ-ONLY
 
 @AGENTS.md

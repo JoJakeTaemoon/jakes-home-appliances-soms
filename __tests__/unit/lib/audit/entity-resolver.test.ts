@@ -48,7 +48,7 @@ describe("resolveEntityDisplays", () => {
       { id: "c2", name: "박영희" },
     ]);
     (prisma.contract.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
-      { id: "k1", contractNumber: "HD-20260526/SA-KH0001" },
+      { id: "k1", contractNumber: "HD-20260526/JH-KH0001" },
     ]);
 
     const out = await resolveEntityDisplays([
@@ -59,7 +59,7 @@ describe("resolveEntityDisplays", () => {
 
     expect(out.get("Customer:c1")).toBe("김철수");
     expect(out.get("Customer:c2")).toBe("박영희");
-    expect(out.get("Contract:k1")).toBe("HD-20260526/SA-KH0001");
+    expect(out.get("Contract:k1")).toBe("HD-20260526/JH-KH0001");
     expect(prisma.customer.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.contract.findMany).toHaveBeenCalledTimes(1);
   });

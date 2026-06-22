@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
-# Seoul Aqua SOMS — host-side deploy entrypoint.
+# Jake's Home Appliances SOMS — host-side deploy entrypoint.
 #
-# Lives at /opt/seoul-aqua-soms/scripts/deploy-staging.sh on the server.
+# Lives at /opt/jakes-home-appliances-soms/scripts/deploy-staging.sh on the server.
 # Invoked by .github/workflows/deploy-staging.yml over SSH:
 #
-#   APP_IMAGE=ghcr.io/jojaketaemoon/seoulaqua-soms:main-<sha> \
-#     bash /opt/seoul-aqua-soms/scripts/deploy-staging.sh
+#   APP_IMAGE=ghcr.io/jojaketaemoon/jakeshomeapp-soms:main-<sha> \
+#     bash /opt/jakes-home-appliances-soms/scripts/deploy-staging.sh
 #
 # Idempotent: re-running just re-pulls and re-applies. Migrations are
 # `prisma migrate deploy` which is itself idempotent.
 
 set -euo pipefail
 
-cd /opt/seoul-aqua-soms
+cd /opt/jakes-home-appliances-soms
 
 APP_IMAGE="${APP_IMAGE:-}"
 if [[ -z "${APP_IMAGE}" ]]; then
-  echo "[deploy] ERROR: APP_IMAGE must be set (e.g. ghcr.io/.../seoulaqua-soms:main-<sha>)" >&2
+  echo "[deploy] ERROR: APP_IMAGE must be set (e.g. ghcr.io/.../jakeshomeapp-soms:main-<sha>)" >&2
   exit 1
 fi
 
 echo "[deploy] Pinning compose to ${APP_IMAGE}"
-# Replace the APP_IMAGE line inside /opt/seoul-aqua-soms/.env so docker
+# Replace the APP_IMAGE line inside /opt/jakes-home-appliances-soms/.env so docker
 # compose picks the new tag on `up`. Use a temp file to keep the mode bits.
 if grep -q '^APP_IMAGE=' .env; then
   sed -i.bak "s|^APP_IMAGE=.*|APP_IMAGE=${APP_IMAGE}|" .env

@@ -607,7 +607,7 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
       {showForm && (
         <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField label={t("colName")}>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Seoul Aqua" />
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jake's Home Appliances" />
           </FormField>
           <div className="flex items-end gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>

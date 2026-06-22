@@ -1,4 +1,4 @@
-# PROJECT PLAN — Seoul Aqua SOMS
+# PROJECT PLAN — Jake's Home Appliances SOMS
 
 **Version:** v0.1 (Bootstrap, 2026-05-25)
 
@@ -22,12 +22,12 @@
 
 **Deliverables (already done by the bootstrap pass):**
 
-- `/Users/jake/Works/SeoulAqua/seoul-aqua-soms/` directory tree
+- `/Users/jake/Works/JakeApp/jakes-home-appliances-soms/` directory tree
 - 9 reference files in `reference/process/` + `reference/forms/` + `reference/data/` + `reference/brand/`
 - Framework files copied from MegaDnC PMIS (Sections §A + §B of plan)
 - `.claude/CLAUDE.md`, `AGENTS.md`, `README.md`, `package.json`, `settings.json` — Seoul-Aqua-rebranded
 - `src/messages/{ko,en,vi}.json` — domain keys dropped, framework keys retained
-- `.claude/skills/DESIGN.md` — Intercom-frame + Seoul Aqua blue `#0071BD`
+- `.claude/skills/DESIGN.md` — Intercom-frame + Jake's Home Appliances blue `#0071BD`
 - `docs/SPEC.md` — this project's specification
 - `docs/PROJECT_PLAN.md` — this file
 - `docs/PROCESS_NOTES.md` — distilled from client process PDFs
@@ -50,20 +50,16 @@
 **Exit criteria for Phase 0:** ✅ **ALL MET (2026-05-26)**
 
 - ✅ Client has read SPEC.md and answered all 50 questions in `docs/QUESTIONS.md` (`reference/answers.txt` 2026-05-26)
-- ✅ Logo blue (`#0071BD`) confirmed (I.2); high-res PNG + AI files received (I.1: `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C-01.png` + `.ai`)
-<!-- portfolio:drop-start -->
-- ✅ Hosting target confirmed: **v0 Vercel + Supabase** for fast iteration → **vhost.vn migration before production launch** (H.1)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+- ✅ Logo blue (`#0071BD`) confirmed (I.2); high-res PNG + AI files received (I.1: `reference/brand/JakeApp_Logo_0071BD_Pantone 285C-01.png` + `.ai`)
+
 - ✅ Hosting target confirmed: **Vercel + Supabase** for production
-portfolio:add-end -->
 - ⏳ A.5 filter-equipment compatibility data delivery pending 2026-05-29 evening — non-blocking for Phase 1, needed before Phase 5
 
 ---
 
 ## Phase 1 — Foundation (estimated 1 week)
 
-**Goal:** an empty-but-runnable, branded, multi-language Next.js app deployed to Vercel staging. No domain features yet. Auth works. Sidebar shows Seoul Aqua logo.
+**Goal:** an empty-but-runnable, branded, multi-language Next.js app deployed to Vercel staging. No domain features yet. Auth works. Sidebar shows Jake's Home Appliances logo.
 
 **Scope:**
 
@@ -72,7 +68,7 @@ portfolio:add-end -->
 3. Supabase project created (dev + staging)
 4. Auth shell — login, logout, refresh-token rotation (port from PMIS verbatim)
 5. RBAC — 4 roles (`ADMIN > MANAGER > STAFF` + `TECHNICIAN` parallel) wired into `roles.ts` with rank-based hierarchy helpers (per SPEC §2.1). NOTE: previous PMIS enum (`SYSTEM_ADMIN/DIRECTOR/MANAGER/STAFF`) gets replaced wholesale — no migration needed (no data yet).
-6. Layout — sidebar with Seoul Aqua logo (brand blue backdrop), topbar, locale switcher, user menu
+6. Layout — sidebar with Jake's Home Appliances logo (brand blue backdrop), topbar, locale switcher, user menu
 7. Empty pages: `/dashboard` (welcome card), `/admin/users` (basic user CRUD)
 8. i18n — Korean / Vietnamese / English with the framework strings (translated for SOMS context)
 9. `LangSyncer` carry-over so `<html lang>` follows active locale
@@ -84,7 +80,7 @@ portfolio:add-end -->
 
 - A user can log in at `https://soms-staging.vercel.app`, see their name in the sidebar, switch language, log out.
 - All 11 agents in `.claude/agents/` have been used at least once during this phase (proving the TDD pipeline works on the new repo).
-- The Seoul Aqua blue and Intercom-frame design system shows up consistently — sidebar, primary buttons, focus rings.
+- The Jake's Home Appliances blue and Intercom-frame design system shows up consistently — sidebar, primary buttons, focus rings.
 
 **Rollback:** delete Supabase project; remove Vercel app. Zero customer impact (none yet).
 
@@ -112,7 +108,7 @@ portfolio:add-end -->
 9. Part catalog admin (CRUD, with replacement-cycle days)
 10. **CSV import script** — read all 7 client CSVs (CP949 → UTF-8), upsert into the new tables, **derive `KH#####` from legacy management number per A.2 (`8918` → `KH08918`)**, link equipment via legacy customer-id, populate filter master from `필터관리`, **generate `CustomerContact` rows: CONTRACT_PARTY from `고객명`+`휴대폰#1`; if `고객정보` carries a distinct secondary name like "MR.K" → auto-create OPS_CONTACT with phone blank (A.9 client answer)**. **Full migration (~9000 customers, J.1 confirmed) + auto-dedup (J.2: match by name+phone) + human review queue.** Idempotent (safe to re-run).
 11. **Outbound language router** — utility module (`src/lib/notifications/router.ts`) that, given `(customerId, channel, event)`, returns the correct `CustomerContact` (site-scoped → customer-scoped → CONTRACT_PARTY fallback per A.7 + A.8) and its language. Used by every SMS/email send + every server-rendered PDF. Lays the foundation for Phase 4 SMS and Phase 6 invoice flows.
-12. Migration validation: row counts match source CSVs, every customer has a `KH#####`, every equipment has a `customerId` link, **every customer has exactly one CONTRACT_PARTY + 0..N OPS_CONTACT rows**. **J.3 validation lead: Seoul Aqua office manager + dev team**.
+12. Migration validation: row counts match source CSVs, every customer has a `KH#####`, every equipment has a `customerId` link, **every customer has exactly one CONTRACT_PARTY + 0..N OPS_CONTACT rows**. **J.3 validation lead: Jake's Home Appliances office manager + dev team**.
 
 **Success criteria:**
 
@@ -136,7 +132,7 @@ portfolio:add-end -->
 
 ## Phase 3 — Contracts + Documents (estimated 2 weeks)
 
-**Goal:** every paper contract Seoul Aqua signs starts in the system. The 10 form templates render server-side as PDFs with customer data pre-filled.
+**Goal:** every paper contract Jake's Home Appliances signs starts in the system. The 10 form templates render server-side as PDFs with customer data pre-filled.
 
 **Scope:**
 
@@ -147,7 +143,7 @@ portfolio:add-end -->
    - For rental: 36-month default, mandatory 24-month
    - Add equipment line items (model + quantity + monthly fee or sale price)
    - Calculate totals
-   - **Contract code generated**: B2C `HD-YYYYmmDD/SA-KH####` (e.g. `HD-20260526/SA-KH0001`); B2B `HD-YYYYmmDD/SA-{shortcode}` (e.g. `HD-20260526/SA-SHV`). Shortcode prompted at customer-create if missing (B.2 client answer 2026-05-26)
+   - **Contract code generated**: B2C `HD-YYYYmmDD/JH-KH####` (e.g. `HD-20260526/JH-KH0001`); B2B `HD-YYYYmmDD/JH-{shortcode}` (e.g. `HD-20260526/JH-SHV`). Shortcode prompted at customer-create if missing (B.2 client answer 2026-05-26)
    - **B2B Appendix workflow**: alternative to new-contract — add equipment to an existing contract via `parentContractId` link + increment `amendmentRevision`
    - Save as DRAFT or activate immediately
    - **B.3 transition**: when 36-month rental Contract.status → COMPLETED, system auto-flips Equipment.ownership from COMPANY → CUSTOMER (no separate ownership-transfer PDF needed)
@@ -229,17 +225,17 @@ portfolio:add-end -->
 
    **Environment variables:**
    - Dev / staging: `SMS_PROVIDER=mock`, `EMAIL_PROVIDER=mock` (default)
-   - Production (post-launch): `SMS_PROVIDER=esms` + `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=SeoulAqua`; `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` / `EMAIL_FROM=noreply@seoulaqua.com.vn` / `EMAIL_REPLY_TO=cs@seoulaqua.com.vn`
+   - Production (post-launch): `SMS_PROVIDER=esms` + `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=JakeApp`; `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` / `EMAIL_FROM=noreply@jakeshomeappliances.com.vn` / `EMAIL_REPLY_TO=cs@jakeshomeappliances.com.vn`
 
    **Mock provider behavior:**
    - Same body / template rendering pipeline as production (variables interpolated, language selected per `CustomerContact.language`)
    - Writes `SmsLog` / `EmailLog` row with all production fields populated + `provider='mock'`, `providerMessageId='mock-{nanoid}'`, `status='MOCKED'`
-   - Prints to stdout: `[SMS MOCK] 2026-05-26T15:42:00Z → +84901234567 (VI) | SMS_VISIT_REMINDER | 1 seg, 70 chars\n  [SeoulAqua] 15/06/2026 14:00, ...`
+   - Prints to stdout: `[SMS MOCK] 2026-05-26T15:42:00Z → +84901234567 (VI) | SMS_VISIT_REMINDER | 1 seg, 70 chars\n  [JakeApp] 15/06/2026 14:00, ...`
    - Admin "Notifications sent" dashboard shows mocked sends with a `MOCKED` badge — enables full pipeline testing pre-launch
 
    **Canonical source** for template bodies, subjects, variables, channel rules is `docs/DOCUMENT_TEMPLATES.md` — implementation mirrors it exactly regardless of provider. Variable interpolation uses `next-intl` `formatDateTime()` / `formatNumber()`.
 
-   **Production launch coordination (separate from Phase 3.5 dev):** `docs/SMS_BRANDNAME_APPLICATION.md` submitted to eSMS at the team's convenience (still 2-3 week lead-time — submit before production go-live date). For email, `seoulaqua.com.vn` DKIM/SPF/DMARC setup (Q A.14) is a 1-day infra task. Production flip is env-only.
+   **Production launch coordination (separate from Phase 3.5 dev):** `docs/SMS_BRANDNAME_APPLICATION.md` submitted to eSMS at the team's convenience (still 2-3 week lead-time — submit before production go-live date). For email, `jakeshomeappliances.com.vn` DKIM/SPF/DMARC setup (Q A.14) is a 1-day infra task. Production flip is env-only.
 5. **Sign-up worker** — drains the pending queue from Phase 3 (any contracts that activated before SMS was wired). Generates 10-char password (excludes ambiguous chars: 0/O, 1/l/I), bcrypt-hashes, sets `mustChangePassword=true`, fires `SMS_PORTAL_WELCOME` in the contact's language. Idempotent (skips contacts where `portalEnabled=true`).
 6. **Portal pages (mobile-first)** — see SPEC §11.2 and mockup screens 47–58:
    - `/portal/login`, `/portal/change-password`, `/portal` (home), `/portal/equipment`, `/portal/visits`, `/portal/requests/new`, `/portal/requests`, `/portal/contacts` (CONTRACT_PARTY only), `/portal/payments`, `/portal/profile`
@@ -272,7 +268,7 @@ portfolio:add-end -->
 **Production-launch blockers** (Phase 3.5 dev proceeds against mock provider; these only gate the env flip from mock → real):
 - F.4 (SMS sender ID — Brand name registration ~2-3 weeks at eSMS.vn; needed for SMS_PROVIDER=esms env flip)
 - F.7 (Email provider choice — Resend recommended; needed for EMAIL_PROVIDER=resend env flip)
-- A.14 (Email sender domain + DKIM/SPF/DMARC for `seoulaqua.com.vn`; 1-day infra task before production email send)
+- A.14 (Email sender domain + DKIM/SPF/DMARC for `jakeshomeappliances.com.vn`; 1-day infra task before production email send)
 - Q17 (SMS provider — **pulled forward from Phase 7**; needed for env flip)
 
 > **Mock-first development** unblocks Phase 3.5 from external-vendor lead times. End-to-end portal + service-request + notification flows are fully testable against the mock providers — DB `SmsLog`/`EmailLog` records show `status='MOCKED'` instead of `SENT`, and an admin dashboard badge surfaces this distinction. Production go-live is a separate, lighter-weight gate.
@@ -358,12 +354,8 @@ portfolio:add-end -->
 5. Receivable aging report (overdue by 0-30 / 30-60 / 60-90 / 90+ days)
 6. **Cash-handover audit (D.2 client answer)**: 3-step trail `collectedByUserId` (technician) → `officeReceivedByUserId` (office) → `reconciledByUserId` (accountant); each step timestamped. **48-hour SLA alert**: if cash is not marked `officeReceivedAt` within 48h of `collectedAt`, admin dashboard surfaces the row.
 7. **Partial payment support (D.3)**: a customer may pay less than the full installment; system records the partial amount, computes outstanding balance, and rolls remainder into next cycle.
-<!-- portfolio:drop-start -->
-8. **Operational email (F.2)**: invoice PDFs auto-emailed via vhost.vn Email Relay to `Customer.billingEmail`. Separate from transactional Resend channel.
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 8. **Operational email**: invoice PDFs auto-emailed via Resend to `Customer.billingEmail` (single ESP).
-portfolio:add-end -->
 9. Contract end-date recompute on each installment received (per SPEC §7.3)
 10. **VND-only display (D.4 confirmed)**: all currency UI in VND; exports may include conversion column.
 11. Export to accounting CSV (monthly close)
@@ -383,12 +375,8 @@ portfolio:add-end -->
 - D.3 (partial payment) — ✅ RESOLVED (allow + carryover)
 - D.4 (currency) — ✅ RESOLVED (VND only)
 - D.5 (no-invoice B2B) — ✅ RESOLVED (**all B2B require invoice**; PDF upload optional warning)
-<!-- portfolio:drop-start -->
-- F.2 (email provider for invoice) — ✅ RESOLVED (vhost.vn Email Relay)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 - F.2 (email provider for invoice) — ✅ RESOLVED (Resend, single ESP)
-portfolio:add-end -->
 
 ---
 
@@ -433,7 +421,7 @@ Phase 7 delivered the local-first remainder of the v1 scope: technician offline 
 3. In-app notification deepening — real-time via Supabase Realtime (staff bell + customer portal toasts)
 4. Tablet e-signature upgrade (replace photo-of-paper if confirmed in Q14)
 5. Offline-tolerant data entry (per Q12) — localStorage queue + sync indicator (for both technician app AND customer portal)
-6. Mobile-app polish — install prompt (PWA), home-screen icon, splash screen with Seoul Aqua logo. Applies to BOTH the technician mobile UI and the customer portal.
+6. Mobile-app polish — install prompt (PWA), home-screen icon, splash screen with Jake's Home Appliances logo. Applies to BOTH the technician mobile UI and the customer portal.
 
 **Success criteria:**
 
@@ -497,7 +485,7 @@ These must be answered before Phase 1 starts:
 
 Additional blockers for **Phase 3.5** (because SMS provider has ~3-week lead time, decisions need to land before Phase 2 ends):
 
-6. **A.10** — Portal URL/domain (production domain is `seoulaqua.com.vn`; pending decision: subdomain `portal.seoulaqua.com.vn` vs path `seoulaqua.com.vn/portal` vs root-redirect — SMS templates currently assume root redirect for shortest char budget; see `docs/DOCUMENT_TEMPLATES.md` § SMS catalog)
+6. **A.10** — Portal URL/domain (production domain is `jakeshomeappliances.com.vn`; pending decision: subdomain `portal.jakeshomeappliances.com.vn` vs path `jakeshomeappliances.com.vn/portal` vs root-redirect — SMS templates currently assume root redirect for shortest char budget; see `docs/DOCUMENT_TEMPLATES.md` § SMS catalog)
 7. **A.11** — Password policy (length + character classes)
 8. **C.6** — Service request type list (confirm/extend the 7 types in SPEC §6.5)
 9. **F.4** — SMS sender ID / Brand name (eSMS.vn registration lead-time critical)
@@ -511,25 +499,17 @@ Everything else can be deferred to the relevant later phase's pre-start gate.
 
 - **2026-05-27 (v0.7 latest)** — **Client answers received** via `reference/answers.txt`. All 50 questions answered. Major Phase impact:
   - **Phase 2**: Site model added (Customer > Site > Equipment, A.4 + A.8); `KH0`-prefix migration (A.2); shortcode field (B.2); preferred-tech fields (C.2); auto-Ops contact for legacy secondary names (A.9); full migration (J.1).
-  - **Phase 3**: contract code format `HD-YYYYmmDD/SA-...` with B2B Appendix support (B.2 + B.5); Equipment.ownership auto-flip (B.3); 1-click renewal (B.4); filter policy JSON (E.2); document retention (E.4: 10y/5y); paper destruction policy (E.5).
-  - **Phase 3.5**: portal URL = **`portal.seoulaqua.com.vn`** subdomain (A.10) — adds +712K VND/mo SMS cost as A.3 VI bumps to 2-seg.
+  - **Phase 3**: contract code format `HD-YYYYmmDD/JH-...` with B2B Appendix support (B.2 + B.5); Equipment.ownership auto-flip (B.3); 1-click renewal (B.4); filter policy JSON (E.2); document retention (E.4: 10y/5y); paper destruction policy (E.5).
+  - **Phase 3.5**: portal URL = **`portal.jakeshomeappliances.com.vn`** subdomain (A.10) — adds +712K VND/mo SMS cost as A.3 VI bumps to 2-seg.
   - **Phase 4**: multi-tech `leadTechnicianId` + `collaboratorTechnicianIds[]` (K.3); auto-scheduler with preferred tech (C.1, C.2); region sort only (C.5); device targets (K.1: Android 8+ / iOS 14+ / 5-6" / 8MP+); phone+password auth (K.2); online-first PWA (C.3 + C.4).
-<!-- portfolio:drop-start -->
-  - **Phase 6**: 48h cash audit SLA (D.2); partial payment + carryover (D.3); VND only (D.4); **all B2B require tax invoice** (D.5) with PDF upload warning-only; vhost.vn Email Relay for invoice delivery (F.2).
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - **Phase 6**: 48h cash audit SLA (D.2); partial payment + carryover (D.3); VND only (D.4); **all B2B require tax invoice** (D.5) with PDF upload warning-only; Resend for invoice delivery.
-portfolio:add-end -->
+
+- **Phase 6**: 48h cash audit SLA (D.2); partial payment + carryover (D.3); VND only (D.4); **all B2B require tax invoice** (D.5) with PDF upload warning-only; Resend for invoice delivery.
   - **Phase 8+**: **Zalo OA + Mini App TODO** (F.1); Viettel SInvoice direct integration TODO (D.1); tablet e-sig TODO (E.1); map view TODO (C.5); offline queue TODO (C.4); G.1/G.2/G.3 portal v2 expansions.
-<!-- portfolio:drop-start -->
-  - **Infra**: vhost.vn hosting confirmed (H.1); 24-month audit retention (H.2); 03:00 VST backup (H.3).
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - **Infra**: Vercel + Supabase production; 24-month audit retention (H.2); Supabase managed backups.
-portfolio:add-end -->
+
+- **Infra**: Vercel + Supabase production; 24-month audit retention (H.2); Supabase managed backups.
   - Phase 0 exit criteria **all met** — ready to start Phase 1.
 - **2026-05-26 (v0.6)** — **Mock-first notification provider** introduced to Phase 3.5. SMS + Email both ship against a mock provider that logs to console + writes `SmsLog`/`EmailLog` rows with `provider='mock'`, `status='MOCKED'`. Real providers (eSMS, Resend) become stubs swapped via env (`SMS_PROVIDER`, `EMAIL_PROVIDER`) when credentials arrive. F.4 / F.7 / A.14 / Q17 reclassified from Phase 3.5 blockers → production-launch blockers — Phase 3.5 dev no longer waits on the 2-3 week eSMS Brandname approval. Same template content, same DB schema, same UI throughout.
 - **2026-05-26 (v0.5)** — Phase 3.5 expanded to **two-channel notification system**: SMS for urgent (security/credentials/dunning-final/D-1) + Email for non-urgent (receipts/acknowledgments/early reminders/summaries with PDF). 10 logical events → 7 SMS templates + 9 email templates (incl. multi-stage variants). Added `src/lib/email/provider.ts` + `src/lib/email/templates.ts` + `EmailLog` model + `src/lib/notifications/router.ts` to Phase 3.5 scope. Verified eSMS pricing applied (830 VND/seg + 50K/mo per network). Monthly cost projection revised: ~1.51M VND/mo (down from ~3.98M, -62%). New blockers F.7 (email provider) + A.14 (email domain DKIM/SPF).
-- **2026-05-26 (later)** — v0.4. Phase 3.5 SMS scope tightened: canonical template bodies live in `docs/DOCUMENT_TEMPLATES.md` § SMS catalog (10 templates × KO/VI/EN with verified char counts per Option C hybrid: 4 × 1-segment + 6 × 2-segment). Client-deliverable Brandname application form generated at `docs/SMS_BRANDNAME_APPLICATION.md` — to be submitted to eSMS account manager in parallel with Phase 1–3 work (2–3 week telecom approval lead-time). Production domain confirmed `seoulaqua.com.vn`.
+- **2026-05-26 (later)** — v0.4. Phase 3.5 SMS scope tightened: canonical template bodies live in `docs/DOCUMENT_TEMPLATES.md` § SMS catalog (10 templates × KO/VI/EN with verified char counts per Option C hybrid: 4 × 1-segment + 6 × 2-segment). Client-deliverable Brandname application form generated at `docs/SMS_BRANDNAME_APPLICATION.md` — to be submitted to eSMS account manager in parallel with Phase 1–3 work (2–3 week telecom approval lead-time). Production domain confirmed `jakeshomeappliances.com.vn`.
 - **2026-05-26** — v0.3. **Phase 3.5 (Customer Portal + SMS) inserted** between Phase 3 and Phase 4 (~2 weeks). SMS provider work pulled forward from Phase 7 → Phase 3.5. Phase 1 RBAC seed simplified to 4 roles (ADMIN/MANAGER/STAFF/TECHNICIAN — Q11 resolved). Phase 8+ refocused on portal payments + CRM extensions (the portal itself ships in 3.5). Phase 0 exit gate Q11 closed; A.10/A.11/C.6/F.4/Q17 added as Phase 3.5 blockers.
 - **2026-05-25** — v0.1 initial roadmap. Phase 0 deliverables aligned with bootstrap session. Phase 1–7 sketched; Phase 8+ strategic placeholder.

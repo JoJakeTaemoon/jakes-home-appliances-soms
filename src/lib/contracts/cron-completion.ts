@@ -244,7 +244,7 @@ export async function runRentalCompletionCheck(
               contract_no: c.contractNumber,
               completed_at: now.toISOString().slice(0, 10),
               equipment_count: String(flippedThisContract),
-              url: "https://portal.seoulaqua.com.vn",
+              url: "https://portal.jakeshomeappliances.com.vn",
               hq_phone: "028-1234-5678",
             },
             actorType: "SYSTEM",

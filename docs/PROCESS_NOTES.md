@@ -1,4 +1,4 @@
-# PROCESS NOTES — Seoul Aqua Operations
+# PROCESS NOTES — Jake's Home Appliances Operations
 
 > Distilled from `reference/process/회사 운영 프로세스 종합 정리.pdf` (canonical business narrative) and `reference/process/프로세스 질의와 응답.pdf` (round-1 Q&A with the client). This document is the single place an engineer or agent should read before designing a feature — so the source PDFs don't need re-reading every time.
 
@@ -6,7 +6,7 @@
 
 ## 1. Company at a glance
 
-**Seoul Aqua (CÔNG TY TNHH MTV TM&DV ĐẠI Á)** sells and services household water-treatment + air-quality products in Vietnam. Three sales modes × multiple product families.
+**Jake's Home Appliances (CÔNG TY TNHH MTV TM&DV JAKE'S HA)** sells and services household water-treatment + air-quality products in Vietnam. Three sales modes × multiple product families.
 
 ### Product families
 
@@ -116,7 +116,7 @@ Three entry paths:
 
 1. Post-rental contract conversion (most common)
 2. Sale customer requests it
-3. Third-party device (not bought from Seoul Aqua) — service-only contract
+3. Third-party device (not bought from Jake's Home Appliances) — service-only contract
 
 ---
 
@@ -511,7 +511,7 @@ These are direct answers from the client; they collapse what would otherwise be 
 |---|---|
 | **Initial rental contract** | `임대 계약서` — same as B2C but different form (`임대 계약서.pdf`) |
 | **Initial install** | `출고서` issued + signed by recipient |
-| **Payments** | Seoul Aqua issues invoice; customer pays by bank transfer; cash sometimes too |
+| **Payments** | Jake's Home Appliances issues invoice; customer pays by bank transfer; cash sometimes too |
 | **Periodic visit (rental B2B)** | `정기 점검 확인서 (고객사용)` issued — work content + parts changed, **no prices**. Customer-staff signs. |
 | **Ad-hoc service (B2B)** | `작업확인서` |
 
@@ -643,7 +643,7 @@ Trigger: customer calls office "I lost my password" OR office detects suspicious
 
 구현: `src/lib/notifications/router.ts` — 각 템플릿이 `smsAllowed`/`emailAllowed` 플래그 선언, 라우터가 컨택트의 가용 채널과 매칭. 자세한 매트릭스 + 본문은 `docs/DOCUMENT_TEMPLATES.md` §A/§B/§C 참조.
 
-**포털 URL (A.10 client answer 2026-05-26)**: 포털은 서브도메인 **`portal.seoulaqua.com.vn`** 에서 운영. 회사 메인 도메인 `seoulaqua.com.vn`은 마케팅 사이트 + 사무실 앱 + 이메일 발신자용으로 유지. 이 결정으로 SMS URL이 16자 → 23자로 증가하여 `SMS_VISIT_REMINDER` VI가 1-seg에서 2-seg로 늘어남 (+712K VND/월 비용 증가).
+**포털 URL (A.10 client answer 2026-05-26)**: 포털은 서브도메인 **`portal.jakeshomeappliances.com.vn`** 에서 운영. 회사 메인 도메인 `jakeshomeappliances.com.vn`은 마케팅 사이트 + 사무실 앱 + 이메일 발신자용으로 유지. 이 결정으로 SMS URL이 16자 → 23자로 증가하여 `SMS_VISIT_REMINDER` VI가 1-seg에서 2-seg로 늘어남 (+712K VND/월 비용 증가).
 
 **Mock-first 개발 환경 (2026-05-26 결정)**: Dev/staging에서는 SMS/Email 모두 **mock provider**가 기본값. `SMS_PROVIDER=mock` + `EMAIL_PROVIDER=mock` 환경에서는:
 - 실제 외부 발송 없음 — 콘솔에 로그 + `SmsLog`/`EmailLog` 테이블에 `status='MOCKED'`로 기록
@@ -652,8 +652,8 @@ Trigger: customer calls office "I lost my password" OR office detects suspicious
 - 전체 알림 flow를 외부 서비스 의존 없이 end-to-end 테스트 가능
 
 **Production 전환**: eSMS Brandname 승인 (F.4) + Resend 가입 (F.7) + DKIM/SPF (A.14)가 모두 준비되면 production 환경에서만 env 변경:
-- `SMS_PROVIDER=esms` + `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=SeoulAqua`
-- `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` / `EMAIL_FROM=noreply@seoulaqua.com.vn`
+- `SMS_PROVIDER=esms` + `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=JakeApp`
+- `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` / `EMAIL_FROM=noreply@jakeshomeappliances.com.vn`
 
 코드 재배포만 하면 자동으로 실제 발송 모드로 전환 — 코드 수정 불필요.
 

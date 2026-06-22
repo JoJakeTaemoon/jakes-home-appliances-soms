@@ -1,4 +1,4 @@
-# DATA MODEL NOTES — Seoul Aqua SOMS
+# DATA MODEL NOTES — Jake's Home Appliances SOMS
 
 > Each provided client CSV mapped to a candidate Prisma model. Use this to scaffold `prisma/schema.prisma` in Phase 1/2.
 
@@ -454,7 +454,7 @@ model Customer {
   type          CustomerType
   name          String   // organization name (B2B) or household label (B2C)
   displayName   String?
-  shortcode     String?  // B2B 2-5 letter abbreviation used in contract code HD-YYYYmmDD/SA-{shortcode} (B.2)
+  shortcode     String?  // B2B 2-5 letter abbreviation used in contract code HD-YYYYmmDD/JH-{shortcode} (B.2)
   taxCode       String?  // B2B only — all B2B require tax invoice (D.5 confirmed)
   nationality   String?  // KHAC / VN / HQ / etc.
   billingEmail  String?  // tax invoice / billing recipient (org-level)
@@ -795,14 +795,14 @@ enum ContractStatus { DRAFT ACTIVE OVERDUE COMPLETED TERMINATED_EARLY }
 enum InspectionFrequency { MONTHLY BIMONTHLY }
 
 /// Contract code format (B.2 client answer 2026-05-26):
-///   - B2C: HD-YYYYmmDD/SA-KH####           e.g. HD-20260526/SA-KH0001
-///   - B2B: HD-YYYYmmDD/SA-{shortcode}      e.g. HD-20260526/SA-SHV
+///   - B2C: HD-YYYYmmDD/JH-KH####           e.g. HD-20260526/JH-KH0001
+///   - B2B: HD-YYYYmmDD/JH-{shortcode}      e.g. HD-20260526/JH-SHV
 /// B2B Appendix workflow: some B2B customers issue a fresh contract per
 /// new install; others use addendums on the original contract. The data
 /// model supports both via parentContractId + amendmentRevision.
 model Contract {
   id              String   @id @default(uuid())
-  code            String   @unique  // HD-20260526/SA-KH0001 (B2C) or HD-20260526/SA-SHV (B2B)
+  code            String   @unique  // HD-20260526/JH-KH0001 (B2C) or HD-20260526/JH-SHV (B2B)
   legacyContractNumber String?  // pre-migration sample format like `2026/030325/DA-SHV`
   customer        Customer @relation(fields: [customerId], references: [id])
   customerId      String

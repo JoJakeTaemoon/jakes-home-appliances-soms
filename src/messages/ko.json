@@ -51,7 +51,7 @@
   "auth": {
     "login": {
       "title": "로그인",
-      "subtitle": "Seoul Aqua 서비스 운영 관리 시스템",
+      "subtitle": "Jake's Home Appliances 서비스 운영 관리 시스템",
       "phone": "전화번호",
       "phonePlaceholder": "전화번호를 입력하세요",
       "password": "비밀번호",
@@ -273,7 +273,7 @@
       "addOpsContact": "운영 담당자 추가",
       "removeOpsContact": "운영 담당자 제거",
       "primaryHint": "주 담당자를 지정하지 않으면 첫 번째 항목이 주 담당자가 됩니다.",
-      "b2bShortcodeHint": "B2B 계약 번호에 사용됩니다 (예: SHV → HD-…/SA-SHV)"
+      "b2bShortcodeHint": "B2B 계약 번호에 사용됩니다 (예: SHV → HD-…/JH-SHV)"
     },
     "errors": {
       "shortcodeInUse": "이미 사용 중인 약어입니다",
@@ -1112,7 +1112,7 @@
     }
   },
   "mobile": {
-    "appName": "Seoul Aqua 현장",
+    "appName": "Jake's Home Appliances 현장",
     "loginTitle": "기사 로그인",
     "loginSubtitle": "전화번호로 로그인",
     "loginPhone": "전화번호",

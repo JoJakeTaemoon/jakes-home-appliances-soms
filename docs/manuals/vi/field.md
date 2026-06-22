@@ -1,11 +1,11 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Kỹ thuật viên Hiện trường (Field Manual)
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho Kỹ thuật viên Hiện trường (Field Manual)
 
 **Đối tượng**: Kỹ thuật viên (TECHNICIAN) — khoảng 80 người, chỉ dùng di động
 **Phiên bản**: 2026-06-02
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Văn phòng](./office.md) · [Hướng dẫn Khách hàng](./customer.md)
 
-Tài liệu này dành cho **kỹ thuật viên hiện trường** của Seoul Aqua. Mô tả chi tiết mọi màn hình và mọi bước công việc bạn sử dụng trên điện thoại hoặc tablet nhỏ.
+Tài liệu này dành cho **kỹ thuật viên hiện trường** của Jake's Home Appliances. Mô tả chi tiết mọi màn hình và mọi bước công việc bạn sử dụng trên điện thoại hoặc tablet nhỏ.
 
 ---
 
@@ -50,7 +50,7 @@ Tài liệu này dành cho **kỹ thuật viên hiện trường** của Seoul A
 Trên trình duyệt internet của điện thoại (Chrome, Safari):
 
 ```
-https://soms.seoulaqua.com.vn/f/login
+https://soms.jakeshomeappliances.com.vn/f/login
 ```
 
 > **Không tải app.** Dùng trực tiếp trên trình duyệt. Nếu dùng nhiều, khuyến nghị **thêm vào màn hình chính** (menu trình duyệt → "Thêm vào màn hình chính").
@@ -60,9 +60,9 @@ https://soms.seoulaqua.com.vn/f/login
 Khi ADMIN tạo tài khoản, bạn nhận được 1 tin nhắn SMS:
 
 ```
-Tài khoản kỹ thuật viên Seoul Aqua đã được tạo.
+Tài khoản kỹ thuật viên Jake's Home Appliances đã được tạo.
 Mật khẩu tạm thời: ********
-Đăng nhập: soms.seoulaqua.com.vn/f/login
+Đăng nhập: soms.jakeshomeappliances.com.vn/f/login
 ```
 
 Tin nhắn này **chỉ mình bạn** được xem. Tuyệt đối không tiết lộ mật khẩu cho người khác.
@@ -1000,4 +1000,4 @@ Lặng lẽ không mang về là tệ nhất. Hãy báo trung thực ngay.
 - **Bối rối khi làm việc** → Gọi STAFF văn phòng (hướng dẫn realtime)
 - **Chênh lệch tiền mặt** → Báo ADMIN/MANAGER văn phòng ngay
 
-Hôm nay cũng an toàn — Đội ngũ vận hành Seoul Aqua.
+Hôm nay cũng an toàn — Đội ngũ vận hành Jake's Home Appliances.

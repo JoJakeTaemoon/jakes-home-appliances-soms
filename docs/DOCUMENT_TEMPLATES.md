@@ -1,6 +1,6 @@
 # DOCUMENT TEMPLATES — Paper Forms → Digital Flow
 
-> Catalog of every paper form Seoul Aqua uses today, where it's used, and what its digital replacement looks like in SOMS.
+> Catalog of every paper form Jake's Home Appliances uses today, where it's used, and what its digital replacement looks like in SOMS.
 
 Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital documents in v1.
 
@@ -18,8 +18,8 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 | Whom | B2B customer |
 | Languages | Korean + Vietnamese side by side (bilingual) |
 | Pages | ~9 |
-| Signed by | Customer (manager), Seoul Aqua (Mr. CHOI ONE HO) |
-| Return path | Customer signs → courier (EMS) back to Seoul Aqua HQ — sometimes 1-2 weeks delay |
+| Signed by | Customer (manager), Jake's Home Appliances (Mr. CHOI ONE HO) |
+| Return path | Customer signs → courier (EMS) back to Jake's Home Appliances HQ — sometimes 1-2 weeks delay |
 | Digital replacement (SOMS) | `Document` kind = `RENTAL_CONTRACT_B2B`. Server-rendered PDF from Contract data. Photo-of-signed-paper uploaded at install; physical original tracked via `physicalReceivedAt` |
 | Fields | Customer name, address, MST (tax code), contact, equipment table (model, qty, monthly fee, term, location), filter replacement cycle table, 13 clauses of Ts&Cs |
 | Open items | Pricing same across customers? Per Q&A: "주로 동일하는데 동일하지 않을 경우도 있습니다" → editable per contract. B2B contracts CAN be amended per customer; B2C cannot. |
@@ -32,7 +32,7 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 | Whom | B2C customer (가정집) |
 | Languages | Korean + Vietnamese bilingual |
 | Pages | ~8 |
-| Signed by | Customer (individual, with CCCD / Passport #), Seoul Aqua |
+| Signed by | Customer (individual, with CCCD / Passport #), Jake's Home Appliances |
 | Return path | Technician brings signed copy back next day to office |
 | Digital replacement | `Document` kind = `RENTAL_CONTRACT_B2C`. Same flow as B2B but never amended (per client) |
 | Fields | Customer name, CCCD/Passport number + issue date + place, address, equipment table, filter cycle, 13 clauses (with §9 auto-renewal-as-maintenance) |
@@ -86,7 +86,7 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 |---|---|
 | Used when | Each B2C periodic visit (rental customer monthly visit) — combines inspection report + payment receipt |
 | Whom | B2C rental customer |
-| Languages | Korean + Vietnamese bilingual, with Seoul Aqua logo |
+| Languages | Korean + Vietnamese bilingual, with Jake's Home Appliances logo |
 | Pages | 1 (duplicate — tech copy + customer copy) |
 | Signed by | Customer (사인 + 성함), technician (담당자) |
 | Return path | Tech brings customer copy back next day |
@@ -100,7 +100,7 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 |---|---|
 | Used when | Each B2B periodic visit |
 | Whom | B2B customer |
-| Languages | Vietnamese (with Seoul Aqua logo) |
+| Languages | Vietnamese (with Jake's Home Appliances logo) |
 | Pages | 2 |
 | Signed by | Technician (KỸ THUẬT VIÊN), Customer (XÁC NHẬN KHÁCH HÀNG) |
 | Return path | B2B customer-staff signs on site; sometimes sent to office by post |
@@ -113,7 +113,7 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 
 | Aspect | Detail |
 |---|---|
-| Used when | Seoul Aqua office orders parts from a vendor/supplier |
+| Used when | Jake's Home Appliances office orders parts from a vendor/supplier |
 | Whom | **Vendor (NOT customer)** — per client Q&A: "이건 회사에서 상품을 주문/오더 할 때 직원들이 사용하는 양식입니다. 고객과 상관이 없습니다." |
 | Languages | Vietnamese (with logo) |
 | Pages | 1 |
@@ -192,7 +192,7 @@ Issuance is **always manual** (office STAFF+ clicks "발급" on the visit detail
 
 - VI primary + KO secondary, stacked via the shared `<Bi>` component (`primary / secondary`)
 - Single-line section titles: `Khách hàng / 고객`, `Phí dịch vụ / 청구 항목`, `Nội dung bảo trì / 점검 작업 내역`, `Danh sách thiết bị bảo trì / 점검 장비 목록`
-- Single-line headers: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
+- Single-line headers: `JAKE'S HOME APPLIANCES · CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)`
 - Watermark = company logo (200×200 pt, opacity 0.07), positioned **inside each copy block** so it survives the tear line
 - Signature blocks bottom-aligned via `marginTop: auto`; when vertical space is tight the spacer collapses
 - All tear-line docs MUST fit on one A4 sheet — 1-page compaction applied uniformly across padding, font sizes, sign-row heights
@@ -251,7 +251,7 @@ TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print
 - Generated PDFs: S3 / Supabase Storage path `documents/generated/{customerCode}/{documentKind}/{YYYY}/{MM}/{docId}.pdf`
 - Signed images / scanned papers: `documents/signed/{customerCode}/{documentKind}/{YYYY}/{MM}/{docId}-sig.{jpg|pdf}`
 - Retention: 7 years (Vietnamese statute of limitations on contracts) — `[TBC — Q15]`
-- Lifecycle: hot 6 months, archive 12 months+, backup after 24 months (carries over from PMIS pattern; details TBC for Seoul Aqua scale)
+- Lifecycle: hot 6 months, archive 12 months+, backup after 24 months (carries over from PMIS pattern; details TBC for Jake's Home Appliances scale)
 
 ---
 
@@ -260,10 +260,10 @@ TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print
 Templates will be rendered server-side from `src/lib/sms/templates.ts` and `src/lib/email/templates.ts` (Phase 3.5 implementation). Each has a KO + VI + EN variant; the recipient's `CustomerContact.language` selects which is sent. Variables in `{braces}` are interpolated at send time.
 
 > **Constants assumed below**:
-> - **Brand prefix (SMS)**: `[SeoulAqua] ` (12 chars incl. trailing space) — eSMS Brandname
-> - **Portal URL**: `portal.seoulaqua.com.vn` (**23 chars** — client answer A.10 2026-05-26 selected subdomain over root URL; this raises SMS A.3 VI from 1-seg to 2-seg, +712K VND/mo cost regression)
+> - **Brand prefix (SMS)**: `[JakeApp] ` (12 chars incl. trailing space) — eSMS Brandname
+> - **Portal URL**: `portal.jakeshomeappliances.com.vn` (**23 chars** — client answer A.10 2026-05-26 selected subdomain over root URL; this raises SMS A.3 VI from 1-seg to 2-seg, +712K VND/mo cost regression)
 > - **HQ phone placeholder**: `028-1234-5678` (13 chars)
-> - **HQ email placeholder**: `cs@seoulaqua.com.vn` (CS), `noreply@seoulaqua.com.vn` (system) — see Q A.14
+> - **HQ email placeholder**: `cs@jakeshomeappliances.com.vn` (CS), `noreply@jakeshomeappliances.com.vn` (system) — see Q A.14
 > - **Date format**: KO/EN `YYYY-MM-DD`, VI `DD/MM/YYYY` (per `locale_date_formats` memory)
 > - **Month format**: KO/EN `YYYY-MM`, VI `T{MM}/{YYYY}` (VN shorthand)
 
@@ -309,7 +309,7 @@ Two-channel notification system: SMS for time-sensitive / security / dunning-fin
 
 ## §A — SMS templates (urgent / time-sensitive)
 
-7 templates sent through eSMS.vn Brandname `SeoulAqua` (CSKH / SmsType=2). All bodies have been validated against the 70 chars/segment Unicode limit (or 67 chars/seg multi-part). The eSMS Brandname application form at `docs/SMS_BRANDNAME_APPLICATION.md` contains the VI bodies submitted for telecom approval.
+7 templates sent through eSMS.vn Brandname `JakeApp` (CSKH / SmsType=2). All bodies have been validated against the 70 chars/segment Unicode limit (or 67 chars/seg multi-part). The eSMS Brandname application form at `docs/SMS_BRANDNAME_APPLICATION.md` contains the VI bodies submitted for telecom approval.
 
 ### SMS encoding reference
 
@@ -328,7 +328,7 @@ Two-channel notification system: SMS for time-sensitive / security / dunning-fin
 | 9 | `SMS_PAYMENT_OVERDUE_FINAL` | 2 | 2 | 1 (GSM-7) | 2-seg allowed — D+30 final escalation |
 | 10 | `SMS_CONTRACT_RENEWAL_FINAL` | 2 | 2 | 1 (GSM-7) | 2-seg allowed — D-7 final rental-expiry notice |
 
-All char counts below verified against realistic substitutions: `{name}` = `김철수` (3) / `Nguyễn Văn A` (12); `{phone}` = `0901234567` (10); `{pwd}` = `K7m3Px9Qrt` (10); `{url}` = `portal.seoulaqua.com.vn` (**23**); `{date}` = `2026-06-15` / `15/06/2026` (10); `{req_no}` = `SR-2026-0042` (12); `{amount}` = `1,500,000` (9); `{hq_phone}` = `028-1234-5678` (13).
+All char counts below verified against realistic substitutions: `{name}` = `김철수` (3) / `Nguyễn Văn A` (12); `{phone}` = `0901234567` (10); `{pwd}` = `K7m3Px9Qrt` (10); `{url}` = `portal.jakeshomeappliances.com.vn` (**23**); `{date}` = `2026-06-15` / `15/06/2026` (10); `{req_no}` = `SR-2026-0042` (12); `{amount}` = `1,500,000` (9); `{hq_phone}` = `028-1234-5678` (13).
 
 ---
 
@@ -338,9 +338,9 @@ Sent automatically when a `CustomerContact` is first provisioned (contract activ
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.` | **109** |
-| VI | `[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.` | **128** |
-| EN | `[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.` | ~122 |
+| KO | `[JakeApp] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.` | **109** |
+| VI | `[JakeApp] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.` | **128** |
+| EN | `[JakeApp] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.` | ~122 |
 
 ### A.2. `SMS_PASSWORD_RESET` — office-initiated reset (2-seg)
 
@@ -348,9 +348,9 @@ Sent when MANAGER+ clicks "비밀번호 초기화" on customer detail screen. Ge
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}` | **100** |
-| VI | `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` | **122** |
-| EN | `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` | ~107 |
+| KO | `[JakeApp] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}` | **100** |
+| VI | `[JakeApp] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` | **122** |
+| EN | `[JakeApp] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` | ~107 |
 
 ### A.3. `SMS_VISIT_REMINDER` — D-1 visit alert (KO: 1-seg, VI: 2-seg ⚠️ after A.10)
 
@@ -358,11 +358,11 @@ Cron at 19:00 the day before any scheduled visit. Sent to primary OPS_CONTACT (o
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {date} {time}, {technician} 기사 방문({service}). 변경 {url}` | **69** ✅ (still 1-seg) |
-| VI | `[SeoulAqua] {date} {time}, {technician} đến ({service}). Đổi {url}` | **77** ⚠️ (now 2-seg, was 70) |
-| EN | `[SeoulAqua] {date} {time}, {technician} visit ({service}). {url}` | ~82 (GSM-7, 1-seg) |
+| KO | `[JakeApp] {date} {time}, {technician} 기사 방문({service}). 변경 {url}` | **69** ✅ (still 1-seg) |
+| VI | `[JakeApp] {date} {time}, {technician} đến ({service}). Đổi {url}` | **77** ⚠️ (now 2-seg, was 70) |
+| EN | `[JakeApp] {date} {time}, {technician} visit ({service}). {url}` | ~82 (GSM-7, 1-seg) |
 
-> ⚠️ **A.10 cost regression**: switching `{url}` from root `seoulaqua.com.vn` (16 chars) → subdomain `portal.seoulaqua.com.vn` (23 chars) added 7 chars and pushed VI body across the 70-char 1-seg boundary. KO body remains under the limit (69 chars). This single template change accounts for ~+712K VND/mo in SMS cost. See §A § Routing rule recap monthly cost block for the revised total.
+> ⚠️ **A.10 cost regression**: switching `{url}` from root `jakeshomeappliances.com.vn` (16 chars) → subdomain `portal.jakeshomeappliances.com.vn` (23 chars) added 7 chars and pushed VI body across the 70-char 1-seg boundary. KO body remains under the limit (69 chars). This single template change accounts for ~+712K VND/mo in SMS cost. See §A § Routing rule recap monthly cost block for the revised total.
 
 ### A.6. `SMS_SR_APPROVED` — paid request approved + visit scheduled (2-seg)
 
@@ -370,9 +370,9 @@ Sent ONLY for paid requests when office STAFF+ transitions a `ServiceRequest` to
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}` | **90** |
-| VI | `[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}` | **101** |
-| EN | `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}` | ~117 |
+| KO | `[JakeApp] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}` | **90** |
+| VI | `[JakeApp] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}` | **101** |
+| EN | `[JakeApp] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}` | ~117 |
 
 ### A.7. `SMS_SR_REJECTED` — request denied (1-seg, no URL)
 
@@ -380,9 +380,9 @@ Sent when office STAFF+ marks a request `REJECTED`. URL omitted since the reques
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}` | **61** ✅ |
-| VI | `[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}` | **63** ✅ |
-| EN | `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` | ~95 (GSM-7) |
+| KO | `[JakeApp] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}` | **61** ✅ |
+| VI | `[JakeApp] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}` | **63** ✅ |
+| EN | `[JakeApp] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` | ~95 (GSM-7) |
 
 ### A.9. `SMS_PAYMENT_OVERDUE_FINAL` — D+30 final escalation (2-seg)
 
@@ -390,9 +390,9 @@ Cron at D+30 after invoice due date. (D+7 and D+14 are email-only at §B.5.) Sen
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}` | **91** |
-| VI | `[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}` | **111** |
-| EN | `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}` | ~107 (GSM-7) |
+| KO | `[JakeApp] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}` | **91** |
+| VI | `[JakeApp] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}` | **111** |
+| EN | `[JakeApp] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}` | ~107 (GSM-7) |
 
 ### A.10. `SMS_CONTRACT_RENEWAL_FINAL` — D-7 final notice (2-seg)
 
@@ -400,9 +400,9 @@ Cron at D-7 before `Contract.endDate` (36-month rental). (D-60 and D-30 are emai
 
 | Lang | Template body | Sample char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}` | **101** |
-| VI | `[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}` | **124** |
-| EN | `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}` | ~122 (GSM-7) |
+| KO | `[JakeApp] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}` | **101** |
+| VI | `[JakeApp] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}` | **124** |
+| EN | `[JakeApp] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}` | ~122 (GSM-7) |
 
 ---
 
@@ -412,35 +412,35 @@ Cron at D-7 before `Contract.endDate` (36-month rental). (D-60 and D-30 are emai
 
 ### Email constants
 
-- **From**: `Seoul Aqua <noreply@seoulaqua.com.vn>` (system) or `Seoul Aqua <cs@seoulaqua.com.vn>` (customer-replyable)
-- **Reply-To**: `cs@seoulaqua.com.vn` (CS team inbox)
-- **Subject prefix**: `[Seoul Aqua]` (matches SMS brand for visual consistency)
+- **From**: `Jake's Home Appliances <noreply@jakeshomeappliances.com.vn>` (system) or `Jake's Home Appliances <cs@jakeshomeappliances.com.vn>` (customer-replyable)
+- **Reply-To**: `cs@jakeshomeappliances.com.vn` (CS team inbox)
+- **Subject prefix**: `[Jake's Home Appliances]` (matches SMS brand for visual consistency)
 - **Body charset**: UTF-8
 - **No character limit** (vs SMS) — bodies aim for ~150–500 words for readability
-- **DKIM / SPF / DMARC**: required for `portal.seoulaqua.com.vn` sender domain — see Q A.14
+- **DKIM / SPF / DMARC**: required for `portal.jakeshomeappliances.com.vn` sender domain — see Q A.14
 
 ### B.1. `EMAIL_PORTAL_WELCOME` — long-form sign-up companion
 
 - **Trigger**: same as `SMS_PORTAL_WELCOME` (A.1) — fires alongside the SMS when contact has email set
 - **Recipient**: the contact themselves
-- **CTA**: `https://portal.seoulaqua.com.vn` (root → portal login)
+- **CTA**: `https://portal.jakeshomeappliances.com.vn` (root → portal login)
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] 고객 포털 가입을 환영합니다 — 로그인 정보 안내` |
-| VI | `[Seoul Aqua] Chào mừng đến cổng khách hàng — Thông tin đăng nhập` |
-| EN | `[Seoul Aqua] Welcome to your customer portal — Login info` |
+| KO | `[Jake's Home Appliances] 고객 포털 가입을 환영합니다 — 로그인 정보 안내` |
+| VI | `[Jake's Home Appliances] Chào mừng đến cổng khách hàng — Thông tin đăng nhập` |
+| EN | `[Jake's Home Appliances] Welcome to your customer portal — Login info` |
 
 **Body (KO):**
 
 ```
 {name}님 안녕하세요,
 
-Seoul Aqua를 선택해주셔서 감사합니다. 고객 포털 계정이 개설되었습니다.
+Jake's Home Appliances를 선택해주셔서 감사합니다. 고객 포털 계정이 개설되었습니다.
 
-▸ 포털 주소: https://portal.seoulaqua.com.vn
+▸ 포털 주소: https://portal.jakeshomeappliances.com.vn
 ▸ 로그인 아이디: {phone}
 ▸ 임시 비밀번호: {pwd}
 
@@ -452,9 +452,9 @@ Seoul Aqua를 선택해주셔서 감사합니다. 고객 포털 계정이 개설
 • 서비스 요청 제출 (정기점검 / 고장 / 교체 / 이전설치)
 • 결제 이력 및 청구서 다운로드
 
-문의: {hq_phone} / cs@seoulaqua.com.vn
+문의: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua 고객지원팀
+Jake's Home Appliances 고객지원팀
 ```
 
 **Body (VI):**
@@ -462,9 +462,9 @@ Seoul Aqua 고객지원팀
 ```
 Kính chào {name},
 
-Cảm ơn quý khách đã chọn Seoul Aqua. Tài khoản cổng khách hàng đã được kích hoạt.
+Cảm ơn quý khách đã chọn Jake's Home Appliances. Tài khoản cổng khách hàng đã được kích hoạt.
 
-▸ Địa chỉ cổng: https://portal.seoulaqua.com.vn
+▸ Địa chỉ cổng: https://portal.jakeshomeappliances.com.vn
 ▸ Tên đăng nhập: {phone}
 ▸ Mật khẩu tạm: {pwd}
 
@@ -476,9 +476,9 @@ Dịch vụ qua cổng:
 • Gửi yêu cầu dịch vụ (bảo trì / báo lỗi / thay thế / di dời)
 • Lịch sử thanh toán và tải hóa đơn
 
-Liên hệ: {hq_phone} / cs@seoulaqua.com.vn
+Liên hệ: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Đội ngũ CSKH Seoul Aqua
+Đội ngũ CSKH Jake's Home Appliances
 ```
 
 **Body (EN):**
@@ -486,9 +486,9 @@ Liên hệ: {hq_phone} / cs@seoulaqua.com.vn
 ```
 Dear {name},
 
-Thank you for choosing Seoul Aqua. Your customer portal account has been activated.
+Thank you for choosing Jake's Home Appliances. Your customer portal account has been activated.
 
-▸ Portal URL: https://portal.seoulaqua.com.vn
+▸ Portal URL: https://portal.jakeshomeappliances.com.vn
 ▸ Login ID: {phone}
 ▸ Temporary password: {pwd}
 
@@ -500,24 +500,24 @@ What you can do in the portal:
 • Submit service requests (inspection / fault / replacement / relocation)
 • Access payment history and download invoices
 
-Contact: {hq_phone} / cs@seoulaqua.com.vn
+Contact: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua Customer Support
+Jake's Home Appliances Customer Support
 ```
 
 ### B.2. `EMAIL_FILTER_DUE_SOON` — D-14 filter replacement notice
 
 - **Trigger**: cron D-14 before computed filter next-replacement date
 - **Recipient**: primary OPS_CONTACT (CC CONTRACT_PARTY)
-- **CTA**: `https://portal.seoulaqua.com.vn/equipment/{equipment_id}/book-visit`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/equipment/{equipment_id}/book-visit`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] {equipment} 필터 교체 시기 안내 ({days}일 후)` |
-| VI | `[Seoul Aqua] Đến hạn thay lõi lọc — {equipment} (còn {days} ngày)` |
-| EN | `[Seoul Aqua] Filter replacement due in {days} days — {equipment}` |
+| KO | `[Jake's Home Appliances] {equipment} 필터 교체 시기 안내 ({days}일 후)` |
+| VI | `[Jake's Home Appliances] Đến hạn thay lõi lọc — {equipment} (còn {days} ngày)` |
+| EN | `[Jake's Home Appliances] Filter replacement due in {days} days — {equipment}` |
 
 **Body (KO):**
 
@@ -530,7 +530,7 @@ Seoul Aqua Customer Support
 ▸ 임대 고객: 무상 교체
 ▸ 판매/유지관리 고객: 부품비용 별도 (포털에서 견적 확인)
 
-방문 예약: https://portal.seoulaqua.com.vn
+방문 예약: https://portal.jakeshomeappliances.com.vn
 
 기사 방문 일정은 D-3일까지 확정 SMS로 안내드립니다.
 
@@ -548,7 +548,7 @@ Lõi lọc của thiết bị {equipment} sẽ đến hạn thay trong {days} ng
 ▸ Khách thuê: thay miễn phí
 ▸ Khách mua / bảo trì: phí vật tư riêng (xem báo giá tại cổng)
 
-Đặt lịch: https://portal.seoulaqua.com.vn
+Đặt lịch: https://portal.jakeshomeappliances.com.vn
 
 Lịch KTV sẽ được xác nhận qua SMS trước 3 ngày.
 
@@ -566,7 +566,7 @@ The filter on your {equipment} is due for replacement in {days} days.
 ▸ Rental customers: replaced free of charge
 ▸ Sale/Maintenance customers: parts billed separately (see portal for quote)
 
-Book a visit: https://portal.seoulaqua.com.vn
+Book a visit: https://portal.jakeshomeappliances.com.vn
 
 Technician schedule will be confirmed via SMS 3 days prior.
 
@@ -577,15 +577,15 @@ Contact: {hq_phone}
 
 - **Trigger**: `ServiceRequest.status` ← `SUBMITTED`
 - **Recipient**: the submitting CustomerContact
-- **CTA**: `https://portal.seoulaqua.com.vn/requests/{req_no}`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/requests/{req_no}`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] 서비스 요청 접수 #{req_no}` |
-| VI | `[Seoul Aqua] Đã nhận yêu cầu dịch vụ #{req_no}` |
-| EN | `[Seoul Aqua] Service request #{req_no} received` |
+| KO | `[Jake's Home Appliances] 서비스 요청 접수 #{req_no}` |
+| VI | `[Jake's Home Appliances] Đã nhận yêu cầu dịch vụ #{req_no}` |
+| EN | `[Jake's Home Appliances] Service request #{req_no} received` |
 
 **Body (KO):**
 
@@ -599,7 +599,7 @@ Contact: {hq_phone}
 ▸ 접수 시간: {received_at}
 ▸ 예상 회신: 1영업일 내
 
-요청 내용 확인: https://portal.seoulaqua.com.vn/requests/{req_no}
+요청 내용 확인: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 무상 요청(정기점검 등)은 자동으로 방문 일정이 잡힙니다.
 유상 요청은 사무실 검토 후 견적과 함께 회신드립니다.
@@ -619,7 +619,7 @@ Yêu cầu dịch vụ đã được tiếp nhận.
 ▸ Thời gian nhận: {received_at}
 ▸ Phản hồi dự kiến: trong 1 ngày làm việc
 
-Theo dõi: https://portal.seoulaqua.com.vn/requests/{req_no}
+Theo dõi: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 Yêu cầu miễn phí (bảo trì định kỳ...) sẽ được xếp lịch tự động.
 Yêu cầu có phí sẽ được xét duyệt và báo giá từ văn phòng.
@@ -639,7 +639,7 @@ We have received your service request.
 ▸ Received: {received_at}
 ▸ Expected response: within 1 business day
 
-Track: https://portal.seoulaqua.com.vn/requests/{req_no}
+Track: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 Free requests (periodic inspection, etc.) will be scheduled automatically.
 Paid requests will receive a quote and approval from the office.
@@ -651,15 +651,15 @@ Contact: {hq_phone}
 
 - **Trigger**: `ServiceRequest.status` ← `APPROVED` (paid) or `AUTO_APPROVED` (free)
 - **Recipient**: submitter + CONTRACT_PARTY (if paid)
-- **CTA**: `https://portal.seoulaqua.com.vn/requests/{req_no}`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/requests/{req_no}`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] 요청 #{req_no} 승인 — 견적 및 방문 일정` |
-| VI | `[Seoul Aqua] Yêu cầu #{req_no} đã duyệt — Báo giá + lịch` |
-| EN | `[Seoul Aqua] Request #{req_no} approved — Quote + visit schedule` |
+| KO | `[Jake's Home Appliances] 요청 #{req_no} 승인 — 견적 및 방문 일정` |
+| VI | `[Jake's Home Appliances] Yêu cầu #{req_no} đã duyệt — Báo giá + lịch` |
+| EN | `[Jake's Home Appliances] Request #{req_no} approved — Quote + visit schedule` |
 
 **Body (KO):**
 
@@ -676,7 +676,7 @@ Contact: {hq_phone}
 ▸ 방문 예정일: {date} {time}
 ▸ 담당 기사: {technician}
 
-승인 / 거절: https://portal.seoulaqua.com.vn/requests/{req_no}
+승인 / 거절: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 24시간 내 응답이 없으면 일정대로 진행됩니다.
 
@@ -698,7 +698,7 @@ Yêu cầu dịch vụ đã được duyệt.
 ▸ Ngày hẹn: {date} {time}
 ▸ KTV phụ trách: {technician}
 
-Đồng ý / Từ chối: https://portal.seoulaqua.com.vn/requests/{req_no}
+Đồng ý / Từ chối: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 Nếu không phản hồi trong 24h, chúng tôi sẽ tiến hành theo lịch.
 
@@ -720,7 +720,7 @@ Your service request has been approved.
 ▸ Scheduled: {date} {time}
 ▸ Technician: {technician}
 
-Confirm / Decline: https://portal.seoulaqua.com.vn/requests/{req_no}
+Confirm / Decline: https://portal.jakeshomeappliances.com.vn/requests/{req_no}
 
 If no response within 24h, we'll proceed as scheduled.
 
@@ -732,15 +732,15 @@ Contact: {hq_phone}
 - **Trigger**: technician marks `Visit.status = COMPLETED`
 - **Recipient**: primary OPS_CONTACT + CONTRACT_PARTY
 - **Attachment**: `work-confirmation-{visit_no}.pdf` (signed scan)
-- **CTA**: `https://portal.seoulaqua.com.vn/equipment`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/equipment`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] {date} 방문 완료 — 작업확인서 (#{visit_no})` |
-| VI | `[Seoul Aqua] Hoàn tất ngày {date} — Phiếu công việc (#{visit_no})` |
-| EN | `[Seoul Aqua] Visit completed {date} — Work confirmation (#{visit_no})` |
+| KO | `[Jake's Home Appliances] {date} 방문 완료 — 작업확인서 (#{visit_no})` |
+| VI | `[Jake's Home Appliances] Hoàn tất ngày {date} — Phiếu công việc (#{visit_no})` |
+| EN | `[Jake's Home Appliances] Visit completed {date} — Work confirmation (#{visit_no})` |
 
 **Body (KO):**
 
@@ -758,7 +758,7 @@ Contact: {hq_phone}
 
 ▸ 첨부: 작업확인서.pdf (서명본)
 
-장비 상세 확인: https://portal.seoulaqua.com.vn/equipment
+장비 상세 확인: https://portal.jakeshomeappliances.com.vn/equipment
 
 이번 방문에 대한 피드백은 1주일 내 SMS로 안내드립니다.
 
@@ -781,7 +781,7 @@ Lượt thăm hôm nay đã hoàn tất. Phiếu công việc đã ký kèm theo
 
 ▸ Đính kèm: Phieu-cong-viec.pdf (đã ký)
 
-Xem chi tiết thiết bị: https://portal.seoulaqua.com.vn/equipment
+Xem chi tiết thiết bị: https://portal.jakeshomeappliances.com.vn/equipment
 
 Chúng tôi sẽ gửi SMS đánh giá trong 1 tuần tới.
 
@@ -804,7 +804,7 @@ Today's visit has been completed. Signed work confirmation is attached.
 
 ▸ Attachment: work-confirmation.pdf (signed)
 
-View equipment details: https://portal.seoulaqua.com.vn/equipment
+View equipment details: https://portal.jakeshomeappliances.com.vn/equipment
 
 A satisfaction survey SMS will follow within 1 week.
 
@@ -815,15 +815,15 @@ Contact: {hq_phone}
 
 - **Trigger**: cron D+7 after `Invoice.dueDate`
 - **Recipient**: CONTRACT_PARTY + all OPS_CONTACTs (CC)
-- **CTA**: `https://portal.seoulaqua.com.vn/payments`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/payments`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] {month} 임대료 결제 안내` |
-| VI | `[Seoul Aqua] Nhắc thanh toán phí thuê {month}` |
-| EN | `[Seoul Aqua] Reminder — {month} rental payment` |
+| KO | `[Jake's Home Appliances] {month} 임대료 결제 안내` |
+| VI | `[Jake's Home Appliances] Nhắc thanh toán phí thuê {month}` |
+| EN | `[Jake's Home Appliances] Reminder — {month} rental payment` |
 
 **Body (KO):**
 
@@ -837,13 +837,13 @@ Contact: {hq_phone}
 ▸ 결제 기한: {due_date} (7일 지남)
 
 결제 방법:
-• 포털 온라인: https://portal.seoulaqua.com.vn/payments
+• 포털 온라인: https://portal.jakeshomeappliances.com.vn/payments
 • 은행 송금: {bank_info}
 • 기사 방문 시 현금/카드 (다음 방문일: {next_visit})
 
 이미 결제하셨다면 본 메일을 무시해주세요 (시스템 반영 1~2일 소요).
 
-문의: {hq_phone} / accounts@seoulaqua.com.vn
+문의: {hq_phone} / accounts@jakeshomeappliances.com.vn
 ```
 
 **Body (VI):**
@@ -858,13 +858,13 @@ Phí thuê tháng {month} của quý khách chưa được thanh toán.
 ▸ Hạn TT: {due_date} (đã quá 7 ngày)
 
 Phương thức TT:
-• Online qua cổng: https://portal.seoulaqua.com.vn/payments
+• Online qua cổng: https://portal.jakeshomeappliances.com.vn/payments
 • Chuyển khoản: {bank_info}
 • Tiền mặt/thẻ khi KTV đến (lượt kế: {next_visit})
 
 Nếu đã TT, xin vui lòng bỏ qua email này (cập nhật hệ thống mất 1-2 ngày).
 
-Liên hệ: {hq_phone} / accounts@seoulaqua.com.vn
+Liên hệ: {hq_phone} / accounts@jakeshomeappliances.com.vn
 ```
 
 **Body (EN):**
@@ -879,28 +879,28 @@ Your {month} rental fee remains unpaid.
 ▸ Due date: {due_date} (7 days overdue)
 
 Payment options:
-• Online via portal: https://portal.seoulaqua.com.vn/payments
+• Online via portal: https://portal.jakeshomeappliances.com.vn/payments
 • Bank transfer: {bank_info}
 • Cash/card during technician visit (next visit: {next_visit})
 
 If already paid, please disregard (system updates take 1-2 days).
 
-Contact: {hq_phone} / accounts@seoulaqua.com.vn
+Contact: {hq_phone} / accounts@jakeshomeappliances.com.vn
 ```
 
 ### B.7. `EMAIL_PAYMENT_OVERDUE_D14` — firmer second reminder
 
 - **Trigger**: cron D+14 after `Invoice.dueDate`
 - **Recipient**: CONTRACT_PARTY + all OPS_CONTACTs (CC)
-- **CTA**: `https://portal.seoulaqua.com.vn/payments`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/payments`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] {month} 미수금 안내 (2차)` |
-| VI | `[Seoul Aqua] Phí thuê {month} chưa TT (Lần 2)` |
-| EN | `[Seoul Aqua] Second reminder — {month} payment outstanding` |
+| KO | `[Jake's Home Appliances] {month} 미수금 안내 (2차)` |
+| VI | `[Jake's Home Appliances] Phí thuê {month} chưa TT (Lần 2)` |
+| EN | `[Jake's Home Appliances] Second reminder — {month} payment outstanding` |
 
 **Body (KO):**
 
@@ -915,7 +915,7 @@ Contact: {hq_phone} / accounts@seoulaqua.com.vn
 
 ▸ 다음 안내는 D+30 SMS로 진행되며, 서비스 중단 가능성이 있습니다.
 
-즉시 결제: https://portal.seoulaqua.com.vn/payments
+즉시 결제: https://portal.jakeshomeappliances.com.vn/payments
 문의: {hq_phone}
 ```
 
@@ -932,7 +932,7 @@ Phí thuê tháng {month} đã quá hạn 14 ngày.
 
 ▸ Thông báo kế tiếp sẽ là SMS vào D+30, có thể bị ngưng dịch vụ.
 
-TT ngay: https://portal.seoulaqua.com.vn/payments
+TT ngay: https://portal.jakeshomeappliances.com.vn/payments
 Liên hệ: {hq_phone}
 ```
 
@@ -949,7 +949,7 @@ Your {month} rental payment is now 14 days overdue.
 
 ▸ Next notice will be via SMS at D+30, with potential service interruption.
 
-Pay now: https://portal.seoulaqua.com.vn/payments
+Pay now: https://portal.jakeshomeappliances.com.vn/payments
 Contact: {hq_phone}
 ```
 
@@ -957,15 +957,15 @@ Contact: {hq_phone}
 
 - **Trigger**: cron D-60 before `Contract.endDate` (36-month rental)
 - **Recipient**: CONTRACT_PARTY only
-- **CTA**: `https://portal.seoulaqua.com.vn/contracts/{contract_no}/renewal`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/contracts/{contract_no}/renewal`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] 임대 계약 만료 안내 (60일 전) — 옵션 비교` |
-| VI | `[Seoul Aqua] HĐ thuê sắp hết hạn (còn 60 ngày) — So sánh phương án` |
-| EN | `[Seoul Aqua] Rental contract ending in 60 days — Options` |
+| KO | `[Jake's Home Appliances] 임대 계약 만료 안내 (60일 전) — 옵션 비교` |
+| VI | `[Jake's Home Appliances] HĐ thuê sắp hết hạn (còn 60 ngày) — So sánh phương án` |
+| EN | `[Jake's Home Appliances] Rental contract ending in 60 days — Options` |
 
 **Body (KO):**
 
@@ -988,7 +988,7 @@ Contact: {hq_phone}
 
 각 옵션의 세부 사항은 포털에서 확인하실 수 있습니다.
 
-옵션 선택: https://portal.seoulaqua.com.vn/contracts/renewal
+옵션 선택: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 문의: {hq_phone}
 
 D-30 시점에 결정 안내 이메일이, D-7 시점에 SMS 최종 알림이 발송됩니다.
@@ -1015,7 +1015,7 @@ Hợp đồng thuê 36 tháng sẽ hết hạn trong 60 ngày tới.
 
 Chi tiết từng phương án xem tại cổng khách hàng.
 
-Chọn phương án: https://portal.seoulaqua.com.vn/contracts/renewal
+Chọn phương án: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 Liên hệ: {hq_phone}
 
 Email nhắc quyết định sẽ gửi vào D-30, SMS cuối cùng vào D-7.
@@ -1042,7 +1042,7 @@ Three options after expiry:
 
 Details on each option are in the portal.
 
-Choose: https://portal.seoulaqua.com.vn/contracts/renewal
+Choose: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 Contact: {hq_phone}
 
 Reminder email at D-30, final SMS at D-7.
@@ -1052,15 +1052,15 @@ Reminder email at D-30, final SMS at D-7.
 
 - **Trigger**: cron D-30 before `Contract.endDate`, sent only if customer hasn't selected an option yet
 - **Recipient**: CONTRACT_PARTY only
-- **CTA**: `https://portal.seoulaqua.com.vn/contracts/{contract_no}/renewal`
+- **CTA**: `https://portal.jakeshomeappliances.com.vn/contracts/{contract_no}/renewal`
 
 **Subject:**
 
 | Lang | Subject |
 |---|---|
-| KO | `[Seoul Aqua] 임대 만료 임박 (D-30) — 결정 부탁드립니다` |
-| VI | `[Seoul Aqua] HĐ thuê còn 30 ngày — Quyết định` |
-| EN | `[Seoul Aqua] 30 days to rental expiry — please decide` |
+| KO | `[Jake's Home Appliances] 임대 만료 임박 (D-30) — 결정 부탁드립니다` |
+| VI | `[Jake's Home Appliances] HĐ thuê còn 30 ngày — Quyết định` |
+| EN | `[Jake's Home Appliances] 30 days to rental expiry — please decide` |
 
 **Body (KO):**
 
@@ -1072,7 +1072,7 @@ Reminder email at D-30, final SMS at D-7.
 ▸ 만료일: {date}
 ▸ 미선택 시 기본값: 옵션 3 (계약 종료, 회수비 부과)
 
-지금 선택: https://portal.seoulaqua.com.vn/contracts/renewal
+지금 선택: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 
 회수비를 피하시려면 옵션 1 (소유권 이전) 또는 옵션 2 (유지관리)를 D-7 이전에 선택해주세요.
 
@@ -1091,7 +1091,7 @@ Còn 30 ngày để chọn phương án sau khi hết hạn HĐ thuê. Quý khá
 ▸ Ngày hết hạn: {date}
 ▸ Mặc định nếu không chọn: PA 3 (Kết thúc HĐ, có phí thu hồi)
 
-Chọn ngay: https://portal.seoulaqua.com.vn/contracts/renewal
+Chọn ngay: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 
 Để tránh phí thu hồi, chọn PA 1 (Chuyển SH) hoặc PA 2 (Bảo trì) trước D-7.
 
@@ -1110,7 +1110,7 @@ Dear {name},
 ▸ End date: {date}
 ▸ Default if no selection: Option 3 (End contract, retrieval fee applies)
 
-Select now: https://portal.seoulaqua.com.vn/contracts/renewal
+Select now: https://portal.jakeshomeappliances.com.vn/contracts/renewal
 
 To avoid retrieval fee, choose Option 1 (Transfer) or Option 2 (Maintenance) before D-7.
 
@@ -1133,7 +1133,7 @@ These supplementary variables apply only to email templates:
 | `{invoice_date}` | Invoice issue date | `2026-04-01` / `01/04/2026` |
 | `{due_date}` | Invoice due date | `2026-04-15` / `15/04/2026` |
 | `{late_fee}` | Late fee amount | `150,000` |
-| `{bank_info}` | Bank account string | `Vietcombank · 1234567890 · CTY ĐẠI Á` |
+| `{bank_info}` | Bank account string | `Vietcombank · 1234567890 · CTY JAKE'S HA` |
 | `{next_visit}` | Next scheduled visit date | `2026-05-10` / `10/05/2026` |
 | `{equipment_list}` | Multi-line equipment under rental | (server-generated) |
 | `{maintenance_fee}` | Monthly maintenance fee after rental | `350,000` |
@@ -1196,7 +1196,7 @@ Implementation in `src/lib/sms/templates.ts` will use these exact keys. eSMS Bra
 | `{name}` | Customer contact name | 30 | `김철수` | `Nguyễn Văn A` | `John Kim` |
 | `{phone}` | Phone (login ID, no spaces) | 11 | `0901234567` | `0901234567` | `0901234567` |
 | `{pwd}` | Auto-generated 10-char password | 10 | `K7m3Px9Qrt` | `K7m3Px9Qrt` | `K7m3Px9Qrt` |
-| `{url}` | Portal URL (always `portal.seoulaqua.com.vn`) | 16 | `portal.seoulaqua.com.vn` | `portal.seoulaqua.com.vn` | `portal.seoulaqua.com.vn` |
+| `{url}` | Portal URL (always `portal.jakeshomeappliances.com.vn`) | 16 | `portal.jakeshomeappliances.com.vn` | `portal.jakeshomeappliances.com.vn` | `portal.jakeshomeappliances.com.vn` |
 | `{hq_phone}` | HQ contact number | 13 | `028-1234-5678` | `028-1234-5678` | `028-1234-5678` |
 | `{date}` | Date in locale format | 10 | `2026-06-15` | `15/06/2026` | `2026-06-15` |
 | `{time}` | Time (24h, HH:MM) | 5 | `14:00` | `14:00` | `14:00` |
@@ -1233,7 +1233,7 @@ Implementation in `src/lib/sms/templates.ts` will use these exact keys. eSMS Bra
 
 **Monthly cost estimate (verified eSMS pricing: 830 VND/segment Brandname Unicode CSKH for "Other Business" category, incl. 10% VAT, Big 3 carriers):**
 
-> Revised 2026-05-26 after client A.10 portal-URL decision (`portal.seoulaqua.com.vn` subdomain pushes A.3 VI 1-seg → 2-seg). Bucket changes: A.3 KO stays 1-seg, A.3 VI joins 2-seg group.
+> Revised 2026-05-26 after client A.10 portal-URL decision (`portal.jakeshomeappliances.com.vn` subdomain pushes A.3 VI 1-seg → 2-seg). Bucket changes: A.3 KO stays 1-seg, A.3 VI joins 2-seg group.
 
 VI:KO:EN traffic mix assumed 80%:15%:5% for visit-reminder volume.
 
@@ -1246,7 +1246,7 @@ VI:KO:EN traffic mix assumed 80%:15%:5% for visit-reminder volume.
 | **Total** | ~2,805 messages | | **≈ 2.11M VND/mo (≈ ₩114K)** |
 
 > **Cost regression breakdown**:
-> - vs previous estimate with root URL `seoulaqua.com.vn` (1.51M VND/mo): **+600K VND/mo** for the A.3 VI 1→2 seg flip (720 msgs × 830 VND extra segment)
+> - vs previous estimate with root URL `jakeshomeappliances.com.vn` (1.51M VND/mo): **+600K VND/mo** for the A.3 VI 1→2 seg flip (720 msgs × 830 VND extra segment)
 > - vs original all-SMS design (3.98M VND/mo): still **~47% savings** through the 2-channel split
 > First-month onboarding spike (Portal Welcome wave) may add 200–400K VND in the first month only.
 >
@@ -1278,12 +1278,12 @@ These canonical bodies are the source of truth for `src/lib/sms/templates.ts` (S
 4. **Notification router** `src/lib/notifications/router.ts` chooses SMS / Email / both per template + per contact's available channels (`phone1`, `email`) using the rule in §C. Hybrid templates (e.g., #1 PORTAL_WELCOME) send both channels when both are present.
 5. **Provider factory pattern (mock-first, 2026-05-26)**: `src/lib/sms/index.ts` and `src/lib/email/index.ts` each export a factory that reads `SMS_PROVIDER` / `EMAIL_PROVIDER` env vars and returns either:
    - **Mock** (default in dev/staging) — `src/lib/sms/mock-client.ts` / `src/lib/email/mock-provider.ts`: console-logs the rendered body and writes `SmsLog` / `EmailLog` with `provider='mock'`, `providerMessageId='mock-{nanoid}'`, `status='MOCKED'`. Same template + variable interpolation pipeline as production; only the network call is replaced.
-   - **Real** (production after F.4 / F.7 / A.14 land) — `src/lib/sms/esms-client.ts` (eSMS REST, ApiKey/SecretKey, SmsType=2, Brandname=`SeoulAqua`) / `src/lib/email/resend-client.ts` (Resend API).
+   - **Real** (production after F.4 / F.7 / A.14 land) — `src/lib/sms/esms-client.ts` (eSMS REST, ApiKey/SecretKey, SmsType=2, Brandname=`JakeApp`) / `src/lib/email/resend-client.ts` (Resend API).
 6. Log every send into `SmsLog` (sms-specific fields incl. `segments`, `provider`) or `EmailLog` (email-specific fields, attachment URLs, bounce/complaint webhooks, `provider`).
 
 Provider switching is **env-only** — same code path, same DB schema, same admin UI (mocked sends show a `MOCKED` badge in the "Notifications sent" dashboard). This unblocks Phase 3.5 development from the 2-3 week eSMS Brandname registration lead-time.
 
-See `docs/SMS_BRANDNAME_APPLICATION.md` for the client-facing eSMS Brandname application form (covers only the 7 SMS templates in §A; email templates do not require third-party registration since `portal.seoulaqua.com.vn` will be set up with DKIM/SPF/DMARC for direct sending — see Q A.14). The Brandname form is no longer Phase-3.5-blocking; submit when production launch date is known.
+See `docs/SMS_BRANDNAME_APPLICATION.md` for the client-facing eSMS Brandname application form (covers only the 7 SMS templates in §A; email templates do not require third-party registration since `portal.jakeshomeappliances.com.vn` will be set up with DKIM/SPF/DMARC for direct sending — see Q A.14). The Brandname form is no longer Phase-3.5-blocking; submit when production launch date is known.
 
 ---
 
@@ -1303,9 +1303,9 @@ See `docs/SMS_BRANDNAME_APPLICATION.md` for the client-facing eSMS Brandname app
 
 ## Change log
 
-- **2026-05-26 (v0.7 latest)** — **Client answer A.10 applied**: portal URL changed from root `seoulaqua.com.vn` (16 chars) to **subdomain `portal.seoulaqua.com.vn` (23 chars)**. All SMS body samples and char counts recomputed (+7 chars per URL-containing template). `SMS_VISIT_REMINDER` VI bumps 70→77 chars → 1-seg→2-seg (only template that crossed a boundary). Monthly cost revised from ~1.51M → ~2.11M VND/mo. All other templates remain in 2-seg band (no further regressions).
+- **2026-05-26 (v0.7 latest)** — **Client answer A.10 applied**: portal URL changed from root `jakeshomeappliances.com.vn` (16 chars) to **subdomain `portal.jakeshomeappliances.com.vn` (23 chars)**. All SMS body samples and char counts recomputed (+7 chars per URL-containing template). `SMS_VISIT_REMINDER` VI bumps 70→77 chars → 1-seg→2-seg (only template that crossed a boundary). Monthly cost revised from ~1.51M → ~2.11M VND/mo. All other templates remain in 2-seg band (no further regressions).
 - **2026-05-26 (v0.6)** — **Mock-first provider pattern** added to implementation note. `src/lib/sms/index.ts` + `src/lib/email/index.ts` factories read `SMS_PROVIDER` / `EMAIL_PROVIDER` env to choose between `mock-*` (default, dev/staging) and `esms-client` / `resend-client` (production). Mock writes to `SmsLog` / `EmailLog` with `status='MOCKED'`. Phase 3.5 dev no longer blocks on eSMS Brandname 2-3 week approval.
 - **2026-05-26 (v0.5)** — **Two-channel notification system** introduced: §A SMS (7 urgent templates) + §B Email (9 templates incl. multi-stage variants) + §C channel selection rule. Templates split by urgency (security/credentials/dunning-final/D-1 → SMS; receipts/early-notices/summaries → Email). Verified eSMS pricing (830 VND/seg, +50K/mo per network maintenance) applied. Revised monthly cost from ~3.98M VND/mo (all-SMS) → ~1.51M VND/mo (2-channel) — 62% reduction. `EmailLog` model + email provider integration added to Phase 3.5 scope.
-- **2026-05-26 (later)** — v0.4. SMS template catalog finalized: expanded from 7 → 10 templates with Option C hybrid (1-seg vs 2-seg), char-count verification per language under realistic substitutions, canonical variable dictionary, and Phase 3.5 implementation note. Production domain locked to `portal.seoulaqua.com.vn`. VI date format `DD/MM/YYYY`, KO/EN ISO `YYYY-MM-DD`. Companion file `docs/SMS_BRANDNAME_APPLICATION.md` created for eSMS Brandname registration.
+- **2026-05-26 (later)** — v0.4. SMS template catalog finalized: expanded from 7 → 10 templates with Option C hybrid (1-seg vs 2-seg), char-count verification per language under realistic substitutions, canonical variable dictionary, and Phase 3.5 implementation note. Production domain locked to `portal.jakeshomeappliances.com.vn`. VI date format `DD/MM/YYYY`, KO/EN ISO `YYYY-MM-DD`. Companion file `docs/SMS_BRANDNAME_APPLICATION.md` created for eSMS Brandname registration.
 - **2026-05-26** — v0.3. Initial SMS template catalog (7 templates × KO/VI/EN). Workflow summary table now shows per-doc language source (CONTRACT_PARTY vs OPS_CONTACT).
 - **2026-05-25** — v0.1 initial catalog. All 10 PDFs in `reference/forms/` mapped. Open items propagated to `QUESTIONS.docx` for client confirmation.

@@ -48,7 +48,7 @@ export class OfflineDb extends Dexie {
   cachedVisits!: Table<CachedVisit, string>;
 
   constructor() {
-    super("seoul_aqua_offline_v1");
+    super("jakes_home_appliances_offline_v1");
     this.version(1).stores({
       pendingActions: "++id, kind, visitId, queuedAt",
       cachedVisits: "id, cachedAt",

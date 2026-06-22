@@ -1,12 +1,12 @@
-# Design System — Seoul Aqua SOMS
+# Design System — Jake's Home Appliances SOMS
 
-> **Inspired by Intercom's design system**, adapted for Seoul Aqua's brand identity. Intercom's warmth + professionalism + tactile interactions are the structural reference; the primary accent is swapped from Intercom orange to Seoul Aqua brand blue.
+> **Inspired by Intercom's design system**, adapted for Jake's Home Appliances's brand identity. Intercom's warmth + professionalism + tactile interactions are the structural reference; the primary accent is swapped from Intercom orange to Jake's Home Appliances brand blue.
 >
 > Reference: [Intercom design system](https://www.intercom.com/) — observed pattern: warm off-white canvas, sharp 4 px borders, monospace uppercase labels, `scale(1.1)` primary CTA hover.
 
 ## 1. Visual Theme & Atmosphere
 
-Seoul Aqua SOMS feels **bright, calm, and trustworthy** — the visual equivalent of clean drinking water served in a well-lit office. The brand identity is anchored by the blue Seoul Aqua wordmark; the UI lets that blue carry meaning (primary actions, links, focus) without flooding the screen with colour. Surfaces are a warm off-white (not pure grey) so screens feel inviting to a customer-service mindset, not an industrial dashboard.
+Jake's Home Appliances SOMS feels **bright, calm, and trustworthy** — the visual equivalent of clean drinking water served in a well-lit office. The brand identity is anchored by the blue Jake's Home Appliances wordmark; the UI lets that blue carry meaning (primary actions, links, focus) without flooding the screen with colour. Surfaces are a warm off-white (not pure grey) so screens feel inviting to a customer-service mindset, not an industrial dashboard.
 
 The aesthetic supports four very different audiences in one product:
 - **Field technicians** working on a phone with one hand, in good or bad light, needing big tap targets and one-glance status reads.
@@ -28,7 +28,7 @@ The aesthetic supports four very different audiences in one product:
 
 ### Brand (the only chromatic family)
 
-Source: extracted from `reference/brand/Seoul Aqua Logo.jpg` — the dominant logo blue is `#0071BD` (4523 pixel cluster, n=3820 at exact pixel). This is the **Primary Brand Blue**.
+Source: extracted from `reference/brand/Jake's Home Appliances Logo.jpg` — the dominant logo blue is `#0071BD` (4523 pixel cluster, n=3820 at exact pixel). This is the **Primary Brand Blue**.
 
 | Token | Hex | Where to use |
 |---|---|---|
@@ -91,7 +91,7 @@ The sidebar is a brand surface — it carries the logo and the navigation.
 
 Pretendard is self-hosted at `/public/fonts/PretendardVariable.woff2` (copied from PMIS where it was proven). Inter loads via `next/font/google`.
 
-The Seoul Aqua wordmark itself has a soft, friendly rounded sans-serif character. Pretendard's geometric roundness echoes that on display text without licensing the wordmark font.
+The Jake's Home Appliances wordmark itself has a soft, friendly rounded sans-serif character. Pretendard's geometric roundness echoes that on display text without licensing the wordmark font.
 
 ### Type scale
 
@@ -174,7 +174,7 @@ Same shape as Primary but `bg-status-error-accent` (`#dc2626`) and slightly more
 ### Navigation (sidebar)
 
 - Dark `bg-sidebar-bg`, fixed `w-64` on `lg+`, slide-out hamburger on `< lg`
-- Logo block at top: `bg-sidebar-logo-bg` with the white Seoul Aqua logo inside, height 64 px
+- Logo block at top: `bg-sidebar-logo-bg` with the white Jake's Home Appliances logo inside, height 64 px
 - Group headings: `text-[10px] font-medium uppercase tracking-wider text-sidebar-group-label px-3 pb-2 pt-4`
 - Nav item: `flex items-center gap-3 px-3 h-10 rounded text-sm text-sidebar-nav-rest hover:bg-sidebar-nav-hover-bg hover:text-white`. On `< md` → `h-11 min-h-[44px]`.
 - Active item: `bg-sidebar-nav-active-bg text-white font-medium`
@@ -296,9 +296,9 @@ Base 4 px. Common values: 4, 8, 12, 16, 20, 24, 32, 40, 48 (Tailwind 1, 2, 3, 4,
 ## 12. Open Items (for future passes)
 
 - **Dark mode:** deferred to a later phase. The token system supports it (just remap canvas/surface), but field-tech low-light testing should drive when this lands.
-- **Marketing site:** if Seoul Aqua wants a customer-facing landing page, the brand blue + warm cream system should extend cleanly with photography. Hold for Phase 8+.
+- **Marketing site:** if Jake's Home Appliances wants a customer-facing landing page, the brand blue + warm cream system should extend cleanly with photography. Hold for Phase 8+.
 - **Brand-blue accessibility on coloured photography:** if drinking-water photography is used as hero imagery (e.g., for customer-facing portal), check brand-blue overlay contrast per-photo.
 
 ## Change log
 
-- **2026-05-25** — v0.1 — Initial design system. Intercom-frame adopted; primary accent set to Seoul Aqua brand blue `#0071BD` (extracted from `reference/brand/Seoul Aqua Logo.jpg`, dominant cluster n=3820). Mirrors MegaDnC PMIS DESIGN.md structure for familiarity but rebuilt content for the warm + tactile feel.
+- **2026-05-25** — v0.1 — Initial design system. Intercom-frame adopted; primary accent set to Jake's Home Appliances brand blue `#0071BD` (extracted from `reference/brand/Jake's Home Appliances Logo.jpg`, dominant cluster n=3820). Mirrors MegaDnC PMIS DESIGN.md structure for familiarity but rebuilt content for the warm + tactile feel.

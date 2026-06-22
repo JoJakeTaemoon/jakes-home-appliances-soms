@@ -110,7 +110,7 @@ export const ko: PdfMessages = {
     pageOf: "{page} / {total}",
     signatureCustomer: "고객 (계약 주체)",
     signatureCompany: "회사 (대표)",
-    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
+    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)",
     generatedAt: "발행일시",
     companyBlockTitle: "발행 회사 정보",
     companyLegalName: "기업명",
@@ -126,7 +126,7 @@ export const ko: PdfMessages = {
   },
   clauses: {
     intro:
-      "본 계약은 위 계약 당사자 간에 체결되며, 본 계약서에 명시된 조건과 'Seoul Aqua 표준 약관'에 따른다.",
+      "본 계약은 위 계약 당사자 간에 체결되며, 본 계약서에 명시된 조건과 'Jake's Home Appliances 표준 약관'에 따른다.",
     rentalTerm:
       "임대 기간은 {term}개월이며, 의무사용 기간은 24개월입니다. 의무사용 기간 내 중도해지 시 잔여 월수의 50% 위약금이 발생합니다.",
     rentalAutoConvert:

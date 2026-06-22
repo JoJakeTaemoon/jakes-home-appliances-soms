@@ -1,7 +1,7 @@
 {
-  "name": "Seoul Aqua SOMS",
-  "short_name": "Seoul Aqua",
-  "description": "Seoul Aqua Service Operation Management System — technician field app",
+  "name": "Jake's Home Appliances SOMS",
+  "short_name": "Jake's Home Appliances",
+  "description": "Jake's Home Appliances Service Operation Management System — technician field app",
   "scope": "/",
   "start_url": "/mobile/today",
   "display": "standalone",

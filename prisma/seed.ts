@@ -90,7 +90,7 @@ async function main() {
     create: {
       username: "admin",
       phone: "012345678",
-      email: "admin@seoulaqua.com.vn",
+      email: "admin@jakeshomeappliances.com.vn",
       passwordHash: devPw,
       role: "ADMIN",
     },
@@ -101,7 +101,7 @@ async function main() {
     create: {
       username: "manager",
       phone: "0123456781",
-      email: "manager@seoulaqua.com.vn",
+      email: "manager@jakeshomeappliances.com.vn",
       passwordHash: devPw,
       role: "MANAGER",
     },
@@ -112,7 +112,7 @@ async function main() {
     create: {
       username: "staff",
       phone: "0123456782",
-      email: "staff@seoulaqua.com.vn",
+      email: "staff@jakeshomeappliances.com.vn",
       passwordHash: devPw,
       role: "STAFF",
     },
@@ -123,7 +123,7 @@ async function main() {
     create: {
       username: "Trần Thị Thu",
       phone: "0123456785",
-      email: "thu.tran@seoulaqua.com.vn",
+      email: "thu.tran@jakeshomeappliances.com.vn",
       passwordHash: devPw,
       role: "STAFF",
     },
@@ -158,10 +158,10 @@ async function main() {
   console.log(`  ✓ users (${2 + 2 + techs.length})`);
 
   // ─── Brands ───────────────────────────────────────────────────────────
-  // Seoul Aqua = own products; DEWBEL + FRELLE = household water filter and
+  // Jake's Home Appliances = own products; DEWBEL + FRELLE = household water filter and
   // microbubble shower lines from the attached client catalog.
   const brandSeed = [
-    { name: "Seoul Aqua", sortOrder: 10 },
+    { name: "Jake's Home Appliances", sortOrder: 10 },
     { name: "DEWBEL", sortOrder: 20 },
     { name: "FRELLE", sortOrder: 30 },
   ];
@@ -219,7 +219,7 @@ async function main() {
     displayKo?: string;
     displayVi?: string;
     displayEn?: string;
-    brand: "Seoul Aqua" | "DEWBEL" | "FRELLE";
+    brand: "Jake's Home Appliances" | "DEWBEL" | "FRELLE";
     category: string;                // ProductCategory.code
     inspectionEveryMonths?: number | null;
     warrantyMonths?: number;
@@ -241,79 +241,79 @@ async function main() {
   };
 
   const modelSeed: ModelSeed[] = [
-    // ── Air purifier — Seoul Aqua ────────────────────────────────────
-    { code: "CA-5000W", name: "CA-5000W Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 7_200_000, monthlyRentalPrice: 320_000, monthlyMaintenancePrice: 110_000 },
-    { code: "CA-7000WS/B", name: "CA-7000WS/B Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 9_800_000, monthlyRentalPrice: 380_000, monthlyMaintenancePrice: 130_000 },
-    { code: "AP-3008FH", name: "AP-3008FH Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "AP-400", name: "AP-400 Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "AD-1615A", name: "AD-1615A Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "FA31-202GY", name: "FA31-202GY Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "FA41-402GY", name: "FA41-402GY Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    // ── Air purifier — Jake's Home Appliances ────────────────────────────────────
+    { code: "CA-5000W", name: "CA-5000W Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 7_200_000, monthlyRentalPrice: 320_000, monthlyMaintenancePrice: 110_000 },
+    { code: "CA-7000WS/B", name: "CA-7000WS/B Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1, retailPrice: 9_800_000, monthlyRentalPrice: 380_000, monthlyMaintenancePrice: 130_000 },
+    { code: "AP-3008FH", name: "AP-3008FH Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "AP-400", name: "AP-400 Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "AD-1615A", name: "AD-1615A Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "FA31-202GY", name: "FA31-202GY Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "FA41-402GY", name: "FA41-402GY Air Purifier", brand: "Jake's Home Appliances", category: "AIR_PURIFIER", inspectionEveryMonths: 1 },
 
     // ── Home dehumidifier ────────────────────────────────────────────
-    { code: "DXTH120-NEK", name: "DXTH120-NEK Home Dehumidifier", brand: "Seoul Aqua", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3, retailPrice: 5_400_000 },
-    { code: "HM-914EC", name: "HM-914EC Home Dehumidifier", brand: "Seoul Aqua", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3 },
+    { code: "DXTH120-NEK", name: "DXTH120-NEK Home Dehumidifier", brand: "Jake's Home Appliances", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3, retailPrice: 5_400_000 },
+    { code: "HM-914EC", name: "HM-914EC Home Dehumidifier", brand: "Jake's Home Appliances", category: "HOME_DEHUMIDIFIER", inspectionEveryMonths: 3 },
 
     // ── Industrial dehumidifier ──────────────────────────────────────
-    { code: "HDI-15000SW", name: "HDI-15000SW Industrial Dehumidifier", brand: "Seoul Aqua", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
-    { code: "HDI-25000SW", name: "HDI-25000SW Industrial Dehumidifier", brand: "Seoul Aqua", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
+    { code: "HDI-15000SW", name: "HDI-15000SW Industrial Dehumidifier", brand: "Jake's Home Appliances", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
+    { code: "HDI-25000SW", name: "HDI-25000SW Industrial Dehumidifier", brand: "Jake's Home Appliances", category: "INDUSTRIAL_DEHUMIDIFIER", inspectionEveryMonths: 3 },
 
     // ── Hot and cold water purifier (standard 4-filter set) ──────────
-    { code: "PTS-2100", name: "PTS-2100 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 8_500_000, monthlyRentalPrice: 350_000, monthlyMaintenancePrice: 120_000 },
-    { code: "PTS-2101", name: "PTS-2101 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-2200", name: "PTS-2200 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-2000", name: "PTS-2000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-3000", name: "PTS-3000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-3001", name: "PTS-3001 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-4000T", name: "PTS-4000T Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 16_500_000, monthlyRentalPrice: 620_000, monthlyMaintenancePrice: 180_000 },
-    { code: "PTS-4001T", name: "PTS-4001T Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PQ-800", name: "PQ-800 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KW-1500", name: "KW-1500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-1500", name: "KJ-1500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-2000", name: "KJ-2000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-2500", name: "KJ-2500 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-3000", name: "KJ-3000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-4000", name: "KJ-4000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KG-5000", name: "KG-5000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "SA-5000", name: "SA-5000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "SA-7000", name: "SA-7000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "SA-8000", name: "SA-8000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "VI-1000", name: "VI-1000 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "VI-1000-04", name: "VI-1000-04 Hot/Cold Water Purifier (4-bay)", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "VI-1000-08", name: "VI-1000-08 Hot/Cold Water Purifier (8-bay)", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KH-750", name: "KH-750 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "KJ-750", name: "KJ-750 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "P-3001", name: "P-3001 Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2100", name: "PTS-2100 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 8_500_000, monthlyRentalPrice: 350_000, monthlyMaintenancePrice: 120_000 },
+    { code: "PTS-2101", name: "PTS-2101 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2200", name: "PTS-2200 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2000", name: "PTS-2000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-3000", name: "PTS-3000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-3001", name: "PTS-3001 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-4000T", name: "PTS-4000T Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 16_500_000, monthlyRentalPrice: 620_000, monthlyMaintenancePrice: 180_000 },
+    { code: "PTS-4001T", name: "PTS-4001T Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PQ-800", name: "PQ-800 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KW-1500", name: "KW-1500 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-1500", name: "KJ-1500 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-2000", name: "KJ-2000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-2500", name: "KJ-2500 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-3000", name: "KJ-3000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-4000", name: "KJ-4000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KG-5000", name: "KG-5000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-5000", name: "SA-5000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-7000", name: "SA-7000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "SA-8000", name: "SA-8000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000", name: "VI-1000 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000-04", name: "VI-1000-04 Hot/Cold Water Purifier (4-bay)", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "VI-1000-08", name: "VI-1000-08 Hot/Cold Water Purifier (8-bay)", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KH-750", name: "KH-750 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "KJ-750", name: "KJ-750 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "P-3001", name: "P-3001 Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
 
     // ── Hot and cold water purifier - RO type ────────────────────────
-    { code: "CHP-590R", name: "CHP-590R RO Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 18_500_000, monthlyRentalPrice: 720_000, monthlyMaintenancePrice: 200_000 },
-    { code: "CHP-671R", name: "CHP-671R RO Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
-    { code: "PTS-2100-RO", name: "PTS-2100 (RO) Hot/Cold Water Purifier", brand: "Seoul Aqua", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "CHP-590R", name: "CHP-590R RO Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1, retailPrice: 18_500_000, monthlyRentalPrice: 720_000, monthlyMaintenancePrice: 200_000 },
+    { code: "CHP-671R", name: "CHP-671R RO Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
+    { code: "PTS-2100-RO", name: "PTS-2100 (RO) Hot/Cold Water Purifier", brand: "Jake's Home Appliances", category: "RO_HOT_COLD_PURIFIER", inspectionEveryMonths: 1 },
 
     // ── Powerless water purifier ─────────────────────────────────────
-    { code: "PTS-100W", name: "PTS-100W Powerless Water Purifier", brand: "Seoul Aqua", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
-    { code: "PTS-100H", name: "PTS-100H Powerless Water Purifier", brand: "Seoul Aqua", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
+    { code: "PTS-100W", name: "PTS-100W Powerless Water Purifier", brand: "Jake's Home Appliances", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
+    { code: "PTS-100H", name: "PTS-100H Powerless Water Purifier", brand: "Jake's Home Appliances", category: "POWERLESS_PURIFIER", inspectionEveryMonths: 6 },
 
     // ── Ice maker ────────────────────────────────────────────────────
-    { code: "FSM30",  name: "FSM30 Ice Maker",  brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1, retailPrice: 22_000_000, monthlyRentalPrice: 850_000, monthlyMaintenancePrice: 250_000 },
-    { code: "FSM100", name: "FSM100 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
-    { code: "FSM150", name: "FSM150 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
-    { code: "FSM200", name: "FSM200 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
-    { code: "FSM300", name: "FSM300 Ice Maker", brand: "Seoul Aqua", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM30",  name: "FSM30 Ice Maker",  brand: "Jake's Home Appliances", category: "ICE_MAKER", inspectionEveryMonths: 1, retailPrice: 22_000_000, monthlyRentalPrice: 850_000, monthlyMaintenancePrice: 250_000 },
+    { code: "FSM100", name: "FSM100 Ice Maker", brand: "Jake's Home Appliances", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM150", name: "FSM150 Ice Maker", brand: "Jake's Home Appliances", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM200", name: "FSM200 Ice Maker", brand: "Jake's Home Appliances", category: "ICE_MAKER", inspectionEveryMonths: 1 },
+    { code: "FSM300", name: "FSM300 Ice Maker", brand: "Jake's Home Appliances", category: "ICE_MAKER", inspectionEveryMonths: 1 },
 
     // ── Bidet (automatic) ────────────────────────────────────────────
-    { code: "SA-J430", name: "SA-J430 Smart Bidet", brand: "Seoul Aqua", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 12_000_000, monthlyRentalPrice: 480_000, monthlyMaintenancePrice: 80_000 },
-    { code: "SA-J830", name: "SA-J830 Smart Bidet", brand: "Seoul Aqua", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 14_500_000 },
+    { code: "SA-J430", name: "SA-J430 Smart Bidet", brand: "Jake's Home Appliances", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 12_000_000, monthlyRentalPrice: 480_000, monthlyMaintenancePrice: 80_000 },
+    { code: "SA-J830", name: "SA-J830 Smart Bidet", brand: "Jake's Home Appliances", category: "BIDET", inspectionEveryMonths: 6, retailPrice: 14_500_000 },
 
     // ── Non-powered manual bidet ─────────────────────────────────────
-    { code: "HB-220",   name: "HB-220 Manual Bidet",   brand: "Seoul Aqua", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
-    { code: "GBD-1800", name: "GBD-1800 Manual Bidet", brand: "Seoul Aqua", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
+    { code: "HB-220",   name: "HB-220 Manual Bidet",   brand: "Jake's Home Appliances", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
+    { code: "GBD-1800", name: "GBD-1800 Manual Bidet", brand: "Jake's Home Appliances", category: "MANUAL_BIDET", inspectionEveryMonths: 12 },
 
     // ── Water dispenser ──────────────────────────────────────────────
-    { code: "PTS-700", name: "PTS-700 Water Dispenser", brand: "Seoul Aqua", category: "WATER_DISPENSER", inspectionEveryMonths: 6 },
+    { code: "PTS-700", name: "PTS-700 Water Dispenser", brand: "Jake's Home Appliances", category: "WATER_DISPENSER", inspectionEveryMonths: 6 },
 
     // ── Micro bubble cleaner ─────────────────────────────────────────
-    { code: "FC-210G", name: "FC-210G Microbubble Cleaner", brand: "Seoul Aqua", category: "MICROBUBBLE_CLEANER", inspectionEveryMonths: 3 },
+    { code: "FC-210G", name: "FC-210G Microbubble Cleaner", brand: "Jake's Home Appliances", category: "MICROBUBBLE_CLEANER", inspectionEveryMonths: 3 },
 
     // ── Household water filter — DEWBELL ─────────────────────────────
     { code: "AC-700-10IN", name: "AC-700 10IN Filter Housing", brand: "DEWBEL", category: "HOUSEHOLD_FILTER", inspectionEveryMonths: 6 },
@@ -379,7 +379,7 @@ async function main() {
   // aliases — keep them resolved from the map so the data-driven refactor is
   // transparent to the rest of the file. PDF reclassifies AC-700 as a DEWBEL
   // filter housing (not an air purifier) so legacy `air` now points at the
-  // next-best Seoul Aqua air purifier (CA-7000WS/B). PTS-3500 isn't in the
+  // next-best Jake's Home Appliances air purifier (CA-7000WS/B). PTS-3500 isn't in the
   // PDF either — purifierPro maps to PTS-4000T (next tier).
   const purifier    = modelByCode.get("PTS-2100")!;
   const purifierPro = modelByCode.get("PTS-4000T")!;
@@ -1914,10 +1914,10 @@ async function main() {
   // ─── Contracts (covering all states) ────────────────────────────────
   // KH00001 B2C rental — ACTIVE, mid-term.
   const c1 = await prisma.contract.upsert({
-    where: { contractNumber: "HD-20250615/SA-KH0001" },
+    where: { contractNumber: "HD-20250615/JH-KH0001" },
     update: {},
     create: {
-      contractNumber: "HD-20250615/SA-KH0001",
+      contractNumber: "HD-20250615/JH-KH0001",
       customerId: b2c.id,
       type: "RENTAL",
       state: "ACTIVE",
@@ -1950,10 +1950,10 @@ async function main() {
 
   // KH00002 B2B rental — ACTIVE with an Appendix amendment (parent + revision).
   const c2parent = await prisma.contract.upsert({
-    where: { contractNumber: "HD-20250801/SA-SHV" },
+    where: { contractNumber: "HD-20250801/JH-SHV" },
     update: {},
     create: {
-      contractNumber: "HD-20250801/SA-SHV",
+      contractNumber: "HD-20250801/JH-SHV",
       customerId: b2b.id,
       type: "RENTAL",
       state: "AMENDED",
@@ -1978,10 +1978,10 @@ async function main() {
     },
   });
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20250901/SA-SHV" },
+    where: { contractNumber: "HD-20250901/JH-SHV" },
     update: {},
     create: {
-      contractNumber: "HD-20250901/SA-SHV",
+      contractNumber: "HD-20250901/JH-SHV",
       customerId: b2b.id,
       type: "RENTAL",
       state: "ACTIVE",
@@ -2007,10 +2007,10 @@ async function main() {
 
   // KH00003 — rental COMPLETED then post-rental SALE (ownership transferred).
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20220301/SA-KH0003" },
+    where: { contractNumber: "HD-20220301/JH-KH0003" },
     update: {},
     create: {
-      contractNumber: "HD-20220301/SA-KH0003",
+      contractNumber: "HD-20220301/JH-KH0003",
       customerId: b2c2.id,
       type: "RENTAL",
       state: "COMPLETED",
@@ -2040,10 +2040,10 @@ async function main() {
     },
   });
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20260201/SA-KH0003-MTN" },
+    where: { contractNumber: "HD-20260201/JH-KH0003-MTN" },
     update: {},
     create: {
-      contractNumber: "HD-20260201/SA-KH0003-MTN",
+      contractNumber: "HD-20260201/JH-KH0003-MTN",
       customerId: b2c2.id,
       type: "MAINTENANCE",
       state: "ACTIVE",
@@ -2058,10 +2058,10 @@ async function main() {
 
   // KH00004 — SALE, ACTIVE (outright purchase).
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20260101/SA-KH0004" },
+    where: { contractNumber: "HD-20260101/JH-KH0004" },
     update: {},
     create: {
-      contractNumber: "HD-20260101/SA-KH0004",
+      contractNumber: "HD-20260101/JH-KH0004",
       customerId: b2cCustomers["KH00004"].id,
       type: "SALE",
       state: "ACTIVE",
@@ -2075,10 +2075,10 @@ async function main() {
 
   // KH00005 — DRAFT (not yet signed).
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20260520/SA-KH0005" },
+    where: { contractNumber: "HD-20260520/JH-KH0005" },
     update: {},
     create: {
-      contractNumber: "HD-20260520/SA-KH0005",
+      contractNumber: "HD-20260520/JH-KH0005",
       customerId: b2cCustomers["KH00005"].id,
       type: "RENTAL",
       state: "DRAFT",
@@ -2089,10 +2089,10 @@ async function main() {
 
   // KH00006 — PENDING_SIGNATURE.
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20260525/SA-KH0006" },
+    where: { contractNumber: "HD-20260525/JH-KH0006" },
     update: {},
     create: {
-      contractNumber: "HD-20260525/SA-KH0006",
+      contractNumber: "HD-20260525/JH-KH0006",
       customerId: b2cCustomers["KH00006"].id,
       type: "RENTAL",
       state: "PENDING_SIGNATURE",
@@ -2106,10 +2106,10 @@ async function main() {
 
   // KH00007 — TERMINATED early.
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20251001/SA-KH0007" },
+    where: { contractNumber: "HD-20251001/JH-KH0007" },
     update: {},
     create: {
-      contractNumber: "HD-20251001/SA-KH0007",
+      contractNumber: "HD-20251001/JH-KH0007",
       customerId: b2cCustomers["KH00007"].id,
       type: "RENTAL",
       state: "TERMINATED",
@@ -2125,10 +2125,10 @@ async function main() {
 
   // KH00011 B2B — ACTIVE rental.
   await prisma.contract.upsert({
-    where: { contractNumber: "HD-20251101/SA-ABC" },
+    where: { contractNumber: "HD-20251101/JH-ABC" },
     update: {},
     create: {
-      contractNumber: "HD-20251101/SA-ABC",
+      contractNumber: "HD-20251101/JH-ABC",
       customerId: b2bCustomers["KH00011"].id,
       type: "RENTAL",
       state: "ACTIVE",
@@ -2166,14 +2166,14 @@ async function main() {
   const bulkContracts: BulkContract[] = [
     // ── DRAFT (3) ─────────────────────────────────────────────────────
     {
-      contractNumber: "HD-20260601/SA-KH0008",
+      contractNumber: "HD-20260601/JH-KH0008",
       customerId: b2cCustomers["KH00008"].id,
       type: "SALE",
       state: "DRAFT",
       totalValue: 9_000_000,
     },
     {
-      contractNumber: "HD-20260605/SA-KH0009",
+      contractNumber: "HD-20260605/JH-KH0009",
       customerId: b2cCustomers["KH00009"].id,
       type: "RENTAL",
       state: "DRAFT",
@@ -2181,7 +2181,7 @@ async function main() {
       monthlyFee: 130_000,
     },
     {
-      contractNumber: "HD-20260610/SA-ABC",
+      contractNumber: "HD-20260610/JH-ABC",
       customerId: b2bCustomers["KH00011"].id,
       type: "SALE",
       state: "DRAFT",
@@ -2190,7 +2190,7 @@ async function main() {
 
     // ── PENDING_SIGNATURE (3) — company signed, awaiting customer ───
     {
-      contractNumber: "HD-20260612/SA-KH0010",
+      contractNumber: "HD-20260612/JH-KH0010",
       customerId: b2cCustomers["KH00010"].id,
       type: "RENTAL",
       state: "PENDING_SIGNATURE",
@@ -2201,7 +2201,7 @@ async function main() {
       signedByCompany: new Date("2026-06-12"),
     },
     {
-      contractNumber: "HD-20260615/SA-XYZ",
+      contractNumber: "HD-20260615/JH-XYZ",
       customerId: b2bCustomers["KH00012"].id,
       type: "RENTAL",
       state: "PENDING_SIGNATURE",
@@ -2212,7 +2212,7 @@ async function main() {
       signedByCompany: new Date("2026-06-15"),
     },
     {
-      contractNumber: "HD-20260618/SA-DLT",
+      contractNumber: "HD-20260618/JH-DLT",
       customerId: b2bCustomers["KH00013"].id,
       type: "SALE",
       state: "PENDING_SIGNATURE",
@@ -2223,7 +2223,7 @@ async function main() {
 
     // ── AMENDED (2) — fully active, marked AMENDED to surface state ──
     {
-      contractNumber: "HD-20260120/SA-GMA",
+      contractNumber: "HD-20260120/JH-GMA",
       customerId: b2bCustomers["KH00014"].id,
       type: "RENTAL",
       state: "AMENDED",
@@ -2238,7 +2238,7 @@ async function main() {
       amendmentReason: "Tăng số lượng thiết bị theo phụ lục",
     },
     {
-      contractNumber: "HD-20260225/SA-KH0008",
+      contractNumber: "HD-20260225/JH-KH0008",
       customerId: b2cCustomers["KH00008"].id,
       type: "RENTAL",
       state: "AMENDED",
@@ -2255,7 +2255,7 @@ async function main() {
 
     // ── COMPLETED (3) — full lifecycle, term ended naturally ──────────
     {
-      contractNumber: "HD-20230315/SA-KH0005",
+      contractNumber: "HD-20230315/JH-KH0005",
       customerId: b2cCustomers["KH00005"].id,
       type: "RENTAL",
       state: "COMPLETED",
@@ -2269,7 +2269,7 @@ async function main() {
       activatedAt: new Date("2023-03-15"),
     },
     {
-      contractNumber: "HD-20230420/SA-KH0006",
+      contractNumber: "HD-20230420/JH-KH0006",
       customerId: b2cCustomers["KH00006"].id,
       type: "SALE",
       state: "COMPLETED",
@@ -2280,7 +2280,7 @@ async function main() {
       activatedAt: new Date("2023-04-20"),
     },
     {
-      contractNumber: "HD-20230510/SA-XYZ",
+      contractNumber: "HD-20230510/JH-XYZ",
       customerId: b2bCustomers["KH00012"].id,
       type: "SALE",
       state: "COMPLETED",
@@ -2293,7 +2293,7 @@ async function main() {
 
     // ── TERMINATED (2) — early termination with reason ────────────────
     {
-      contractNumber: "HD-20250105/SA-KH0009",
+      contractNumber: "HD-20250105/JH-KH0009",
       customerId: b2cCustomers["KH00009"].id,
       type: "RENTAL",
       state: "TERMINATED",
@@ -2308,7 +2308,7 @@ async function main() {
       terminationReason: "Khách hàng phá sản, không thể tiếp tục thanh toán.",
     },
     {
-      contractNumber: "HD-20250215/SA-ABC",
+      contractNumber: "HD-20250215/JH-ABC",
       customerId: b2bCustomers["KH00011"].id,
       type: "RENTAL",
       state: "TERMINATED",
@@ -2325,7 +2325,7 @@ async function main() {
 
     // ── CANCELLED (2) — never activated, killed before sign-off ────────
     {
-      contractNumber: "HD-20260301/SA-KH0010",
+      contractNumber: "HD-20260301/JH-KH0010",
       customerId: b2cCustomers["KH00010"].id,
       type: "RENTAL",
       state: "CANCELLED",
@@ -2333,7 +2333,7 @@ async function main() {
       monthlyFee: 100_000,
     },
     {
-      contractNumber: "HD-20260315/SA-DLT",
+      contractNumber: "HD-20260315/JH-DLT",
       customerId: b2bCustomers["KH00013"].id,
       type: "SALE",
       state: "CANCELLED",
@@ -2405,26 +2405,26 @@ async function main() {
 
   const contractEquipmentLinks: Array<{ contract: string; serial: string; unitPrice?: number }> = [
     // ── Anchor contracts left bare originally ─────────────────────────
-    { contract: "HD-20220301/SA-KH0003", serial: "SA-J430-000001", unitPrice: 50_000 },
-    { contract: "HD-20220301/SA-KH0003", serial: "PTS-2100-000003", unitPrice: 30_000 },
-    { contract: "HD-20260101/SA-KH0004", serial: "SA-J430-000020", unitPrice: 12_000_000 },
-    { contract: "HD-20251001/SA-KH0007", serial: "PTS-3500-000001", unitPrice: 150_000 },
-    { contract: "HD-20251101/SA-ABC", serial: "PTS-2100-000111", unitPrice: 120_000 },
-    { contract: "HD-20251101/SA-ABC", serial: "AC-700-000111", unitPrice: 60_000 },
-    { contract: "HD-20251101/SA-ABC", serial: "PTS-3500-000111", unitPrice: 40_000 },
+    { contract: "HD-20220301/JH-KH0003", serial: "SA-J430-000001", unitPrice: 50_000 },
+    { contract: "HD-20220301/JH-KH0003", serial: "PTS-2100-000003", unitPrice: 30_000 },
+    { contract: "HD-20260101/JH-KH0004", serial: "SA-J430-000020", unitPrice: 12_000_000 },
+    { contract: "HD-20251001/JH-KH0007", serial: "PTS-3500-000001", unitPrice: 150_000 },
+    { contract: "HD-20251101/JH-ABC", serial: "PTS-2100-000111", unitPrice: 120_000 },
+    { contract: "HD-20251101/JH-ABC", serial: "AC-700-000111", unitPrice: 60_000 },
+    { contract: "HD-20251101/JH-ABC", serial: "PTS-3500-000111", unitPrice: 40_000 },
     // ── Bulk AMENDED ─────────────────────────────────────────────────
-    { contract: "HD-20260120/SA-GMA", serial: "PTS-2100-000114", unitPrice: 130_000 },
-    { contract: "HD-20260120/SA-GMA", serial: "AC-700-000114", unitPrice: 90_000 },
-    { contract: "HD-20260120/SA-GMA", serial: "PTS-3500-000114", unitPrice: 90_000 },
-    { contract: "HD-20260225/SA-KH0008", serial: "PTS-2100-000031", unitPrice: 110_000 },
+    { contract: "HD-20260120/JH-GMA", serial: "PTS-2100-000114", unitPrice: 130_000 },
+    { contract: "HD-20260120/JH-GMA", serial: "AC-700-000114", unitPrice: 90_000 },
+    { contract: "HD-20260120/JH-GMA", serial: "PTS-3500-000114", unitPrice: 90_000 },
+    { contract: "HD-20260225/JH-KH0008", serial: "PTS-2100-000031", unitPrice: 110_000 },
     // ── Bulk COMPLETED ───────────────────────────────────────────────
-    { contract: "HD-20230315/SA-KH0005", serial: "PTS-2100-000030", unitPrice: 100_000 },
-    { contract: "HD-20230420/SA-KH0006", serial: "AC-700-000020", unitPrice: 8_500_000 },
-    { contract: "HD-20230510/SA-XYZ", serial: "PTS-2100-000112", unitPrice: 11_000_000 },
-    { contract: "HD-20230510/SA-XYZ", serial: "AC-700-000112", unitPrice: 8_000_000 },
+    { contract: "HD-20230315/JH-KH0005", serial: "PTS-2100-000030", unitPrice: 100_000 },
+    { contract: "HD-20230420/JH-KH0006", serial: "AC-700-000020", unitPrice: 8_500_000 },
+    { contract: "HD-20230510/JH-XYZ", serial: "PTS-2100-000112", unitPrice: 11_000_000 },
+    { contract: "HD-20230510/JH-XYZ", serial: "AC-700-000112", unitPrice: 8_000_000 },
     // ── Bulk TERMINATED ──────────────────────────────────────────────
-    { contract: "HD-20250105/SA-KH0009", serial: "SA-J430-000021", unitPrice: 120_000 },
-    { contract: "HD-20250215/SA-ABC", serial: "AC-700-000111", unitPrice: 120_000 },
+    { contract: "HD-20250105/JH-KH0009", serial: "SA-J430-000021", unitPrice: 120_000 },
+    { contract: "HD-20250215/JH-ABC", serial: "AC-700-000111", unitPrice: 120_000 },
   ];
   for (const link of contractEquipmentLinks) {
     await ensureContractEquipment(link.contract, link.serial, link.unitPrice);
@@ -2469,7 +2469,7 @@ async function main() {
   const paymentPlans: PaymentPlan[] = [
     // KH00001 RENTAL ACTIVE — deposit + 12 months billed + 1 ad-hoc service.
     {
-      contractNumber: "HD-20250615/SA-KH0001",
+      contractNumber: "HD-20250615/JH-KH0001",
       customerId: b2c.id,
       deposit: 1_500_000,
       monthlyFee: 350_000,
@@ -2480,7 +2480,7 @@ async function main() {
     },
     // KH00002 B2B parent RENTAL — deposit + 10 monthly + 1 trailing EXPECTED.
     {
-      contractNumber: "HD-20250801/SA-SHV",
+      contractNumber: "HD-20250801/JH-SHV",
       customerId: b2b.id,
       deposit: 3_000_000,
       monthlyFee: 630_000,
@@ -2489,7 +2489,7 @@ async function main() {
     },
     // KH00002 B2B Appendix RENTAL — newer add-on, 8 monthly.
     {
-      contractNumber: "HD-20250901/SA-SHV",
+      contractNumber: "HD-20250901/JH-SHV",
       customerId: b2b.id,
       monthlyFee: 530_000,
       monthsToBill: 8,
@@ -2497,7 +2497,7 @@ async function main() {
     },
     // KH00003 B2C RENTAL COMPLETED — full 36 → 12 representative monthly + final return.
     {
-      contractNumber: "HD-20220301/SA-KH0003",
+      contractNumber: "HD-20220301/JH-KH0003",
       customerId: b2c2.id,
       deposit: 1_000_000,
       monthlyFee: 80_000,
@@ -2505,20 +2505,20 @@ async function main() {
     },
     // KH00003 MAINTENANCE — 4 monthly (started 2026-02).
     {
-      contractNumber: "HD-20260201/SA-KH0003-MTN",
+      contractNumber: "HD-20260201/JH-KH0003-MTN",
       customerId: b2c2.id,
       monthlyFee: 60_000,
       monthsToBill: 4,
     },
     // KH00004 SALE — single payment.
     {
-      contractNumber: "HD-20260101/SA-KH0004",
+      contractNumber: "HD-20260101/JH-KH0004",
       customerId: b2cCustomers["KH00004"].id,
       salePrice: 12_000_000,
     },
     // KH00007 RENTAL TERMINATED — partial.
     {
-      contractNumber: "HD-20251001/SA-KH0007",
+      contractNumber: "HD-20251001/JH-KH0007",
       customerId: b2cCustomers["KH00007"].id,
       deposit: 1_500_000,
       monthlyFee: 150_000,
@@ -2526,7 +2526,7 @@ async function main() {
     },
     // KH00011 RENTAL ACTIVE.
     {
-      contractNumber: "HD-20251101/SA-ABC",
+      contractNumber: "HD-20251101/JH-ABC",
       customerId: b2bCustomers["KH00011"].id,
       deposit: 2_500_000,
       monthlyFee: 220_000,
@@ -2535,7 +2535,7 @@ async function main() {
     },
     // ── Bulk AMENDED ────────────────────────────────────────────────
     {
-      contractNumber: "HD-20260120/SA-GMA",
+      contractNumber: "HD-20260120/JH-GMA",
       customerId: b2bCustomers["KH00014"].id,
       deposit: 3_000_000,
       monthlyFee: 310_000,
@@ -2543,7 +2543,7 @@ async function main() {
       expectedTrailingCount: 1,
     },
     {
-      contractNumber: "HD-20260225/SA-KH0008",
+      contractNumber: "HD-20260225/JH-KH0008",
       customerId: b2cCustomers["KH00008"].id,
       deposit: 1_100_000,
       monthlyFee: 110_000,
@@ -2551,32 +2551,32 @@ async function main() {
     },
     // ── Bulk COMPLETED ──────────────────────────────────────────────
     {
-      contractNumber: "HD-20230315/SA-KH0005",
+      contractNumber: "HD-20230315/JH-KH0005",
       customerId: b2cCustomers["KH00005"].id,
       deposit: 1_000_000,
       monthlyFee: 100_000,
       monthsToBill: 12,
     },
     {
-      contractNumber: "HD-20230420/SA-KH0006",
+      contractNumber: "HD-20230420/JH-KH0006",
       customerId: b2cCustomers["KH00006"].id,
       salePrice: 8_500_000,
     },
     {
-      contractNumber: "HD-20230510/SA-XYZ",
+      contractNumber: "HD-20230510/JH-XYZ",
       customerId: b2bCustomers["KH00012"].id,
       salePrice: 22_000_000,
     },
     // ── Bulk TERMINATED ─────────────────────────────────────────────
     {
-      contractNumber: "HD-20250105/SA-KH0009",
+      contractNumber: "HD-20250105/JH-KH0009",
       customerId: b2cCustomers["KH00009"].id,
       deposit: 1_200_000,
       monthlyFee: 120_000,
       monthsToBill: 8,
     },
     {
-      contractNumber: "HD-20250215/SA-ABC",
+      contractNumber: "HD-20250215/JH-ABC",
       customerId: b2bCustomers["KH00011"].id,
       deposit: 2_400_000,
       monthlyFee: 240_000,
@@ -3235,7 +3235,7 @@ async function main() {
     status: "MOCKED",
     segmentsUsed: 1,
     sentAt: daysFromNow(-1),
-    payload: { body: "Seoul Aqua: lịch bảo trì ngày mai 14:00." },
+    payload: { body: "Jake's Home Appliances: lịch bảo trì ngày mai 14:00." },
   });
   await ensureNotification("seed-notif-002", {
     customerId: b2c.id,
@@ -3248,7 +3248,7 @@ async function main() {
     status: "MOCKED",
     segmentsUsed: 2,
     sentAt: daysFromNow(-40),
-    payload: { body: "Chào mừng đến cổng khách hàng Seoul Aqua. Mật khẩu tạm: ********" },
+    payload: { body: "Chào mừng đến cổng khách hàng Jake's Home Appliances. Mật khẩu tạm: ********" },
   });
   await ensureNotification("seed-notif-003", {
     customerId: b2c2.id,
@@ -3278,7 +3278,7 @@ async function main() {
       key: "company.taxInfo",
       value: {
         legalName:
-          "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ ĐẠI Á",
+          "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ JAKE'S HA",
         address:
           "Số 47 Đường Hoàng Trọng Mậu, Khu dân cư Him Lam, Phường Tân Hưng, TP Hồ Chí Minh, Việt Nam",
         representativeName: "CHOI ONE HO",

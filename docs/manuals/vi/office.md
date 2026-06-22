@@ -1,11 +1,11 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng (Office Manual)
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho Nhân viên Văn phòng (Office Manual)
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
 **Phiên bản**: 2026-06-02
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Kỹ thuật viên](./field.md) · [Hướng dẫn Khách hàng](./customer.md)
 
-Tài liệu này dành cho tất cả nhân viên văn phòng tại trụ sở Seoul Aqua sử dụng SOMS. Bao gồm toàn bộ màn hình và mọi tác vụ hàng ngày, có chú thích sự khác biệt về quyền giữa **Quản trị viên / Quản lý / Nhân viên**.
+Tài liệu này dành cho tất cả nhân viên văn phòng tại trụ sở Jake's Home Appliances sử dụng SOMS. Bao gồm toàn bộ màn hình và mọi tác vụ hàng ngày, có chú thích sự khác biệt về quyền giữa **Quản trị viên / Quản lý / Nhân viên**.
 
 ---
 
@@ -35,7 +35,7 @@ Tài liệu này dành cho tất cả nhân viên văn phòng tại trụ sở S
 
 ### 1.1 SOMS là gì?
 
-**SOMS (Service Operation Management System, Hệ thống Quản lý Vận hành Dịch vụ)** là hệ thống tích hợp của Seoul Aqua. Từ đăng ký khách hàng, hợp đồng, lắp đặt máy lọc nước, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ, đến nhật ký kiểm toán — mọi công việc của công ty đều được xử lý ở một nơi.
+**SOMS (Service Operation Management System, Hệ thống Quản lý Vận hành Dịch vụ)** là hệ thống tích hợp của Jake's Home Appliances. Từ đăng ký khách hàng, hợp đồng, lắp đặt máy lọc nước, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ, đến nhật ký kiểm toán — mọi công việc của công ty đều được xử lý ở một nơi.
 
 Thay thế cho sổ giấy và bảng tính Excel, với các ưu điểm sau:
 
@@ -178,7 +178,7 @@ flowchart TB
 
 ### 4.1 Màn hình Đăng nhập
 
-Trang đăng nhập cho nhân viên trụ sở là **`soms.seoulaqua.com.vn/o/login`** (tên miền thực tế do công ty thông báo).
+Trang đăng nhập cho nhân viên trụ sở là **`soms.jakeshomeappliances.com.vn/o/login`** (tên miền thực tế do công ty thông báo).
 
 ![Màn hình Đăng nhập](../screenshots/vi/office/01-login.png)
 
@@ -327,7 +327,7 @@ Mặc định bật **Kích hoạt cổng tự động**. Ngay khi lưu:
 
 1. Hệ thống tự cấp mã khách hàng (`KH00001` kiểu 5 chữ số).
 2. **SMS mật khẩu tạm thời** được gửi đến số điện thoại của khách.
-3. Khách hàng đăng nhập lần đầu tại `seoulaqua.com.vn/login` → đặt mật khẩu mới → bắt đầu sử dụng.
+3. Khách hàng đăng nhập lần đầu tại `jakeshomeappliances.com.vn/login` → đặt mật khẩu mới → bắt đầu sử dụng.
 
 Sau khi lưu chuyển đến trang chi tiết khách hàng.
 
@@ -546,8 +546,8 @@ Nút "**Thêm thiết bị**" → Chọn từ thiết bị hiện có của khá
 
 Ngay sau khi lưu, mã hợp đồng tự sinh:
 
-- **B2C**: `HD-YYYYmmDD/SA-KH####` (ví dụ: `HD-20260602/SA-KH00001`)
-- **B2B**: `HD-YYYYmmDD/SA-{shortcode}` (ví dụ: `HD-20260602/SA-SHV`)
+- **B2C**: `HD-YYYYmmDD/JH-KH####` (ví dụ: `HD-20260602/JH-KH00001`)
+- **B2B**: `HD-YYYYmmDD/JH-{shortcode}` (ví dụ: `HD-20260602/JH-SHV`)
 
 Mã này được in trong PDF hợp đồng.
 
@@ -556,7 +556,7 @@ Mã này được in trong PDF hợp đồng.
 Sau khi lưu, ở trang chi tiết hợp đồng nhấn nút "**Tạo PDF**":
 
 - **PDF song ngữ** tự sinh (Tiếng Việt bên trái, Tiếng Hàn/Anh bên phải)
-- "Party A (Bên A)" = Seoul Aqua, "Party B (Bên B)" = Khách hàng
+- "Party A (Bên A)" = Jake's Home Appliances, "Party B (Bên B)" = Khách hàng
 - Ô để khách ký được đánh dấu
 
 Sau khi in PDF, gửi giấy hoặc PDF cho khách.
@@ -624,7 +624,7 @@ Khi B2B muốn thêm thiết bị vào hợp đồng hiện tại, tạo **Phụ
 1. Trang hợp đồng gốc → Nút "**Thêm Phụ lục**"
 2. Nhập thiết bị hoặc giá mới
 3. Lưu → Sinh dòng hợp đồng mới
-   - Mã: `HD-YYYYmmDD/SA-SHV-A1` (thêm `-A1`)
+   - Mã: `HD-YYYYmmDD/JH-SHV-A1` (thêm `-A1`)
    - `amendmentRevision = 1` (lần sau là `-A2`, revision=2)
    - Tự liên kết với hợp đồng gốc
 4. Tạo PDF Phụ lục → Khách ký lại
@@ -865,7 +865,7 @@ Cấu trúc thẻ **"Giấy tờ mang theo"** ở đầu trang:
 #### Đa ngôn ngữ
 
 - Mọi giấy tờ lượt thăm bố trí **VI chính + KO phụ** 2 ngôn ngữ chồng nhau (ví dụ: `Khách hàng / 고객`)
-- Header 1 dòng: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
+- Header 1 dòng: `JAKE'S HOME APPLIANCES · CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)`
 - Watermark là logo công ty (độ mờ 0.07, 200×200pt) — Đặt bên trong mỗi bản sao để sau khi cắt theo đường nét đứt vẫn còn ở cả 2 bản
 
 ### 7.10 In Hàng loạt (Phase 6 — 2026-06-03)
@@ -1299,7 +1299,7 @@ Khi cá nhân quên mật khẩu, ADMIN xử lý:
 #### Đăng ký Brand
 
 - Nút "**Brand mới**"
-- Nhập tên Brand (ví dụ: `Seoul Aqua`, `Coway`)
+- Nhập tên Brand (ví dụ: `Jake's Home Appliances`, `Coway`)
 
 #### Đăng ký Model
 
@@ -1675,4 +1675,4 @@ Danh sách tất cả thông báo hệ thống tự gửi.
 - **Bối rối cách dùng tính năng** → Tìm trong mục lục tài liệu này hoặc hỏi đồng nghiệp
 - **Phát hiện lỗi** → Chụp màn hình + Ghi các bước tái tạo gửi ADMIN
 
-Chúc một ngày tốt lành — Đội ngũ vận hành Seoul Aqua.
+Chúc một ngày tốt lành — Đội ngũ vận hành Jake's Home Appliances.

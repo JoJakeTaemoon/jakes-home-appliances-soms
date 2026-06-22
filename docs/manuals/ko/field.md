@@ -1,11 +1,11 @@
-# Seoul Aqua SOMS — 현장 기사 매뉴얼 (Field Manual)
+# Jake's Home Appliances SOMS — 현장 기사 매뉴얼 (Field Manual)
 
 **대상 사용자**: 기사 (TECHNICIAN) — 약 80명, 모바일 전용
 **버전**: 2026-06-02
 **언어**: 한국어
 **관련 문서**: [사무실 매뉴얼](./office.md) · [고객 매뉴얼](./customer.md)
 
-이 매뉴얼은 Seoul Aqua의 **현장 기사** 분들을 위한 안내서입니다. 핸드폰 또는 작은 태블릿으로 사용하는 모든 화면과 모든 작업 단계를 자세히 설명합니다.
+이 매뉴얼은 Jake's Home Appliances의 **현장 기사** 분들을 위한 안내서입니다. 핸드폰 또는 작은 태블릿으로 사용하는 모든 화면과 모든 작업 단계를 자세히 설명합니다.
 
 ---
 
@@ -50,7 +50,7 @@
 핸드폰 인터넷 브라우저(Chrome, Safari)에서:
 
 ```
-https://soms.seoulaqua.com.vn/f/login
+https://soms.jakeshomeappliances.com.vn/f/login
 ```
 
 > **앱 다운로드 안 합니다.** 브라우저에서 바로 사용합니다. 자주 쓰시면 **홈 화면에 바로가기 추가**를 추천합니다 (브라우저 메뉴 → "홈 화면에 추가").
@@ -60,9 +60,9 @@ https://soms.seoulaqua.com.vn/f/login
 ADMIN이 본인 계정을 만들어 주시면 SMS 한 통이 옵니다:
 
 ```
-Seoul Aqua 기사용 계정이 생성되었습니다.
+Jake's Home Appliances 기사용 계정이 생성되었습니다.
 임시 비밀번호: ********
-로그인: soms.seoulaqua.com.vn/f/login
+로그인: soms.jakeshomeappliances.com.vn/f/login
 ```
 
 이 SMS는 **본인만** 봐야 합니다. 비밀번호는 다른 사람에게 절대 알려주지 마세요.
@@ -1000,4 +1000,4 @@ v1 시스템은 **인터넷이 되는 상태**를 가정합니다. 완전한 오
 - **작업 헷갈림** → 사무실 STAFF에게 전화 (실시간 안내)
 - **현금 차이** → 즉시 사무실 ADMIN/MANAGER에 보고
 
-오늘도 안전하게 — Seoul Aqua 운영팀.
+오늘도 안전하게 — Jake's Home Appliances 운영팀.

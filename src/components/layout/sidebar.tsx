@@ -171,14 +171,14 @@ export function Sidebar() {
       <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-[var(--brand-blue-500)] px-4">
         <div className="flex size-9 items-center justify-center overflow-hidden rounded-md bg-white">
           <Image
-            src="/logo/seoul-aqua-logo.jpg"
-            alt="Seoul Aqua"
+            src="/logo/jakes-home-appliances-logo.jpg"
+            alt="Jake's Home Appliances"
             width={36}
             height={36}
             priority
           />
         </div>
-        <span className="text-sm font-semibold text-white">Seoul Aqua SOMS</span>
+        <span className="text-sm font-semibold text-white">Jake's Home Appliances SOMS</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-3">

@@ -229,10 +229,10 @@ function SheetContent({
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: "4pt", flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: "12pt", fontWeight: "bold", color: "#0C6BA8", whiteSpace: "nowrap" }}>
-            SEOUL AQUA
+            JAKE'S HOME APPLIANCES
           </span>
           <span style={{ fontSize: "7pt", color: "#666" }}>
-            · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)
+            · CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)
           </span>
         </div>
         <div style={{ whiteSpace: "nowrap" }}>

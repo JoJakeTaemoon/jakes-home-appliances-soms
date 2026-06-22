@@ -51,7 +51,7 @@
   "auth": {
     "login": {
       "title": "Sign in",
-      "subtitle": "Seoul Aqua Service Operation Management System",
+      "subtitle": "Jake's Home Appliances Service Operation Management System",
       "phone": "Phone number",
       "phonePlaceholder": "Enter your phone number",
       "password": "Password",
@@ -273,7 +273,7 @@
       "addOpsContact": "Add OPS contact",
       "removeOpsContact": "Remove OPS contact",
       "primaryHint": "First OPS contact will be marked primary if none chosen.",
-      "b2bShortcodeHint": "Used in B2B contract numbers (e.g. SHV → HD-…/SA-SHV)"
+      "b2bShortcodeHint": "Used in B2B contract numbers (e.g. SHV → HD-…/JH-SHV)"
     },
     "errors": {
       "shortcodeInUse": "Shortcode already in use",
@@ -1112,7 +1112,7 @@
     }
   },
   "mobile": {
-    "appName": "Seoul Aqua Field",
+    "appName": "Jake's Home Appliances Field",
     "loginTitle": "Technician sign-in",
     "loginSubtitle": "Sign in with your phone",
     "loginPhone": "Phone number",

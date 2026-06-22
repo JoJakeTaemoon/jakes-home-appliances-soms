@@ -51,7 +51,7 @@
   "auth": {
     "login": {
       "title": "Đăng nhập",
-      "subtitle": "Hệ thống Quản lý Vận hành Dịch vụ Seoul Aqua",
+      "subtitle": "Hệ thống Quản lý Vận hành Dịch vụ Jake's Home Appliances",
       "phone": "Số điện thoại",
       "phonePlaceholder": "Nhập số điện thoại",
       "password": "Mật khẩu",
@@ -273,7 +273,7 @@
       "addOpsContact": "Thêm liên hệ vận hành",
       "removeOpsContact": "Xóa liên hệ vận hành",
       "primaryHint": "Nếu không chọn, mục đầu tiên sẽ được đánh dấu là chính.",
-      "b2bShortcodeHint": "Dùng cho mã hợp đồng B2B (ví dụ: SHV → HD-…/SA-SHV)"
+      "b2bShortcodeHint": "Dùng cho mã hợp đồng B2B (ví dụ: SHV → HD-…/JH-SHV)"
     },
     "errors": {
       "shortcodeInUse": "Mã viết tắt đã tồn tại",
@@ -1112,7 +1112,7 @@
     }
   },
   "mobile": {
-    "appName": "Seoul Aqua Hiện trường",
+    "appName": "Jake's Home Appliances Hiện trường",
     "loginTitle": "KTV đăng nhập",
     "loginSubtitle": "Đăng nhập bằng số điện thoại",
     "loginPhone": "Số điện thoại",

@@ -177,7 +177,7 @@ describe("POST /api/contracts (B2C SALE)", () => {
     expect(status).toBe(201);
     const created = body.data as { id: string; contractNumber: string; state: string };
     expect(created.state).toBe("DRAFT");
-    expect(created.contractNumber).toMatch(/^HD-\d{8}\/SA-TESTKH3-/);
+    expect(created.contractNumber).toMatch(/^HD-\d{8}\/JH-TESTKH3-/);
   });
 
   it("rejects equipment belonging to a different customer", async () => {
@@ -331,7 +331,7 @@ describe("runRentalCompletionCheck", () => {
     const past = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const rental = await prisma.contract.create({
       data: {
-        contractNumber: `HD-20240101/SA-${customer.code.replace(/[^A-Z0-9]/gi, "")}-CRON`,
+        contractNumber: `HD-20240101/JH-${customer.code.replace(/[^A-Z0-9]/gi, "")}-CRON`,
         customerId: customer.id,
         type: "RENTAL",
         state: "ACTIVE",
