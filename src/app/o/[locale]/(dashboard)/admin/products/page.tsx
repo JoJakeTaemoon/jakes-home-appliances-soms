@@ -555,9 +555,9 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<BrandRow | null>(null);
   const [deleting, setDeleting] = useState<BrandRow | null>(null);
-  const [form, setForm] = useState({ name: "", sortOrder: 0 });
+  const [form, setForm] = useState({ name: "" });
   const [error, setError] = useState<string | null>(null);
-  const { sort, onClick } = useSort<"name" | "models" | "sortOrder" | "isActive">("name");
+  const { sort, onClick } = useSort<"name" | "models" | "isActive">("name");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -582,7 +582,7 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     try {
       await api.post("/api/admin/products/brands", form);
       setShowForm(false);
-      setForm({ name: "", sortOrder: 0 });
+      setForm({ name: "" });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errorGeneric"));
@@ -594,7 +594,6 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
       sortRows(rows, sort, {
         name: (r) => r.name,
         models: (r) => r._count?.models ?? 0,
-        sortOrder: (r) => r.sortOrder,
         isActive: (r) => r.isActive,
       }),
     [rows, sort],
@@ -606,29 +605,21 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         <Button onClick={() => setShowForm((s) => !s)}>+ {t("addBrand")}</Button>
       </div>
       {showForm && (
-        <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField label={t("colName")}>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Seoul Aqua" />
-          </FormField>
-          <FormField label={t("colSortOrder")}>
-            <Input
-              type="number"
-              value={form.sortOrder}
-              onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
-            />
           </FormField>
           <div className="flex items-end gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>
             <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
-          {error && <div className="md:col-span-3 text-red-600 text-sm">{error}</div>}
+          {error && <div className="md:col-span-2 text-red-600 text-sm">{error}</div>}
         </div>
       )}
       <table className="w-full border border-border">
         <thead className="bg-muted">
           <tr>
             <SortableTh column="name" sort={sort} onClick={onClick}>{t("colName")}</SortableTh>
-            <SortableTh column="sortOrder" sort={sort} onClick={onClick} align="right">{t("colSortOrder")}</SortableTh>
             <SortableTh column="models" sort={sort} onClick={onClick} align="right">{t("colCompatibility")}</SortableTh>
             <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
             <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
@@ -636,12 +627,11 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
+            <tr><td colSpan={4} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-semibold">{r.name}</td>
-                <td className="p-2 text-right">{r.sortOrder}</td>
                 <td className="p-2 text-right text-xs">
                   {t("statusModelCount", { count: r._count?.models ?? 0 })}
                 </td>
@@ -690,7 +680,6 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
 
 function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiClient; t: Translate; row: BrandRow; onClose: () => void; onSaved: () => void }>) {
   const [name, setName] = useState(row.name);
-  const [sortOrder, setSortOrder] = useState(row.sortOrder);
   const [isActive, setIsActive] = useState(row.isActive);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -698,7 +687,7 @@ function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiCl
     setBusy(true);
     setErr(null);
     try {
-      await api.patch(`/api/admin/products/brands/${row.id}`, { name, sortOrder, isActive });
+      await api.patch(`/api/admin/products/brands/${row.id}`, { name, isActive });
       onSaved();
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("errorGeneric"));
@@ -718,14 +707,11 @@ function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiCl
         </>
       }
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         <FormField label={t("colName")}>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label={t("colSortOrder")}>
-          <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
-        </FormField>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
           {t("statusActive")}
         </label>
@@ -1113,6 +1099,7 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
 
 function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const locale = useLocale();
+  const tEq = useTranslations("equipmentModels");
   const models = useModelOptions(api);
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
@@ -1122,6 +1109,10 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [modelFilter, setModelFilter] = useState<string | null>(null);
+  // Create-form-only: brand + category narrow which models the
+  // CompatibilityPicker exposes for selection.
+  const [formBrand, setFormBrand] = useState<string | null>(null);
+  const [formCategory, setFormCategory] = useState<string | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -1204,6 +1195,32 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
     [models, brandFilter, locale],
   );
+
+  // Distinct category enum values present in the model catalog (legacy
+  // `category` column on EquipmentModel: WATER_PURIFIER / BIDET / etc.).
+  const categoryOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { value: string; label: string }[] = [];
+    for (const m of models) {
+      if (!m.category || seen.has(m.category)) continue;
+      seen.add(m.category);
+      out.push({ value: m.category, label: tEq(`categoryValues.${m.category}` as never) });
+    }
+    return out;
+  }, [models, tEq]);
+
+  // Models shown in the create-form CompatibilityPicker: filtered by the
+  // create-form brand/category. Already-selected models stay visible so the
+  // user can unselect them even after narrowing the filter.
+  const createFormModels = useMemo(() => {
+    const sel = new Set(form.compatibleModelIds);
+    return models.filter((m) => {
+      if (sel.has(m.id)) return true;
+      if (formBrand && m.brand?.id !== formBrand) return false;
+      if (formCategory && m.category !== formCategory) return false;
+      return true;
+    });
+  }, [models, form.compatibleModelIds, formBrand, formCategory]);
 
   const sorted = useMemo(
     () =>
@@ -1288,7 +1305,36 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             </FormField>
           </div>
           <FormField label={t("colCompatibility")}>
-            <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Combobox
+                  value={formBrand}
+                  onChange={(v) => {
+                    setFormBrand(v);
+                    if (
+                      v &&
+                      formCategory &&
+                      !models.some((m) => m.brand?.id === v && m.category === formCategory)
+                    ) {
+                      setFormCategory(null);
+                    }
+                  }}
+                  options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                  placeholder={t("filterByBrand")}
+                  allowClear
+                  ariaLabel={t("filterByBrand")}
+                />
+                <Combobox
+                  value={formCategory}
+                  onChange={setFormCategory}
+                  options={categoryOptions}
+                  placeholder={t("colCategory")}
+                  allowClear
+                  ariaLabel={t("colCategory")}
+                />
+              </div>
+              <CompatibilityPicker models={createFormModels} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
+            </div>
           </FormField>
           <div className="flex gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>
@@ -1341,6 +1387,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           t={t}
           row={editing}
           models={models}
+          brands={brands}
+          categoryOptions={categoryOptions}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
         />
@@ -1371,8 +1419,17 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 }
 
 function ConsumableEditModal({
-  api, t, row, models, onClose, onSaved,
-}: Readonly<{ api: ApiClient; t: Translate; row: ConsumableRow; models: ModelRow[]; onClose: () => void; onSaved: () => void }>) {
+  api, t, row, models, brands, categoryOptions, onClose, onSaved,
+}: Readonly<{
+  api: ApiClient;
+  t: Translate;
+  row: ConsumableRow;
+  models: ModelRow[];
+  brands: BrandRow[];
+  categoryOptions: { value: string; label: string }[];
+  onClose: () => void;
+  onSaved: () => void;
+}>) {
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
@@ -1382,8 +1439,22 @@ function ConsumableEditModal({
   const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
   const [isActive, setIsActive] = useState(row.isActive);
   const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
+  const [pickBrand, setPickBrand] = useState<string | null>(null);
+  const [pickCategory, setPickCategory] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Models exposed in CompatibilityPicker: those matching the brand/category
+  // narrowing, plus anything already selected (so users can always unselect).
+  const visibleModels = useMemo(() => {
+    const sel = new Set(compatibleModelIds);
+    return models.filter((m) => {
+      if (sel.has(m.id)) return true;
+      if (pickBrand && m.brand?.id !== pickBrand) return false;
+      if (pickCategory && m.category !== pickCategory) return false;
+      return true;
+    });
+  }, [models, compatibleModelIds, pickBrand, pickCategory]);
   async function save() {
     setBusy(true);
     setErr(null);
@@ -1440,7 +1511,36 @@ function ConsumableEditModal({
           </FormField>
         </div>
         <FormField label={t("colCompatibility")}>
-          <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
+          <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Combobox
+                value={pickBrand}
+                onChange={(v) => {
+                  setPickBrand(v);
+                  if (
+                    v &&
+                    pickCategory &&
+                    !models.some((m) => m.brand?.id === v && m.category === pickCategory)
+                  ) {
+                    setPickCategory(null);
+                  }
+                }}
+                options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                placeholder={t("filterByBrand")}
+                allowClear
+                ariaLabel={t("filterByBrand")}
+              />
+              <Combobox
+                value={pickCategory}
+                onChange={setPickCategory}
+                options={categoryOptions}
+                placeholder={t("colCategory")}
+                allowClear
+                ariaLabel={t("colCategory")}
+              />
+            </div>
+            <CompatibilityPicker models={visibleModels} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
+          </div>
         </FormField>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
