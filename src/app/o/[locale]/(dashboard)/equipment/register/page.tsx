@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -86,6 +86,14 @@ function newLine(): LineState {
 }
 
 export default function RegisterEquipmentPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-[#737373]">Loading…</div>}>
+      <RegisterEquipmentInner />
+    </Suspense>
+  );
+}
+
+function RegisterEquipmentInner() {
   const t = useTranslations("equipment.register");
   const tc = useTranslations("common");
   const locale = useLocale();
