@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
@@ -96,6 +96,14 @@ interface RowState {
 const STEPS = ["info", "list", "confirm"] as const;
 
 export default function BulkRegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <BulkRegisterInner />
+    </Suspense>
+  );
+}
+
+function BulkRegisterInner() {
   const t = useTranslations("equipment.bulkRegister");
   const tc = useTranslations("common");
   const router = useRouter();

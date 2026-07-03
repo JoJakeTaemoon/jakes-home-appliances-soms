@@ -118,6 +118,7 @@
     "users": "사용자",
     "settings": "설정",
     "notificationTemplates": "알림 서식",
+    "schedulerWeights": "스케줄러 가중치",
     "profile": "프로필",
     "logout": "로그아웃",
     "main": "메인",
