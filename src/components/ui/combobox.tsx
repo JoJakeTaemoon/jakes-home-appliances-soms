@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 
 export interface ComboboxOption {
@@ -34,10 +35,24 @@ interface Props {
   createLabel?: (query: string) => string;
   /** Fires when the user picks the "Create" row. */
   onCreate?: (query: string) => void;
+  /** Minimum dropdown width in px. Defaults to 320; raise for dense option labels. */
+  minDropdownWidth?: number;
+}
+
+interface Coords {
+  top: number;
+  left: number;
+  width: number;
+  flipUp: boolean;
 }
 
 /**
  * Custom dropdown with built-in search. No native <select>, no shadcn.
+ *
+ * The popover renders via React portal to `document.body` so it escapes
+ * narrow table cells, `overflow:auto` scrollers, and stacking contexts.
+ * Position is recomputed on scroll/resize so the dropdown tracks the
+ * trigger; the panel auto-flips above when there isn't room below.
  *
  * Per CLAUDE.md: search must be enabled when options > 5; we auto-enable
  * unless the caller explicitly passes `searchable={false}`.
@@ -57,13 +72,24 @@ export function Combobox({
   allowCreate = false,
   createLabel = (q) => `Add “${q}”`,
   onCreate,
+  minDropdownWidth = 320,
 }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const showSearch = searchable ?? options.length > 5;
 
-  const selected = useMemo(() => options.find((o) => o.value === value) ?? null, [options, value]);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const selected = useMemo(
+    () => options.find((o) => o.value === value) ?? null,
+    [options, value],
+  );
 
   const filtered = useMemo(() => {
     if (!query.trim()) return options;
@@ -76,19 +102,56 @@ export function Combobox({
     );
   }, [options, query]);
 
-  // Close on outside click.
+  // Track trigger position. Recompute on scroll (capture: true catches
+  // nested overflow scrollers such as the table's overflow-x-auto wrapper)
+  // and on resize so the dropdown always follows the trigger.
+  useEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+    const recompute = () => {
+      const el = triggerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const desiredWidth = Math.max(r.width, minDropdownWidth);
+      const spaceBelow = window.innerHeight - r.bottom;
+      const spaceAbove = r.top;
+      const flipUp = spaceBelow < 280 && spaceAbove > spaceBelow;
+      setCoords({
+        top: flipUp ? r.top - 4 : r.bottom + 4,
+        left: r.left,
+        width: desiredWidth,
+        flipUp,
+      });
+    };
+    recompute();
+    window.addEventListener("scroll", recompute, true);
+    window.addEventListener("resize", recompute);
+    return () => {
+      window.removeEventListener("scroll", recompute, true);
+      window.removeEventListener("resize", recompute);
+    };
+  }, [open, minDropdownWidth]);
+
+  // Outside click — closes when click lands outside both the trigger and
+  // the portaled dropdown panel.
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div className={cn("relative", className)}>
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         aria-label={ariaLabel}
@@ -146,8 +209,12 @@ export function Combobox({
         </div>
       </button>
 
-      {open && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-[#e5e5e5] bg-white shadow-lg">
+      {mounted && open && coords && createPortal(
+        <PortalPanel
+          panelRef={dropdownRef}
+          coords={coords}
+          minWidth={minDropdownWidth}
+        >
           {showSearch && (
             <div className="border-b border-[#f5f5f5] p-2">
               <input
@@ -159,7 +226,7 @@ export function Combobox({
               />
             </div>
           )}
-          <div role="listbox" className="max-h-64 overflow-y-auto py-1">
+          <div role="listbox" className="max-h-72 overflow-y-auto py-1">
             {filtered.length === 0 && (
               <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText}</div>
             )}
@@ -212,8 +279,43 @@ export function Combobox({
               </button>
             )}
           </div>
-        </div>
+        </PortalPanel>,
+        document.body,
       )}
+    </div>
+  );
+}
+
+interface PortalPanelProps {
+  coords: Coords;
+  minWidth: number;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  children: React.ReactNode;
+}
+
+function PortalPanel({ coords, minWidth, panelRef, children }: Readonly<PortalPanelProps>) {
+  // Clamp horizontally so the panel stays in the viewport even when the
+  // trigger sits near the right edge.
+  const viewportW = typeof globalThis.window === "undefined" ? 1024 : globalThis.window.innerWidth;
+  const desiredWidth = Math.max(coords.width, minWidth);
+  const maxWidth = Math.max(minWidth, viewportW - 16);
+  const width = Math.min(desiredWidth, maxWidth);
+  const left = Math.max(8, Math.min(coords.left, viewportW - width - 8));
+  return (
+    <div
+      ref={panelRef}
+      style={{
+        position: "fixed",
+        top: coords.top,
+        left,
+        width,
+        maxWidth,
+        transform: coords.flipUp ? "translateY(-100%)" : undefined,
+        zIndex: 50,
+      }}
+      className="overflow-hidden rounded-lg border border-[#e5e5e5] bg-white shadow-lg"
+    >
+      {children}
     </div>
   );
 }

@@ -50,6 +50,8 @@ import {
   type CompleteVisitResult,
 } from "@/lib/visits/complete";
 import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
+import { issueVisitDocument } from "@/lib/visits/issue-document";
+import type { PdfKind } from "@/lib/pdf/renderer";
 import { NotFoundError, ValidationError } from "@/lib/api/error";
 import type { Prisma, VisitType } from "@/generated/prisma/client";
 
@@ -66,7 +68,6 @@ export interface CreateVisitInput {
   equipmentId?: string | null;
   type: VisitType;
   scheduledFor: Date;
-  scheduledWindow?: string | null;
   expectedAmount?: number | null;
 }
 
@@ -74,7 +75,6 @@ export interface ScheduleVisitInput {
   leadTechnicianId: string;
   collaboratorTechnicianIds: string[];
   scheduledFor?: Date | null;
-  scheduledWindow?: string | null;
 }
 
 export interface ReassignVisitInput {
@@ -85,7 +85,6 @@ export interface ReassignVisitInput {
 
 export interface RescheduleVisitInput {
   scheduledFor: Date;
-  scheduledWindow?: string | null;
   reason?: string | null;
 }
 
@@ -162,7 +161,6 @@ async function create(
       type: input.type,
       state: "SUGGESTED",
       scheduledFor: input.scheduledFor,
-      scheduledWindow: input.scheduledWindow ?? null,
       expectedAmount: input.expectedAmount ?? null,
     },
   });
@@ -213,9 +211,47 @@ async function schedule(
       leadTechnicianId: input.leadTechnicianId,
       collaboratorTechnicianIds: collab,
       scheduledFor: input.scheduledFor ?? undefined,
-      scheduledWindow: input.scheduledWindow ?? undefined,
+    },
+    select: {
+      id: true,
+      state: true,
+      leadTechnicianId: true,
+      collaboratorTechnicianIds: true,
+      scheduledFor: true,
+      pendingDocumentKinds: true,
     },
   });
+
+  // Drain pending document kinds — the order-create path queues these
+  // when a delivery slip couldn't be issued yet (SUGGESTED, no lead).
+  // Each render failure logs but doesn't fail the schedule call; the
+  // remaining kinds stay in the array so the office can retry from the
+  // visit detail issue-document CTA.
+  if (updated.pendingDocumentKinds.length > 0) {
+    const remaining: typeof updated.pendingDocumentKinds = [];
+    for (const kind of updated.pendingDocumentKinds) {
+      try {
+        await issueVisitDocument({
+          visitId,
+          kind: kind as PdfKind,
+          actorId: actor.userId,
+          request: request ?? null,
+        });
+      } catch (renderErr) {
+        console.error(
+          `[visits/workflow] auto-issue ${kind} failed:`,
+          renderErr,
+        );
+        remaining.push(kind);
+      }
+    }
+    if (remaining.length !== updated.pendingDocumentKinds.length) {
+      await prisma.visit.update({
+        where: { id: visitId },
+        data: { pendingDocumentKinds: { set: remaining } },
+      });
+    }
+  }
 
   if (current.serviceRequestId) {
     try {
@@ -313,7 +349,6 @@ async function reschedule(
     data: {
       state: "SCHEDULED",
       scheduledFor: input.scheduledFor,
-      scheduledWindow: input.scheduledWindow ?? null,
       failureReason: null,
     },
   });
@@ -326,12 +361,10 @@ async function reschedule(
     before: {
       state: current.state,
       scheduledFor: current.scheduledFor,
-      scheduledWindow: current.scheduledWindow,
     },
     after: {
       state: updated.state,
       scheduledFor: updated.scheduledFor,
-      scheduledWindow: updated.scheduledWindow,
       reason: input.reason ?? null,
     },
     request: request ?? null,

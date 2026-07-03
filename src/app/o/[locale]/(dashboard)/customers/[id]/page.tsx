@@ -18,6 +18,11 @@ import {
   equipmentStatusTone,
   equipmentOwnershipTone,
 } from "@/components/ui/status-badge";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { Avatar } from "@/components/ui/avatar";
+import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-modal";
+import { EquipmentDetailContent } from "@/components/equipment/equipment-detail-content";
+import { OrderHistoryTab } from "@/components/customer/order-history-tab";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
@@ -37,6 +42,7 @@ import {
   canManageEquipment,
 } from "@/lib/customers/access";
 import { formatDate } from "@/lib/format";
+import { OrderCreateModal } from "@/components/order/order-create-modal";
 
 interface CustomerDetail {
   id: string;
@@ -74,6 +80,20 @@ interface CustomerDetail {
   equipment: EquipmentRow[];
   contracts: ContractRow[];
   recentAudit: AuditRow[];
+  salesRep: { id: string; username: string; title: string | null; avatarUrl: string | null } | null;
+  salesRepId: string | null;
+}
+
+interface CustomerStats {
+  totalEquipment: number;
+  activeEquipment: number;
+  inactiveEquipment: number;
+  totalContracts: number;
+  activeContracts: number;
+  closedContracts: number;
+  monthlyMaintenanceRevenue: number;
+  monthlyRentalRevenue: number;
+  totalReceivable: number;
 }
 
 interface CustomerContact {
@@ -151,6 +171,7 @@ export default function CustomerDetailPage() {
   const tc = useTranslations("common");
   const tSite = useTranslations("sites");
   const tEq = useTranslations("equipment");
+  const tOrders = useTranslations("orders");
   const router = useRouter();
   const locale = useLocale();
   const api = useApi();
@@ -163,11 +184,18 @@ export default function CustomerDetailPage() {
   const [deactivateReason, setDeactivateReason] = useState("");
   const [showAddSite, setShowAddSite] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showChangeSalesRep, setShowChangeSalesRep] = useState(false);
+  const [showNewOrder, setShowNewOrder] = useState(false);
   const [siteFilter, setSiteFilter] = useState<string | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
 
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
   );
+  const statsQuery = useApiQuery<CustomerStats>(
+    id ? `/api/customers/${id}/stats` : null,
+  );
+  const stats = statsQuery.data ?? null;
   const data = query.data ?? null;
   const loading = query.isLoading;
   const error =
@@ -220,44 +248,151 @@ export default function CustomerDetailPage() {
     : data.equipment;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <BreadcrumbLabel value={data.name} />
-      <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs text-[#737373]">{data.code}</span>
-            <StatusBadge tone={customerTypeTone(data.type)}>{data.type}</StatusBadge>
-            <StatusBadge tone={customerStatusTone(data.status)}>{data.status}</StatusBadge>
+      <header className="rounded-lg border-2 border-gray-200 bg-white p-4">
+        <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-3">
+            <Avatar name={data.name} size="lg" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold text-[#002A4D]">{data.name}</h1>
+                <span className="font-mono text-xs text-gray-500">{data.code}</span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <StatusBadge tone={customerTypeTone(data.type)}>{data.type}</StatusBadge>
+                <StatusBadge tone={customerStatusTone(data.status)}>{data.status}</StatusBadge>
+                {data.shortcode && (
+                  <span className="text-xs text-gray-500">SC: {data.shortcode}</span>
+                )}
+              </div>
+              {/* Inline meta row: primary contact / email / address */}
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                {(() => {
+                  const primary = data.contacts.find((c) => c.isPrimary) ?? data.contacts[0];
+                  if (!primary) return null;
+                  return (
+                    <>
+                      <span>
+                        <span className="text-gray-400">{t("primaryContact")}:</span>{" "}
+                        <span className="text-gray-900">{primary.name}</span>
+                        {primary.title ? <span className="text-gray-500"> · {primary.title}</span> : null}
+                      </span>
+                      <span>
+                        <span className="text-gray-400">{tc("phone")}:</span>{" "}
+                        <span className="text-gray-900">{primary.phone1}</span>
+                      </span>
+                      {primary.email ? (
+                        <span>
+                          <span className="text-gray-400">{tc("email")}:</span>{" "}
+                          <span className="text-gray-900">{primary.email}</span>
+                        </span>
+                      ) : null}
+                    </>
+                  );
+                })()}
+                {(data.addressStreet ?? data.address) ? (
+                  <span>
+                    <span className="text-gray-400">{tc("address")}:</span>{" "}
+                    <span className="text-gray-900">
+                      {[
+                        data.addressStreet ?? data.address,
+                        data.addressDistrictName ?? data.district,
+                        data.addressProvinceName ?? data.city,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </span>
+                  </span>
+                ) : null}
+              </div>
+              {data.notes ? (
+                <div className="mt-2 text-xs">
+                  <span className="text-gray-400">{tc("notes")}:</span>{" "}
+                  <span className="text-gray-700">{data.notes}</span>
+                </div>
+              ) : null}
+            </div>
           </div>
-          <h1 className="mt-1 text-2xl font-semibold text-[#002A4D]">{data.name}</h1>
-          {data.shortcode && (
-            <p className="text-xs text-[#737373]">SC: {data.shortcode}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/o/customers/${id}/edit`}>
-            <Button variant="secondary">{tc("edit")}</Button>
-          </Link>
-          {!isInactive && canDeactivateCustomer(role) && (
-            <Button variant="danger" onClick={() => setShowDeactivate(true)}>
-              {t("deactivate")}
+          <div className="flex items-center gap-2">
+            <Link href={`/o/customers/${id}/edit`}>
+              <Button variant="secondary">{t("editCustomerShort")}</Button>
+            </Link>
+            <Button variant="secondary" onClick={() => setShowChangeSalesRep(true)}>
+              {t("changeSalesRep")}
             </Button>
-          )}
-          {isInactive && canReactivateCustomer(role) && (
-            <Button variant="outline" onClick={() => setShowReactivate(true)}>
-              {t("reactivate")}
-            </Button>
-          )}
+            {canManageEquipment(role) && (
+              <Button onClick={() => setShowNewOrder(true)}>
+                {tOrders("newOrder")}
+              </Button>
+            )}
+            <Link href={`/o/equipment/register?customerId=${id}`}>
+              <Button>{t("addEquipment")}</Button>
+            </Link>
+            {!isInactive && canDeactivateCustomer(role) && (
+              <Button variant="danger" onClick={() => setShowDeactivate(true)}>
+                {t("deactivate")}
+              </Button>
+            )}
+            {isInactive && canReactivateCustomer(role) && (
+              <Button variant="outline" onClick={() => setShowReactivate(true)}>
+                {t("reactivate")}
+              </Button>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* KPI strip — 5 cards */}
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <KpiCard
+          label={t("stats.totalEquipment")}
+          value={stats?.totalEquipment ?? "—"}
+          hint={
+            stats
+              ? `${tc("unitCount")} · ${t("stats.activeCustomers")}: ${stats.activeEquipment} / ${stats.inactiveEquipment}`
+              : undefined
+          }
+        />
+        <KpiCard
+          label={t("stats.totalContracts")}
+          value={stats?.totalContracts ?? "—"}
+          hint={
+            stats
+              ? `${tc("count")} · ${stats.activeContracts} / ${stats.closedContracts}`
+              : undefined
+          }
+        />
+        <KpiCard
+          label={t("stats.monthlyMaintenance")}
+          value={stats ? formatMoney(stats.monthlyMaintenanceRevenue) : "—"}
+          variant="money"
+        />
+        <KpiCard
+          label={t("stats.monthlyRental")}
+          value={stats ? formatMoney(stats.monthlyRentalRevenue) : "—"}
+          variant="money"
+        />
+        <KpiCard
+          label={t("stats.totalReceivable")}
+          value={stats ? formatMoney(stats.totalReceivable) : "—"}
+          variant={stats && stats.totalReceivable > 0 ? "warning" : "default"}
+        />
+      </section>
 
       <Tabs defaultValue="overview">
         <TabsList>
           <Tab value="overview">{t("tabs.overview")}</Tab>
-          <Tab value="contacts">{t("tabs.contacts")}</Tab>
-          {data.type === "B2B" && <Tab value="sites">{t("tabs.sites")}</Tab>}
           <Tab value="equipment">{t("tabs.equipment")}</Tab>
           <Tab value="contracts">{t("tabs.contracts")}</Tab>
+          <Tab value="maintenance">{t("tabs.maintenanceHistory")}</Tab>
+          <Tab value="filter-history">{t("tabs.filterExchange")}</Tab>
+          <Tab value="payments">{t("tabs.paymentStatus")}</Tab>
+          <Tab value="purchase">{t("tabs.orderHistory")}</Tab>
+          <Tab value="sales-orders">{t("tabs.salesOrder")}</Tab>
+          <Tab value="install-sites">{t("tabs.installSites")}</Tab>
+          <Tab value="notes-files">{t("tabs.notesAttachments")}</Tab>
+          <Tab value="contacts">{t("tabs.contacts")}</Tab>
           <Tab value="service-requests">{t("tabs.serviceRequests")}</Tab>
           <Tab value="activity">{t("tabs.activity")}</Tab>
         </TabsList>
@@ -293,6 +428,7 @@ export default function CustomerDetailPage() {
                 <Field label={t("documentIssuePlace")} value={data.documentIssuePlace} />
               </Card>
             )}
+            <SalesRepCard salesRep={data.salesRep} />
             <OpsContactsSummaryCard contacts={data.contacts} sites={data.sites} />
             <EquipmentSummaryCard equipment={data.equipment} />
             <ContractsSummaryCard contracts={data.contracts} />
@@ -365,8 +501,8 @@ export default function CustomerDetailPage() {
                 </div>
               )}
               {canManageEquipment(role) && (
-                <Link href={`/o/contracts/new?customerId=${data.id}`}>
-                  <Button variant="secondary">{tEq("installViaContract")}</Button>
+                <Link href={`/o/equipment/register?customerId=${data.id}`}>
+                  <Button variant="secondary">{tEq("bulkRegister.title")}</Button>
                 </Link>
               )}
             </div>
@@ -393,8 +529,12 @@ export default function CustomerDetailPage() {
                     {filteredEquipment.map((e) => (
                       <tr
                         key={e.id}
-                        onClick={() => router.push(`/o/equipment/${e.id}`)}
-                        className="cursor-pointer border-b border-[#f5f5f5] last:border-b-0 hover:bg-[#fafafa]"
+                        onClick={() =>
+                          setSelectedEquipmentId(
+                            selectedEquipmentId === e.id ? null : e.id,
+                          )
+                        }
+                        className={`cursor-pointer border-b border-[#f5f5f5] last:border-b-0 hover:bg-[#fafafa] ${selectedEquipmentId === e.id ? "bg-blue-50" : ""}`}
                       >
                         <td className="px-3 py-2">
                           <div className="flex flex-col">
@@ -421,11 +561,58 @@ export default function CustomerDetailPage() {
                 </table>
               </div>
             )}
+
+            {selectedEquipmentId ? (
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-[#002A4D]">
+                    {tEq("detailPanelTitle")}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/o/equipment/${selectedEquipmentId}`}>
+                      <Button variant="ghost">{tEq("openFullPage")}</Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setSelectedEquipmentId(null)}
+                    >
+                      {tc("close")}
+                    </Button>
+                  </div>
+                </div>
+                <EquipmentDetailContent
+                  equipmentId={selectedEquipmentId}
+                  embedded
+                />
+              </div>
+            ) : null}
           </div>
         </TabPanel>
 
         <TabPanel value="contracts">
           <CustomerContractsTab customerId={data.id} />
+        </TabPanel>
+
+        <TabPanel value="maintenance">
+          <PlaceholderTab title={t("tabs.maintenanceHistory")} />
+        </TabPanel>
+        <TabPanel value="filter-history">
+          <PlaceholderTab title={t("tabs.filterExchange")} />
+        </TabPanel>
+        <TabPanel value="payments">
+          <PlaceholderTab title={t("tabs.paymentStatus")} />
+        </TabPanel>
+        <TabPanel value="purchase">
+          <OrderHistoryTab customerId={data.id} />
+        </TabPanel>
+        <TabPanel value="sales-orders">
+          <OrderHistoryTab customerId={data.id} productKind="EQUIPMENT" />
+        </TabPanel>
+        <TabPanel value="install-sites">
+          <PlaceholderTab title={t("tabs.installSites")} />
+        </TabPanel>
+        <TabPanel value="notes-files">
+          <PlaceholderTab title={t("tabs.notesAttachments")} />
         </TabPanel>
 
         <TabPanel value="service-requests">
@@ -520,6 +707,32 @@ export default function CustomerDetailPage() {
           }}
         />
       )}
+
+      <ChangeSalesRepModal
+        open={showChangeSalesRep}
+        onClose={() => setShowChangeSalesRep(false)}
+        customerId={id}
+        currentSalesRepId={data.salesRepId}
+        onChanged={() => {
+          void reload();
+          void statsQuery.refetch();
+        }}
+      />
+
+      {showNewOrder && (
+        <OrderCreateModal
+          open={showNewOrder}
+          onClose={() => setShowNewOrder(false)}
+          initial={{ customerId: id, lockCustomer: true }}
+          onCreated={() => {
+            // Refetch the customer detail + stats so any downstream
+            // widget (equipment purchase-history, upcoming-visit hint,
+            // etc.) picks up the new order without a hard reload.
+            void reload();
+            void statsQuery.refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -582,6 +795,62 @@ function residencyLabel(
   return null;
 }
 
+/**
+ * Sales-rep card for the overview grid. Clickable — jumps to the
+ * rep's detail page so the office can see the rep's roster + numbers
+ * without hunting for the sidebar menu. Renders a "not assigned"
+ * empty state so the card slot doesn't disappear from the grid layout
+ * when a customer has no sales rep yet.
+ */
+function SalesRepCard({
+  salesRep,
+}: Readonly<{
+  salesRep: {
+    id: string;
+    username: string;
+    title: string | null;
+    avatarUrl: string | null;
+  } | null;
+}>) {
+  const t = useTranslations("customers");
+  return (
+    <Card label={t("salesRep")}>
+      {salesRep ? (
+        <Link
+          href={`/o/sales-reps/${salesRep.id}`}
+          className="-m-1 flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-[var(--brand-blue-50)]"
+        >
+          <Avatar name={salesRep.username} imageUrl={salesRep.avatarUrl} size="md" />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-[#111111]">
+              {salesRep.username}
+            </div>
+            {salesRep.title && (
+              <div className="truncate text-xs text-[#737373]">{salesRep.title}</div>
+            )}
+          </div>
+          <svg
+            className="text-[#737373]"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </Link>
+      ) : (
+        <p className="text-sm text-[#a3a3a3]">{t("salesRepUnassigned")}</p>
+      )}
+    </Card>
+  );
+}
+
 function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[] }>) {
   const t = useTranslations("customers");
   const tEq = useTranslations("equipment");
@@ -605,7 +874,7 @@ function EquipmentSummaryCard({ equipment }: Readonly<{ equipment: EquipmentRow[
               >
                 <span className="flex flex-col">
                   <span className="font-mono text-xs text-[var(--brand-blue-700)] underline">
-                    {e.serialNumber ?? e.model.modelCode ?? "—"}
+                    {e.serialNumber ?? e.model?.modelCode ?? "—"}
                   </span>
                   <span className="text-xs text-[#737373]">
                     {pickModelName(e.model, locale)}
@@ -1672,4 +1941,19 @@ function CustomerServiceRequestsTab({ customerId }: Readonly<{ customerId: strin
       </table>
     </div>
   );
+}
+
+function PlaceholderTab({ title }: Readonly<{ title: string }>) {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+      <h3 className="text-base font-semibold text-gray-700">{title}</h3>
+      <p className="mt-1 text-xs text-gray-500">
+        준비 중 — 이 화면은 곧 활성화됩니다.
+      </p>
+    </div>
+  );
+}
+
+function formatMoney(v: number): string {
+  return new Intl.NumberFormat("vi-VN").format(Math.round(v)) + " ₫";
 }

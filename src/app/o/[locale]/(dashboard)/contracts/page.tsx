@@ -206,9 +206,14 @@ export default function ContractsPage() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
-        <Link href="/o/contracts/new">
-          <Button>{t("newContract")}</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/o/contracts/new?source=equipment">
+            <Button variant="secondary">{t("newContractFromEquipment")}</Button>
+          </Link>
+          <Link href="/o/contracts/new">
+            <Button>{t("newContract")}</Button>
+          </Link>
+        </div>
       </header>
 
       <DataTable

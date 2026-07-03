@@ -31,6 +31,7 @@ const CUSTOMER_SORT_MAP: SortMap<Prisma.CustomerOrderByWithRelationInput> = {
   shortcode: (dir) => ({ shortcode: dir }),
   preferredRegion: (dir) => ({ preferredRegion: dir }),
   createdAt: (dir) => ({ createdAt: dir }),
+  salesRep: (dir) => ({ salesRep: { username: dir } }),
 };
 
 export const GET = defineQuery({
@@ -43,13 +44,48 @@ export const GET = defineQuery({
   query: customerListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, type, status, region, sortBy, sortDir, page, pageSize } = query;
+    const {
+      q,
+      type,
+      status,
+      region,
+      salesRepId,
+      contractState,
+      sortBy,
+      sortDir,
+      page,
+      pageSize,
+    } = query;
     const orderBy = resolveOrderBy({ sortBy, sortDir }, CUSTOMER_SORT_MAP, { code: "asc" });
 
     const where: Prisma.CustomerWhereInput = {};
     if (type) where.type = type;
     if (status) where.status = status;
     if (region) where.preferredRegion = region;
+    if (salesRepId) where.salesRepId = salesRepId;
+    if (contractState) {
+      switch (contractState) {
+        case "ACTIVE":
+          where.contracts = { some: { state: "ACTIVE" } };
+          break;
+        case "EXPIRING": {
+          const now = new Date();
+          const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          where.contracts = {
+            some: { state: "ACTIVE", endDate: { gte: now, lte: in30 } },
+          };
+          break;
+        }
+        case "TERMINATED":
+          where.contracts = {
+            some: { state: { in: ["TERMINATED", "COMPLETED"] } },
+          };
+          break;
+        case "NONE":
+          where.contracts = { none: {} };
+          break;
+      }
+    }
     if (q) {
       const term = q.trim();
       where.OR = [
@@ -79,6 +115,10 @@ export const GET = defineQuery({
           contacts: {
             where: { isPrimary: true },
             take: 1,
+            select: { id: true, name: true, title: true, phone1: true, email: true },
+          },
+          salesRep: {
+            select: { id: true, username: true, title: true, avatarUrl: true },
           },
           _count: {
             select: { equipment: true, sites: true, contracts: true },
@@ -87,7 +127,55 @@ export const GET = defineQuery({
       }),
     ]);
 
-    return { rows, pagination: { page, limit: pageSize, total } };
+    // Augment each row with: activeContracts, activeEquipment, nextMaintenanceAt.
+    // Done as a batched query so we avoid an N+1 for /api/customers.
+    const customerIds = rows.map((r) => r.id);
+    const [activeContracts, activeEquipment, nextVisits] = await Promise.all([
+      customerIds.length === 0
+        ? []
+        : prisma.contract.groupBy({
+            by: ["customerId"],
+            where: { customerId: { in: customerIds }, state: "ACTIVE" },
+            _count: { _all: true },
+          }),
+      customerIds.length === 0
+        ? []
+        : prisma.equipment.groupBy({
+            by: ["customerId"],
+            where: {
+              customerId: { in: customerIds },
+              status: { not: "REPLACED" },
+              lifecycleStage: { in: ["INSTALLED", "IN_RENTAL", "IN_MAINTENANCE"] },
+            },
+            _count: { _all: true },
+          }),
+      customerIds.length === 0
+        ? []
+        : prisma.visit.findMany({
+            where: {
+              customerId: { in: customerIds },
+              state: { in: ["SUGGESTED", "SCHEDULED"] },
+              type: { in: ["PERIODIC_INSPECTION", "INSTALLATION"] },
+            },
+            select: { customerId: true, scheduledFor: true },
+            orderBy: { scheduledFor: "asc" },
+          }),
+    ]);
+    const activeContractMap = new Map(activeContracts.map((r) => [r.customerId, r._count._all]));
+    const activeEquipmentMap = new Map(activeEquipment.map((r) => [r.customerId, r._count._all]));
+    const nextVisitMap = new Map<string, Date>();
+    for (const v of nextVisits) {
+      if (!nextVisitMap.has(v.customerId)) nextVisitMap.set(v.customerId, v.scheduledFor);
+    }
+
+    const augmented = rows.map((row) => ({
+      ...row,
+      activeContractCount: activeContractMap.get(row.id) ?? 0,
+      activeEquipmentCount: activeEquipmentMap.get(row.id) ?? 0,
+      nextMaintenanceAt: nextVisitMap.get(row.id) ?? null,
+    }));
+
+    return { rows: augmented, pagination: { page, limit: pageSize, total } };
   },
 });
 
@@ -164,6 +252,7 @@ export async function POST(request: NextRequest) {
       city: data.addressProvinceName ?? null,
       preferredRegion: data.preferredRegion ?? null,
       preferredTechnicianId: data.preferredTechnicianId ?? null,
+      salesRepId: data.salesRepId ?? null,
       notes: data.notes ?? null,
       contacts: {
         create: [

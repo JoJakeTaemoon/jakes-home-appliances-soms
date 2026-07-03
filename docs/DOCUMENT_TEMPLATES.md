@@ -164,18 +164,39 @@ Source PDFs live in `reference/forms/`. The 10 forms map to ~6 logical digital d
 | Visit reminder SMS (auto) | Any | SMS only (no PDF) | n/a | **Ops Contact lang** → Ops Contact.phone1 | n/a |
 | Overdue dunning notice | Any | Email + SMS | n/a | Each in **its own** contact's language | n/a |
 
-### 0. Visit-document auto-suggestion matrix (Phase 6 — 2026-06-03)
+### 0. Visit-document auto-suggestion matrix (Phase 6 — 2026-06-03, extended 2026-07-02)
 
 `src/lib/visits/document-suggest.ts → suggestVisitDocumentKind()`:
 
 | `Visit.type` | `Customer.type` | `Contract.type` (latest active) | → DocumentKind |
 |---|---|---|---|
-| INSTALLATION | B2C | RENTAL | `DELIVERY_RECEIPT` |
-| INSTALLATION | B2C | SALE | `SALE_RECEIPT_B2C` |
-| INSTALLATION | B2B | * | `DELIVERY_SLIP_B2B` |
-| PERIODIC_INSPECTION | B2C | * | `PERIODIC_CHECK_B2C` |
-| PERIODIC_INSPECTION | B2B | * | `PERIODIC_CHECK_B2B` |
-| REPAIR / FILTER_REPLACEMENT / RELOCATION / PAYMENT_COLLECTION / OTHER | * | * | `WORK_CONFIRMATION` |
+| INSTALLATION | B2C | RENTAL | `DELIVERY_RECEIPT` (납품·수령서) |
+| INSTALLATION | B2C | SALE | `SALE_RECEIPT_B2C` (판매 영수증) |
+| INSTALLATION | B2B | * | `DELIVERY_SLIP_B2B` (출고서 Mẫu 02-VT) |
+| PERIODIC_INSPECTION | B2C | * | `PERIODIC_CHECK_B2C` (정기 점검표) |
+| PERIODIC_INSPECTION | B2B | * | `PERIODIC_CHECK_B2B` (정기 점검 확인서) |
+| **CONSUMABLE_DELIVERY** (purchase) | **B2C** | * | **`SALE_RECEIPT_B2C`** (판매 영수증) |
+| **CONSUMABLE_DELIVERY** (purchase) | **B2B** | * | **`DELIVERY_SLIP_B2B`** (출고서 Mẫu 02-VT) |
+| REPAIR / FILTER_REPLACEMENT / RELOCATION / PAYMENT_COLLECTION / RETRIEVAL / OTHER | * | * | `WORK_CONFIRMATION` (작업확인서) |
+
+**Rationale — `CONSUMABLE_DELIVERY` is a purchase, not a rental handoff.** B2C households pay outright for consumables (필터/소모품/부속품), so the artifact is the sale receipt (판매 영수증), not the rental-flavored `DELIVERY_RECEIPT` (납품·수령서). B2B customers get the standard Vietnamese `Mẫu số 02-VT` goods-delivery slip for both equipment installs and consumable purchases.
+
+#### Multi-purpose visits (primary type + `additionalTypes`)
+
+A single visit can carry more than one work stream — the canonical case is a scheduled periodic inspection where the office attaches a paid consumable order via **[예정된 방문에 구매 소모품 추가]**. The visit's `additionalTypes: VisitType[]` array captures every extra stream; each entry adds its suggested document to the visit.
+
+`suggestVisitDocumentKindList({ visitType, additionalTypes, customerType, contractType })` returns the deduped union across `[type, ...additionalTypes]`. Callers (bulk print, visit-detail 지참 서류 card) iterate the array:
+
+| Visit shape | Customer | Suggested docs (primary → additional) |
+|---|---|---|
+| PERIODIC_INSPECTION + [CONSUMABLE_DELIVERY] | B2C | `PERIODIC_CHECK_B2C` + `SALE_RECEIPT_B2C` |
+| PERIODIC_INSPECTION + [CONSUMABLE_DELIVERY] | B2B | `PERIODIC_CHECK_B2B` + `DELIVERY_SLIP_B2B` |
+| REPAIR + [CONSUMABLE_DELIVERY] | B2C | `WORK_CONFIRMATION` + `SALE_RECEIPT_B2C` |
+| REPAIR + [CONSUMABLE_DELIVERY] | B2B | `WORK_CONFIRMATION` + `DELIVERY_SLIP_B2B` |
+| CONSUMABLE_DELIVERY only ("신규 방문 생성" order flow) | B2C | `SALE_RECEIPT_B2C` |
+| CONSUMABLE_DELIVERY only ("신규 방문 생성" order flow) | B2B | `DELIVERY_SLIP_B2B` |
+
+`POST /api/orders` queues the correct kind on the visit's `pendingDocumentKinds` at order-create time via `deliveryKindForCustomerType(customer.type)` — the auto-issue drain in `VisitWorkflow.schedule` renders it the moment the office confirms the trip, and the bulk-print handler picks up the additional doc without any office intervention.
 
 ### 0.1 Issuance policy (D3 — 2026-06-03)
 
@@ -199,12 +220,12 @@ Issuance is **always manual** (office STAFF+ clicks "발급" on the visit detail
 - `PERIODIC_CHECK_B2B` exception: ≤4 devices = 1 page, 5–10 devices = 2 pages (page 1 = customer copy, page 2 = company copy). 11+ devices is follow-up.
 - `WORK_CONFIRMATION` is 2 identical pages (1=customer, 2=company) instead of 1-page tear; the layout has a 2-column visit + customer header.
 
-### 0.3 Bulk-print (Track 4 — 2026-06-03)
+### 0.3 Bulk-print (Track 4 — 2026-06-03, multi-doc 2026-07-02)
 
 `/o/{locale}/visits/print?date=YYYY-MM-DD&technicianId=<id>` — backend merges the day's per-tech bundle into a single PDF via `pdf-lib`. The page renders an `<iframe>` of that merged PDF plus a "PDF 새 탭에서 인쇄" button. For each visit:
 
 - If `visit.type = INSTALLATION`, the **actual contract PDF** (the same file the `/o/contracts/[id]` page shows, served from `getLatestPdf({kind:'CONTRACT'})`) is appended twice (customer copy + company copy) **before** the visit document. The technician hand-carries both.
-- The visit's suggested or already-issued document follows.
+- Every doc from `suggestVisitDocumentKindList({visitType, additionalTypes, customerType, contractType})` is appended in order. Merged visits (e.g. PERIODIC_INSPECTION + CONSUMABLE_DELIVERY) print BOTH the primary form and the extra receipt/slip on a single trip.
 - Visits without an issued document trigger **auto-issuance** at print time.
 
 TECHNICIAN can also reach an equivalent mobile view at `/f/{locale}/visits/print?date=...` scoped to their own lead visits.

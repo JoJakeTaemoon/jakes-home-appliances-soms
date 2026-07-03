@@ -9,6 +9,7 @@
     "filter": "Lọc",
     "filters": "Bộ lọc",
     "all": "Tất cả",
+    "none": "Không chọn",
     "loading": "Đang tải...",
     "error": "Đã xảy ra lỗi",
     "success": "Thành công",
@@ -16,6 +17,9 @@
     "back": "Quay lại",
     "next": "Tiếp theo",
     "previous": "Trước",
+    "prev": "Trước",
+    "today": "Hôm nay",
+    "clear": "Xoá",
     "actions": "Thao tác",
     "noData": "Không có dữ liệu",
     "noResults": "Không tìm thấy kết quả",
@@ -46,7 +50,11 @@
     "deleting": "Đang xóa...",
     "select": "Chọn",
     "selectPlaceholder": "Chọn...",
-    "searchPlaceholder": "Tìm kiếm..."
+    "searchPlaceholder": "Tìm kiếm...",
+    "count": "HĐ",
+    "unitCount": "thiết bị",
+    "daysRemaining": " ngày còn lại",
+    "daysOverdue": " ngày quá hạn"
   },
   "auth": {
     "login": {
@@ -97,6 +105,9 @@
     "dashboard": "Bảng điều khiển",
     "customers": "Khách hàng",
     "equipment": "Thiết bị",
+    "equipmentBulkRegister": "Đăng ký / Lắp đặt hàng loạt",
+    "equipmentInstallHistory": "Lịch sử lắp đặt",
+    "salesReps": "Nhân viên BH",
     "contracts": "Hợp đồng",
     "visits": "Lượt thăm",
     "scheduleBoard": "Bảng phân công",
@@ -234,6 +245,40 @@
     "filterType": "Lọc theo loại",
     "filterStatus": "Lọc theo trạng thái",
     "filterRegion": "Lọc theo khu vực",
+    "listSubtitle": "Xem và quản lý tất cả thông tin khách hàng đã đăng ký.",
+    "quickFilters": "Bộ lọc nhanh",
+    "apply": "Áp dụng",
+    "reset": "Đặt lại bộ lọc",
+    "all": "Tất cả",
+    "regionPlaceholder": "VD: HCMC-D1",
+    "contactInfo": "Liên hệ",
+    "contractStatus": "Trạng thái HĐ",
+    "equipmentCount": "Số thiết bị",
+    "contractCount": "Số HĐ",
+    "nextMaintenance": "Bảo trì tiếp theo",
+    "salesRep": "Nhân viên bán hàng",
+    "salesRepUnassigned": "Chưa gán nhân viên bán hàng.",
+    "changeSalesRep": "Đổi NV phụ trách",
+    "addEquipment": "+ Đăng ký thiết bị mới",
+    "editCustomerShort": "Sửa",
+    "contractState": {
+      "ACTIVE": "Đang hoạt động",
+      "EXPIRING": "Sắp hết hạn",
+      "TERMINATED": "Đã kết thúc",
+      "NONE": "Chưa có HĐ"
+    },
+    "stats": {
+      "totalCustomers": "Tổng khách hàng",
+      "activeCustomers": "Khách đang HĐ",
+      "activeHint": "Khách có hợp đồng đang hoạt động",
+      "b2bCount": "B2B - Doanh nghiệp",
+      "b2cCount": "B2C - Cá nhân",
+      "totalEquipment": "Tổng thiết bị",
+      "totalContracts": "Tổng hợp đồng",
+      "monthlyMaintenance": "Doanh thu bảo trì/tháng",
+      "monthlyRental": "Doanh thu thuê/tháng",
+      "totalReceivable": "Tổng công nợ"
+    },
     "noCustomers": "Chưa có khách hàng",
     "noResults": "Không có khách hàng phù hợp",
     "tabs": {
@@ -242,6 +287,13 @@
       "sites": "Cơ sở",
       "equipment": "Thiết bị",
       "contracts": "Hợp đồng",
+      "maintenanceHistory": "Lịch sử bảo trì",
+      "filterExchange": "Lịch sử thay lõi lọc",
+      "paymentStatus": "Tình hình thanh toán",
+      "orderHistory": "Lịch sử mua hàng",
+      "salesOrder": "Đơn hàng (Bán)",
+      "installSites": "Địa điểm lắp đặt",
+      "notesAttachments": "Ghi chú & Đính kèm",
       "serviceRequests": "Yêu cầu DV",
       "activity": "Hoạt động"
     },
@@ -291,6 +343,104 @@
     "serviceSummary": "Dịch vụ",
     "visitHistory": "Lượt thăm gần đây"
   },
+  "salesReps": {
+    "title": "Nhân viên bán hàng",
+    "subtitle": "Quản lý khách hàng, hợp đồng và công nợ theo nhân viên.",
+    "emptyState": "Chưa có nhân viên — bật cờ \"Nhân viên BH\" trong cài đặt.",
+    "type": "Loại",
+    "equipmentCount": "Thiết bị",
+    "contractCount": "Số HĐ",
+    "createdAt": "Ngày tạo",
+    "contractNumber": "Số HĐ",
+    "totalValue": "Giá trị HĐ",
+    "totalSum": "Tổng",
+    "totalReceivable": "Tổng công nợ",
+    "outstanding": "Công nợ",
+    "dueDate": "Hạn",
+    "state": "Trạng thái",
+    "periodLabel": "Kỳ",
+    "periodFrom": "Từ",
+    "periodTo": "Đến",
+    "kpi": {
+      "customers": "Khách phụ trách",
+      "monthlyContracts": "HĐ mới (tháng)",
+      "monthlyRevenue": "Doanh thu kỳ",
+      "receivables": "Công nợ tích lũy"
+    },
+    "tabs": {
+      "customers": "Khách phụ trách",
+      "contracts": "Doanh thu theo kỳ",
+      "receivables": "Công nợ theo kỳ"
+    },
+    "revenue": {
+      "customerCount": "Số KH",
+      "equipmentCount": "Số TB",
+      "modelName": "Model",
+      "serial": "Serial",
+      "installedAt": "Ngày lắp",
+      "serviceType": "Loại dịch vụ",
+      "deposit": "Đặt cọc",
+      "monthlyFee": "Phí/tháng",
+      "perEquipmentRevenue": "Doanh thu/TB",
+      "formulaHint": "Doanh thu/TB = đặt cọc + phí/tháng × {months} tháng"
+    },
+    "receivables": {
+      "paymentCount": "Số mục",
+      "noEquipment": "Không có thông tin thiết bị liên kết."
+    }
+  },
+  "orders": {
+    "title": "Đơn hàng",
+    "orderNumber": "Số đơn",
+    "orderedAt": "Ngày đặt",
+    "deliveredAt": "Ngày giao",
+    "product": "Sản phẩm",
+    "quantity": "SL",
+    "unitPrice": "Đơn giá",
+    "totalPrice": "Tổng",
+    "purpose": "Mục đích",
+    "equipment": "Thiết bị",
+    "state": "Trạng thái",
+    "newOrder": "+ Đơn mới",
+    "createTitle": "Tạo đơn hàng",
+    "customer": "Khách hàng",
+    "site": "Cơ sở",
+    "items": "Mục",
+    "addItem": "+ Thêm mục",
+    "kind": "Loại",
+    "orderTotal": "Tổng đơn",
+    "linkedEquipment": "Thiết bị liên kết",
+    "noConsumableForEquipment": "Không có vật tư nào tương thích với thiết bị này.",
+    "pickModel": "Chọn model thiết bị",
+    "pickConsumable": "Chọn vật tư",
+    "customNamePlaceholder": "Tên sản phẩm",
+    "notes": "Ghi chú",
+    "states": {
+      "PENDING": "Chưa giao",
+      "DELIVERED": "Đã giao",
+      "CANCELLED": "Đã huỷ"
+    },
+    "kinds": {
+      "EQUIPMENT": "Thiết bị",
+      "CONSUMABLE": "Vật tư",
+      "OTHER": "Khác"
+    },
+    "visitSectionTitle": "Lượt thăm (tự tạo)",
+    "visitSectionHint": "Một lượt thăm sẽ được lên lịch khi tạo đơn.",
+    "visitScheduledFor": "Ngày thăm",
+    "visitType": "Loại lượt thăm",
+    "visitTechnician": "Kỹ thuật viên",
+    "visitNotes": "Ghi chú lượt thăm",
+    "visitNotesPlaceholder": "Ghi chú cho hiện trường (tuỳ chọn)",
+    "visitModeAttach": "Thêm vào lượt thăm sắp tới",
+    "visitModeNew": "Tạo lượt thăm mới",
+    "visitModeNewHint": "Lên lịch một lượt thăm riêng cho đơn này.",
+    "visitAttachHint": "Đơn này sẽ được gắn vào lượt thăm ở trên; loại 'Giao vật tư' được bổ sung vào lượt thăm.",
+    "noUpcomingVisit": "Chưa có lượt thăm nào sắp tới.",
+    "upcomingFetchError": "Không tải được thông tin lượt thăm.",
+    "scheduledFor": "Ngày thăm",
+    "openVisit": "Mở lượt thăm"
+  },
   "sites": {
     "title": "Cơ sở",
     "addSite": "Thêm cơ sở",
@@ -315,7 +465,211 @@
   "equipment": {
     "title": "Thiết bị",
     "installNew": "+ Lắp đặt",
-    "installViaContract": "+ Lắp đặt qua hợp đồng",
+    "detailPanelTitle": "Chi tiết thiết bị",
+    "openFullPage": "Mở toàn màn hình",
+    "detail": {
+      "title": "Thông tin thiết bị",
+      "model": "Mẫu",
+      "serial": "Sê-ri",
+      "assetCode": "Mã tài sản",
+      "location": "Vị trí",
+      "serviceType": "Loại dịch vụ",
+      "managementType": "Loại quản lý",
+      "deposit": "Đặt cọc",
+      "monthlyFee": "Phí/tháng",
+      "installedAt": "Ngày lắp",
+      "registeredBy": "Người đăng ký",
+      "technician": "Kỹ thuật viên",
+      "inspectionCycle": "Chu kỳ kiểm tra",
+      "months": "tháng"
+    },
+    "serviceConfig": {
+      "title": "Cấu hình dịch vụ",
+      "kindHeader": "Loại",
+      "name": "Hạng mục",
+      "defaultCycle": "Chu kỳ (mặc định)",
+      "userCycle": "Chu kỳ tùy chỉnh",
+      "quantity": "SL",
+      "previousAt": "Lần trước",
+      "lastAt": "Lần gần nhất",
+      "nextDueAt": "Dự kiến",
+      "daysRemaining": "Còn lại",
+      "monthsShort": "ngày",
+      "kind": {
+        "INSPECTION": "Kiểm tra",
+        "FILTER": "Lõi lọc"
+      },
+      "status": {
+        "header": "Trạng thái",
+        "NORMAL": "Bình thường",
+        "SCHEDULED": "Đã lên lịch",
+        "REPLACE_DUE": "Sắp đến hạn",
+        "OVERDUE": "Quá hạn"
+      }
+    },
+    "widgets": {
+      "purchaseHistory": "Lịch sử mua",
+      "recentWork": "Công việc gần đây",
+      "nextSchedule": "Lịch tiếp theo",
+      "customerRequest": "Yêu cầu khách hàng"
+    },
+    "register": {
+      "title": "Đăng ký / Lắp đặt thiết bị",
+      "subtitle": "Đăng ký nhiều mẫu thiết bị cho một khách hàng, mỗi mẫu một mức giá riêng.",
+      "submit": "Đăng ký",
+      "sections": {
+        "customer": "Khách hàng",
+        "location": "Địa điểm",
+        "lines": "Dòng thiết bị theo mẫu",
+        "summary": "Tổng & HĐ"
+      },
+      "fields": {
+        "customer": "Khách hàng",
+        "customerPlaceholder": "Tìm khách (mã / tên / mã viết tắt)",
+        "customerType": "Loại KH",
+        "contact": "Liên hệ",
+        "site": "Cơ sở",
+        "sitePlaceholder": "Chọn cơ sở",
+        "siteNotApplicable": "Khách chưa có cơ sở (dùng địa chỉ KH)",
+        "pickCustomerFirst": "Chọn khách hàng trước",
+        "installedAt": "Ngày lắp mặc định",
+        "technician": "Kỹ thuật viên",
+        "brand": "Thương hiệu",
+        "brandPlaceholder": "Thương hiệu (tất cả)",
+        "category": "Nhóm SP",
+        "categoryPlaceholder": "Nhóm SP (tất cả)",
+        "modelPlaceholder": "Chọn mẫu",
+        "serialPrefixPlaceholder": "VD: AQS-2406"
+      },
+      "columns": {
+        "model": "Mẫu",
+        "serviceType": "Loại DV",
+        "managementType": "Loại QL",
+        "quantity": "SL",
+        "deposit": "Cọc (1 cái)",
+        "monthlyFee": "Phí/tháng (1 cái)",
+        "serialPrefix": "Tiền tố sê-ri",
+        "installedAt": "Ngày lắp"
+      },
+      "serviceTypes": { "RENTAL": "Thuê", "MAINTENANCE": "Bảo trì", "SALE": "Bán" },
+      "managementTypes": { "FULL_SERVICE": "Toàn phần", "SELF_MANAGED": "KH tự quản", "OTHER": "Khác" },
+      "actions": { "addLine": "+ Thêm mẫu" },
+      "totals": {
+        "equipmentCount": "Tổng thiết bị",
+        "totalDeposit": "Tổng đặt cọc",
+        "totalMonthly": "Tổng phí/tháng",
+        "totalSale": "Tổng giá bán"
+      },
+      "contract": {
+        "toggle": "Tạo HĐ cùng các thiết bị này",
+        "toggleHint": "Khi bật, gói mọi dòng vào một HĐ trong cùng giao dịch.",
+        "termMonths": "Kỳ hạn (tháng)"
+      }
+    },
+    "bulkRegister": {
+      "title": "Đăng ký / lắp đặt thiết bị hàng loạt",
+      "subtitle": "Đăng ký nhiều thiết bị cùng cấu hình trong một lần.",
+      "prevStep": "Quay lại",
+      "nextStep": "Tiếp theo",
+      "submitFinal": "Hoàn tất",
+      "applyPaste": "Áp dụng",
+      "vatExclusive": "* Giá đã loại VAT.",
+      "steps": { "info": "Nhập thông tin", "list": "Danh sách", "confirm": "Xác nhận" },
+      "sections": {
+        "customer": "Khách hàng",
+        "location": "Địa điểm",
+        "equipment": "Thiết bị",
+        "etc": "Khác",
+        "contractCost": "Hợp đồng & chi phí (Quan trọng)",
+        "quantitySerial": "Số lượng & Sê-ri",
+        "rowsTable": "Danh sách thiết bị"
+      },
+      "fields": {
+        "customerName": "Tên khách hàng",
+        "customerPlaceholder": "Tìm KH (mã / tên / mã viết tắt)",
+        "customerType": "Loại KH",
+        "primaryContact": "Người liên hệ",
+        "site": "Cơ sở",
+        "sitePlaceholder": "Chọn cơ sở",
+        "siteAddress": "Địa chỉ cơ sở",
+        "siteNotApplicable": "Khách hàng chưa có cơ sở (dùng địa chỉ KH)",
+        "pickCustomerFirst": "Chọn khách hàng trước",
+        "brand": "Thương hiệu",
+        "brandPlaceholder": "Thương hiệu (tất cả)",
+        "category": "Nhóm sản phẩm",
+        "categoryPlaceholder": "Nhóm SP (tất cả)",
+        "model": "Mẫu thiết bị",
+        "modelPlaceholder": "Chọn mẫu",
+        "serviceType": "Loại dịch vụ",
+        "managementType": "Loại quản lý",
+        "installedAt": "Ngày lắp mặc định",
+        "technician": "Kỹ thuật viên",
+        "deposit": "Đặt cọc (1 thiết bị)",
+        "monthlyFee": "Phí hàng tháng (1 thiết bị)",
+        "quantity": "Số lượng",
+        "serialMode": "Cách nhập sê-ri",
+        "serialNumber": "Sê-ri",
+        "assetCode": "Mã tài sản"
+      },
+      "serviceTypes": {
+        "RENTAL": "Thuê",
+        "MAINTENANCE": "Bảo trì",
+        "SALE": "Bán (sở hữu)"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "Toàn phần",
+        "SELF_MANAGED": "Khách tự quản",
+        "OTHER": "Khác"
+      },
+      "serialMode": {
+        "auto": "Tự động",
+        "manual": "Nhập tay",
+        "excel": "Tải Excel",
+        "paste": "Dán văn bản"
+      },
+      "summary": {
+        "title": "Tóm tắt (dự kiến)",
+        "equipmentCount": "Số thiết bị",
+        "contractCount": "Số hợp đồng",
+        "contractHint": "Chỉ tạo thiết bị. HĐ liên kết sau.",
+        "visitCount": "Số lượt thăm",
+        "deposit": "Tổng đặt cọc",
+        "monthlyFee": "Tổng phí/tháng"
+      },
+      "contract": {
+        "title": "Tạo HĐ (tùy chọn)",
+        "toggle": "Tạo HĐ cùng với các thiết bị này",
+        "toggleHint": "Khi bật, gói tất cả thiết bị vào một HĐ và tạo cùng giao dịch. Khi tắt, chỉ tạo thiết bị; HĐ liên kết sau ở [Hợp đồng].",
+        "termMonths": "Kỳ hạn (tháng)",
+        "totalValue": "Tổng giá trị HĐ",
+        "totalValueHint": "Tổng đặt cọc + phí/tháng × {months} tháng",
+        "totalValueHintSale": "Tổng giá bán",
+        "numberPreview": "Số HĐ",
+        "autoAssigned": "Tự động",
+        "numberPreviewHint": "Theo mã KH + ngày lắp sớm nhất"
+      }
+    },
+    "installationHistory": {
+      "title": "Lịch sử lắp đặt",
+      "subtitle": "Tra cứu các đợt đăng ký hàng loạt + lượt thăm lắp đặt.",
+      "viewMode": { "batch": "Theo đợt", "visit": "Theo lượt thăm" },
+      "columns": {
+        "batch": {
+          "registeredAt": "Ngày đăng ký",
+          "registeredBy": "Người đăng ký",
+          "quantity": "SL",
+          "serviceType": "Dịch vụ"
+        },
+        "visit": {
+          "scheduledAt": "Ngày dự kiến",
+          "customer": "Khách hàng",
+          "model": "Mẫu",
+          "equipmentCode": "Sê-ri",
+          "technician": "KTV",
+          "state": "Trạng thái"
+        }
+      }
+    },
     "filterHistory": {
       "title": "Lịch sử thay lõi lọc",
       "addManual": "+ Thêm lõi",
@@ -483,6 +837,7 @@
   "contracts": {
     "title": "Hợp đồng",
     "newContract": "+ Hợp đồng mới",
+    "newContractFromEquipment": "+ HĐ từ thiết bị đã lắp",
     "createContract": "Tạo hợp đồng",
     "install": {
       "cta": "+ Lắp đặt thiết bị",
@@ -639,6 +994,7 @@
       "step2": "2. Loại & thiết bị",
       "step3": "3. Giá",
       "step4": "4. Xem lại",
+      "fromEquipmentHint": "Tạo HĐ từ thiết bị đã lắp. Chọn khách hàng trước; ở bước 2, bạn có thể chọn thiết bị đã lắp của khách hàng đó để thêm vào HĐ.",
       "pickCustomer": "Chọn khách hàng",
       "newCustomer": "Khách hàng mới",
       "newCustomerTitle": "Tạo nhanh khách hàng",
@@ -913,6 +1269,20 @@
   "visits": {
     "title": "Lượt thăm",
     "newVisit": "+ Lượt thăm mới",
+    "pendingDocPrefix": "Chờ phát hành",
+    "pendingDocsTooltip": "Sẽ được tự động phát hành khi lượt thăm được xác nhận SCHEDULED.",
+    "docKinds": {
+      "DELIVERY_RECEIPT": "Phiếu giao hàng & nhận",
+      "SALE_RECEIPT_B2C": "Hoá đơn bán hàng",
+      "DELIVERY_SLIP_B2B": "Phiếu xuất kho",
+      "PERIODIC_CHECK_B2C": "Phiếu bảo trì định kỳ",
+      "PERIODIC_CHECK_B2B": "Phiếu bảo trì định kỳ",
+      "WORK_CONFIRMATION": "Phiếu xác nhận công việc",
+      "RECEIPT": "Hoá đơn",
+      "CONTRACT": "Hợp đồng",
+      "TAX_INVOICE": "Hoá đơn GTGT",
+      "DELIVERY_SLIP": "Phiếu xuất kho"
+    },
     "searchPlaceholder": "Tìm lượt thăm...",
     "noVisits": "Chưa có lượt thăm.",
     "noResults": "Không tìm thấy.",
@@ -966,7 +1336,6 @@
     "load": "{n} lượt thăm trong ngày",
     "manualPick": "Chọn KTV khác",
     "addCollaborator": "Thêm KTV phụ",
-    "scheduleWindow": "Khung giờ (vd: sáng, 14:00-16:00)",
     "reasonRequired": "Lý do (3-500 ký tự)",
     "saving": "Đang lưu...",
     "createForm": {
@@ -980,7 +1349,6 @@
       "equipmentPick": "— Chọn thiết bị —",
       "type": "Loại dịch vụ",
       "scheduledFor": "Ngày + giờ",
-      "scheduledWindow": "Khung giờ",
       "expectedAmount": "Số tiền dự kiến (VND)",
       "notes": "Ghi chú nội bộ",
       "submit": "Tạo lượt thăm"
@@ -992,6 +1360,8 @@
       "FILTER_REPLACEMENT": "Thay lõi lọc",
       "RELOCATION": "Di dời",
       "PAYMENT_COLLECTION": "Thu tiền",
+      "RETRIEVAL": "Thu hồi thiết bị",
+      "CONSUMABLE_DELIVERY": "Giao vật tư",
       "OTHER": "Khác"
     },
     "states": {
@@ -1008,6 +1378,28 @@
       "photos": "Hình ảnh",
       "activity": "Hoạt động",
       "payments": "Thanh toán"
+    },
+    "relatedSr": {
+      "title": "Yêu cầu dịch vụ liên quan",
+      "paid": "Có phí",
+      "free": "Miễn phí",
+      "submittedAt": "Gửi lúc",
+      "preferredVisitAt": "Thời gian mong muốn"
+    },
+    "relatedOrders": {
+      "title": "Đơn mua liên quan",
+      "totalLabel": "Tổng",
+      "fromServiceRequest": "Từ yêu cầu dịch vụ",
+      "forEquipment": "Cho thiết bị",
+      "colProduct": "Mặt hàng",
+      "colQty": "SL",
+      "colUnitPrice": "Đơn giá",
+      "colTotal": "Thành tiền",
+      "states": {
+        "PENDING": "Đang xử lý",
+        "DELIVERED": "Đã giao",
+        "CANCELLED": "Đã hủy"
+      }
     },
     "documents": {
       "title": "Tài liệu mang theo",
@@ -1035,6 +1427,7 @@
     "title": "Yêu cầu dịch vụ",
     "unreadMessage": "Tin nhắn khách hàng mới",
     "newRequest": "+ Yêu cầu mới",
+    "originSr": "Từ yêu cầu dịch vụ:",
     "newPageTitle": "Yêu cầu dịch vụ mới (nhập tại văn phòng)",
     "customerLabel": "Khách hàng",
     "customerPlaceholder": "Tìm theo mã / tên",
@@ -1204,7 +1597,6 @@
       "cleanTitle": "Cần vệ sinh · kiểm tra",
       "everyMonths": "mỗi {n} tháng",
       "everyVisit": "mỗi lượt thăm",
-      "windowLabel": "Khung giờ",
       "expectedAmountLabel": "Số tiền dự kiến (VND)",
       "introInstallation": "Lắp đặt thiết bị mới, vận hành thử và kiểm tra. Mang đầy đủ phụ kiện và bộ lắp đặt.",
       "introPeriodicInspection": "Bảo trì định kỳ. Vui lòng kiểm tra/vệ sinh các lõi bên dưới và thay những lõi đã đến chu kỳ. Kiểm tra rò rỉ, chất lượng nước và hoạt động chung.",

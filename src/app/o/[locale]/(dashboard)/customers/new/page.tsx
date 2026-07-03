@@ -14,7 +14,14 @@ import {
   type VnAddressValue,
 } from "@/components/ui/vn-address-picker";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { createCustomerSchema } from "@/lib/validators/customer";
+
+interface SalesRepOption {
+  id: string;
+  username: string;
+  title: string | null;
+}
 
 interface OpsContactInput {
   name: string;
@@ -44,6 +51,7 @@ interface FormValues {
   addressWardName?: string | null;
   addressStreet?: string | null;
   preferredRegion?: string;
+  salesRepId?: string | null;
   notes?: string;
   // B2B legal block (representativeName removed — CONTRACT_PARTY is canonical signatory)
   shortcode?: string;
@@ -109,6 +117,12 @@ export default function NewCustomerPage() {
     control,
     name: "opsContacts",
   });
+
+  // Sales-rep picker — every active office user is a candidate. See
+  // /api/sales-reps for the policy rationale.
+  const salesRepsQuery = useApiQuery<SalesRepOption[]>("/api/sales-reps");
+  const salesReps = salesRepsQuery.data ?? [];
+  const selectedSalesRepId = useWatch({ control, name: "salesRepId" });
 
   function switchTab(next: "B2C" | "B2B") {
     if (next === tab) return;
@@ -277,6 +291,18 @@ export default function NewCustomerPage() {
           </div>
           <FormField label={t("preferredRegion")}>
             <Input {...register("preferredRegion")} placeholder="HCMC-D1" />
+          </FormField>
+          <FormField label={t("salesRep")}>
+            <Combobox
+              value={selectedSalesRepId ?? null}
+              onChange={(v) => setValue("salesRepId", (v as string | null) ?? null)}
+              options={salesReps.map((r) => ({
+                value: r.id,
+                label: r.title ? `${r.username} · ${r.title}` : r.username,
+              }))}
+              placeholder={salesRepsQuery.isLoading ? tc("loading") : t("all")}
+              searchable
+            />
           </FormField>
           <FormField label={t("notes")} className="sm:col-span-2">
             <Textarea {...register("notes")} rows={3} />
@@ -489,6 +515,7 @@ function defaultsFor(tab: "B2C" | "B2B"): FormValues {
     addressWardName: null,
     addressStreet: null,
     preferredRegion: "",
+    salesRepId: null,
     notes: "",
     shortcode: tab === "B2B" ? "" : undefined,
     taxCode: tab === "B2B" ? "" : undefined,

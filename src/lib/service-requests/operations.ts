@@ -382,7 +382,6 @@ export async function approveServiceRequest(args: ApproveSrArgs) {
       state: input.leadTechnicianId ? "SCHEDULED" : "SUGGESTED",
       scheduledFor:
         input.scheduledFor ?? current.preferredVisitAt ?? input.approvedDate,
-      scheduledWindow: input.scheduledWindow ?? null,
       expectedAmount: input.approvedPrice,
       leadTechnicianId: input.leadTechnicianId ?? null,
       officeNotes,

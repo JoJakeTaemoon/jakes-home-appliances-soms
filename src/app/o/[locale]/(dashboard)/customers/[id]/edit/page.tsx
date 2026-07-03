@@ -9,7 +9,14 @@ import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Input, Textarea } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
+
+interface SalesRepOption {
+  id: string;
+  username: string;
+  title: string | null;
+}
 import {
   VnAddressPicker,
   type VnAddressValue,
@@ -50,6 +57,7 @@ interface CustomerDetail {
   /** @deprecated legacy */
   city: string | null;
   preferredRegion: string | null;
+  salesRepId: string | null;
   notes: string | null;
   contacts: CustomerContactSummary[];
 }
@@ -66,6 +74,8 @@ export default function EditCustomerPage() {
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
   );
+  const salesRepsQuery = useApiQuery<SalesRepOption[]>("/api/sales-reps");
+  const salesReps = salesRepsQuery.data ?? [];
   const loading = query.isLoading;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -126,6 +136,7 @@ export default function EditCustomerPage() {
         addressStreet: orEmpty(data.addressStreet),
         ...(phoneChanged ? { phone: phoneEdit } : {}),
         preferredRegion: orEmpty(data.preferredRegion),
+        salesRepId: data.salesRepId ?? null,
         notes: orEmpty(data.notes),
       });
       router.push(`/o/customers/${id}`);
@@ -275,6 +286,18 @@ export default function EditCustomerPage() {
             value={data.preferredRegion ?? ""}
             onChange={(e) => patch({ preferredRegion: e.target.value })}
             placeholder="HCMC-D1"
+          />
+        </FormField>
+        <FormField label={t("salesRep")}>
+          <Combobox
+            value={data.salesRepId ?? null}
+            onChange={(v) => patch({ salesRepId: (v as string | null) ?? null })}
+            options={salesReps.map((r) => ({
+              value: r.id,
+              label: r.title ? `${r.username} · ${r.title}` : r.username,
+            }))}
+            placeholder={salesRepsQuery.isLoading ? tc("loading") : t("all")}
+            searchable
           />
         </FormField>
         <FormField label={t("notes")} className="sm:col-span-2">

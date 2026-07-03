@@ -6,14 +6,13 @@ import { pickModelName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
-import { formatDate, formatWeekday } from "@/lib/format";
+import { formatDate, formatWeekday, formatTime } from "@/lib/format";
 
 interface VisitCard {
   id: string;
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   leadTechnicianId: string | null;
   customer: { code: string; name: string };
   equipment: {
@@ -67,7 +66,7 @@ function MobileUpcomingContent() {
                           {v.customer.name}
                         </span>
                         <span className="font-mono text-sm font-semibold text-[var(--brand-blue-700)]">
-                          {v.scheduledFor.slice(11, 16)}
+                          {formatTime(v.scheduledFor)}
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-2">

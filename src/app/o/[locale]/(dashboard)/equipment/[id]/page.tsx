@@ -117,7 +117,7 @@ export default function EquipmentDetailPage() {
   const policy = data.filterPolicyOverride ?? data.model.filterPolicy;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <BreadcrumbLabel
         value={data.serialNumber ?? data.model.modelCode ?? null}
       />

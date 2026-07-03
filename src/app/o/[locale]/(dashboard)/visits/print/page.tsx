@@ -22,6 +22,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 
 function todayYmd(): string {
   const d = new Date();
@@ -51,7 +52,7 @@ function VisitsPrintPageInner() {
   const techsQuery = useApiQuery<{ id: string; username: string }[]>(
     "/api/users?role=TECHNICIAN&pageSize=100",
   );
-  const technicians = techsQuery.data ?? [];
+  const technicians = Array.isArray(techsQuery.data) ? techsQuery.data : [];
 
   // Light meta query so we can disable the "open PDF" button when the
   // bundle is empty and show entry counts to the operator.
@@ -80,12 +81,9 @@ function VisitsPrintPageInner() {
           <p className="text-sm text-[#737373]">{t("subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded border border-[#d4d4d4] px-2 py-1 text-sm"
-          />
+          <div className="w-40">
+            <DatePicker value={date} onChange={setDate} clearable={false} />
+          </div>
           <select
             value={techId}
             onChange={(e) => setTechId(e.target.value)}

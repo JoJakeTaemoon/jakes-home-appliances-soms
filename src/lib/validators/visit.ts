@@ -98,14 +98,12 @@ export const createVisitSchema = z.object({
   contractId: optStr(60),
   type: visitTypeEnum,
   scheduledFor: z.coerce.date(),
-  scheduledWindow: optStr(40),
   expectedAmount: moneyOptional,
   notes: optStr(2000),
 });
 
 export const updateVisitSchema = z.object({
   type: visitTypeEnum.optional(),
-  scheduledWindow: optStr(40),
   expectedAmount: moneyOptional,
   siteId: z.string().trim().min(1).nullable().optional(),
   equipmentId: z.string().trim().min(1).nullable().optional(),
@@ -116,7 +114,6 @@ export const scheduleVisitSchema = z.object({
   leadTechnicianId: z.string().trim().min(1),
   collaboratorTechnicianIds: collaboratorList,
   scheduledFor: z.coerce.date().optional(),
-  scheduledWindow: optStr(40),
 });
 
 export const reassignVisitSchema = z.object({
@@ -127,7 +124,6 @@ export const reassignVisitSchema = z.object({
 
 export const rescheduleVisitSchema = z.object({
   scheduledFor: z.coerce.date(),
-  scheduledWindow: optStr(40),
   reason: z.string().trim().min(3).max(500),
 });
 

@@ -16,14 +16,13 @@ import {
 } from "@/components/visits/visit-state-badge";
 import { VisitsCalendarView } from "@/components/visits/visits-calendar-view";
 import { SchedulerWidget } from "@/components/visits/scheduler-widget";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 
 interface VisitRow {
   id: string;
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B" };
   site: { id: string; name: string } | null;
   leadTechnician: { id: string; username: string } | null;
@@ -271,8 +270,7 @@ function ListView({
         <div className="flex flex-col">
           <span>{formatDate(r.scheduledFor, locale)}</span>
           <span className="text-xs text-[#737373]">
-            {r.scheduledFor.slice(11, 16)}
-            {r.scheduledWindow ? ` · ${r.scheduledWindow}` : ""}
+            {formatTime(r.scheduledFor)}
           </span>
         </div>
       ),
@@ -417,8 +415,7 @@ function UnassignedView({
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-[#737373]">
                 {formatDate(r.scheduledFor, locale)} ·{" "}
-                {r.scheduledFor.slice(11, 16)}
-                {r.scheduledWindow ? ` · ${r.scheduledWindow}` : ""}
+                {formatTime(r.scheduledFor)}
               </span>
               <VisitTypeBadge type={r.type} />
             </div>

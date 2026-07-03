@@ -167,7 +167,7 @@ export default function PaymentsListPage() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="w-full">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
       </header>

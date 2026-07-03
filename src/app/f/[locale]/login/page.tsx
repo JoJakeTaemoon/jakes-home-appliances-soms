@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
@@ -17,6 +17,8 @@ interface RoleMismatch {
   url: string;
 }
 
+const SENSITIVE_LOGIN_PARAMS = ["phone", "password", "username"] as const;
+
 export default function MobileLoginPage() {
   const t = useTranslations("mobile");
   const router = useRouter();
@@ -26,6 +28,31 @@ export default function MobileLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mismatch, setMismatch] = useState<RoleMismatch | null>(null);
+
+  useEffect(() => {
+    // Strip credentials that may have leaked into the URL — same defense
+    // as office + portal login forms. See login-form.tsx for context.
+    if (globalThis.window === undefined) return;
+    try {
+      const url = new URL(globalThis.window.location.href);
+      let mutated = false;
+      for (const param of SENSITIVE_LOGIN_PARAMS) {
+        if (url.searchParams.has(param)) {
+          url.searchParams.delete(param);
+          mutated = true;
+        }
+      }
+      if (mutated) {
+        globalThis.window.history.replaceState(
+          {},
+          "",
+          `${url.pathname}${url.search}${url.hash}`,
+        );
+      }
+    } catch {
+      // Malformed URL — leave it.
+    }
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +105,12 @@ export default function MobileLoginPage() {
           <p className="mt-1 text-sm text-[#525252]">{t("loginSubtitle")}</p>
         </div>
         <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-[0_4px_12px_rgba(0,113,189,0.06)]">
-        <form onSubmit={submit} className="flex flex-col gap-3">
+        <form
+          onSubmit={submit}
+          method="POST"
+          action=""
+          className="flex flex-col gap-3"
+        >
           <FormField label={t("loginPhone")} required htmlFor="identifier">
             <Input
               id="identifier"

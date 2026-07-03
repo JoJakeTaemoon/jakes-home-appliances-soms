@@ -118,7 +118,61 @@ export async function getVisitOr404(visitId: string) {
           state: true,
           description: true,
           isPaid: true,
+          approvedPrice: true,
+          approvedDate: true,
+          submittedAt: true,
+          preferredVisitAt: true,
         },
+      },
+      // Purchase orders whose delivery / install this visit is fulfilling.
+      // Rendered on the visit-detail page as a "연관 구매" section so the
+      // technician + office can see what the customer paid for on this trip.
+      orders: {
+        select: {
+          id: true,
+          orderNumber: true,
+          state: true,
+          orderedAt: true,
+          deliveredAt: true,
+          notes: true,
+          serviceRequestId: true,
+          items: {
+            select: {
+              id: true,
+              productKind: true,
+              quantity: true,
+              unitPrice: true,
+              totalPrice: true,
+              customName: true,
+              purpose: true,
+              consumable: {
+                select: {
+                  id: true,
+                  sku: true,
+                  nameKo: true,
+                  nameVi: true,
+                  nameEn: true,
+                },
+              },
+              equipmentModel: {
+                select: {
+                  id: true,
+                  modelCode: true,
+                  nameKo: true,
+                  nameVi: true,
+                  nameEn: true,
+                },
+              },
+              equipment: {
+                select: {
+                  id: true,
+                  serialNumber: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { orderedAt: "desc" },
       },
     },
   });

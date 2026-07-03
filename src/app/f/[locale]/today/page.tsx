@@ -8,14 +8,13 @@ import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
 import { CashOnHandBadge } from "@/components/mobile/cash-on-hand-badge";
 import { VisitTypeBadge } from "@/components/visits/visit-state-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 
 interface VisitCard {
   id: string;
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   leadTechnicianId: string | null;
   customer: {
     code: string;
@@ -107,8 +106,7 @@ function VisitSection({
               </div>
               <p className="mt-2 text-sm text-[#525252]">
                 {formatDate(v.scheduledFor, locale)} ·{" "}
-                {v.scheduledFor.slice(11, 16)}
-                {v.scheduledWindow ? ` · ${v.scheduledWindow}` : ""}
+                {formatTime(v.scheduledFor)}
               </p>
               {v.equipment && (
                 <p className="text-xs text-[#737373]">

@@ -10,6 +10,7 @@ import {
 } from "@/providers/customer-auth-provider";
 
 const PORTAL_STORAGE_KEYS = ["soms_portal_contact", "soms_portal_access", "soms_portal_auth"];
+const SENSITIVE_LOGIN_PARAMS = ["phone", "password", "username"] as const;
 
 export function PortalLoginForm() {
   const t = useTranslations("portal.login");
@@ -26,6 +27,28 @@ export function PortalLoginForm() {
   useEffect(() => {
     if (typeof sessionStorage !== "undefined") {
       for (const k of PORTAL_STORAGE_KEYS) sessionStorage.removeItem(k);
+    }
+    // Strip leaked credentials from URL — see office login-form for context.
+    if (globalThis.window !== undefined) {
+      try {
+        const url = new URL(globalThis.window.location.href);
+        let mutated = false;
+        for (const param of SENSITIVE_LOGIN_PARAMS) {
+          if (url.searchParams.has(param)) {
+            url.searchParams.delete(param);
+            mutated = true;
+          }
+        }
+        if (mutated) {
+          globalThis.window.history.replaceState(
+            {},
+            "",
+            `${url.pathname}${url.search}${url.hash}`,
+          );
+        }
+      } catch {
+        // Malformed URL — leave it.
+      }
     }
   }, []);
 
@@ -106,6 +129,8 @@ export function PortalLoginForm() {
   return (
     <form
       onSubmit={onSubmit}
+      method="POST"
+      action=""
       noValidate
       className="rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-[0_4px_12px_rgba(0,113,189,0.06)]"
     >

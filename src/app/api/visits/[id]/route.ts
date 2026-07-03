@@ -112,7 +112,6 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       where: { id },
       data: {
         type: data.type ?? undefined,
-        scheduledWindow: data.scheduledWindow ?? undefined,
         expectedAmount:
           data.expectedAmount === undefined ? undefined : data.expectedAmount,
         siteId: data.siteId === undefined ? undefined : data.siteId,

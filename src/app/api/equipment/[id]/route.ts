@@ -34,10 +34,18 @@ export const GET = defineQuery({
         site: { select: { id: true, name: true, address: true } },
         model: true,
         contracts: { include: { contract: true } },
+        registeredBy: { select: { id: true, username: true } },
       },
     });
     if (!equipment) throw new NotFoundError("Equipment not found");
-    return equipment;
+    // installedBy technician — separate query since the field is just an id.
+    const installedByTechnician = equipment.installedByTechnicianId
+      ? await prisma.user.findUnique({
+          where: { id: equipment.installedByTechnicianId },
+          select: { id: true, username: true },
+        })
+      : null;
+    return { ...equipment, installedByTechnician };
   },
 });
 
@@ -66,6 +74,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       where: { id },
       data: {
         serialNumber: data.serialNumber,
+        assetCode: data.assetCode,
         ownership: data.ownership,
         installedAt: data.installedAt,
         installedByTechnicianId: data.installedByTechnicianId ?? undefined,
@@ -74,6 +83,17 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
             ? undefined
             : (data.filterPolicyOverride as object | undefined),
         notes: data.notes,
+        deposit: data.deposit === undefined ? undefined : data.deposit,
+        monthlyFee: data.monthlyFee === undefined ? undefined : data.monthlyFee,
+        serviceType: data.serviceType === undefined ? undefined : data.serviceType,
+        managementType:
+          data.managementType === undefined ? undefined : data.managementType,
+        lifecycleStage: data.lifecycleStage,
+        customInspectionCycle:
+          data.customInspectionCycle === undefined
+            ? undefined
+            : data.customInspectionCycle,
+        imageUrl: data.imageUrl,
       },
     });
     await logAudit({

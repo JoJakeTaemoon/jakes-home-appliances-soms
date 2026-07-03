@@ -21,7 +21,7 @@ import { ForbiddenError } from "@/lib/api/error";
 import prisma from "@/lib/prisma";
 import { VisitWorkflow } from "@/lib/visits/workflow";
 import {
-  suggestVisitDocumentKind,
+  suggestVisitDocumentKindList,
   type VisitTypeForSuggest,
   type CustomerTypeForSuggest,
 } from "@/lib/visits/document-suggest";
@@ -90,6 +90,7 @@ export const GET = defineQuery({
       select: {
         id: true,
         type: true,
+        additionalTypes: true,
         scheduledFor: true,
         customerId: true,
         customer: { select: { id: true, code: true, name: true, type: true } },
@@ -136,37 +137,46 @@ export const GET = defineQuery({
     const entries: BundleEntry[] = [];
     for (const v of visits) {
       const contract = latestContractByCustomer.get(v.customerId) ?? null;
-      const kind = suggestVisitDocumentKind({
+      // A single visit can carry multiple work streams (e.g. periodic
+      // inspection + consumable delivery). Expand every one so the bulk
+      // print stack has every doc the tech needs to hand over on-site.
+      const kinds = suggestVisitDocumentKindList({
         visitType: v.type as VisitTypeForSuggest,
+        additionalTypes: v.additionalTypes as VisitTypeForSuggest[],
         customerType: v.customer.type as CustomerTypeForSuggest,
         contractType: contract?.type ?? null,
       });
-      try {
-        const doc = await buildVisitDocumentPayload(v.id, kind, langPair);
-        const contractRef: ContractRef | null =
-          v.type === "INSTALLATION" && contract
-            ? { id: contract.id, contractNumber: contract.contractNumber }
-            : null;
-        entries.push({
-          visitId: v.id,
-          visitNumber: v.id.slice(-8).toUpperCase(),
-          scheduledFor: v.scheduledFor.toISOString(),
-          customerCode: v.customer.code,
-          customerName: v.customer.name,
-          customerType: v.customer.type as "B2C" | "B2B",
-          visitType: v.type,
-          doc,
-          contract: contractRef,
-        });
-      } catch (err) {
-        // One visit failing to build (e.g. PERIODIC_CHECK_B2C requires
-        // equipment + the visit has none) shouldn't blank the whole
-        // print bundle. Skip with a console warn — the print page
-        // surfaces the missing-row count to the operator.
-        console.warn(
-          `[print-bundle] skipped visit ${v.id} kind=${kind}:`,
-          err instanceof Error ? err.message : err,
-        );
+      const contractRef: ContractRef | null =
+        v.type === "INSTALLATION" && contract
+          ? { id: contract.id, contractNumber: contract.contractNumber }
+          : null;
+      for (const kind of kinds) {
+        try {
+          const doc = await buildVisitDocumentPayload(v.id, kind, langPair);
+          entries.push({
+            visitId: v.id,
+            visitNumber: v.id.slice(-8).toUpperCase(),
+            scheduledFor: v.scheduledFor.toISOString(),
+            customerCode: v.customer.code,
+            customerName: v.customer.name,
+            customerType: v.customer.type as "B2C" | "B2B",
+            visitType: v.type,
+            doc,
+            // Attach the contract ref to the FIRST entry only so the
+            // print page renders customer + company copies once per
+            // installation, not once per document.
+            contract: kind === kinds[0] ? contractRef : null,
+          });
+        } catch (err) {
+          // One doc failing to build (e.g. SALE_RECEIPT_B2C on a visit
+          // with no order rows) shouldn't blank the whole print bundle.
+          // Skip with a console warn — the print page surfaces the
+          // total entry count to the operator.
+          console.warn(
+            `[print-bundle] skipped visit ${v.id} kind=${kind}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
       }
     }
 

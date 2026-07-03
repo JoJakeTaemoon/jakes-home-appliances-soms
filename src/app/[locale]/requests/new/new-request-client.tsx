@@ -6,6 +6,8 @@ import { useTranslations , useLocale} from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 import { compressImage } from "@/lib/upload/compress";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { formatDateTime, fromVstDateTimeInput } from "@/lib/format";
 
 interface EquipmentOption {
   id: string;
@@ -162,7 +164,7 @@ export function NewRequestClient() {
           type,
           description: description.trim(),
           preferredVisitAt: preferredVisitAt
-            ? new Date(preferredVisitAt).toISOString()
+            ? fromVstDateTimeInput(preferredVisitAt)
             : undefined,
           attachments: attachments.map((a) => ({
             storageKey: a.storageKey,
@@ -375,13 +377,9 @@ export function NewRequestClient() {
             <h2 className="text-sm font-semibold text-[#262626]">
               {t("preferredVisitAt")}
             </h2>
-            <input
-              type="datetime-local"
-              lang={locale}
+            <DateTimePicker
               value={preferredVisitAt}
-              onChange={(e) => setPreferredVisitAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              className="w-full rounded-md border border-[#e5e5e5] bg-white p-3 text-sm text-[#262626] outline-none focus:border-[var(--brand-blue-500)]"
+              onChange={setPreferredVisitAt}
             />
             <p className="text-xs text-[#a3a3a3]">
               {t("preferredVisitAtHint")}
@@ -455,7 +453,7 @@ export function NewRequestClient() {
               label={t("preferredVisitAt")}
               value={
                 preferredVisitAt
-                  ? new Date(preferredVisitAt).toLocaleString(locale)
+                  ? formatDateTime(fromVstDateTimeInput(preferredVisitAt), locale)
                   : "—"
               }
             />

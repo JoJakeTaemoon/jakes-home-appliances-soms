@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useApiPageQuery } from "@/lib/api/hooks";
+import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,16 @@ import {
   customerStatusTone,
   customerTypeTone,
 } from "@/components/ui/status-badge";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { Avatar } from "@/components/ui/avatar";
+import { SidebarFilter } from "@/components/ui/sidebar-filter";
+
+interface SalesRepLite {
+  id: string;
+  username: string;
+  title: string | null;
+  avatarUrl: string | null;
+}
 
 interface CustomerRow {
   id: string;
@@ -23,8 +33,29 @@ interface CustomerRow {
   shortcode: string | null;
   city: string | null;
   preferredRegion: string | null;
-  contacts: Array<{ id: string; name: string; phone1: string }>;
+  contacts: Array<{
+    id: string;
+    name: string;
+    title: string | null;
+    phone1: string;
+    email: string | null;
+  }>;
+  salesRep: SalesRepLite | null;
+  activeContractCount: number;
+  activeEquipmentCount: number;
+  nextMaintenanceAt: string | null;
   _count?: { equipment: number; sites: number; contracts: number };
+}
+
+type CustomerRowWithIndex = CustomerRow & { __no: number };
+
+interface CustomerStats {
+  totalCustomers: number;
+  activeCustomers: number;
+  b2bCount: number;
+  b2cCount: number;
+  totalEquipment: number;
+  totalContracts: number;
 }
 
 const PAGE_SIZE = 25;
@@ -38,34 +69,76 @@ function useDebounced<T>(value: T, ms = 300): T {
   return v;
 }
 
+function daysFromNow(iso: string | null): number | null {
+  if (!iso) return null;
+  const target = new Date(iso).getTime();
+  const now = Date.now();
+  return Math.ceil((target - now) / (24 * 60 * 60 * 1000));
+}
+
+function formatDate(iso: string | null, locale: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  if (locale === "vi") {
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export default function CustomersPage() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const router = useRouter();
+  const locale = useLocale();
 
   const [q, setQ] = useState("");
   const debouncedQ = useDebounced(q, 300);
   const [type, setType] = useState<"B2C" | "B2B" | null>(null);
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "PROSPECT" | null>(null);
+  const [region, setRegion] = useState<string | null>(null);
+  const [salesRepId, setSalesRepId] = useState<string | null>(null);
+  const [contractState, setContractState] = useState<
+    "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null
+  >(null);
+  // Pending filter state for the sidebar (only applied on [적용하기]).
+  const [pendingRegion, setPendingRegion] = useState<string | null>(null);
+  const [pendingSalesRepId, setPendingSalesRepId] = useState<string | null>(null);
+  const [pendingContractState, setPendingContractState] = useState<
+    "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null
+  >(null);
+  const [pendingType, setPendingType] = useState<"B2C" | "B2B" | null>(null);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "code",
     direction: "asc",
   });
 
-  // Reset to page 1 when any filter changes. Folded into the filter
-  // setters via wrapper handlers so we don't need a useEffect that
-  // setStates from another setState (set-state-in-effect rule).
   const onQ = (v: string) => {
     setQ(v);
     setPage(1);
   };
-  const onType = (v: "B2C" | "B2B" | null) => {
-    setType(v);
-    setPage(1);
-  };
   const onStatus = (v: "ACTIVE" | "INACTIVE" | "PROSPECT" | null) => {
     setStatus(v);
+    setPage(1);
+  };
+
+  const applyFilters = () => {
+    setType(pendingType);
+    setRegion(pendingRegion);
+    setSalesRepId(pendingSalesRepId);
+    setContractState(pendingContractState);
+    setPage(1);
+  };
+  const resetFilters = () => {
+    setPendingType(null);
+    setPendingRegion(null);
+    setPendingSalesRepId(null);
+    setPendingContractState(null);
+    setType(null);
+    setRegion(null);
+    setSalesRepId(null);
+    setContractState(null);
     setPage(1);
   };
 
@@ -74,6 +147,9 @@ export default function CustomersPage() {
     if (debouncedQ) qs.set("q", debouncedQ);
     if (type) qs.set("type", type);
     if (status) qs.set("status", status);
+    if (region) qs.set("region", region);
+    if (salesRepId) qs.set("salesRepId", salesRepId);
+    if (contractState) qs.set("contractState", contractState);
     if (sort) {
       qs.set("sortBy", sort.column);
       qs.set("sortDir", sort.direction);
@@ -81,23 +157,56 @@ export default function CustomersPage() {
     qs.set("page", String(page));
     qs.set("pageSize", String(PAGE_SIZE));
     return `/api/customers?${qs.toString()}`;
-  }, [debouncedQ, type, status, page, sort]);
+  }, [debouncedQ, type, status, region, salesRepId, contractState, page, sort]);
 
   const query = useApiPageQuery<CustomerRow[]>(url);
-  const rows = query.data?.data ?? [];
+  const rawRows = query.data?.data ?? [];
+  const rows: CustomerRowWithIndex[] = rawRows.map((r, i) => ({
+    ...r,
+    __no: (page - 1) * PAGE_SIZE + i + 1,
+  }));
   const total = (query.data?.pagination as { total?: number } | undefined)?.total ?? rows.length;
   const loading = query.isLoading;
   const error =
     query.error instanceof Error ? query.error.message : null;
 
-  const columns = useMemo<Column<CustomerRow>[]>(
+  // KPI stats — separate hook, runs in parallel with the list query.
+  const statsQuery = useApiQuery<CustomerStats>("/api/customers/stats");
+  const stats = statsQuery.data ?? null;
+
+  // Sales reps for the sidebar combobox.
+  const repsQuery = useApiQuery<SalesRepLite[]>("/api/sales-reps");
+  const reps = repsQuery.data ?? [];
+
+  const columns = useMemo<Column<CustomerRowWithIndex>[]>(
     () => [
+      {
+        key: "no",
+        header: "No.",
+        cell: (r) => (
+          <span className="font-mono text-xs text-gray-500">{r.__no}</span>
+        ),
+        className: "w-12",
+      },
       {
         key: "code",
         header: t("code"),
         sortKey: "code",
-        cell: (r) => <span className="font-mono text-xs text-[#525252]">{r.code}</span>,
-        className: "w-28",
+        cell: (r) => <span className="font-mono text-xs text-gray-700">{r.code}</span>,
+        className: "w-24",
+      },
+      {
+        key: "name",
+        header: t("name"),
+        sortKey: "name",
+        cell: (r) => (
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-900">{r.name}</span>
+            {r.shortcode && (
+              <span className="text-xs text-gray-500">{r.shortcode}</span>
+            )}
+          </div>
+        ),
       },
       {
         key: "type",
@@ -107,45 +216,124 @@ export default function CustomersPage() {
         className: "w-20",
       },
       {
-        key: "name",
-        header: t("name"),
-        sortKey: "name",
-        cell: (r) => (
-          <div className="flex flex-col">
-            <span className="font-medium text-[#111111]">{r.name}</span>
-            {r.shortcode && (
-              <span className="text-xs text-[#737373]">{r.shortcode}</span>
-            )}
-          </div>
-        ),
-      },
-      {
         key: "contact",
         header: t("primaryContact"),
         cell: (r) => {
           const c = r.contacts?.[0];
-          if (!c) return <span className="text-xs text-[#a3a3a3]">—</span>;
+          if (!c) return <span className="text-xs text-gray-400">—</span>;
           return (
-            <div className="flex flex-col">
-              <span>{c.name}</span>
-              <span className="text-xs text-[#737373]">{c.phone1}</span>
+            <div className="flex items-center gap-2">
+              <Avatar name={c.name} size="sm" />
+              <div className="min-w-0">
+                <div className="truncate text-sm text-gray-900">{c.name}</div>
+                {c.title ? (
+                  <div className="truncate text-[11px] text-gray-500">{c.title}</div>
+                ) : null}
+              </div>
             </div>
           );
         },
+        className: "w-48",
       },
       {
-        key: "city",
-        header: tc("city"),
-        cell: (r) => r.city ?? <span className="text-xs text-[#a3a3a3]">—</span>,
-        className: "w-40",
+        key: "contactInfo",
+        header: t("contactInfo"),
+        cell: (r) => {
+          const c = r.contacts?.[0];
+          if (!c) return <span className="text-xs text-gray-400">—</span>;
+          return (
+            <div className="flex flex-col text-xs">
+              <span className="text-gray-700">{c.phone1}</span>
+              {c.email ? (
+                <span className="truncate text-gray-500">{c.email}</span>
+              ) : null}
+            </div>
+          );
+        },
+        className: "w-48",
+      },
+      {
+        key: "contractStatus",
+        header: t("contractStatus"),
+        cell: (r) => {
+          if (r.activeContractCount === 0) {
+            return (
+              <StatusBadge tone="muted">{t("contractState.NONE")}</StatusBadge>
+            );
+          }
+          return (
+            <StatusBadge tone="success">{t("contractState.ACTIVE")}</StatusBadge>
+          );
+        },
+        className: "w-32",
+      },
+      {
+        key: "equipmentCount",
+        header: t("equipmentCount"),
+        cell: (r) => (
+          <span className="text-sm">
+            {r.activeEquipmentCount} {tc("unitCount")}
+          </span>
+        ),
+        className: "w-20",
+      },
+      {
+        key: "contractCount",
+        header: t("contractCount"),
+        cell: (r) => (
+          <span className="text-sm">
+            {r.activeContractCount} {tc("count")}
+          </span>
+        ),
+        className: "w-20",
+      },
+      {
+        key: "nextMaintenance",
+        header: t("nextMaintenance"),
+        cell: (r) => {
+          const d = daysFromNow(r.nextMaintenanceAt);
+          if (d === null) return <span className="text-xs text-gray-400">—</span>;
+          return (
+            <div className="flex flex-col text-xs">
+              <span className="text-gray-900">{formatDate(r.nextMaintenanceAt, locale)}</span>
+              <span className={d <= 7 ? "text-red-600" : d <= 30 ? "text-orange-600" : "text-gray-500"}>
+                {d >= 0 ? `(${d}${tc("daysRemaining")})` : `(${-d}${tc("daysOverdue")})`}
+              </span>
+            </div>
+          );
+        },
+        className: "w-32",
       },
       {
         key: "region",
+        header: tc("region"),
+        cell: (r) => r.city ?? <span className="text-xs text-gray-400">—</span>,
+        className: "w-28",
+      },
+      {
+        key: "preferredRegion",
         header: t("preferredRegion"),
         sortKey: "preferredRegion",
         cell: (r) =>
-          r.preferredRegion ?? <span className="text-xs text-[#a3a3a3]">—</span>,
-        className: "w-32",
+          r.preferredRegion ?? <span className="text-xs text-gray-400">—</span>,
+        className: "w-28",
+      },
+      {
+        key: "salesRep",
+        header: t("salesRep"),
+        sortKey: "salesRep",
+        cell: (r) => {
+          if (!r.salesRep) {
+            return <span className="text-xs text-gray-400">—</span>;
+          }
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar name={r.salesRep.username} imageUrl={r.salesRep.avatarUrl} size="sm" />
+              <span className="text-sm text-gray-900">{r.salesRep.username}</span>
+            </div>
+          );
+        },
+        className: "w-40",
       },
       {
         key: "status",
@@ -157,83 +345,162 @@ export default function CustomersPage() {
         className: "w-28",
       },
     ],
-    [t, tc],
+    [t, tc, locale, page],
   );
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-4">
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
-          <p className="text-sm text-[#737373]">{total} {tc("name").toLowerCase()}</p>
+          <p className="text-sm text-gray-500">{t("listSubtitle")}</p>
         </div>
-        <Link href="/o/customers/new">
-          <Button>{t("newCustomer")}</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/o/customers/new">
+            <Button>{t("newCustomer")}</Button>
+          </Link>
+        </div>
       </header>
 
-      <DataTable<CustomerRow>
-        columns={columns}
-        rows={rows}
-        rowKey={(r) => r.id}
-        isLoading={loading}
-        sort={sort}
-        onSortChange={setSort}
-        emptyText={debouncedQ || type || status ? t("noResults") : t("noCustomers")}
-        onRowClick={(r) => router.push(`/o/customers/${r.id}`)}
-        toolbar={
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <Input
-                value={q}
-                onChange={(e) => onQ(e.target.value)}
-                placeholder={t("searchPlaceholder")}
+      {/* KPI strip — bigger cards on wide screens so they breathe */}
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
+        <KpiCard label={t("stats.totalCustomers")} value={stats?.totalCustomers ?? "—"} />
+        <KpiCard
+          label={t("stats.activeCustomers")}
+          value={stats?.activeCustomers ?? "—"}
+          hint={t("stats.activeHint")}
+        />
+        <KpiCard label={t("stats.b2bCount")} value={stats?.b2bCount ?? "—"} />
+        <KpiCard label={t("stats.b2cCount")} value={stats?.b2cCount ?? "—"} />
+        <KpiCard
+          label={t("stats.totalEquipment")}
+          value={stats?.totalEquipment ?? "—"}
+          hint={tc("unitCount")}
+        />
+        <KpiCard
+          label={t("stats.totalContracts")}
+          value={stats?.totalContracts ?? "—"}
+          hint={tc("count")}
+        />
+      </section>
+
+      {/* Body: sidebar + table */}
+      <div className="flex flex-col gap-4 md:flex-row">
+        <SidebarFilter
+          title={t("quickFilters")}
+          applyLabel={t("apply")}
+          resetLabel={t("reset")}
+          onApply={applyFilters}
+          onReset={resetFilters}
+        >
+          <FilterGroup label={t("contractStatus")}>
+            <Combobox
+              value={pendingContractState}
+              onChange={(v) =>
+                setPendingContractState(v as typeof pendingContractState)
+              }
+              options={[
+                { value: "ACTIVE", label: t("contractState.ACTIVE") },
+                { value: "EXPIRING", label: t("contractState.EXPIRING") },
+                { value: "TERMINATED", label: t("contractState.TERMINATED") },
+                { value: "NONE", label: t("contractState.NONE") },
+              ]}
+              placeholder={t("all")}
+              searchable={false}
+            />
+          </FilterGroup>
+          <FilterGroup label={t("type")}>
+            <Combobox
+              value={pendingType}
+              onChange={(v) => setPendingType(v as "B2C" | "B2B" | null)}
+              options={[
+                { value: "B2C", label: "B2C" },
+                { value: "B2B", label: "B2B" },
+              ]}
+              placeholder={t("all")}
+              searchable={false}
+            />
+          </FilterGroup>
+          <FilterGroup label={t("preferredRegion")}>
+            <Input
+              value={pendingRegion ?? ""}
+              onChange={(e) => setPendingRegion(e.target.value || null)}
+              placeholder={t("regionPlaceholder")}
+            />
+          </FilterGroup>
+          <FilterGroup label={t("salesRep")}>
+            <Combobox
+              value={pendingSalesRepId}
+              onChange={(v) => setPendingSalesRepId(v as string | null)}
+              options={reps.map((r) => ({ value: r.id, label: r.username }))}
+              placeholder={t("all")}
+              searchable
+            />
+          </FilterGroup>
+        </SidebarFilter>
+
+        <div className="min-w-0 flex-1">
+          <DataTable<CustomerRowWithIndex>
+            columns={columns}
+            rows={rows}
+            rowKey={(r) => r.id}
+            isLoading={loading}
+            sort={sort}
+            onSortChange={setSort}
+            emptyText={debouncedQ || type || status ? t("noResults") : t("noCustomers")}
+            onRowClick={(r) => router.push(`/o/customers/${r.id}`)}
+            toolbar={
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <Input
+                    value={q}
+                    onChange={(e) => onQ(e.target.value)}
+                    placeholder={t("searchPlaceholder")}
+                  />
+                </div>
+                <div className="w-full sm:w-44">
+                  <Combobox
+                    value={status}
+                    onChange={(v) =>
+                      onStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)
+                    }
+                    options={[
+                      { value: "ACTIVE", label: "ACTIVE" },
+                      { value: "INACTIVE", label: "INACTIVE" },
+                      { value: "PROSPECT", label: "PROSPECT" },
+                    ]}
+                    placeholder={t("filterStatus")}
+                    searchable={false}
+                  />
+                </div>
+              </div>
+            }
+            footer={
+              <Pagination
+                page={page}
+                pageSize={PAGE_SIZE}
+                total={total}
+                onPageChange={setPage}
               />
-            </div>
-            <div className="w-full sm:w-44">
-              <Combobox
-                value={type}
-                onChange={(v) => onType(v as "B2C" | "B2B" | null)}
-                options={[
-                  { value: "B2C", label: "B2C" },
-                  { value: "B2B", label: "B2B" },
-                ]}
-                placeholder={t("filterType")}
-                searchable={false}
-              />
-            </div>
-            <div className="w-full sm:w-44">
-              <Combobox
-                value={status}
-                onChange={(v) =>
-                  onStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)
-                }
-                options={[
-                  { value: "ACTIVE", label: "ACTIVE" },
-                  { value: "INACTIVE", label: "INACTIVE" },
-                  { value: "PROSPECT", label: "PROSPECT" },
-                ]}
-                placeholder={t("filterStatus")}
-                searchable={false}
-              />
-            </div>
-          </div>
-        }
-        footer={
-          <Pagination
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={total}
-            onPageChange={setPage}
+            }
           />
-        }
-      />
+        </div>
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
+    </div>
+  );
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-xs font-medium text-gray-600">{label}</label>
+      {children}
     </div>
   );
 }

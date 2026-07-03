@@ -7,6 +7,7 @@ import { CustomerAuthProvider } from "@/providers/customer-auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { LangSyncer } from "@/components/layout/lang-syncer";
 import { MockSmsLogger } from "@/components/dev/mock-sms-logger";
+import { ToastProvider } from "@/components/ui/toast";
 
 /**
  * Customer realm root layout (URL `/[locale?]/...`).
@@ -40,11 +41,13 @@ export default async function CustomerLocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <QueryProvider>
-        <CustomerAuthProvider>
-          <LangSyncer />
-          {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
-          {children}
-        </CustomerAuthProvider>
+        <ToastProvider>
+          <CustomerAuthProvider>
+            <LangSyncer />
+            {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
+            {children}
+          </CustomerAuthProvider>
+        </ToastProvider>
       </QueryProvider>
     </NextIntlClientProvider>
   );

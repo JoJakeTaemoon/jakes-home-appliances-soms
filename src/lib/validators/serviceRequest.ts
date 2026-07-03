@@ -105,7 +105,6 @@ export const approveServiceRequestSchema = z.object({
   approvedPrice: moneyRequired,
   approvedDate: z.coerce.date(),
   scheduledFor: z.coerce.date().optional(),
-  scheduledWindow: optStr(40),
   leadTechnicianId: optStr(60),
   notes: optStr(2000),
 });

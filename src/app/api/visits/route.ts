@@ -120,7 +120,6 @@ export const POST = defineMutation({
         equipmentId: body.equipmentId ?? null,
         type: body.type,
         scheduledFor: body.scheduledFor,
-        scheduledWindow: body.scheduledWindow ?? null,
         expectedAmount: body.expectedAmount ?? null,
       },
       { userId: auth.userId, role: auth.role },

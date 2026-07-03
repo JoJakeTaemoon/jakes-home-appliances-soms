@@ -28,7 +28,6 @@ export const POST = defineMutation({
       params.id,
       {
         scheduledFor: body.scheduledFor,
-        scheduledWindow: body.scheduledWindow,
         reason: body.reason,
       },
       { userId: auth.userId, role: auth.role },

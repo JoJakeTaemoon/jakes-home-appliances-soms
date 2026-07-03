@@ -7,6 +7,7 @@ import { AuthProvider } from "@/providers/auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { LangSyncer } from "@/components/layout/lang-syncer";
 import { MockSmsLogger } from "@/components/dev/mock-sms-logger";
+import { ToastProvider } from "@/components/ui/toast";
 
 /**
  * Office realm root layout (URL `/o/[locale?]/...`).
@@ -39,11 +40,13 @@ export default async function OfficeLocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <QueryProvider>
-        <AuthProvider>
-          <LangSyncer />
-          {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
-          {children}
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <LangSyncer />
+            {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
+            {children}
+          </AuthProvider>
+        </ToastProvider>
       </QueryProvider>
     </NextIntlClientProvider>
   );

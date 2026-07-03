@@ -3,8 +3,11 @@
 /**
  * "지참 서류" card on the office visit-detail page.
  *
- * - Renders the auto-suggested DocumentKind (visit type + customer type +
- *   contract type) with a one-click "발급" button.
+ * - Renders every auto-suggested DocumentKind for the visit — primary
+ *   type + every additionalTypes entry — each with its own one-click
+ *   발급 / 재발급 button. Multi-purpose trips (e.g. a periodic inspection
+ *   with a piggy-backed consumable delivery) show BOTH the periodic
+ *   check form AND the sale receipt / delivery slip.
  * - Lists previously issued documents with download / re-issue actions
  *   per row.
  * - Lets the operator add a different kind via a dropdown.
@@ -22,9 +25,10 @@ import { Button } from "@/components/ui/button";
 import { useApi } from "@/lib/api/client";
 import { canIssueVisitDocument } from "@/lib/visits/document-policy";
 import {
-  suggestVisitDocumentKind,
+  suggestVisitDocumentKindList,
   VISIT_DOCUMENT_KINDS,
   type VisitDocumentKind,
+  type VisitTypeForSuggest,
 } from "@/lib/visits/document-suggest";
 
 interface IssuedDocument {
@@ -40,6 +44,10 @@ interface Props {
   state: string;
   leadTechnicianId: string | null;
   visitType: string;
+  /** Extra work streams layered on the primary type — each contributes
+   *  its own suggested doc (e.g. CONSUMABLE_DELIVERY → B2C sale receipt
+   *  or B2B delivery slip). Empty when the visit is single-purpose. */
+  additionalTypes: string[];
   customerType: "B2C" | "B2B";
   /** Latest active contract type for the customer, if available. */
   contractType: "RENTAL" | "SALE" | "MAINTENANCE" | null;
@@ -59,6 +67,7 @@ export function DocumentIssueCard({
   state,
   leadTechnicianId,
   visitType,
+  additionalTypes,
   customerType,
   contractType,
   documents,
@@ -76,14 +85,19 @@ export function DocumentIssueCard({
     leadTechnicianId,
   });
 
-  const suggested = useMemo<VisitDocumentKind>(
+  // Every doc the visit needs — primary type plus each additionalTypes
+  // entry, deduped. A merged visit (e.g. PERIODIC_INSPECTION +
+  // CONSUMABLE_DELIVERY on a B2B customer) returns
+  // [PERIODIC_CHECK_B2B, DELIVERY_SLIP_B2B].
+  const suggestedList = useMemo<VisitDocumentKind[]>(
     () =>
-      suggestVisitDocumentKind({
-        visitType: visitType as Parameters<typeof suggestVisitDocumentKind>[0]["visitType"],
+      suggestVisitDocumentKindList({
+        visitType: visitType as VisitTypeForSuggest,
+        additionalTypes: additionalTypes as VisitTypeForSuggest[],
         customerType,
         contractType,
       }),
-    [visitType, customerType, contractType],
+    [visitType, additionalTypes, customerType, contractType],
   );
 
   const issuedKinds = useMemo(
@@ -124,26 +138,33 @@ export function DocumentIssueCard({
         </div>
       ) : (
         <>
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-3">
-            <div className="flex-1">
-              <p className="text-[10px] uppercase tracking-wide text-[var(--brand-blue-700)]">
-                {t("suggested")}
-              </p>
-              <p className="text-sm font-semibold text-[#002A4D]">
-                {kindLabel(suggested)}
-              </p>
-            </div>
-            <Button
-              onClick={() => handleIssue(suggested)}
-              disabled={busy !== null}
-              size="sm"
-            >
-              {busy === suggested
-                ? "…"
-                : issuedKinds.has(suggested)
-                  ? t("reissue")
-                  : t("issue")}
-            </Button>
+          <div className="mt-3 flex flex-col gap-2">
+            {suggestedList.map((kind) => {
+              const nextLabel = issuedKinds.has(kind) ? t("reissue") : t("issue");
+              const label = busy === kind ? "…" : nextLabel;
+              return (
+                <div
+                  key={`sugg-${kind}`}
+                  className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-3"
+                >
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-wide text-[var(--brand-blue-700)]">
+                      {t("suggested")}
+                    </p>
+                    <p className="text-sm font-semibold text-[#002A4D]">
+                      {kindLabel(kind)}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => handleIssue(kind)}
+                    disabled={busy !== null}
+                    size="sm"
+                  >
+                    {label}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2">

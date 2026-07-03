@@ -18,14 +18,22 @@ import {
 } from "@/components/visits/visit-state-badge";
 import { SchedulerWidget } from "@/components/visits/scheduler-widget";
 import { DocumentIssueCard } from "@/components/visits/document-issue-card";
-import { formatDate, formatVnd } from "@/lib/format";
+import { Link } from "@/i18n/navigation";
+import {
+  formatDate,
+  formatTime,
+  formatVnd,
+  fromVstDateTimeInput,
+} from "@/lib/format";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 interface VisitDetail {
   id: string;
   type: string;
+  additionalTypes: string[];
+  pendingDocumentKinds: string[];
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   expectedAmount: string | null;
   findings: string | null;
   officeNotes: { at: string; authorId: string; authorName: string; text: string }[] | null;
@@ -69,6 +77,54 @@ interface VisitDetail {
   }>;
   documents: Array<{ id: string; kind: string; filename: string; generatedAt: string }>;
   latestContractType: "RENTAL" | "SALE" | "MAINTENANCE" | null;
+  serviceRequest: {
+    id: string;
+    code: string;
+    type: string;
+    state: string;
+    description: string;
+    isPaid: boolean;
+    approvedPrice: string | null;
+    approvedDate: string | null;
+    submittedAt: string;
+    preferredVisitAt: string | null;
+  } | null;
+  orders: Array<{
+    id: string;
+    orderNumber: string;
+    state: string;
+    orderedAt: string;
+    deliveredAt: string | null;
+    notes: string | null;
+    serviceRequestId: string | null;
+    items: Array<{
+      id: string;
+      productKind: "EQUIPMENT" | "CONSUMABLE" | "OTHER";
+      quantity: number;
+      unitPrice: string;
+      totalPrice: string;
+      customName: string | null;
+      purpose: string | null;
+      consumable: {
+        id: string;
+        sku: string | null;
+        nameKo: string | null;
+        nameVi: string | null;
+        nameEn: string | null;
+      } | null;
+      equipmentModel: {
+        id: string;
+        modelCode: string | null;
+        nameKo: string | null;
+        nameVi: string | null;
+        nameEn: string | null;
+      } | null;
+      equipment: {
+        id: string;
+        serialNumber: string | null;
+      } | null;
+    }>;
+  }>;
 }
 
 interface PhotoEntry { storageKey: string }
@@ -122,7 +178,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
     setActionError(null);
     try {
       await api.post(`/api/visits/${id}/reschedule`, {
-        scheduledFor: new Date(reschedFor).toISOString(),
+        scheduledFor: fromVstDateTimeInput(reschedFor),
         reason: reschedReason,
       });
       setShowResched(false);
@@ -174,7 +230,20 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
               #{data.id.slice(-8)}
             </span>
             <VisitTypeBadge type={data.type} />
+            {data.additionalTypes.map((t) => (
+              <VisitTypeBadge key={t} type={t} />
+            ))}
             <VisitStateBadge state={data.state} />
+            {data.pendingDocumentKinds.map((k) => (
+              <span
+                key={`pending-${k}`}
+                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800"
+                title={t("pendingDocsTooltip")}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                {t("pendingDocPrefix")} {t(`docKinds.${k}` as const)}
+              </span>
+            ))}
           </div>
           <h1 className="text-xl font-semibold text-[#002A4D]">
             {data.customer.name}
@@ -184,8 +253,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
           </h1>
           <p className="text-sm text-[#525252]">
             {formatDate(data.scheduledFor, locale)} ·{" "}
-            {data.scheduledFor.slice(11, 16)}
-            {data.scheduledWindow ? ` · ${data.scheduledWindow}` : ""}
+            {formatTime(data.scheduledFor)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -223,11 +291,19 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
           state={data.state}
           leadTechnicianId={data.leadTechnicianId}
           visitType={data.type}
+          additionalTypes={data.additionalTypes}
           customerType={data.customer.type}
           contractType={data.latestContractType}
           documents={data.documents}
           onIssued={() => reload()}
         />
+      )}
+
+      {data.serviceRequest && (
+        <RelatedServiceRequestCard sr={data.serviceRequest} locale={locale} />
+      )}
+      {data.orders.length > 0 && (
+        <RelatedOrdersCard orders={data.orders} locale={locale} />
       )}
 
       <Tabs defaultValue="details">
@@ -281,7 +357,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
                   <li key={`${n.at}-${i}`} className="rounded border border-[#e5e5e5] bg-white p-2 text-sm text-[#262626]">
                     <span className="block whitespace-pre-wrap">{n.text}</span>
                     <span className="mt-1 block text-[10px] text-[#737373]">
-                      {n.authorName} · {formatDate(n.at, locale)} {n.at.slice(11, 16)}
+                      {n.authorName} · {formatDate(n.at, locale)} {formatTime(n.at)}
                     </span>
                   </li>
                 ))}
@@ -385,12 +461,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
       >
         <div className="flex flex-col gap-3" lang={locale}>
           <FormField label={t("scheduledFor")} required>
-            <Input
-              type="datetime-local"
-              lang={locale}
-              value={reschedFor}
-              onChange={(e) => setReschedFor(e.target.value)}
-            />
+            <DateTimePicker value={reschedFor} onChange={setReschedFor} />
           </FormField>
           <FormField label={t("reasonRequired")} required>
             <Input
@@ -415,4 +486,191 @@ function DetailCard({
       <div className="mt-1 text-sm text-[#111]">{children}</div>
     </div>
   );
+}
+
+type RelatedServiceRequest = NonNullable<VisitDetail["serviceRequest"]>;
+type RelatedOrder = VisitDetail["orders"][number];
+
+/** Service request that triggered this visit (via `Visit.serviceRequestId`).
+ *  Rendered above the tabs so office + techs immediately see what the
+ *  customer originally asked for and whether it was paid. */
+function RelatedServiceRequestCard({
+  sr,
+  locale,
+}: Readonly<{ sr: RelatedServiceRequest; locale: string }>) {
+  const t = useTranslations("visits.relatedSr");
+  const tSr = useTranslations("serviceRequests");
+  return (
+    <div className="rounded-xl border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-[var(--brand-blue-700)]">
+            {t("title")}
+          </span>
+          <Link
+            href={`/o/service-requests/${sr.id}`}
+            className="font-mono text-sm font-semibold text-[var(--brand-blue-700)] underline"
+          >
+            {sr.code}
+          </Link>
+          <span className="rounded-full border border-[#d4d4d4] bg-white px-2 py-0.5 text-[10px] text-[#525252]">
+            {tSr(`types.${sr.type}` as never)}
+          </span>
+          <span className="rounded-full border border-[#d4d4d4] bg-white px-2 py-0.5 text-[10px] text-[#525252]">
+            {tSr(`states.${sr.state}` as never)}
+          </span>
+          {sr.isPaid ? (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
+              {t("paid")}
+              {sr.approvedPrice ? ` · ${formatVnd(sr.approvedPrice)}` : ""}
+            </span>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700">
+              {t("free")}
+            </span>
+          )}
+        </div>
+      </div>
+      <p className="mt-2 whitespace-pre-wrap text-sm text-[#262626]">
+        {sr.description}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#525252]">
+        <span>
+          {t("submittedAt")}: {formatDate(sr.submittedAt, locale)}{" "}
+          {formatTime(sr.submittedAt)}
+        </span>
+        {sr.preferredVisitAt && (
+          <span>
+            {t("preferredVisitAt")}: {formatDate(sr.preferredVisitAt, locale)}{" "}
+            {formatTime(sr.preferredVisitAt)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Orders whose delivery / installation is fulfilled by this visit. Usually
+ *  0..1, but the schema allows several so we render a list. Each row shows
+ *  the order number (linkable) + all line items with per-line quantity/price. */
+function RelatedOrdersCard({
+  orders,
+  locale,
+}: Readonly<{ orders: RelatedOrder[]; locale: string }>) {
+  const t = useTranslations("visits.relatedOrders");
+  const totalAll = orders.reduce(
+    (sum, o) =>
+      sum + o.items.reduce((s, it) => s + Number(it.totalPrice), 0),
+    0,
+  );
+  return (
+    <div className="rounded-xl border border-[#e5e5e5] bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="text-sm font-semibold text-[#002A4D]">
+          {t("title")}{" "}
+          <span className="ml-1 text-xs font-normal text-[#737373]">
+            ({orders.length})
+          </span>
+        </h3>
+        <span className="text-xs text-[#525252]">
+          {t("totalLabel")}: <span className="font-semibold text-[#111]">{formatVnd(totalAll)}</span>
+        </span>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {orders.map((o) => (
+          <li key={o.id} className="rounded-lg border border-[#e5e5e5] bg-[#fafafa] p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-semibold text-[var(--brand-blue-700)]">
+                  {o.orderNumber}
+                </span>
+                <span className="rounded-full border border-[#d4d4d4] bg-white px-2 py-0.5 text-[10px] text-[#525252]">
+                  {t(`states.${o.state}` as const)}
+                </span>
+                {o.serviceRequestId && (
+                  <span className="rounded-full bg-[var(--brand-blue-50)] px-2 py-0.5 text-[10px] text-[var(--brand-blue-700)]">
+                    {t("fromServiceRequest")}
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-[#737373]">
+                {formatDate(o.orderedAt, locale)}
+              </span>
+            </div>
+            <div className="mt-2 overflow-hidden rounded border border-[#e5e5e5] bg-white">
+              <table className="w-full text-xs">
+                <thead className="bg-[#f5f5f5] text-left text-[10px] text-[#737373]">
+                  <tr>
+                    <th className="px-2 py-1">{t("colProduct")}</th>
+                    <th className="px-2 py-1 text-right">{t("colQty")}</th>
+                    <th className="px-2 py-1 text-right">{t("colUnitPrice")}</th>
+                    <th className="px-2 py-1 text-right">{t("colTotal")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f5f5f5]">
+                  {o.items.map((it) => (
+                    <tr key={it.id}>
+                      <td className="px-2 py-1.5">
+                        <div className="flex flex-col">
+                          <span className="text-[#262626]">
+                            {pickOrderItemName(it, locale)}
+                          </span>
+                          {it.equipment?.serialNumber && (
+                            <span className="text-[10px] text-[#737373]">
+                              {t("forEquipment")}: {it.equipment.serialNumber}
+                            </span>
+                          )}
+                          {it.purpose && (
+                            <span className="text-[10px] text-[#737373]">
+                              {it.purpose}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-2 py-1.5 text-right">{it.quantity}</td>
+                      <td className="px-2 py-1.5 text-right">
+                        {formatVnd(it.unitPrice)}
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-medium">
+                        {formatVnd(it.totalPrice)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {o.notes && (
+              <p className="mt-2 whitespace-pre-wrap text-[11px] text-[#525252]">
+                {o.notes}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function pickOrderItemName(
+  it: RelatedOrder["items"][number],
+  locale: string,
+): string {
+  if (it.customName) return it.customName;
+  if (it.consumable) {
+    return (
+      pickModelName(
+        {
+          modelCode: it.consumable.sku,
+          nameKo: it.consumable.nameKo,
+          nameVi: it.consumable.nameVi,
+          nameEn: it.consumable.nameEn,
+        },
+        locale,
+      ) || it.consumable.sku || "—"
+    );
+  }
+  if (it.equipmentModel) {
+    return pickModelName(it.equipmentModel, locale) || it.equipmentModel.modelCode || "—";
+  }
+  return "—";
 }

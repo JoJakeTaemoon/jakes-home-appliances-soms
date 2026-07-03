@@ -7,6 +7,7 @@ import { FieldAuthProvider } from "@/providers/field-auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { LangSyncer } from "@/components/layout/lang-syncer";
 import { MockSmsLogger } from "@/components/dev/mock-sms-logger";
+import { ToastProvider } from "@/components/ui/toast";
 
 /**
  * Field realm root layout (URL `/f/[locale?]/...`).
@@ -39,11 +40,13 @@ export default async function FieldLocaleLayout({
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <QueryProvider>
-        <FieldAuthProvider>
-          <LangSyncer />
-          {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
-          {children}
-        </FieldAuthProvider>
+        <ToastProvider>
+          <FieldAuthProvider>
+            <LangSyncer />
+            {process.env.NODE_ENV !== "production" && <MockSmsLogger />}
+            {children}
+          </FieldAuthProvider>
+        </ToastProvider>
       </QueryProvider>
     </NextIntlClientProvider>
   );

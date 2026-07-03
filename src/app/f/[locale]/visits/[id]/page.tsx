@@ -14,7 +14,7 @@ import {
   VisitStateBadge,
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 import { HQ_PHONE } from "@/lib/config/company";
 import { Phone, MapPin, CheckCircle2, AlertTriangle, Play, Send } from "lucide-react";
 
@@ -45,7 +45,6 @@ interface VisitDetail {
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   expectedAmount: string | null;
   findings: string | null;
   officeNotes: OfficeNoteEntry[] | null;
@@ -169,8 +168,7 @@ function MobileVisitDetailContent() {
         </div>
         <h1 className="text-lg font-semibold text-[#002A4D]">{data.customer.name}</h1>
         <p className="text-sm text-[#525252]">
-          {formatDate(data.scheduledFor, locale)} · {data.scheduledFor.slice(11, 16)}
-          {data.scheduledWindow ? ` · ${data.scheduledWindow}` : ""}
+          {formatDate(data.scheduledFor, locale)} · {formatTime(data.scheduledFor)}
         </p>
       </header>
 
@@ -262,7 +260,7 @@ function MobileVisitDetailContent() {
               <li key={`${n.at}-${i}`} className="rounded-lg bg-[#f5f5f5] p-2 text-sm text-[#262626]">
                 <span className="block whitespace-pre-wrap">{n.text}</span>
                 <span className="mt-1 block text-[10px] text-[#737373]">
-                  {n.authorName} · {formatDate(n.at, locale)} {n.at.slice(11, 16)}
+                  {n.authorName} · {formatDate(n.at, locale)} {formatTime(n.at)}
                 </span>
               </li>
             ))}
@@ -459,11 +457,6 @@ function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
         </div>
       )}
 
-      {visit.scheduledWindow && (
-        <p className="mt-3 text-xs text-[#737373]">
-          {t("windowLabel")}: {visit.scheduledWindow}
-        </p>
-      )}
       {visit.expectedAmount && Number(visit.expectedAmount) > 0 && (
         <p className="mt-1 text-xs text-[#737373]">
           {t("expectedAmountLabel")}:{" "}

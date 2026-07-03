@@ -10,6 +10,14 @@ import { useAuth } from "@/providers/auth-provider";
 import { useRouter, Link } from "@/i18n/navigation";
 
 const AUTH_KEYS = ["soms_user", "soms_access", "soms_auth"];
+/**
+ * Query params that must never persist in the address bar. If a stale
+ * GET-style form resubmission ever landed phone/password here (legacy
+ * form, browser auto-restore, accidental link share), strip them on
+ * mount + replace history so the password vanishes from the URL,
+ * referrer header, and browser history.
+ */
+const SENSITIVE_LOGIN_PARAMS = ["phone", "password", "username"] as const;
 
 function ErrorIcon() {
   return (
@@ -46,6 +54,37 @@ export function LoginForm() {
   useEffect(() => {
     if (typeof sessionStorage !== "undefined") {
       for (const key of AUTH_KEYS) sessionStorage.removeItem(key);
+    }
+    // Guard against a stuck submit spinner: if the previous mount was
+    // interrupted mid-submit (Fast Refresh, dev-server restart), the
+    // component can be re-created with submitting=false as the initial
+    // value — this reset is defensive.
+    setSubmitting(false);
+    setServerError(null);
+    setRoleMismatchUrl(null);
+    // Strip credentials that may have leaked into the URL (legacy form
+    // resubmission, accidentally-shared link). Use history.replaceState
+    // so the cleanup is invisible to navigation history.
+    if (typeof globalThis.window !== "undefined") {
+      try {
+        const url = new URL(globalThis.window.location.href);
+        let mutated = false;
+        for (const param of SENSITIVE_LOGIN_PARAMS) {
+          if (url.searchParams.has(param)) {
+            url.searchParams.delete(param);
+            mutated = true;
+          }
+        }
+        if (mutated) {
+          globalThis.window.history.replaceState(
+            {},
+            "",
+            `${url.pathname}${url.search}${url.hash}`,
+          );
+        }
+      } catch {
+        // Malformed URL — nothing we can do; refuse to render the leak.
+      }
     }
   }, []);
 
@@ -90,7 +129,20 @@ export function LoginForm() {
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onSubmit, (invalidFields) => {
+        // Silent validation failures are the #1 cause of "the button
+        // does nothing" reports — react-hook-form swallows the submit
+        // when a field is invalid and the caller forgot to render the
+        // field's errors. Surface a generic message so the user knows
+        // the click was received and the form is at fault.
+        const first = Object.values(invalidFields)[0];
+        setServerError(first?.message ?? t("errorGeneric"));
+      })}
+      // method="POST" + action="" so a no-JS / pre-hydration submit falls
+      // back to POST (body, not query string) — credentials never end up
+      // in the URL or referrer header even if onSubmit fails to attach.
+      method="POST"
+      action=""
       className="rounded-2xl border border-[#e5e5e5] bg-white p-6 shadow-[0_4px_12px_rgba(0,113,189,0.06)]"
       noValidate
     >

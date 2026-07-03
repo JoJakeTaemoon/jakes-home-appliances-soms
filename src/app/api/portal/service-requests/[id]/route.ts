@@ -35,7 +35,6 @@ export const GET = defineQuery({
             id: true,
             state: true,
             scheduledFor: true,
-            scheduledWindow: true,
             leadTechnician: { select: { id: true, username: true, phone: true } },
           },
         },

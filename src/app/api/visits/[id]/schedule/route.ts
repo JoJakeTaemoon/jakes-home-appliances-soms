@@ -31,7 +31,6 @@ export const POST = defineMutation({
         leadTechnicianId: body.leadTechnicianId,
         collaboratorTechnicianIds: body.collaboratorTechnicianIds,
         scheduledFor: body.scheduledFor ?? null,
-        scheduledWindow: body.scheduledWindow ?? null,
       },
       { userId: auth.userId, role: auth.role },
       request,

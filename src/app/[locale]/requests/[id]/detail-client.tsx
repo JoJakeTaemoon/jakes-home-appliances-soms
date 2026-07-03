@@ -33,7 +33,6 @@ interface SrDetail {
     id: string;
     state: string;
     scheduledFor: string;
-    scheduledWindow: string | null;
     leadTechnician: { id: string; username: string; phone: string | null } | null;
   } | null;
   attachments: unknown;
@@ -162,7 +161,6 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
           <div className="mt-2 space-y-1">
             <p className="text-sm text-[#262626]">
               {formatDateTime(sr.visit.scheduledFor, locale)}
-              {sr.visit.scheduledWindow ? ` · ${sr.visit.scheduledWindow}` : ""}
             </p>
             {sr.visit.leadTechnician && (
               <p className="text-xs text-[#737373]">

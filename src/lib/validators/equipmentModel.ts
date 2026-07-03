@@ -65,6 +65,9 @@ export const updateEquipmentModelSchema = z.object({
 export const equipmentModelListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
+  // Server-side filters used by the bulk-register wizard's model picker.
+  brandId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),

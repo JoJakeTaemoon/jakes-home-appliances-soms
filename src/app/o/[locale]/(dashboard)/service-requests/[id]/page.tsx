@@ -21,7 +21,16 @@ import {
 } from "@/components/service-requests/sr-state-badge";
 import { SrMessageThreadOffice } from "@/components/service-requests/sr-message-thread-office";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { formatDate, formatDateTime, formatVnd } from "@/lib/format";
+import {
+  formatDate,
+  formatDateTime,
+  formatVnd,
+  fromVstDateTimeInput,
+  toVstDateTimeInput,
+} from "@/lib/format";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { OrderCreateModal } from "@/components/order/order-create-modal";
+import { canManageEquipment } from "@/lib/customers/access";
 
 interface SrDetail {
   id: string;
@@ -74,7 +83,6 @@ interface SrDetail {
     state: string;
     type: string;
     scheduledFor: string;
-    scheduledWindow: string | null;
     leadTechnician: { id: string; username: string; phone: string | null } | null;
   } | null;
   activity: Array<{
@@ -92,6 +100,7 @@ export default function ServiceRequestDetailPage() {
   const id = params?.id ?? "";
   const t = useTranslations("serviceRequests");
   const tCommon = useTranslations("common");
+  const tOrders = useTranslations("orders");
   const locale = useLocale();
   const router = useRouter();
   const api = useApi();
@@ -108,6 +117,7 @@ export default function ServiceRequestDetailPage() {
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
 
   // Approve modal state
   const [price, setPrice] = useState<number>(0);
@@ -124,16 +134,16 @@ export default function ServiceRequestDetailPage() {
   //   at 09:00" so the office still has a sensible starting value.
   const handleOpenApprove = () => {
     const now = new Date();
-    setApprovedDate(now.toISOString().slice(0, 10));
+    // approvedDate is a VST calendar date entered as YYYY-MM-DD; use the
+    // VST wall clock (via toVstDateTimeInput) so refresh-at-23:30-Seoul
+    // (16:30-VST) still resolves to the correct VST calendar day.
+    setApprovedDate(toVstDateTimeInput(now).slice(0, 10));
     if (data?.preferredVisitAt) {
-      const d = new Date(data.preferredVisitAt);
-      const tzOffsetMs = d.getTimezoneOffset() * 60_000;
-      setScheduledFor(new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16));
+      setScheduledFor(toVstDateTimeInput(data.preferredVisitAt));
     } else {
-      const d = new Date(now);
-      d.setHours(9, 0, 0, 0);
-      const tzOffsetMs = d.getTimezoneOffset() * 60_000;
-      setScheduledFor(new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16));
+      // Default = "today 09:00 VST" — build the VST wall-clock string
+      // directly instead of poking a Date object with getHours().
+      setScheduledFor(`${toVstDateTimeInput(now).slice(0, 10)}T09:00`);
     }
     setApproveError(null);
     setShowApprove(true);
@@ -184,8 +194,11 @@ export default function ServiceRequestDetailPage() {
     try {
       await api.post(`/api/service-requests/${id}/approve`, {
         approvedPrice: price,
-        approvedDate: new Date(approvedDate).toISOString(),
-        scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : undefined,
+        // approvedDate is a VST calendar date — anchor it at 00:00 VST
+        // so the server persists the correct day regardless of the
+        // office user's browser TZ.
+        approvedDate: fromVstDateTimeInput(`${approvedDate}T00:00`),
+        scheduledFor: scheduledFor ? fromVstDateTimeInput(scheduledFor) : undefined,
         leadTechnicianId: leadId || undefined,
         notes: approveNotes.trim() || undefined,
       });
@@ -252,6 +265,14 @@ export default function ServiceRequestDetailPage() {
     data.state !== "REJECTED" &&
     data.state !== "COMPLETED" &&
     data.state !== "CANCELLED";
+  // [+ 주문 등록] is available whenever the SR is still actionable —
+  // office can raise a parts order (filters, replacement equipment) in
+  // response. Closed SRs (rejected/cancelled/completed) hide it.
+  const canCreateOrder =
+    canManageEquipment(role) &&
+    data.state !== "REJECTED" &&
+    data.state !== "CANCELLED" &&
+    data.state !== "COMPLETED";
 
   const attachments = Array.isArray(data.attachments)
     ? (data.attachments as { url?: string; storageKey: string; filename: string }[])
@@ -282,11 +303,16 @@ export default function ServiceRequestDetailPage() {
               </StatusBadge>
             </div>
           </div>
-          {(canApprove || canReject || canCancel) && (
+          {(canApprove || canReject || canCancel || canCreateOrder) && (
             <div className="flex flex-wrap items-center gap-2">
               {canApprove && (
                 <Button onClick={handleOpenApprove}>
                   {t("actionApprove")}
+                </Button>
+              )}
+              {canCreateOrder && (
+                <Button variant="outline" onClick={() => setShowCreateOrder(true)}>
+                  {tOrders("newOrder")}
                 </Button>
               )}
               {canReject && (
@@ -550,11 +576,7 @@ export default function ServiceRequestDetailPage() {
                 : undefined
             }
           >
-            <Input
-              type="datetime-local"
-              value={scheduledFor}
-              onChange={(e) => setScheduledFor(e.target.value)}
-            />
+            <DateTimePicker value={scheduledFor} onChange={setScheduledFor} />
           </FormField>
           <FormField label={t("approveLead")} hint={t("approveLeadHint")}>
             <Combobox
@@ -659,6 +681,27 @@ export default function ServiceRequestDetailPage() {
           )}
         </div>
       </Modal>
+
+      {showCreateOrder && (
+        <OrderCreateModal
+          open={showCreateOrder}
+          onClose={() => setShowCreateOrder(false)}
+          initial={{
+            customerId: data.customer.id,
+            lockCustomer: true,
+            equipmentId: data.equipment?.id ?? null,
+            siteId: data.equipment?.site?.id ?? null,
+            serviceRequestId: data.id,
+            preferredVisitAt: data.preferredVisitAt,
+            notesSeed: data.description
+              ? `${t("originSr")} ${data.code} — ${data.description}`
+              : `${t("originSr")} ${data.code}`,
+          }}
+          onCreated={() => {
+            void reload();
+          }}
+        />
+      )}
     </div>
   );
 }

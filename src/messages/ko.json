@@ -9,6 +9,7 @@
     "filter": "필터",
     "filters": "필터",
     "all": "전체",
+    "none": "선택 안 함",
     "loading": "로딩 중...",
     "error": "오류가 발생했습니다",
     "success": "성공적으로 처리되었습니다",
@@ -16,6 +17,9 @@
     "back": "뒤로",
     "next": "다음",
     "previous": "이전",
+    "prev": "이전",
+    "today": "오늘",
+    "clear": "지우기",
     "actions": "작업",
     "noData": "데이터가 없습니다",
     "noResults": "검색 결과가 없습니다",
@@ -39,6 +43,10 @@
     "region": "지역",
     "language": "언어",
     "notes": "메모",
+    "count": "건",
+    "unitCount": "대",
+    "daysRemaining": "일 남음",
+    "daysOverdue": "일 지남",
     "title": "직책",
     "submit": "제출",
     "submitting": "처리 중...",
@@ -97,6 +105,9 @@
     "dashboard": "대시보드",
     "customers": "고객",
     "equipment": "장비",
+    "equipmentBulkRegister": "대량 장비 등록 / 설치",
+    "equipmentInstallHistory": "설치 이력",
+    "salesReps": "판매원",
     "contracts": "계약",
     "visits": "방문",
     "scheduleBoard": "오늘의 배정",
@@ -234,6 +245,40 @@
     "filterType": "유형 필터",
     "filterStatus": "상태 필터",
     "filterRegion": "지역 필터",
+    "listSubtitle": "등록된 모든 고객 정보를 조회하고 관리할 수 있습니다.",
+    "quickFilters": "빠른 필터",
+    "apply": "적용하기",
+    "reset": "필터 초기화",
+    "all": "전체",
+    "regionPlaceholder": "예: HCMC-D1",
+    "contactInfo": "연락처",
+    "contractStatus": "계약 상태",
+    "equipmentCount": "장비 수",
+    "contractCount": "계약 수",
+    "nextMaintenance": "다음 유지보수일",
+    "salesRep": "담당 판매원",
+    "salesRepUnassigned": "지정된 판매원이 없습니다.",
+    "changeSalesRep": "담당자 변경",
+    "addEquipment": "+ 신규 장비 등록",
+    "editCustomerShort": "수정",
+    "contractState": {
+      "ACTIVE": "계약 진행 중",
+      "EXPIRING": "계약 만료 예정",
+      "TERMINATED": "계약 종료",
+      "NONE": "계약 없음"
+    },
+    "stats": {
+      "totalCustomers": "전체 고객",
+      "activeCustomers": "활성 고객",
+      "activeHint": "계약이 진행 중인 고객",
+      "b2bCount": "B2B - 기업 고객",
+      "b2cCount": "B2C - 개인 고객",
+      "totalEquipment": "총 장비 수",
+      "totalContracts": "총 계약 수",
+      "monthlyMaintenance": "월 유지보수 매출",
+      "monthlyRental": "월 렌탈 매출",
+      "totalReceivable": "총 미수금"
+    },
     "noCustomers": "등록된 고객이 없습니다",
     "noResults": "조건에 맞는 고객이 없습니다",
     "tabs": {
@@ -242,6 +287,13 @@
       "sites": "사업장",
       "equipment": "장비",
       "contracts": "계약",
+      "maintenanceHistory": "유지보수 이력",
+      "filterExchange": "필터 교환 이력",
+      "paymentStatus": "결제 현황",
+      "orderHistory": "구매 이력",
+      "salesOrder": "주문 내역 (판매)",
+      "installSites": "설치 장소",
+      "notesAttachments": "메모 및 첨부파일",
       "serviceRequests": "서비스 요청",
       "activity": "활동 로그"
     },
@@ -291,6 +343,104 @@
     "serviceSummary": "서비스",
     "visitHistory": "최근 방문"
   },
+  "salesReps": {
+    "title": "판매원",
+    "subtitle": "담당 판매원별 고객, 계약, 미수금 현황을 조회합니다.",
+    "emptyState": "등록된 판매원이 없습니다 — 시스템 설정에서 사용자에게 판매원 권한을 부여하세요.",
+    "type": "유형",
+    "equipmentCount": "장비 수",
+    "contractCount": "계약 수",
+    "createdAt": "체결일",
+    "contractNumber": "계약 번호",
+    "totalValue": "계약 금액",
+    "totalSum": "합계",
+    "totalReceivable": "총 미수금",
+    "outstanding": "미수금",
+    "dueDate": "납기일",
+    "state": "상태",
+    "periodLabel": "기간",
+    "periodFrom": "시작일",
+    "periodTo": "종료일",
+    "kpi": {
+      "customers": "담당 고객 수",
+      "monthlyContracts": "이번 달 신규 계약",
+      "monthlyRevenue": "기간 매출",
+      "receivables": "누적 미수금"
+    },
+    "tabs": {
+      "customers": "담당 고객",
+      "contracts": "기간별 매출",
+      "receivables": "기간별 미수금"
+    },
+    "revenue": {
+      "customerCount": "고객 수",
+      "equipmentCount": "장비 수",
+      "modelName": "모델",
+      "serial": "시리얼",
+      "installedAt": "설치일",
+      "serviceType": "서비스 유형",
+      "deposit": "보증금",
+      "monthlyFee": "월 요금",
+      "perEquipmentRevenue": "장비별 매출",
+      "formulaHint": "장비별 매출 = 보증금 + 월 요금 × {months}개월"
+    },
+    "receivables": {
+      "paymentCount": "건수",
+      "noEquipment": "연결된 장비 정보가 없습니다."
+    }
+  },
+  "orders": {
+    "title": "주문",
+    "orderNumber": "주문번호",
+    "orderedAt": "주문일",
+    "deliveredAt": "납품일",
+    "product": "제품명",
+    "quantity": "수량",
+    "unitPrice": "단가",
+    "totalPrice": "금액",
+    "purpose": "용도",
+    "equipment": "연결 장비",
+    "state": "상태",
+    "newOrder": "+ 새 주문 등록",
+    "createTitle": "새 주문 등록",
+    "customer": "고객",
+    "site": "사업장",
+    "items": "주문 품목",
+    "addItem": "+ 품목 추가",
+    "kind": "유형",
+    "orderTotal": "주문 합계",
+    "linkedEquipment": "연결 장비",
+    "noConsumableForEquipment": "이 장비에 호환되는 소모품이 없습니다.",
+    "pickModel": "장비 모델 선택",
+    "pickConsumable": "소모품 선택",
+    "customNamePlaceholder": "품목명 입력",
+    "notes": "메모",
+    "states": {
+      "PENDING": "미전달",
+      "DELIVERED": "전달 완료",
+      "CANCELLED": "취소"
+    },
+    "kinds": {
+      "EQUIPMENT": "장비",
+      "CONSUMABLE": "소모품",
+      "OTHER": "기타"
+    },
+    "visitSectionTitle": "방문 정보 (자동 생성)",
+    "visitSectionHint": "주문 등록 시 방문이 자동으로 예정됩니다.",
+    "visitScheduledFor": "방문 예정일",
+    "visitType": "방문 유형",
+    "visitTechnician": "담당 기술자",
+    "visitNotes": "방문 메모",
+    "visitNotesPlaceholder": "현장에 전달할 메모 (선택)",
+    "visitModeAttach": "예정된 방문에 구매 소모품 추가",
+    "visitModeNew": "신규 방문 생성",
+    "visitModeNewHint": "이 주문 배송을 위한 새 방문을 예약합니다.",
+    "visitAttachHint": "이 주문이 위의 방문에 추가되며, 방문 유형에 '구매 소모품 배송'이 부여됩니다.",
+    "noUpcomingVisit": "예정된 방문이 없습니다.",
+    "upcomingFetchError": "방문 정보를 불러오지 못했습니다.",
+    "scheduledFor": "방문 예정일",
+    "openVisit": "방문 보기"
+  },
   "sites": {
     "title": "사업장",
     "addSite": "사업장 추가",
@@ -315,7 +465,228 @@
   "equipment": {
     "title": "장비",
     "installNew": "+ 신규 설치",
-    "installViaContract": "+ 계약 생성으로 설치",
+    "detailPanelTitle": "장비 상세 정보",
+    "openFullPage": "전체 화면으로 보기",
+    "detail": {
+      "title": "장비 상세 정보",
+      "model": "모델명",
+      "serial": "시리얼 번호",
+      "assetCode": "자산 코드",
+      "location": "설치 장소",
+      "serviceType": "서비스 유형",
+      "managementType": "관리 유형",
+      "deposit": "보증금",
+      "monthlyFee": "월 요금",
+      "installedAt": "설치일",
+      "registeredBy": "등록자",
+      "technician": "담당 기술자",
+      "inspectionCycle": "정기 점검 주기",
+      "months": "개월"
+    },
+    "serviceConfig": {
+      "title": "서비스 구성 (점검 + 필터)",
+      "kindHeader": "구분",
+      "name": "항목명",
+      "defaultCycle": "주기(기본)",
+      "userCycle": "사용자 주기",
+      "quantity": "수량",
+      "previousAt": "과거 수행일",
+      "lastAt": "최근 수행일",
+      "nextDueAt": "다음 예정일",
+      "daysRemaining": "잔여일",
+      "monthsShort": "일",
+      "kind": {
+        "INSPECTION": "점검",
+        "FILTER": "필터"
+      },
+      "status": {
+        "header": "상태",
+        "NORMAL": "정상",
+        "SCHEDULED": "예정",
+        "REPLACE_DUE": "교체 예정",
+        "OVERDUE": "지연"
+      }
+    },
+    "widgets": {
+      "purchaseHistory": "구매 이력",
+      "recentWork": "최근 작업 이력",
+      "nextSchedule": "다음 일정",
+      "customerRequest": "고객 요청 사항"
+    },
+    "register": {
+      "title": "장비 등록 / 설치",
+      "subtitle": "한 고객에게 여러 모델의 장비를 모델별로 다른 보증금/월 요금으로 한 번에 등록할 수 있습니다.",
+      "submit": "등록",
+      "sections": {
+        "customer": "고객 정보",
+        "location": "설치 장소 정보",
+        "lines": "모델별 장비 라인",
+        "summary": "합계 및 계약"
+      },
+      "fields": {
+        "customer": "고객명",
+        "customerPlaceholder": "고객 검색 (코드 / 이름 / 약어)",
+        "customerType": "고객 유형",
+        "contact": "담당자",
+        "site": "설치 장소",
+        "sitePlaceholder": "사업장 선택",
+        "siteNotApplicable": "이 고객은 사업장이 등록되어 있지 않습니다 (고객 주소 사용)",
+        "pickCustomerFirst": "먼저 고객을 선택하세요",
+        "installedAt": "기본 설치일",
+        "technician": "담당 기술자",
+        "brand": "브랜드",
+        "brandPlaceholder": "브랜드 (전체)",
+        "category": "제품군",
+        "categoryPlaceholder": "제품군 (전체)",
+        "modelPlaceholder": "모델 선택",
+        "serialPrefixPlaceholder": "예: AQS-2406"
+      },
+      "columns": {
+        "model": "모델",
+        "serviceType": "서비스 유형",
+        "managementType": "관리 유형",
+        "quantity": "수량",
+        "deposit": "보증금 (1대당)",
+        "monthlyFee": "월 요금 (1대당)",
+        "serialPrefix": "시리얼 prefix",
+        "installedAt": "설치일 (선택)"
+      },
+      "serviceTypes": {
+        "RENTAL": "렌탈",
+        "MAINTENANCE": "유지보수",
+        "SALE": "판매"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "전체 서비스",
+        "SELF_MANAGED": "고객 자가 관리",
+        "OTHER": "기타"
+      },
+      "actions": {
+        "addLine": "+ 모델 추가"
+      },
+      "totals": {
+        "equipmentCount": "총 장비 수",
+        "totalDeposit": "보증금 합계",
+        "totalMonthly": "월 요금 합계",
+        "totalSale": "판매가 합계"
+      },
+      "contract": {
+        "toggle": "이 장비들로 계약도 함께 생성",
+        "toggleHint": "체크하면 모든 라인을 하나의 계약에 묶어 같은 트랜잭션에서 생성합니다.",
+        "termMonths": "계약 기간 (개월)"
+      }
+    },
+    "bulkRegister": {
+      "title": "대량 장비 등록 / 설치",
+      "subtitle": "동일한 정보로 여러 장비를 한 번에 등록하고 설치할 수 있습니다.",
+      "prevStep": "이전 단계",
+      "nextStep": "다음 단계",
+      "submitFinal": "완료",
+      "applyPaste": "적용",
+      "vatExclusive": "* 금액은 VAT 제외 금액입니다.",
+      "steps": {
+        "info": "정보 입력",
+        "list": "장비 목록 확인",
+        "confirm": "최종 확인"
+      },
+      "sections": {
+        "customer": "고객 정보",
+        "location": "설치 장소 정보",
+        "equipment": "장비 정보",
+        "etc": "기타 정보",
+        "contractCost": "계약 및 비용 정보 (중요)",
+        "quantitySerial": "수량 및 시리얼",
+        "rowsTable": "장비 목록"
+      },
+      "fields": {
+        "customerName": "고객명",
+        "customerPlaceholder": "고객 검색 (코드 / 이름 / 약어)",
+        "customerType": "고객 유형",
+        "primaryContact": "담당자",
+        "site": "설치 장소",
+        "sitePlaceholder": "사업장 선택",
+        "siteAddress": "사업장 주소",
+        "siteNotApplicable": "이 고객은 사업장이 등록되어 있지 않습니다 (고객 주소 사용)",
+        "pickCustomerFirst": "먼저 고객을 선택하세요",
+        "brand": "브랜드",
+        "brandPlaceholder": "브랜드 (전체)",
+        "category": "제품군",
+        "categoryPlaceholder": "제품군 (전체)",
+        "model": "장비 모델",
+        "modelPlaceholder": "모델 선택",
+        "serviceType": "서비스 유형",
+        "managementType": "관리 유형",
+        "installedAt": "기본 설치일",
+        "technician": "담당 기술자",
+        "deposit": "보증금 (1대당)",
+        "monthlyFee": "월 임대료 (1대당)",
+        "quantity": "설치할 장비 수량",
+        "serialMode": "시리얼 번호 입력 방식",
+        "serialNumber": "시리얼 번호",
+        "assetCode": "자산 코드"
+      },
+      "serviceTypes": {
+        "RENTAL": "렌탈",
+        "MAINTENANCE": "유지보수",
+        "SALE": "판매(소유)"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "전체 서비스",
+        "SELF_MANAGED": "고객 자가 관리",
+        "OTHER": "기타"
+      },
+      "serialMode": {
+        "auto": "자동 생성",
+        "manual": "수동 입력",
+        "excel": "엑셀 업로드",
+        "paste": "텍스트 붙여넣기"
+      },
+      "summary": {
+        "title": "생성 결과 요약 (예상)",
+        "equipmentCount": "생성 장비 수",
+        "contractCount": "생성 계약 수",
+        "contractHint": "장비만 생성됩니다. 계약 연결은 별도 진행.",
+        "visitCount": "생성 방문 수",
+        "deposit": "보증금 합계",
+        "monthlyFee": "월 요금 합계"
+      },
+      "contract": {
+        "title": "계약 생성 (선택)",
+        "toggle": "이 장비들로 계약도 함께 생성",
+        "toggleHint": "체크하면 모든 장비를 하나의 계약에 묶어 같은 트랜잭션에서 생성합니다. 미체크 시 장비만 생성되고 계약은 [계약 관리]에서 따로 연결합니다.",
+        "termMonths": "계약 기간 (개월)",
+        "totalValue": "총 계약 금액",
+        "totalValueHint": "보증금 합계 + 월 요금 × {months}개월",
+        "totalValueHintSale": "판매가 합계",
+        "numberPreview": "계약 번호",
+        "autoAssigned": "자동 발번",
+        "numberPreviewHint": "고객 코드 + 가장 빠른 설치일 기준"
+      }
+    },
+    "installationHistory": {
+      "title": "설치 이력",
+      "subtitle": "대량 등록 batch 및 INSTALLATION 방문 이력을 조회합니다.",
+      "viewMode": {
+        "batch": "Batch 단위",
+        "visit": "개별 방문"
+      },
+      "columns": {
+        "batch": {
+          "registeredAt": "등록일시",
+          "registeredBy": "등록자",
+          "quantity": "수량",
+          "serviceType": "서비스 유형"
+        },
+        "visit": {
+          "scheduledAt": "예정일",
+          "customer": "고객",
+          "model": "모델",
+          "equipmentCode": "시리얼",
+          "technician": "담당 기술자",
+          "state": "상태"
+        }
+      }
+    },
     "filterHistory": {
       "title": "필터 교환 이력",
       "addManual": "+ 필터 추가",
@@ -483,6 +854,7 @@
   "contracts": {
     "title": "계약",
     "newContract": "+ 신규 계약",
+    "newContractFromEquipment": "+ 설치된 장비로 계약 생성",
     "createContract": "계약 생성",
     "install": {
       "cta": "+ 기기 설치",
@@ -639,6 +1011,7 @@
       "step2": "2. 유형 및 장비",
       "step3": "3. 가격",
       "step4": "4. 확인",
+      "fromEquipmentHint": "설치된 장비로 계약을 만드는 흐름입니다. 먼저 고객을 선택하면, 2단계에서 그 고객의 설치된 장비 목록에서 계약 라인을 골라 추가할 수 있습니다.",
       "pickCustomer": "고객 선택",
       "newCustomer": "신규 고객",
       "newCustomerTitle": "신규 고객 등록 (간편)",
@@ -913,6 +1286,20 @@
   "visits": {
     "title": "방문 일정",
     "newVisit": "+ 방문 추가",
+    "pendingDocPrefix": "발행 대기",
+    "pendingDocsTooltip": "방문이 SCHEDULED로 확정되면 자동 발행됩니다.",
+    "docKinds": {
+      "DELIVERY_RECEIPT": "납품·수령서",
+      "SALE_RECEIPT_B2C": "판매 영수증",
+      "DELIVERY_SLIP_B2B": "출고서",
+      "PERIODIC_CHECK_B2C": "정기 점검표",
+      "PERIODIC_CHECK_B2B": "정기 점검표",
+      "WORK_CONFIRMATION": "작업확인서",
+      "RECEIPT": "영수증",
+      "CONTRACT": "계약서",
+      "TAX_INVOICE": "세금계산서",
+      "DELIVERY_SLIP": "출고서"
+    },
     "searchPlaceholder": "방문 검색...",
     "noVisits": "방문 일정이 없습니다.",
     "noResults": "검색 결과가 없습니다.",
@@ -966,7 +1353,6 @@
     "load": "당일 방문 {n}건",
     "manualPick": "다른 기사 선택",
     "addCollaborator": "협업 기사 추가",
-    "scheduleWindow": "시간대 (예: 오전, 14:00-16:00)",
     "reasonRequired": "사유 (3-500자)",
     "saving": "저장 중...",
     "createForm": {
@@ -980,7 +1366,6 @@
       "equipmentPick": "— 장비 선택 —",
       "type": "서비스 유형",
       "scheduledFor": "예정 일시",
-      "scheduledWindow": "시간대",
       "expectedAmount": "예상 금액 (VND)",
       "notes": "내부 메모",
       "submit": "방문 생성"
@@ -992,6 +1377,8 @@
       "FILTER_REPLACEMENT": "필터 교체",
       "RELOCATION": "이전 설치",
       "PAYMENT_COLLECTION": "수금",
+      "RETRIEVAL": "장비 회수",
+      "CONSUMABLE_DELIVERY": "구매 소모품 배송",
       "OTHER": "기타"
     },
     "states": {
@@ -1008,6 +1395,28 @@
       "photos": "사진",
       "activity": "활동",
       "payments": "결제"
+    },
+    "relatedSr": {
+      "title": "연관 서비스 요청",
+      "paid": "유상",
+      "free": "무상",
+      "submittedAt": "접수",
+      "preferredVisitAt": "고객 희망일"
+    },
+    "relatedOrders": {
+      "title": "연관 구매",
+      "totalLabel": "합계",
+      "fromServiceRequest": "서비스 요청에서 생성",
+      "forEquipment": "대상 장비",
+      "colProduct": "품목",
+      "colQty": "수량",
+      "colUnitPrice": "단가",
+      "colTotal": "금액",
+      "states": {
+        "PENDING": "처리 중",
+        "DELIVERED": "배송 완료",
+        "CANCELLED": "취소"
+      }
     },
     "documents": {
       "title": "지참 서류",
@@ -1035,6 +1444,7 @@
     "title": "서비스 요청",
     "unreadMessage": "새 고객 메시지",
     "newRequest": "+ 새 요청",
+    "originSr": "서비스 요청에서 등록:",
     "newPageTitle": "신규 서비스 요청 (사무실 접수)",
     "customerLabel": "고객",
     "customerPlaceholder": "고객 코드 / 이름으로 검색",
@@ -1204,7 +1614,6 @@
       "cleanTitle": "청소·점검 대상",
       "everyMonths": "{n}개월마다",
       "everyVisit": "방문마다",
-      "windowLabel": "방문 시간대",
       "expectedAmountLabel": "예상 금액 (VND)",
       "introInstallation": "신규 장비를 설치하고 동작 확인 후 시운전합니다. 부속품·설치 키트를 모두 챙기세요.",
       "introPeriodicInspection": "정기 점검입니다. 아래 필터를 점검·청소하고 교체 주기에 도달한 필터를 교체하세요. 누수·수질·작동 상태도 함께 확인합니다.",

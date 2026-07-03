@@ -85,6 +85,8 @@ function NewContractPageInner() {
   const api = useApi();
   const sp = useSearchParams();
   const preselectCustomer = sp?.get("customerId") ?? null;
+  /** "+ 설치된 장비로 계약 생성" 진입점에서 노출되는 안내 배너 토글. */
+  const fromEquipment = sp?.get("source") === "equipment";
 
   const [step, setStep] = useState(1);
   const [customerId, setCustomerId] = useState<string | null>(preselectCustomer);
@@ -400,6 +402,12 @@ function NewContractPageInner() {
           <StepDot label={t("wizard.step4")} active={step === 4} done={false} />
         </div>
       </header>
+
+      {fromEquipment && (
+        <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          {t("wizard.fromEquipmentHint")}
+        </div>
+      )}
 
       {step === 1 && (
         <section className="rounded-xl border border-[#e5e5e5] bg-white p-4">

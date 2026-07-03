@@ -16,16 +16,17 @@ import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { SchedulerWidget } from "@/components/visits/scheduler-widget";
 import { VisitTypeBadge, VisitStateBadge } from "@/components/visits/visit-state-badge";
 import { pickModelName } from "@/lib/products/name";
+import { formatDate, formatTime } from "@/lib/format";
 
 interface BoardVisit {
   id: string;
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   leadTechnicianId?: string | null;
   collaboratorTechnicianIds?: string[];
   customerId?: string;
@@ -73,20 +74,6 @@ function shiftDay(yyyymmdd: string, delta: number): string {
   const x = new Date(y, m - 1, d + delta);
   const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
   return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
-}
-
-function formatHm(iso: string): string {
-  return iso.slice(11, 16);
-}
-
-function formatDateOnly(iso: string, locale: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
-  if (locale === "vi") {
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  }
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export default function ScheduleBoardPage() {
@@ -138,12 +125,9 @@ export default function ScheduleBoardPage() {
           >
             {t("today")}
           </Button>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded border border-[#d4d4d4] bg-white px-2 py-1 text-sm"
-          />
+          <div className="w-40">
+            <DatePicker value={date} onChange={setDate} clearable={false} />
+          </div>
           <Button
             size="sm"
             variant="outline"
@@ -177,8 +161,8 @@ export default function ScheduleBoardPage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium text-[#737373]">
-                        {formatDateOnly(v.scheduledFor, locale)} ·{" "}
-                        {formatHm(v.scheduledFor)}
+                        {formatDate(v.scheduledFor, locale)} ·{" "}
+                        {formatTime(v.scheduledFor)}
                       </span>
                       <VisitTypeBadge type={v.type} />
                     </div>
@@ -278,10 +262,7 @@ export default function ScheduleBoardPage() {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-mono text-[10px] text-[#737373]">
-                            {formatHm(v.scheduledFor)}
-                            {v.scheduledWindow
-                              ? ` · ${v.scheduledWindow}`
-                              : ""}
+                            {formatTime(v.scheduledFor)}
                           </span>
                           <VisitStateBadge state={v.state} />
                         </div>

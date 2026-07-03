@@ -75,6 +75,8 @@ const createBaseFields = {
   ...addressFields,
   preferredRegion: optString(60),
   preferredTechnicianId: optString(60),
+  /** Sales rep (담당 판매원) — User with isSalesRep=true. */
+  salesRepId: optString(60),
   notes: optString(2000),
 } as const;
 
@@ -150,7 +152,21 @@ export const updateCustomerSchema = z.object({
   ...identityIssueFields,
   preferredRegion: optString(60),
   preferredTechnicianId: optString(60),
+  /**
+   * Sales rep (담당 판매원) — User with isSalesRep=true. Optional; nulling
+   * unassigns the rep.
+   */
+  salesRepId: z.preprocess((v) => {
+    if (typeof v !== "string") return v;
+    const t = v.trim();
+    return t === "" ? null : t;
+  }, z.union([z.string().min(1).max(60), z.null()]).optional()),
   notes: optString(2000),
+});
+
+export const changeSalesRepSchema = z.object({
+  salesRepId: z.union([z.string().trim().min(1).max(60), z.null()]),
+  reason: z.string().trim().max(500).optional(),
 });
 
 export const customerListQuerySchema = z.object({
@@ -158,6 +174,8 @@ export const customerListQuerySchema = z.object({
   type: z.enum(["B2C", "B2B"]).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "PROSPECT"]).optional(),
   region: z.string().trim().max(60).optional(),
+  salesRepId: z.string().trim().min(1).max(60).optional(),
+  contractState: z.enum(["ACTIVE", "EXPIRING", "TERMINATED", "NONE"]).optional(),
   sortBy: z.string().trim().min(1).max(60).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -174,3 +192,4 @@ export type CreateB2BInput = z.infer<typeof createB2BCustomerSchema>;
 export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 export type CustomerListQuery = z.infer<typeof customerListQuerySchema>;
 export type DeactivateCustomerInput = z.infer<typeof deactivateCustomerSchema>;
+export type ChangeSalesRepInput = z.infer<typeof changeSalesRepSchema>;

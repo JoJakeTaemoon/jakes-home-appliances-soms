@@ -7,11 +7,12 @@ import { pickModelName } from "@/lib/products/name";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { NumberInput } from "@/components/ui/number-input";
+import { fromVstDateTimeInput } from "@/lib/format";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 interface CustomerLite {
   id: string;
@@ -41,7 +42,6 @@ export default function NewVisitPage() {
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
   const [type, setType] = useState<string>("PERIODIC_INSPECTION");
   const [scheduledFor, setScheduledFor] = useState<string>("");
-  const [window, setWindow] = useState<string>("");
   const [amount, setAmount] = useState<number>(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,8 +94,7 @@ export default function NewVisitPage() {
         siteId: siteId || undefined,
         equipmentId: equipmentId || undefined,
         type,
-        scheduledFor: new Date(scheduledFor).toISOString(),
-        scheduledWindow: window || undefined,
+        scheduledFor: fromVstDateTimeInput(scheduledFor),
         expectedAmount: amount > 0 ? amount : undefined,
       });
       router.push(`/o/visits/${res.data.id}`);
@@ -171,19 +170,7 @@ export default function NewVisitPage() {
         </FormField>
 
         <FormField label={t("createForm.scheduledFor")} required>
-          <Input
-            type="datetime-local"
-            value={scheduledFor}
-            onChange={(e) => setScheduledFor(e.target.value)}
-          />
-        </FormField>
-
-        <FormField label={t("createForm.scheduledWindow")}>
-          <Input
-            value={window}
-            placeholder="e.g. morning, 14:00-16:00"
-            onChange={(e) => setWindow(e.target.value)}
-          />
+          <DateTimePicker value={scheduledFor} onChange={setScheduledFor} />
         </FormField>
 
         <FormField label={t("createForm.expectedAmount")}>

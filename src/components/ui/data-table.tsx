@@ -76,7 +76,7 @@ export function DataTable<T>({
 
       <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-max text-sm">
             <thead
               className={cn(
                 "bg-[#fafafa] text-[#525252]",

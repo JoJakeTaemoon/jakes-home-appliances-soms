@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/cn";
 
 /**
  * Standard numeric input used across the app for settings, schedule windows,
@@ -47,6 +48,19 @@ interface Props {
    * Pass `true` to allow decimals; default is integer-only.
    */
   allowDecimal?: boolean;
+  /**
+   * Visual variant.
+   *
+   *   - `"default"` (or omitted) — plain integer / count input, left-
+   *     aligned. Uses the same border, focus ring and hover accent as
+   *     the standard `<Input>` component so callsites don't have to
+   *     pass className every time.
+   *   - `"money"` — right-aligned + subtle "editable amount" cue
+   *     (thicker border, brand-blue hover) meant for VND unit
+   *     prices, deposits, monthly fees. Defaults `step` to 1000 so
+   *     the up/down keys move by the smallest bill denomination.
+   */
+  variant?: "default" | "money";
 }
 
 export function NumberInput({
@@ -61,7 +75,11 @@ export function NumberInput({
   ariaLabel,
   id,
   allowDecimal = false,
+  variant = "default",
 }: Readonly<Props>) {
+  // Money fields step by 1000 VND (smallest bill denomination) unless
+  // the caller explicitly overrode step.
+  const effectiveStep = step ?? (variant === "money" ? 1000 : undefined);
   // Keep a string copy of what the user is typing so empty / partial input
   // can survive between renders.
   const [draft, setDraft] = useState<string>(String(value));
@@ -109,13 +127,13 @@ export function NumberInput({
     onChange(next);
   };
 
-  return (
+  const inputEl = (
     <input
       id={id}
       type="number"
       min={min}
       max={max}
-      step={step}
+      step={effectiveStep}
       disabled={disabled}
       aria-label={ariaLabel}
       value={draft}
@@ -132,7 +150,34 @@ export function NumberInput({
         onChange(parsed);
       }}
       onBlur={(e) => commit(e.target.value)}
-      className={className}
+      className={cn(
+        // Baseline — matches `<Input>` (see components/ui/input.tsx) so
+        // the field reads as editable even without a caller-provided
+        // className. Hover/focus accents flag "you can type here".
+        "h-10 w-full rounded-lg border-2 bg-white px-3 text-sm text-[#111111] outline-none",
+        "hover:border-[var(--brand-blue-300)]",
+        "focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]",
+        "disabled:cursor-not-allowed disabled:bg-[#fafafa] disabled:text-[#737373]",
+        variant === "money"
+          ? "border-[#e5e5e5] pr-8 text-right tabular-nums"
+          : "border-[#e5e5e5]",
+        className,
+      )}
     />
+  );
+  if (variant !== "money") return inputEl;
+  // Money variant — right-aligned amount with a ₫ suffix so the user
+  // never has to guess the currency. Wrap in a relative container so
+  // the suffix floats over the input's padding.
+  return (
+    <div className="relative w-full">
+      {inputEl}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-[#737373]"
+      >
+        ₫
+      </span>
+    </div>
   );
 }

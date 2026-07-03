@@ -151,15 +151,15 @@ export default function EquipmentPage() {
   );
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
           <p className="text-sm text-[#737373]">{total}</p>
         </div>
         {canManageEquipment(role) && (
-          <Link href="/o/contracts/new">
-            <Button variant="secondary">{t("installViaContract")}</Button>
+          <Link href="/o/equipment/register">
+            <Button>{t("register.title")}</Button>
           </Link>
         )}
       </header>

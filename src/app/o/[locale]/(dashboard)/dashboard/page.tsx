@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/providers/auth-provider";
 import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
-import { formatDate, formatVnd } from "@/lib/format";
+import { formatDate, formatTime, formatVnd } from "@/lib/format";
 import { VisitStateBadge } from "@/components/visits/visit-state-badge";
 import { pickModelName } from "@/lib/products/name";
 
@@ -25,7 +25,6 @@ interface TodayVisitRow {
   state: string;
   type: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   customer: { id: string; code: string; name: string; type: string };
   leadTechnician: { id: string; username: string } | null;
   equipment: {
@@ -136,7 +135,7 @@ export default function DashboardPage() {
   const role = user?.role ? tRoles(user.role as RoleKey) : "";
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="w-full">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-[#002A4D]">
           {t("greeting")}
@@ -288,7 +287,7 @@ export default function DashboardPage() {
           ) : (
             <ul className="divide-y divide-[#f0f0f0]">
               {todayVisits.map((v) => {
-                const time = v.scheduledFor.slice(11, 16);
+                const time = formatTime(v.scheduledFor);
                 const equipmentLabel = v.equipment
                   ? pickModelName(v.equipment.model, locale)
                   : null;
@@ -313,9 +312,6 @@ export default function DashboardPage() {
                             {equipmentLabel ?? "—"}
                             {v.leadTechnician
                               ? ` · ${v.leadTechnician.username}`
-                              : ""}
-                            {v.scheduledWindow
-                              ? ` · ${v.scheduledWindow}`
                               : ""}
                           </span>
                         </div>

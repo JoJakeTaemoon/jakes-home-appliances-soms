@@ -17,6 +17,16 @@ export const filterPolicySchema = z.object({
   filters: z.array(filterPolicyEntry).default([]),
 });
 
+const equipmentServiceTypeEnum = z.enum(["RENTAL", "MAINTENANCE", "SALE"]);
+const managementTypeEnum = z.enum(["FULL_SERVICE", "SELF_MANAGED", "OTHER"]);
+const lifecycleStageEnum = z.enum([
+  "INSTALLED",
+  "IN_RENTAL",
+  "IN_MAINTENANCE",
+  "RETRIEVED",
+  "REPLACED",
+]);
+
 export const createEquipmentSchema = z.object({
   customerId: z.string().trim().min(1),
   siteId: optStr(60),
@@ -38,9 +48,17 @@ export const createEquipmentSchema = z.object({
    */
   customMaintenanceCycle: z.coerce.number().int().min(1).max(120).optional(),
   serialNumber: optStr(60),
+  assetCode: optStr(60),
   ownership: z.enum(["COMPANY", "CUSTOMER"]).default("COMPANY"),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
+  // Equipment-centric domain shift (2026-06).
+  deposit: z.coerce.number().nonnegative().optional(),
+  monthlyFee: z.coerce.number().nonnegative().optional(),
+  serviceType: equipmentServiceTypeEnum.optional(),
+  managementType: managementTypeEnum.optional(),
+  customInspectionCycle: z.coerce.number().int().min(1).max(120).optional(),
+  imageUrl: optStr(500),
   notes: optStr(2000),
 }).superRefine((v, ctx) => {
   // Exactly one of (catalog modelId) / (customDescription) must be present.
@@ -50,6 +68,14 @@ export const createEquipmentSchema = z.object({
       path: ["customDescription"],
       message:
         "Either modelId (catalog) or customDescription (external device) is required",
+    });
+  }
+  // RENTAL serviceType requires a deposit.
+  if (v.serviceType === "RENTAL" && (v.deposit ?? null) === null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["deposit"],
+      message: "Deposit is required for RENTAL service type",
     });
   }
 });
@@ -116,6 +142,7 @@ export function generateSerialSequence(
 
 export const updateEquipmentSchema = z.object({
   serialNumber: optStr(60),
+  assetCode: optStr(60),
   ownership: z.enum(["COMPANY", "CUSTOMER"]).optional(),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
@@ -128,8 +155,150 @@ export const updateEquipmentSchema = z.object({
     .max(120)
     .nullable()
     .optional(),
+  // Equipment-centric fields.
+  deposit: z.coerce.number().nonnegative().nullable().optional(),
+  monthlyFee: z.coerce.number().nonnegative().nullable().optional(),
+  serviceType: equipmentServiceTypeEnum.nullable().optional(),
+  managementType: managementTypeEnum.nullable().optional(),
+  lifecycleStage: lifecycleStageEnum.optional(),
+  customInspectionCycle: z.coerce.number().int().min(1).max(120).nullable().optional(),
+  imageUrl: optStr(500),
   notes: optStr(2000),
 });
+
+// ──────────────────────────────────────────────────────────────────────
+// Bulk register wizard — equipment-centric (no contract auto-creation).
+// Step 1 = common info, Step 2 = N × serial/installedAt rows.
+// API: POST /api/equipment/bulk-register
+// ──────────────────────────────────────────────────────────────────────
+
+const bulkRegisterRowSchema = z.object({
+  serialNumber: optStr(60),
+  assetCode: optStr(60),
+  installedAt: z.coerce.date(),
+  notes: optStr(500),
+});
+
+export const bulkRegisterEquipmentSchema = z.object({
+  // Step 1 — common info applied to every row.
+  customerId: z.string().trim().min(1),
+  siteId: optStr(60),
+  modelId: z.string().trim().min(1),
+  serviceType: equipmentServiceTypeEnum,
+  managementType: managementTypeEnum.default("FULL_SERVICE"),
+  deposit: z.coerce.number().nonnegative().optional(),
+  monthlyFee: z.coerce.number().nonnegative().optional(),
+  customInspectionCycle: z.coerce.number().int().min(1).max(120).optional(),
+  defaultInstalledAt: z.coerce.date(),
+  installedByTechnicianId: optStr(60),
+  installNotes: optStr(2000),
+  // Step 2 — per-row data (length matches quantity).
+  rows: z.array(bulkRegisterRowSchema).min(1).max(500),
+  // Service config user-cycle overrides applied to every row's
+  // EquipmentConsumable overrides (empty = use catalog defaults).
+  serviceConfig: z
+    .object({
+      inspectionCycleMonths: z.coerce.number().int().min(1).max(120).optional(),
+      filterOverrides: z
+        .array(
+          z.object({
+            consumableId: z.string().trim().min(1),
+            replaceEveryMonths: z.coerce.number().int().min(1).max(120),
+            quantity: z.coerce.number().int().min(1).max(20).default(1),
+          }),
+        )
+        .default([]),
+    })
+    .default({ filterOverrides: [] }),
+  // Optional: also issue a Contract that bundles every equipment row.
+  // The API mints a fresh contractNumber, sets type/state/period from
+  // serviceType + termMonths, and creates one ContractEquipment row per
+  // generated Equipment.
+  createContract: z.coerce.boolean().default(false),
+  /** Required when createContract=true. Defaults to 36 for RENTAL. */
+  contractTermMonths: z.coerce.number().int().min(1).max(120).optional(),
+}).superRefine((v, ctx) => {
+  if (v.serviceType === "RENTAL" && (v.deposit ?? null) === null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["deposit"],
+      message: "Deposit is required for RENTAL service type",
+    });
+  }
+  if (v.createContract && v.serviceType !== "SALE" && !v.contractTermMonths) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["contractTermMonths"],
+      message: "contractTermMonths is required for RENTAL/MAINTENANCE contracts",
+    });
+  }
+});
+
+export type BulkRegisterEquipmentInput = z.infer<typeof bulkRegisterEquipmentSchema>;
+
+// ──────────────────────────────────────────────────────────────────────
+// Multi-model register wizard — "장비 등록 / 설치" (2026-06-26).
+//
+// Unlike bulkRegisterEquipmentSchema, this flow accepts N lines where
+// each line carries its own model + price + serviceType + quantity. The
+// API expands each line into `quantity` Equipment rows + one Visit per
+// row, and (optionally) a single Contract that bundles every generated
+// equipment id across all lines.
+// ──────────────────────────────────────────────────────────────────────
+
+const registerLineSchema = z
+  .object({
+    modelId: z.string().trim().min(1),
+    serviceType: equipmentServiceTypeEnum,
+    managementType: managementTypeEnum.default("FULL_SERVICE"),
+    quantity: z.coerce.number().int().min(1).max(500),
+    deposit: z.coerce.number().nonnegative().optional(),
+    monthlyFee: z.coerce.number().nonnegative().optional(),
+    /** Optional serial prefix; auto-generates `{prefix}{seq:04d}` when set. */
+    serialPrefix: optStr(60),
+    /** Optional per-line install date — falls back to defaultInstalledAt. */
+    installedAt: z.coerce.date().optional(),
+    notes: optStr(500),
+  })
+  .superRefine((v, ctx) => {
+    if (v.serviceType === "RENTAL" && (v.deposit ?? null) === null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["deposit"],
+        message: "Deposit is required for RENTAL line",
+      });
+    }
+  });
+
+export const registerEquipmentSchema = z.object({
+  // Common info applied to every generated row when the line doesn't
+  // override.
+  customerId: z.string().trim().min(1),
+  siteId: optStr(60),
+  defaultInstalledAt: z.coerce.date(),
+  installedByTechnicianId: optStr(60),
+  installNotes: optStr(2000),
+  lines: z.array(registerLineSchema).min(1).max(50),
+  // Optional: mint a single Contract bundling every line's equipment.
+  createContract: z.coerce.boolean().default(false),
+  /** Required when createContract=true + at least one line is non-SALE. */
+  contractTermMonths: z.coerce.number().int().min(1).max(120).optional(),
+  /** Used to derive Contract.type when the lines mix service types. */
+  contractServiceType: equipmentServiceTypeEnum.optional(),
+}).superRefine((v, ctx) => {
+  if (v.createContract) {
+    const hasNonSale = v.lines.some((l) => l.serviceType !== "SALE");
+    if (hasNonSale && !v.contractTermMonths) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["contractTermMonths"],
+        message: "contractTermMonths is required when any line is RENTAL or MAINTENANCE",
+      });
+    }
+  }
+});
+
+export type RegisterEquipmentInput = z.infer<typeof registerEquipmentSchema>;
 
 export const moveSiteSchema = z.object({
   siteId: z.string().trim().min(1).nullable(),
@@ -177,6 +346,9 @@ export const equipmentListQuerySchema = z.object({
   brandId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
   status: z.enum(["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"]).optional(),
+  managementType: managementTypeEnum.optional(),
+  serviceType: equipmentServiceTypeEnum.optional(),
+  lifecycleStage: lifecycleStageEnum.optional(),
   region: z.string().trim().max(60).optional(),
   sortBy: z.string().trim().min(1).max(60).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),

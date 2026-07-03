@@ -93,41 +93,113 @@ async function main() {
       email: "admin@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "ADMIN",
+      title: "관리자",
     },
   });
-  await prisma.user.upsert({
+  const manager = await prisma.user.upsert({
     where: { phone: "0123456781" },
-    update: { username: "manager", passwordHash: devPw, role: "MANAGER" },
+    update: {
+      username: "manager",
+      passwordHash: devPw,
+      role: "MANAGER",
+      isSalesRep: true,
+      title: "영업팀 매니저",
+    },
     create: {
       username: "manager",
       phone: "0123456781",
       email: "manager@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "MANAGER",
+      isSalesRep: true,
+      title: "영업팀 매니저",
     },
   });
   const staff = await prisma.user.upsert({
     where: { phone: "0123456782" },
-    update: { username: "staff", passwordHash: devPw, role: "STAFF" },
+    update: {
+      username: "staff",
+      passwordHash: devPw,
+      role: "STAFF",
+      isSalesRep: true,
+      title: "판매원",
+    },
     create: {
       username: "staff",
       phone: "0123456782",
       email: "staff@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "STAFF",
+      isSalesRep: true,
+      title: "판매원",
     },
   });
-  await prisma.user.upsert({
+  const staffThu = await prisma.user.upsert({
     where: { phone: "0123456785" },
-    update: { username: "Trần Thị Thu", passwordHash: devPw, role: "STAFF" },
+    update: {
+      username: "Trần Thị Thu",
+      passwordHash: devPw,
+      role: "STAFF",
+      isSalesRep: true,
+      title: "영업 사원",
+    },
     create: {
       username: "Trần Thị Thu",
       phone: "0123456785",
       email: "thu.tran@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "STAFF",
+      isSalesRep: true,
+      title: "영업 사원",
     },
   });
+  void manager;
+  void staffThu;
+
+  // Two extra office users so the /o/sales-reps cards show more than three
+  // rows and "is every active office user a candidate?" can be exercised
+  // end-to-end. Both are flagged isSalesRep=true for parity with the
+  // anchor reps even though the picker now ignores that flag.
+  const repAn = await prisma.user.upsert({
+    where: { phone: "0123456790" },
+    update: {
+      username: "Lê Văn An",
+      passwordHash: devPw,
+      role: "STAFF",
+      isSalesRep: true,
+      title: "영업 사원",
+    },
+    create: {
+      username: "Lê Văn An",
+      phone: "0123456790",
+      email: "an.le@seoulaqua.com.vn",
+      passwordHash: devPw,
+      role: "STAFF",
+      isSalesRep: true,
+      title: "영업 사원",
+    },
+  });
+  const repDuc = await prisma.user.upsert({
+    where: { phone: "0123456791" },
+    update: {
+      username: "Hoàng Minh Đức",
+      passwordHash: devPw,
+      role: "MANAGER",
+      isSalesRep: true,
+      title: "지역 매니저",
+    },
+    create: {
+      username: "Hoàng Minh Đức",
+      phone: "0123456791",
+      email: "duc.hoang@seoulaqua.com.vn",
+      passwordHash: devPw,
+      role: "MANAGER",
+      isSalesRep: true,
+      title: "지역 매니저",
+    },
+  });
+  void repAn;
+  void repDuc;
 
   // 5 technicians spread across regions so the scheduler has real candidates.
   const techSeed = [
@@ -155,7 +227,7 @@ async function main() {
   }
   const [tech1, tech2, tech3, tech4] = techs;
 
-  console.log(`  ✓ users (${2 + 2 + techs.length})`);
+  console.log(`  ✓ users (${2 + 2 + 2 + techs.length})`);
 
   // ─── Brands ───────────────────────────────────────────────────────────
   // Seoul Aqua = own products; DEWBEL + FRELLE = household water filter and
@@ -1321,6 +1393,8 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech1.id,
       preferredRegion: "HCMC-D1",
+      salesRepId: staff.id,
+      notes: "VIP 고객 / 정기 관리 요청",
       contacts: {
         create: [
           {
@@ -1354,6 +1428,12 @@ async function main() {
             installedAt: new Date("2025-06-15"),
             status: "ACTIVE",
             ownership: "COMPANY",
+            serviceType: "RENTAL",
+            managementType: "FULL_SERVICE",
+            lifecycleStage: "IN_RENTAL",
+            deposit: "1500000",
+            monthlyFee: "350000",
+            registeredById: staff.id,
           },
           // Anchor B2C carries a 2nd device (bidet) — exercises the
           // multi-equipment contract path on the showcase customer.
@@ -1363,6 +1443,12 @@ async function main() {
             installedAt: new Date("2025-06-15"),
             status: "ACTIVE",
             ownership: "COMPANY",
+            serviceType: "RENTAL",
+            managementType: "FULL_SERVICE",
+            lifecycleStage: "IN_RENTAL",
+            deposit: "1000000",
+            monthlyFee: "200000",
+            registeredById: staff.id,
           },
         ],
       },
@@ -1392,6 +1478,7 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       district: "Quận 1",
       preferredRegion: "HCMC-D1",
+      salesRepId: manager.id,
       contacts: {
         create: [
           {
@@ -1515,6 +1602,12 @@ async function main() {
     installedAt: Date;
     status?: "ACTIVE" | "REPLACED" | "RELOCATED" | "DEACTIVATED" | "TERMINATED";
     ownership?: "COMPANY" | "CUSTOMER";
+    serviceType?: "RENTAL" | "MAINTENANCE" | "SALE";
+    managementType?: "FULL_SERVICE" | "SELF_MANAGED" | "OTHER";
+    lifecycleStage?: "INSTALLED" | "IN_RENTAL" | "IN_MAINTENANCE" | "RETRIEVED" | "REPLACED";
+    deposit?: string;
+    monthlyFee?: string;
+    registeredById?: string;
   }) {
     const existing = await prisma.equipment.findFirst({
       where: { serialNumber: data.serialNumber },
@@ -1529,6 +1622,12 @@ async function main() {
         installedAt: data.installedAt,
         status: data.status ?? "ACTIVE",
         ownership: data.ownership ?? "COMPANY",
+        serviceType: data.serviceType ?? "MAINTENANCE",
+        managementType: data.managementType ?? "FULL_SERVICE",
+        lifecycleStage: data.lifecycleStage ?? "IN_MAINTENANCE",
+        deposit: data.deposit,
+        monthlyFee: data.monthlyFee ?? "500000",
+        registeredById: data.registeredById ?? staff.id,
       },
     });
   }
@@ -1539,6 +1638,11 @@ async function main() {
     siteId: hcmcSite.id,
     modelId: purifier.id,
     installedAt: new Date("2025-08-01"),
+    serviceType: "RENTAL",
+    managementType: "FULL_SERVICE",
+    lifecycleStage: "IN_RENTAL",
+    deposit: "2000000",
+    monthlyFee: "450000",
   });
   const b2bHcmcAir = await ensureEquipment({
     serialNumber: "AC-700-000005",
@@ -1546,6 +1650,10 @@ async function main() {
     siteId: hcmcSite.id,
     modelId: air.id,
     installedAt: new Date("2025-08-01"),
+    serviceType: "MAINTENANCE",
+    managementType: "SELF_MANAGED",
+    lifecycleStage: "IN_MAINTENANCE",
+    monthlyFee: "150000",
   });
   const b2bHnPurifier = await ensureEquipment({
     serialNumber: "PTS-2100-000011",
@@ -1553,6 +1661,11 @@ async function main() {
     siteId: hnSite.id,
     modelId: purifier.id,
     installedAt: new Date("2025-09-01"),
+    serviceType: "RENTAL",
+    managementType: "FULL_SERVICE",
+    lifecycleStage: "IN_RENTAL",
+    deposit: "2000000",
+    monthlyFee: "450000",
   });
   // Add a 4th device at the HN site (bidet) so the Appendix
   // amendment "Thêm thiết bị cho chi nhánh Hà Nội" has 2 devices
@@ -1563,6 +1676,11 @@ async function main() {
     siteId: hnSite.id,
     modelId: bidet.id,
     installedAt: new Date("2025-09-01"),
+    serviceType: "RENTAL",
+    managementType: "FULL_SERVICE",
+    lifecycleStage: "IN_RENTAL",
+    deposit: "1000000",
+    monthlyFee: "200000",
   });
 
   console.log(`  ✓ B2B customer ${b2b.code} (with 2 sites, 4 equipment)`);
@@ -1588,6 +1706,7 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech2.id,
       preferredRegion: "HCMC-D7",
+      salesRepId: staffThu.id,
       contacts: {
         create: [
           {
@@ -1678,6 +1797,7 @@ async function main() {
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
         preferredTechnicianId: c.tech,
         preferredRegion: c.region,
+        salesRepId: [staff.id, staffThu.id, manager.id][parseInt(c.code.slice(-2), 10) % 3],
         contacts: {
           create: [
             {
@@ -1699,6 +1819,11 @@ async function main() {
               installedAt: monthsFromNow(-Math.floor(Math.random() * 24) - 1),
               status: "ACTIVE",
               ownership: "COMPANY",
+              serviceType: "MAINTENANCE",
+              managementType: parseInt(c.code.slice(-2), 10) % 4 === 0 ? "SELF_MANAGED" : "FULL_SERVICE",
+              lifecycleStage: "IN_MAINTENANCE",
+              monthlyFee: "300000",
+              registeredById: staff.id,
             },
           ],
         },
@@ -1734,6 +1859,7 @@ async function main() {
         address: `HQ, ${c.region}`,
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
         preferredRegion: c.region,
+        salesRepId: [staff.id, staffThu.id, manager.id][parseInt(c.code.slice(-2), 10) % 3],
         contacts: {
           create: [
             {
@@ -1777,6 +1903,12 @@ async function main() {
               installedAt: monthsFromNow(-6),
               status: "ACTIVE",
               ownership: "COMPANY",
+              serviceType: "RENTAL",
+              managementType: "FULL_SERVICE",
+              lifecycleStage: "IN_RENTAL",
+              deposit: "2000000",
+              monthlyFee: "450000",
+              registeredById: staff.id,
             },
             {
               modelId: air.id,
@@ -1784,6 +1916,11 @@ async function main() {
               installedAt: monthsFromNow(-6),
               status: "ACTIVE",
               ownership: "COMPANY",
+              serviceType: "MAINTENANCE",
+              managementType: "SELF_MANAGED",
+              lifecycleStage: "IN_MAINTENANCE",
+              monthlyFee: "150000",
+              registeredById: staff.id,
             },
             // 3rd device varies by customer index so the catalog mix
             // (bidet vs premium purifier) is visible across B2B accounts.
@@ -1793,6 +1930,12 @@ async function main() {
               installedAt: monthsFromNow(-5),
               status: "ACTIVE",
               ownership: "COMPANY",
+              serviceType: "RENTAL",
+              managementType: "FULL_SERVICE",
+              lifecycleStage: "IN_RENTAL",
+              deposit: "1500000",
+              monthlyFee: "350000",
+              registeredById: staff.id,
             },
           ],
         },
@@ -2750,7 +2893,6 @@ async function main() {
     type: "PERIODIC_INSPECTION",
     state: "COMPLETED",
     scheduledFor: at(daysFromNow(-30), 10),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
     findings: "Đã vệ sinh máy, thay lõi Sediment. Máy hoạt động tốt.",
     startedAt: at(daysFromNow(-30), 10, 15),
@@ -2765,7 +2907,6 @@ async function main() {
     type: "PERIODIC_INSPECTION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(0), 14),
-    scheduledWindow: "14:00-16:00",
     leadTechnicianId: tech1.id,
     collaboratorTechnicianIds: [techs[4].id],
   });
@@ -2776,7 +2917,6 @@ async function main() {
     type: "INSTALLATION",
     state: "SUGGESTED",
     scheduledFor: at(daysFromNow(1), 9),
-    scheduledWindow: "morning",
     leadTechnicianId: tech2.id,
   });
 
@@ -2790,7 +2930,6 @@ async function main() {
     type: "REPAIR",
     state: "IN_PROGRESS",
     scheduledFor: at(daysFromNow(0), 9),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
     collaboratorTechnicianIds: [tech3.id],
     startedAt: at(daysFromNow(0), 9, 20),
@@ -2798,14 +2937,16 @@ async function main() {
 
   // KH00001 approved-SR follow-up — SR-00002 is APPROVED awaiting visit.
   // Office scheduled it for two days out. Surfaces as the customer's
-  // "다음 방문" tile on the portal dashboard.
+  // "다음 방문" tile on the portal dashboard. Also carries a paid consumable
+  // order (seed-order-004 below) so the visit-detail "연관 구매" section has
+  // data alongside the "연관 서비스 요청" card.
   await ensureVisit("seed-visit-001-sr", {
     customerId: b2c.id,
     equipmentId: b2c.equipment[0].id,
     type: "REPAIR",
+    additionalTypes: ["CONSUMABLE_DELIVERY"],
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(2), 10),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
     serviceRequestId: serviceRequests["SR-00002"].id,
   });
@@ -2816,7 +2957,6 @@ async function main() {
     type: "PERIODIC_INSPECTION",
     state: "FAILED_NO_SHOW",
     scheduledFor: at(daysFromNow(-3), 15),
-    scheduledWindow: "afternoon",
     leadTechnicianId: tech3.id,
     failureReason: "Khách không có mặt, gọi điện không liên lạc được.",
   });
@@ -2835,6 +2975,91 @@ async function main() {
     completedAt: seedVisit006CompletedAt,
     serviceRequestId: serviceRequests["SR-00005"].id,
     photos: pickSamplePhotos("seed-visit-006", seedVisit006CompletedAt),
+  });
+
+  // ─── Print-bundle demo (today B2C + B2B "merge into existing" visits) ───
+  //
+  // Today (daysFromNow(0)) — one pre-existing SCHEDULED visit per customer
+  // (B2C KH00001 + B2B KH00002/HCMC site), both assigned to tech1. The
+  // "merge into existing visit" order flow (see orders section below)
+  // attaches a paid consumable order to each, so bulk-print for today +
+  // tech1 shows the periodic-check form + the merged sale receipt /
+  // delivery slip. `pendingDocumentKinds` mirrors what POST /api/orders
+  // would have queued when the order was placed against the visit
+  // (SALE_RECEIPT_B2C for B2C purchase, DELIVERY_SLIP_B2B for B2B).
+  await ensureVisit("seed-visit-b2c-today", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "PERIODIC_INSPECTION",
+    additionalTypes: ["CONSUMABLE_DELIVERY"],
+    pendingDocumentKinds: ["SALE_RECEIPT_B2C"],
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(0), 10, 30),
+    leadTechnicianId: tech1.id,
+  });
+  // Re-sync pending kinds even on repeat seed runs — the ensureVisit
+  // guard skips already-inserted rows, so this update makes sure the
+  // 지참 서류 card is populated on dev DBs seeded before the multi-doc
+  // policy landed.
+  await prisma.visit.update({
+    where: { id: "seed-visit-b2c-today" },
+    data: {
+      additionalTypes: ["CONSUMABLE_DELIVERY"],
+      pendingDocumentKinds: ["SALE_RECEIPT_B2C"],
+    },
+  });
+  await ensureVisit("seed-visit-b2b-today", {
+    customerId: b2b.id,
+    siteId: hcmcSite.id,
+    equipmentId: b2bEq1.id,
+    type: "PERIODIC_INSPECTION",
+    additionalTypes: ["CONSUMABLE_DELIVERY"],
+    pendingDocumentKinds: ["DELIVERY_SLIP_B2B"],
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(0), 15, 0),
+    leadTechnicianId: tech1.id,
+  });
+  await prisma.visit.update({
+    where: { id: "seed-visit-b2b-today" },
+    data: {
+      additionalTypes: ["CONSUMABLE_DELIVERY"],
+      pendingDocumentKinds: ["DELIVERY_SLIP_B2B"],
+    },
+  });
+
+  // ─── Print-bundle demo (tomorrow "new visit" spawned per order) ─────────
+  //
+  // Tomorrow (daysFromNow(+1)) — one dedicated CONSUMABLE_DELIVERY visit per
+  // customer, both tech1 lead, SCHEDULED. Represents the alternate flow
+  // where the office chose "신규 방문 생성" instead of merging into an
+  // existing trip. Shows up on the 2026-07-03 (relative to seed run) bulk
+  // print, and pairs with the "-tomorrow" orders below.
+  await ensureVisit("seed-visit-b2c-tomorrow", {
+    customerId: b2c.id,
+    equipmentId: b2c.equipment[0].id,
+    type: "CONSUMABLE_DELIVERY",
+    pendingDocumentKinds: ["SALE_RECEIPT_B2C"],
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(1), 9, 30),
+    leadTechnicianId: tech1.id,
+  });
+  await prisma.visit.update({
+    where: { id: "seed-visit-b2c-tomorrow" },
+    data: { pendingDocumentKinds: ["SALE_RECEIPT_B2C"] },
+  });
+  await ensureVisit("seed-visit-b2b-tomorrow", {
+    customerId: b2b.id,
+    siteId: hcmcSite.id,
+    equipmentId: b2bEq1.id,
+    type: "CONSUMABLE_DELIVERY",
+    pendingDocumentKinds: ["DELIVERY_SLIP_B2B"],
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(1), 14, 0),
+    leadTechnicianId: tech1.id,
+  });
+  await prisma.visit.update({
+    where: { id: "seed-visit-b2b-tomorrow" },
+    data: { pendingDocumentKinds: ["DELIVERY_SLIP_B2B"] },
   });
 
   // ─── Unread customer SR messages ──────────────────────────────────────
@@ -2951,7 +3176,6 @@ async function main() {
     type: "INSTALLATION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(3), 9),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
   });
   await ensureVisit("seed-visit-doc-sale-b2c", {
@@ -2960,7 +3184,6 @@ async function main() {
     type: "INSTALLATION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(3), 11),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
   });
   await ensureVisit("seed-visit-doc-slip-b2b", {
@@ -2970,7 +3193,6 @@ async function main() {
     type: "INSTALLATION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(3), 14),
-    scheduledWindow: "afternoon",
     leadTechnicianId: tech1.id,
   });
   await ensureVisit("seed-visit-doc-periodic-b2c", {
@@ -2979,7 +3201,6 @@ async function main() {
     type: "PERIODIC_INSPECTION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(4), 10),
-    scheduledWindow: "morning",
     leadTechnicianId: tech1.id,
   });
   await ensureVisit("seed-visit-doc-periodic-b2b", {
@@ -2988,7 +3209,6 @@ async function main() {
     type: "PERIODIC_INSPECTION",
     state: "SCHEDULED",
     scheduledFor: at(daysFromNow(4), 14),
-    scheduledWindow: "afternoon",
     leadTechnicianId: tech1.id,
   });
 
@@ -3010,7 +3230,6 @@ async function main() {
         type: vType,
         state: bucket.state,
         scheduledFor: at(daysFromNow(dayOff), hourBase),
-        scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
         leadTechnicianId: techPick.id,
         collaboratorTechnicianIds: i % 3 === 0 ? [collabPick.id] : [],
       };
@@ -3062,7 +3281,6 @@ async function main() {
       type: vType,
       state: isPast ? "COMPLETED" : "SCHEDULED",
       scheduledFor: at(daysFromNow(dayOff), hourBase),
-      scheduledWindow: hourBase < 12 ? "morning" : "afternoon",
       leadTechnicianId: techPick.id,
     };
     if (isPast) {
@@ -3364,12 +3582,588 @@ async function main() {
   }
   console.log(`  ✓ system settings (${settings.length})`);
 
+  // ─── Orders (purchase history fixture) ────────────────────────────────
+  // Two B2C orders attached to KH00001 + one B2B order to KH00002,
+  // matching the customer-detail "구매 이력" tab mockup. Idempotent via
+  // stable ids and unique orderNumber.
+  const consumableForOrder = await prisma.consumable.findFirst({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (consumableForOrder) {
+    await prisma.order.upsert({
+      where: { id: "seed-order-001" },
+      update: {},
+      create: {
+        id: "seed-order-001",
+        orderNumber: "SO260510-001",
+        customerId: b2c.id,
+        equipmentId: b2c.equipment[0]?.id,
+        orderedAt: new Date("2026-05-10"),
+        deliveredAt: new Date("2026-05-12"),
+        state: "DELIVERED",
+        createdById: staff.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              quantity: 10,
+              unitPrice: "200000",
+              totalPrice: "2000000",
+              purpose: "교체용",
+            },
+          ],
+        },
+      },
+    });
+    await prisma.order.upsert({
+      where: { id: "seed-order-002" },
+      update: {},
+      create: {
+        id: "seed-order-002",
+        orderNumber: "SO260402-003",
+        customerId: b2c.id,
+        equipmentId: b2c.equipment[0]?.id,
+        orderedAt: new Date("2026-04-02"),
+        deliveredAt: new Date("2026-04-04"),
+        state: "DELIVERED",
+        createdById: staff.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              quantity: 5,
+              unitPrice: "600000",
+              totalPrice: "3000000",
+              purpose: "유지보수",
+            },
+          ],
+        },
+      },
+    });
+    await prisma.order.upsert({
+      where: { id: "seed-order-003" },
+      update: {},
+      create: {
+        id: "seed-order-003",
+        orderNumber: "SO260315-002",
+        customerId: b2b.id,
+        equipmentId: b2bEq1.id,
+        siteId: hcmcSite.id,
+        orderedAt: new Date("2026-03-15"),
+        deliveredAt: new Date("2026-03-17"),
+        state: "DELIVERED",
+        createdById: manager.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              quantity: 5,
+              unitPrice: "450000",
+              totalPrice: "2250000",
+              purpose: "유지보수",
+            },
+          ],
+        },
+      },
+    });
+    // Order-004 — the paired demo order for seed-visit-001-sr.
+    // Both `visitId` and `serviceRequestId` are set so the visit-detail page
+    // renders BOTH the "연관 서비스 요청" card (from Visit.serviceRequest)
+    // AND the "연관 구매" card (from Visit.orders). Same customer + equipment
+    // as SR-00002 so the linkage stays coherent when clicking through.
+    await prisma.order.upsert({
+      where: { id: "seed-order-004" },
+      update: {
+        visitId: "seed-visit-001-sr",
+        serviceRequestId: serviceRequests["SR-00002"].id,
+      },
+      create: {
+        id: "seed-order-004",
+        orderNumber: "SO260625-004",
+        customerId: b2c.id,
+        equipmentId: b2c.equipment[0]?.id,
+        visitId: "seed-visit-001-sr",
+        serviceRequestId: serviceRequests["SR-00002"].id,
+        orderedAt: new Date("2026-06-25"),
+        state: "PENDING",
+        notes: "서비스 요청 SR-00002 승인 시 함께 배송할 소모품.",
+        createdById: staff.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              equipmentId: b2c.equipment[0]?.id,
+              quantity: 2,
+              unitPrice: "200000",
+              totalPrice: "400000",
+              purpose: "교체용",
+            },
+            {
+              productKind: "OTHER",
+              customName: "출장 조립 서비스",
+              quantity: 1,
+              unitPrice: "150000",
+              totalPrice: "150000",
+              purpose: "설치 지원",
+            },
+          ],
+        },
+      },
+    });
+    // ── Print-bundle demo orders (2 customers × 2 flows) ─────────────
+    // Two customers (B2C KH00001 + B2B KH00002) each get two new orders:
+    //
+    //   (a) "merge" order — attached to today's pre-existing SCHEDULED
+    //       visit (seed-visit-{b2c,b2b}-today). Verifies the office
+    //       "예정된 방문에 구매 소모품 추가" flow. Prints on today's
+    //       bulk-print for tech1.
+    //   (b) "new" order — attached to tomorrow's dedicated
+    //       CONSUMABLE_DELIVERY visit (seed-visit-{b2c,b2b}-tomorrow).
+    //       Verifies the "신규 방문 생성" flow. Prints on tomorrow's
+    //       bulk-print for tech1.
+    //
+    // Every order is PENDING (delivery hasn't happened yet — visits are
+    // future-dated). state=DELIVERED gets flipped when the tech marks
+    // the visit COMPLETED in the mobile app.
+
+    // B2C — merged into today's visit.
+    await prisma.order.upsert({
+      where: { id: "seed-order-005" },
+      update: {
+        visitId: "seed-visit-b2c-today",
+      },
+      create: {
+        id: "seed-order-005",
+        orderNumber: "SO260702-001",
+        customerId: b2c.id,
+        equipmentId: b2c.equipment[0]?.id,
+        visitId: "seed-visit-b2c-today",
+        orderedAt: new Date("2026-07-02"),
+        state: "PENDING",
+        notes: "정기 점검 방문에 필터 배송 합류.",
+        createdById: staff.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              equipmentId: b2c.equipment[0]?.id,
+              quantity: 2,
+              unitPrice: "200000",
+              totalPrice: "400000",
+              purpose: "교체용",
+            },
+          ],
+        },
+      },
+    });
+
+    // B2C — spawned as tomorrow's own delivery visit.
+    await prisma.order.upsert({
+      where: { id: "seed-order-006" },
+      update: {
+        visitId: "seed-visit-b2c-tomorrow",
+      },
+      create: {
+        id: "seed-order-006",
+        orderNumber: "SO260702-002",
+        customerId: b2c.id,
+        equipmentId: b2c.equipment[0]?.id,
+        visitId: "seed-visit-b2c-tomorrow",
+        orderedAt: new Date("2026-07-02"),
+        state: "PENDING",
+        notes: "신규 방문으로 배송 (내일).",
+        createdById: staff.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              equipmentId: b2c.equipment[0]?.id,
+              quantity: 4,
+              unitPrice: "200000",
+              totalPrice: "800000",
+              purpose: "교체용",
+            },
+            {
+              productKind: "OTHER",
+              customName: "출장 조립 서비스",
+              quantity: 1,
+              unitPrice: "150000",
+              totalPrice: "150000",
+              purpose: "설치 지원",
+            },
+          ],
+        },
+      },
+    });
+
+    // B2B — merged into today's visit.
+    await prisma.order.upsert({
+      where: { id: "seed-order-007" },
+      update: {
+        visitId: "seed-visit-b2b-today",
+      },
+      create: {
+        id: "seed-order-007",
+        orderNumber: "SO260702-003",
+        customerId: b2b.id,
+        equipmentId: b2bEq1.id,
+        siteId: hcmcSite.id,
+        visitId: "seed-visit-b2b-today",
+        orderedAt: new Date("2026-07-02"),
+        state: "PENDING",
+        notes: "정기 점검 방문에 필터 배송 합류 (HCMC 사이트).",
+        createdById: manager.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              equipmentId: b2bEq1.id,
+              quantity: 6,
+              unitPrice: "450000",
+              totalPrice: "2700000",
+              purpose: "유지보수",
+            },
+          ],
+        },
+      },
+    });
+
+    // B2B — spawned as tomorrow's own delivery visit.
+    await prisma.order.upsert({
+      where: { id: "seed-order-008" },
+      update: {
+        visitId: "seed-visit-b2b-tomorrow",
+      },
+      create: {
+        id: "seed-order-008",
+        orderNumber: "SO260702-004",
+        customerId: b2b.id,
+        equipmentId: b2bEq1.id,
+        siteId: hcmcSite.id,
+        visitId: "seed-visit-b2b-tomorrow",
+        orderedAt: new Date("2026-07-02"),
+        state: "PENDING",
+        notes: "HCMC 사이트 신규 소모품 배송 방문.",
+        createdById: manager.id,
+        items: {
+          create: [
+            {
+              productKind: "CONSUMABLE",
+              consumableId: consumableForOrder.id,
+              equipmentId: b2bEq1.id,
+              quantity: 8,
+              unitPrice: "450000",
+              totalPrice: "3600000",
+              purpose: "유지보수",
+            },
+          ],
+        },
+      },
+    });
+
+    console.log("  ✓ purchase orders (8)");
+  }
+
+  // ─── Sales-rep demo contracts + overdue payments ─────────────────────
+  // Spread synthetic contracts across the three sales reps so the per-rep
+  // detail page (/o/sales-reps/[id]) has data to render — KPI cards
+  // (월별 신규 / 기간 매출 / 누적 미수금) and the "기간별 신규 계약" +
+  // "기간별 미수금" tabs all read from Contract + Payment scoped by the
+  // customer's salesRepId. Without this seed the cards are all zeros on a
+  // fresh DB.
+
+  // Six extra customers belonging to the two new reps (repAn, repDuc) so
+  // the /o/sales-reps cards stay non-zero for every active office user.
+  // Skipped on re-seed via upsert — fresh DBs get them, existing rows are
+  // left untouched.
+  const extraCustomerSeed = [
+    // repAn (Lê Văn An)
+    { code: "KH00021", type: "B2C" as const, name: "Đoàn Văn Hùng", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, salesRepId: repAn.id },
+    { code: "KH00022", type: "B2C" as const, name: "Nguyễn Minh Châu", district: "Quận 3", region: "HCMC-D3", tech: tech3.id, salesRepId: repAn.id },
+    { code: "KH00023", type: "B2B" as const, name: "CÔNG TY TNHH OMEGA TECH", shortcode: "OMG", tax: "0301234521", district: "Quận 7", region: "HCMC-D7", tech: tech2.id, salesRepId: repAn.id },
+    // repDuc (Hoàng Minh Đức)
+    { code: "KH00024", type: "B2C" as const, name: "Trịnh Thị Thanh", district: "Hoàn Kiếm", region: "HN-HK", tech: tech4.id, salesRepId: repDuc.id },
+    { code: "KH00025", type: "B2B" as const, name: "TẬP ĐOÀN PHƯƠNG NAM", shortcode: "PNM", tax: "0301234524", district: "Quận 1", region: "HCMC-D1", tech: tech1.id, salesRepId: repDuc.id },
+    { code: "KH00026", type: "B2B" as const, name: "BỆNH VIỆN ĐA KHOA SIGMA", shortcode: "SGM", tax: "0301234525", district: "Quận 5", region: "HCMC-D5", tech: tech1.id, salesRepId: repDuc.id },
+  ];
+  const extraCustomers: Record<string, { id: string; code: string }> = {};
+  for (const c of extraCustomerSeed) {
+    const cust = await prisma.customer.upsert({
+      where: { code: c.code },
+      update: {},
+      create: {
+        code: c.code,
+        type: c.type,
+        name: c.name,
+        shortcode: c.type === "B2B" ? c.shortcode ?? null : null,
+        taxCode: c.type === "B2B" ? c.tax ?? null : null,
+        residency: c.type === "B2C" ? "DOMESTIC" : null,
+        address: `${c.district} address line`,
+        district: c.district,
+        city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
+        preferredTechnicianId: c.tech,
+        preferredRegion: c.region,
+        salesRepId: c.salesRepId,
+        contacts: {
+          create: [
+            {
+              role: "CONTRACT_PARTY",
+              scope: "CUSTOMER",
+              isPrimary: false,
+              name: c.type === "B2C" ? c.name : `Director ${c.shortcode}`,
+              phone1: `09017${c.code.slice(-5)}`,
+              email: `${c.code.toLowerCase()}@example.com`,
+              language: "vi",
+            },
+          ],
+        },
+      },
+    });
+    extraCustomers[c.code] = cust;
+  }
+  console.log(`  ✓ extra customers for new reps (${extraCustomerSeed.length})`);
+
+  // Customer → sales rep assignment (mirrors the % 3 split in the bulk
+  // customer block). Keep the lists explicit so future renames stay safe.
+  const repAssignments = {
+    staff: [
+      b2c.id, // KH00001 (anchor B2C, salesRep=staff)
+      b2cCustomers["KH00006"]?.id,
+      b2cCustomers["KH00009"]?.id,
+      b2bCustomers["KH00012"]?.id,
+      b2bCustomers["KH00015"]?.id,
+      b2cCustomers["KH00018"]?.id,
+    ].filter((v): v is string => !!v),
+    manager: [
+      b2b.id, // KH00002 (Sheraton, salesRep=manager)
+      b2cCustomers["KH00005"]?.id,
+      b2cCustomers["KH00008"]?.id,
+      b2bCustomers["KH00011"]?.id,
+      b2bCustomers["KH00014"]?.id,
+      b2bCustomers["KH00017"]?.id,
+      b2cCustomers["KH00020"]?.id,
+    ].filter((v): v is string => !!v),
+    staffThu: [
+      b2c2.id, // KH00003 (Korean speaker, salesRep=staffThu)
+      b2cCustomers["KH00004"]?.id,
+      b2cCustomers["KH00007"]?.id,
+      b2cCustomers["KH00010"]?.id,
+      b2bCustomers["KH00013"]?.id,
+      b2bCustomers["KH00016"]?.id,
+      b2cCustomers["KH00019"]?.id,
+    ].filter((v): v is string => !!v),
+    repAn: [
+      extraCustomers["KH00021"]?.id,
+      extraCustomers["KH00022"]?.id,
+      extraCustomers["KH00023"]?.id,
+    ].filter((v): v is string => !!v),
+    repDuc: [
+      extraCustomers["KH00024"]?.id,
+      extraCustomers["KH00025"]?.id,
+      extraCustomers["KH00026"]?.id,
+    ].filter((v): v is string => !!v),
+  };
+
+  // Per-rep contract distribution. Each row makes one MAINTENANCE contract
+  // (no equipment links — keeps the fixture light) with explicit
+  // createdAt/startDate/activatedAt so the period filters on /o/sales-reps
+  // resolve cleanly.
+  type ContractSeed = {
+    id: string;
+    customerId: string;
+    repNo: number;       // for unique contractNumber within the rep
+    monthsAgo: number;   // negative offset from today
+    monthlyFee: number;
+    termMonths: number;
+    type?: "RENTAL" | "MAINTENANCE" | "SALE";
+    deposit?: number;
+    state?: "ACTIVE" | "AMENDED" | "COMPLETED" | "TERMINATED" | "PENDING_SIGNATURE";
+  };
+
+  function buildContracts(
+    label: string,
+    customerIds: string[],
+    rows: Array<Omit<ContractSeed, "id" | "customerId" | "repNo">>,
+  ): ContractSeed[] {
+    return rows.map((r, i) => ({
+      ...r,
+      id: `seed-rep-${label}-c${i + 1}`,
+      customerId: customerIds[i % customerIds.length],
+      repNo: i + 1,
+    }));
+  }
+
+  const repContractSeeds: Array<{ label: string; codePrefix: string; rows: ContractSeed[] }> = [
+    {
+      label: "staff",
+      codePrefix: "STF",
+      rows: buildContracts("staff", repAssignments.staff, [
+        // Spread over the last ~10 months + 2 fresh this-month deals.
+        { monthsAgo: -10, monthlyFee: 280_000, termMonths: 36, type: "RENTAL", deposit: 1_500_000 },
+        { monthsAgo: -7, monthlyFee: 180_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: -4, monthlyFee: 320_000, termMonths: 36, type: "RENTAL", deposit: 2_000_000 },
+        { monthsAgo: -1, monthlyFee: 220_000, termMonths: 12, type: "MAINTENANCE" },
+        { monthsAgo: 0, monthlyFee: 350_000, termMonths: 36, type: "RENTAL", deposit: 2_500_000 },
+        { monthsAgo: 0, monthlyFee: 200_000, termMonths: 24, type: "MAINTENANCE" },
+      ]),
+    },
+    {
+      label: "manager",
+      codePrefix: "MGR",
+      rows: buildContracts("manager", repAssignments.manager, [
+        // Bigger B2B deals; longer history.
+        { monthsAgo: -18, monthlyFee: 750_000, termMonths: 36, type: "RENTAL", deposit: 6_000_000 },
+        { monthsAgo: -12, monthlyFee: 480_000, termMonths: 36, type: "RENTAL", deposit: 4_000_000 },
+        { monthsAgo: -8, monthlyFee: 620_000, termMonths: 36, type: "RENTAL", deposit: 5_000_000 },
+        { monthsAgo: -5, monthlyFee: 350_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: -2, monthlyFee: 900_000, termMonths: 36, type: "RENTAL", deposit: 7_000_000 },
+        { monthsAgo: 0, monthlyFee: 680_000, termMonths: 36, type: "RENTAL", deposit: 5_500_000 },
+        { monthsAgo: 0, monthlyFee: 420_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: 0, monthlyFee: 1_100_000, termMonths: 36, type: "RENTAL", deposit: 8_000_000 },
+      ]),
+    },
+    {
+      label: "staffThu",
+      codePrefix: "THU",
+      rows: buildContracts("staffThu", repAssignments.staffThu, [
+        // Mix of B2C + small B2B.
+        { monthsAgo: -14, monthlyFee: 200_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: -9, monthlyFee: 260_000, termMonths: 36, type: "RENTAL", deposit: 1_800_000 },
+        { monthsAgo: -6, monthlyFee: 180_000, termMonths: 12, type: "MAINTENANCE" },
+        { monthsAgo: -3, monthlyFee: 300_000, termMonths: 36, type: "RENTAL", deposit: 2_200_000 },
+        { monthsAgo: 0, monthlyFee: 250_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: 0, monthlyFee: 380_000, termMonths: 36, type: "RENTAL", deposit: 2_800_000 },
+      ]),
+    },
+    {
+      label: "repAn",
+      codePrefix: "REA",
+      rows: buildContracts("repAn", repAssignments.repAn, [
+        // Smaller B2C + one this-month deal.
+        { monthsAgo: -5, monthlyFee: 250_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: -2, monthlyFee: 290_000, termMonths: 36, type: "RENTAL", deposit: 2_000_000 },
+        { monthsAgo: 0, monthlyFee: 310_000, termMonths: 36, type: "RENTAL", deposit: 2_200_000 },
+      ]),
+    },
+    {
+      label: "repDuc",
+      codePrefix: "DUC",
+      rows: buildContracts("repDuc", repAssignments.repDuc, [
+        // B2B-heavy, larger ticket sizes.
+        { monthsAgo: -8, monthlyFee: 540_000, termMonths: 36, type: "RENTAL", deposit: 4_200_000 },
+        { monthsAgo: -3, monthlyFee: 380_000, termMonths: 24, type: "MAINTENANCE" },
+        { monthsAgo: -1, monthlyFee: 720_000, termMonths: 36, type: "RENTAL", deposit: 5_800_000 },
+        { monthsAgo: 0, monthlyFee: 850_000, termMonths: 36, type: "RENTAL", deposit: 6_500_000 },
+      ]),
+    },
+  ];
+
+  let totalRepContracts = 0;
+  for (const { label, codePrefix, rows } of repContractSeeds) {
+    void label;
+    for (const r of rows) {
+      const start = monthsFromNow(r.monthsAgo);
+      const end = monthsFromNow(r.monthsAgo + r.termMonths);
+      const total =
+        (r.deposit ?? 0) + r.monthlyFee * r.termMonths;
+      const dateStr = `${start.getFullYear()}${String(start.getMonth() + 1).padStart(2, "0")}${String(start.getDate()).padStart(2, "0")}`;
+      await prisma.contract.upsert({
+        where: { id: r.id },
+        update: {},
+        create: {
+          id: r.id,
+          contractNumber: `HD-${dateStr}/SA-${codePrefix}-${r.repNo}`,
+          customerId: r.customerId,
+          type: r.type ?? "MAINTENANCE",
+          state: r.state ?? "ACTIVE",
+          startDate: start,
+          endDate: end,
+          termMonths: r.termMonths,
+          monthlyMaintenanceFee: r.monthlyFee,
+          totalContractValue: total,
+          deposit: r.deposit ?? null,
+          endOfTermAction: r.type === "RENTAL" ? "TRANSFER_OWNERSHIP" : null,
+          signedByCustomerAt: start,
+          signedByCompanyAt: start,
+          activatedAt: start,
+          createdAt: start,
+          updatedAt: start,
+        },
+      });
+      totalRepContracts += 1;
+    }
+  }
+  console.log(`  ✓ sales-rep demo contracts (${totalRepContracts})`);
+
+  // ─── Outstanding receivables per rep ─────────────────────────────────
+  // A handful of EXPECTED + OVERDUE_D14/D30 payments per rep so the
+  // "누적 미수금" KPI + the receivables tab are non-empty. Different rep
+  // gets different magnitudes so the dashboard reads as realistic.
+  const overduePaymentSeeds: Array<{
+    id: string;
+    customerId: string;
+    expected: number;
+    dueDate: Date;
+    state: "EXPECTED" | "OVERDUE_D7" | "OVERDUE_D14" | "OVERDUE_D30";
+    kind: "RENTAL_FEE" | "MAINTENANCE_FEE";
+  }> = [
+    // staff — small B2C balances
+    { id: "seed-rep-pay-staff-1", customerId: repAssignments.staff[0], expected: 280_000, dueDate: daysFromNow(-35), state: "OVERDUE_D30", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-staff-2", customerId: repAssignments.staff[1] ?? repAssignments.staff[0], expected: 180_000, dueDate: daysFromNow(-10), state: "OVERDUE_D7", kind: "MAINTENANCE_FEE" },
+    { id: "seed-rep-pay-staff-3", customerId: repAssignments.staff[2] ?? repAssignments.staff[0], expected: 320_000, dueDate: daysFromNow(5), state: "EXPECTED", kind: "RENTAL_FEE" },
+    // manager — big B2B balances
+    { id: "seed-rep-pay-mgr-1", customerId: repAssignments.manager[0], expected: 2_400_000, dueDate: daysFromNow(-45), state: "OVERDUE_D30", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-mgr-2", customerId: repAssignments.manager[1] ?? repAssignments.manager[0], expected: 1_800_000, dueDate: daysFromNow(-15), state: "OVERDUE_D14", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-mgr-3", customerId: repAssignments.manager[2] ?? repAssignments.manager[0], expected: 920_000, dueDate: daysFromNow(8), state: "EXPECTED", kind: "MAINTENANCE_FEE" },
+    { id: "seed-rep-pay-mgr-4", customerId: repAssignments.manager[3] ?? repAssignments.manager[0], expected: 3_200_000, dueDate: daysFromNow(-7), state: "OVERDUE_D7", kind: "RENTAL_FEE" },
+    // staffThu — medium balances
+    { id: "seed-rep-pay-thu-1", customerId: repAssignments.staffThu[0], expected: 260_000, dueDate: daysFromNow(-22), state: "OVERDUE_D14", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-thu-2", customerId: repAssignments.staffThu[1] ?? repAssignments.staffThu[0], expected: 200_000, dueDate: daysFromNow(3), state: "EXPECTED", kind: "MAINTENANCE_FEE" },
+    { id: "seed-rep-pay-thu-3", customerId: repAssignments.staffThu[2] ?? repAssignments.staffThu[0], expected: 480_000, dueDate: daysFromNow(-40), state: "OVERDUE_D30", kind: "RENTAL_FEE" },
+    // repAn — small mix
+    { id: "seed-rep-pay-an-1", customerId: repAssignments.repAn[0], expected: 290_000, dueDate: daysFromNow(-12), state: "OVERDUE_D7", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-an-2", customerId: repAssignments.repAn[1] ?? repAssignments.repAn[0], expected: 250_000, dueDate: daysFromNow(2), state: "EXPECTED", kind: "MAINTENANCE_FEE" },
+    // repDuc — bigger B2B balances
+    { id: "seed-rep-pay-duc-1", customerId: repAssignments.repDuc[0], expected: 540_000, dueDate: daysFromNow(-20), state: "OVERDUE_D14", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-duc-2", customerId: repAssignments.repDuc[1] ?? repAssignments.repDuc[0], expected: 1_400_000, dueDate: daysFromNow(-50), state: "OVERDUE_D30", kind: "RENTAL_FEE" },
+    { id: "seed-rep-pay-duc-3", customerId: repAssignments.repDuc[2] ?? repAssignments.repDuc[0], expected: 380_000, dueDate: daysFromNow(4), state: "EXPECTED", kind: "MAINTENANCE_FEE" },
+  ];
+
+  for (const p of overduePaymentSeeds) {
+    const existing = await prisma.payment.findUnique({ where: { id: p.id } });
+    if (existing) continue;
+    await prisma.payment.create({
+      data: {
+        id: p.id,
+        customerId: p.customerId,
+        method: "BANK_TRANSFER",
+        kind: p.kind,
+        state: p.state,
+        expectedAmount: p.expected,
+        actualAmount: 0,
+        dueDate: p.dueDate,
+        notes: "Sales-rep demo receivable",
+      },
+    });
+  }
+  console.log(`  ✓ sales-rep overdue receivables (${overduePaymentSeeds.length})`);
+
   console.log("\nDone seeding.");
   console.log("\nLogin credentials (dev only) — phone is the login key:");
   console.log("  admin    phone 012345678   / pw 12341234");
   console.log("  manager  phone 0123456781  / pw 12341234");
   console.log("  staff    phone 0123456782  / pw 12341234");
-  console.log("  staff2   phone 0123456785  / pw 12341234");
+  console.log("  staff2   phone 0123456785  / pw 12341234  (Trần Thị Thu, 영업 사원)");
+  console.log("  repAn    phone 0123456790  / pw 12341234  (Lê Văn An, STAFF, 영업 사원)");
+  console.log("  repDuc   phone 0123456791  / pw 12341234  (Hoàng Minh Đức, MANAGER, 지역 매니저)");
   console.log("  tech1    phone 0123456783  / pw 12341234 (HCMC-D1)");
   console.log("  tech2    phone 0123456784  / pw 12341234 (HCMC-D7)");
   console.log("  tech3    phone 0123456786  / pw 12341234 (HCMC-D3)");
@@ -3380,7 +4174,7 @@ async function main() {
   console.log("  KH00002 CP   phone 0901112233 / vi / mustChange=true  (Trần Văn Minh, B2B 사장님)");
   console.log("  KH00002 OPS  phone 0901112234 / vi / mustChange=true  (Lê Thị Mai, B2B 운영담당)");
   console.log("  KH00003 CP   phone 0901555000 / ko / mustChange=false (김민수, 한국어 — 바로 진입)");
-  console.log("\nData volume: 14 customers, 24 contracts, 5 service requests, 147 visits, 116 payments (10 anchor + 106 per-contract history).");
+  console.log("\nData volume: 20 customers, 31 contracts, 5 service requests, 147 visits, 121 payments (10 anchor + 106 per-contract history + 5 rep demo).");
 }
 
 main()

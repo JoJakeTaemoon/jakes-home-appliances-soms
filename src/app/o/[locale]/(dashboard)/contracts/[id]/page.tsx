@@ -129,7 +129,7 @@ export default function ContractDetailPage() {
   const hasContractPartyEmail = true;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <BreadcrumbLabel value={data.contractNumber} />
       <header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>

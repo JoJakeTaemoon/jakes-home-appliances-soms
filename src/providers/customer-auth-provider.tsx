@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { registerCustomerLogout } from "@/lib/auth/global-handlers";
 
 const useIsomorphicLayoutEffect =
   globalThis.window === undefined ? useEffect : useLayoutEffect;
@@ -96,12 +97,9 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
   // protects against locale-change + StrictMode double-fire racing the
   // refresh-token rotation and wiping local state.
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
-  // Snapshot for refresh() so a 401 on the login-page silent-restore
-  // attempt doesn't clobber a fast login() that landed in between.
-  const contactRef = useRef<PortalContact | null>(null);
-  useEffect(() => {
-    contactRef.current = contact;
-  }, [contact]);
+  // True while login() is in-flight — refresh() must NOT wipe state while
+  // credentials are being minted concurrently.
+  const loginInFlightRef = useRef(false);
 
   const isAuthenticated = !!contact && !!accessToken;
 
@@ -115,29 +113,47 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
       mustChangePassword?: boolean;
     }> => {
       setIsLoading(true);
+      loginInFlightRef.current = true;
       try {
-        const res = await fetch("/api/portal/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ phone, password, contactId }),
-        });
-        const json = await res.json();
+        let res: Response;
+        try {
+          res = await fetch("/api/portal/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ phone, password, contactId }),
+          });
+        } catch (networkErr) {
+          throw new PortalLoginError(
+            (networkErr as Error)?.message ?? "Network error",
+            "NETWORK_ERROR",
+          );
+        }
+        let json: { success?: boolean; data?: { candidates?: PortalLoginCandidate[]; contact?: PortalContact; accessToken?: string; mustChangePassword?: boolean }; error?: { code?: string; message?: string } } = {};
+        try {
+          json = await res.json();
+        } catch {
+          // empty body
+        }
         if (!res.ok || !json.success) {
-          const code = json?.error?.code ?? "UNKNOWN";
-          const msg = json?.error?.message ?? "Login failed";
+          const code = json?.error?.code ?? `HTTP_${res.status}`;
+          const msg = json?.error?.message ?? `Login failed (${res.status})`;
           throw new PortalLoginError(msg, code);
         }
         // Disambiguation path — response has `candidates` only, no contact yet.
-        if (json.data.candidates) {
-          return { candidates: json.data.candidates as PortalLoginCandidate[] };
+        if (json.data?.candidates) {
+          return { candidates: json.data.candidates };
         }
-        const c = json.data.contact as PortalContact;
+        if (!json.data?.contact || !json.data?.accessToken) {
+          throw new PortalLoginError("Malformed login response", "MALFORMED_RESPONSE");
+        }
+        const c = json.data.contact;
         setContact(c);
         setAccessToken(json.data.accessToken);
         setCached(c, json.data.accessToken);
         return { mustChangePassword: !!json.data.mustChangePassword };
       } finally {
+        loginInFlightRef.current = false;
         setIsLoading(false);
       }
     },
@@ -165,7 +181,6 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current !== null) return refreshInFlightRef.current;
-    const startedWithUser = contactRef.current !== null;
     const promise = (async () => {
       try {
         const res = await fetch("/api/portal/auth/refresh", {
@@ -173,7 +188,9 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
           credentials: "include",
         });
         if (res.status === 401 || res.status === 403) {
-          if (startedWithUser) {
+          // Session dead — wipe local state unless a concurrent login is
+          // in-flight.
+          if (!loginInFlightRef.current) {
             setContact(null);
             setAccessToken(null);
             setCached(null, null);
@@ -202,6 +219,16 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
   }, []);
 
   useIsomorphicLayoutEffect(() => {
+    const path =
+      globalThis.window === undefined
+        ? ""
+        : globalThis.window.location.pathname;
+    const onPublicPage = /^\/[^/]+\/(login|forgot-password|change-password)(?:\/|$)/.test(path);
+    if (onPublicPage) {
+      setCached(null, null);
+      setIsLoading(false);
+      return;
+    }
     const cachedContact = getCached<PortalContact>(STORAGE_CONTACT);
     const cachedToken =
       typeof sessionStorage === "undefined"
@@ -214,22 +241,14 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
       void refresh();
       return;
     }
-    // No cache. On /login (or forgot/change-password) the user has no
-    // session yet, so a refresh() here is a guaranteed 401 — and
-    // browsers log 4xx responses to the console regardless of how the
-    // JS code handles them. Skip the call on customer public pages.
-    const path =
-      globalThis.window === undefined
-        ? ""
-        : globalThis.window.location.pathname;
-    if (
-      /^\/[^/]+\/(login|forgot-password|change-password)(?:\/|$)/.test(path)
-    ) {
-      setIsLoading(false);
-      return;
-    }
     refresh().finally(() => setIsLoading(false));
   }, []);
+
+  // Expose logout to the API client so a 401 from any portal-realm fetch
+  // can tear down the session globally.
+  useEffect(() => {
+    return registerCustomerLogout(logout);
+  }, [logout]);
 
   useEffect(() => {
     if (!accessToken) return;

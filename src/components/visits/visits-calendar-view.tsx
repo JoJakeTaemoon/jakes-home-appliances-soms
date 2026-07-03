@@ -11,13 +11,13 @@ import {
 } from "@/components/visits/visit-state-badge";
 import { VisitDetailContent } from "@/components/visits/visit-detail-content";
 import { pickModelName } from "@/lib/products/name";
+import { formatTime } from "@/lib/format";
 
 interface CalendarVisit {
   id: string;
   type: string;
   state: string;
   scheduledFor: string;
-  scheduledWindow: string | null;
   customer: { id: string; code: string; name: string; type: "B2C" | "B2B" };
   leadTechnician: { id: string; username: string } | null;
   equipment: {
@@ -261,7 +261,7 @@ export function VisitsCalendarView({
               </div>
               <ul className="flex flex-col gap-0.5">
                 {dayVisits.slice(0, VISIBLE_PER_DAY).map((v) => {
-                  const time = v.scheduledFor.slice(11, 16);
+                  const time = formatTime(v.scheduledFor);
                   return (
                     <li key={v.id}>
                       <span
@@ -421,7 +421,7 @@ function CalendarSplitPanel({
             ) : (
               <ul className="divide-y divide-[#f0f0f0]">
                 {dayVisits.map((v) => {
-                  const time = v.scheduledFor.slice(11, 16);
+                  const time = formatTime(v.scheduledFor);
                   const equipmentLabel = v.equipment
                     ? pickModelName(v.equipment.model, locale)
                     : null;
@@ -457,7 +457,6 @@ function CalendarSplitPanel({
                             {v.leadTechnician
                               ? ` · ${v.leadTechnician.username}`
                               : ""}
-                            {v.scheduledWindow ? ` · ${v.scheduledWindow}` : ""}
                           </div>
                         </div>
                       </button>

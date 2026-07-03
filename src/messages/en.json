@@ -9,6 +9,7 @@
     "filter": "Filter",
     "filters": "Filters",
     "all": "All",
+    "none": "None",
     "loading": "Loading...",
     "error": "An error occurred",
     "success": "Success",
@@ -16,6 +17,9 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
+    "prev": "Prev",
+    "today": "Today",
+    "clear": "Clear",
     "actions": "Actions",
     "noData": "No data",
     "noResults": "No results found",
@@ -46,7 +50,11 @@
     "deleting": "Deleting...",
     "select": "Select",
     "selectPlaceholder": "Select...",
-    "searchPlaceholder": "Search..."
+    "searchPlaceholder": "Search...",
+    "count": "",
+    "unitCount": "unit(s)",
+    "daysRemaining": "d left",
+    "daysOverdue": "d overdue"
   },
   "auth": {
     "login": {
@@ -97,6 +105,9 @@
     "dashboard": "Dashboard",
     "customers": "Customers",
     "equipment": "Equipment",
+    "equipmentBulkRegister": "Bulk register / install",
+    "equipmentInstallHistory": "Install history",
+    "salesReps": "Sales reps",
     "contracts": "Contracts",
     "visits": "Visits",
     "scheduleBoard": "Schedule Board",
@@ -234,6 +245,40 @@
     "filterType": "Filter by type",
     "filterStatus": "Filter by status",
     "filterRegion": "Filter by region",
+    "listSubtitle": "View and manage every customer record.",
+    "quickFilters": "Quick filters",
+    "apply": "Apply",
+    "reset": "Reset filters",
+    "all": "All",
+    "regionPlaceholder": "e.g. HCMC-D1",
+    "contactInfo": "Contact",
+    "contractStatus": "Contract status",
+    "equipmentCount": "Equipment",
+    "contractCount": "Contracts",
+    "nextMaintenance": "Next maintenance",
+    "salesRep": "Sales rep",
+    "salesRepUnassigned": "No sales rep assigned.",
+    "changeSalesRep": "Change sales rep",
+    "addEquipment": "+ Register equipment",
+    "editCustomerShort": "Edit",
+    "contractState": {
+      "ACTIVE": "Active",
+      "EXPIRING": "Expiring soon",
+      "TERMINATED": "Terminated",
+      "NONE": "No contract"
+    },
+    "stats": {
+      "totalCustomers": "Total customers",
+      "activeCustomers": "Active customers",
+      "activeHint": "Currently on contract",
+      "b2bCount": "B2B - Business",
+      "b2cCount": "B2C - Individual",
+      "totalEquipment": "Total equipment",
+      "totalContracts": "Total contracts",
+      "monthlyMaintenance": "Monthly maintenance",
+      "monthlyRental": "Monthly rental",
+      "totalReceivable": "Receivables"
+    },
     "noCustomers": "No customers yet",
     "noResults": "No customers match your filters",
     "tabs": {
@@ -242,6 +287,13 @@
       "sites": "Sites",
       "equipment": "Equipment",
       "contracts": "Contracts",
+      "maintenanceHistory": "Maintenance history",
+      "filterExchange": "Filter exchange",
+      "paymentStatus": "Payment status",
+      "orderHistory": "Purchase history",
+      "salesOrder": "Sales orders",
+      "installSites": "Install locations",
+      "notesAttachments": "Notes & files",
       "serviceRequests": "Service requests",
       "activity": "Activity"
     },
@@ -291,6 +343,104 @@
     "serviceSummary": "Service",
     "visitHistory": "Recent visits"
   },
+  "salesReps": {
+    "title": "Sales reps",
+    "subtitle": "Per-rep customers, contracts, and receivables.",
+    "emptyState": "No sales reps yet — toggle isSalesRep in user settings.",
+    "type": "Type",
+    "equipmentCount": "Equipment",
+    "contractCount": "Contracts",
+    "createdAt": "Signed",
+    "contractNumber": "Contract #",
+    "totalValue": "Value",
+    "totalSum": "Total",
+    "totalReceivable": "Total receivable",
+    "outstanding": "Outstanding",
+    "dueDate": "Due",
+    "state": "State",
+    "periodLabel": "Period",
+    "periodFrom": "From",
+    "periodTo": "To",
+    "kpi": {
+      "customers": "Customers",
+      "monthlyContracts": "Monthly contracts",
+      "monthlyRevenue": "Period revenue",
+      "receivables": "Receivables"
+    },
+    "tabs": {
+      "customers": "Customers",
+      "contracts": "Revenue by period",
+      "receivables": "Receivables by period"
+    },
+    "revenue": {
+      "customerCount": "Customers",
+      "equipmentCount": "Equipment",
+      "modelName": "Model",
+      "serial": "Serial",
+      "installedAt": "Installed",
+      "serviceType": "Service type",
+      "deposit": "Deposit",
+      "monthlyFee": "Monthly",
+      "perEquipmentRevenue": "Per-device revenue",
+      "formulaHint": "Per-device revenue = deposit + monthly fee × {months} months"
+    },
+    "receivables": {
+      "paymentCount": "Items",
+      "noEquipment": "No equipment information linked."
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "orderNumber": "Order #",
+    "orderedAt": "Ordered",
+    "deliveredAt": "Delivered",
+    "product": "Product",
+    "quantity": "Qty",
+    "unitPrice": "Unit price",
+    "totalPrice": "Total",
+    "purpose": "Purpose",
+    "equipment": "Equipment",
+    "state": "State",
+    "newOrder": "+ New order",
+    "createTitle": "New order",
+    "customer": "Customer",
+    "site": "Site",
+    "items": "Items",
+    "addItem": "+ Add item",
+    "kind": "Kind",
+    "orderTotal": "Order total",
+    "linkedEquipment": "Linked equipment",
+    "noConsumableForEquipment": "No compatible consumables for this equipment.",
+    "pickModel": "Pick equipment model",
+    "pickConsumable": "Pick consumable",
+    "customNamePlaceholder": "Item name",
+    "notes": "Notes",
+    "states": {
+      "PENDING": "Pending",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled"
+    },
+    "kinds": {
+      "EQUIPMENT": "Equipment",
+      "CONSUMABLE": "Consumable",
+      "OTHER": "Other"
+    },
+    "visitSectionTitle": "Visit (auto-created)",
+    "visitSectionHint": "A visit is scheduled when the order is created.",
+    "visitScheduledFor": "Visit date",
+    "visitType": "Visit type",
+    "visitTechnician": "Lead technician",
+    "visitNotes": "Visit notes",
+    "visitNotesPlaceholder": "Note for the field tech (optional)",
+    "visitModeAttach": "Add to an upcoming visit",
+    "visitModeNew": "Create a new visit",
+    "visitModeNewHint": "Schedule a fresh visit just for this delivery.",
+    "visitAttachHint": "This order will be attached to the visit above; the visit will carry the 'Consumable delivery' type.",
+    "noUpcomingVisit": "No upcoming visits scheduled.",
+    "upcomingFetchError": "Failed to load upcoming visits.",
+    "scheduledFor": "Visit date",
+    "openVisit": "Open visit"
+  },
   "sites": {
     "title": "Sites",
     "addSite": "Add site",
@@ -315,7 +465,211 @@
   "equipment": {
     "title": "Equipment",
     "installNew": "+ Install",
-    "installViaContract": "+ Install via contract",
+    "detailPanelTitle": "Equipment details",
+    "openFullPage": "Open full page",
+    "detail": {
+      "title": "Equipment details",
+      "model": "Model",
+      "serial": "Serial",
+      "assetCode": "Asset code",
+      "location": "Location",
+      "serviceType": "Service type",
+      "managementType": "Management type",
+      "deposit": "Deposit",
+      "monthlyFee": "Monthly fee",
+      "installedAt": "Installed",
+      "registeredBy": "Registered by",
+      "technician": "Technician",
+      "inspectionCycle": "Inspection cycle",
+      "months": "mo"
+    },
+    "serviceConfig": {
+      "title": "Service config (inspection + filters)",
+      "kindHeader": "Type",
+      "name": "Item",
+      "defaultCycle": "Default cycle",
+      "userCycle": "User cycle",
+      "quantity": "Qty",
+      "previousAt": "Previous",
+      "lastAt": "Last",
+      "nextDueAt": "Next due",
+      "daysRemaining": "Days left",
+      "monthsShort": "d",
+      "kind": {
+        "INSPECTION": "Inspection",
+        "FILTER": "Filter"
+      },
+      "status": {
+        "header": "Status",
+        "NORMAL": "Normal",
+        "SCHEDULED": "Scheduled",
+        "REPLACE_DUE": "Replace due",
+        "OVERDUE": "Overdue"
+      }
+    },
+    "widgets": {
+      "purchaseHistory": "Purchase history",
+      "recentWork": "Recent visits",
+      "nextSchedule": "Next visit",
+      "customerRequest": "Customer requests"
+    },
+    "register": {
+      "title": "Register / install equipment",
+      "subtitle": "Register multiple models for one customer, each with its own deposit + monthly fee.",
+      "submit": "Submit",
+      "sections": {
+        "customer": "Customer",
+        "location": "Location",
+        "lines": "Model lines",
+        "summary": "Totals & contract"
+      },
+      "fields": {
+        "customer": "Customer",
+        "customerPlaceholder": "Search customer (code / name / shortcode)",
+        "customerType": "Type",
+        "contact": "Contact",
+        "site": "Site",
+        "sitePlaceholder": "Select site",
+        "siteNotApplicable": "Customer has no sites (using customer address)",
+        "pickCustomerFirst": "Pick a customer first",
+        "installedAt": "Default install date",
+        "technician": "Technician",
+        "brand": "Brand",
+        "brandPlaceholder": "Brand (all)",
+        "category": "Category",
+        "categoryPlaceholder": "Category (all)",
+        "modelPlaceholder": "Select model",
+        "serialPrefixPlaceholder": "e.g. AQS-2406"
+      },
+      "columns": {
+        "model": "Model",
+        "serviceType": "Service",
+        "managementType": "Management",
+        "quantity": "Qty",
+        "deposit": "Deposit (per unit)",
+        "monthlyFee": "Monthly (per unit)",
+        "serialPrefix": "Serial prefix",
+        "installedAt": "Install date"
+      },
+      "serviceTypes": { "RENTAL": "Rental", "MAINTENANCE": "Maintenance", "SALE": "Sale" },
+      "managementTypes": { "FULL_SERVICE": "Full service", "SELF_MANAGED": "Self managed", "OTHER": "Other" },
+      "actions": { "addLine": "+ Add model" },
+      "totals": {
+        "equipmentCount": "Total units",
+        "totalDeposit": "Total deposit",
+        "totalMonthly": "Total monthly",
+        "totalSale": "Total sale value"
+      },
+      "contract": {
+        "toggle": "Issue a contract for these units too",
+        "toggleHint": "When checked, bundle every line into a single contract minted in the same transaction.",
+        "termMonths": "Term (months)"
+      }
+    },
+    "bulkRegister": {
+      "title": "Bulk register / install equipment",
+      "subtitle": "Register many units with identical configuration at once.",
+      "prevStep": "Back",
+      "nextStep": "Next",
+      "submitFinal": "Submit",
+      "applyPaste": "Apply",
+      "vatExclusive": "* Prices exclude VAT.",
+      "steps": { "info": "Info", "list": "Units", "confirm": "Confirm" },
+      "sections": {
+        "customer": "Customer",
+        "location": "Location",
+        "equipment": "Equipment",
+        "etc": "Other",
+        "contractCost": "Contract & cost (Important)",
+        "quantitySerial": "Quantity & serial",
+        "rowsTable": "Equipment rows"
+      },
+      "fields": {
+        "customerName": "Customer",
+        "customerPlaceholder": "Search customer (code / name / shortcode)",
+        "customerType": "Type",
+        "primaryContact": "Contact",
+        "site": "Site",
+        "sitePlaceholder": "Select site",
+        "siteAddress": "Site address",
+        "siteNotApplicable": "Customer has no sites (using customer address)",
+        "pickCustomerFirst": "Pick a customer first",
+        "brand": "Brand",
+        "brandPlaceholder": "Brand (all)",
+        "category": "Category",
+        "categoryPlaceholder": "Category (all)",
+        "model": "Model",
+        "modelPlaceholder": "Select model",
+        "serviceType": "Service type",
+        "managementType": "Management type",
+        "installedAt": "Default install date",
+        "technician": "Technician",
+        "deposit": "Deposit (per unit)",
+        "monthlyFee": "Monthly fee (per unit)",
+        "quantity": "Quantity",
+        "serialMode": "Serial entry mode",
+        "serialNumber": "Serial",
+        "assetCode": "Asset code"
+      },
+      "serviceTypes": {
+        "RENTAL": "Rental",
+        "MAINTENANCE": "Maintenance",
+        "SALE": "Sale"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "Full service",
+        "SELF_MANAGED": "Self managed",
+        "OTHER": "Other"
+      },
+      "serialMode": {
+        "auto": "Auto",
+        "manual": "Manual",
+        "excel": "Excel",
+        "paste": "Paste"
+      },
+      "summary": {
+        "title": "Summary",
+        "equipmentCount": "Equipment created",
+        "contractCount": "Contracts created",
+        "contractHint": "Equipment only; link contracts separately.",
+        "visitCount": "Visits created",
+        "deposit": "Total deposit",
+        "monthlyFee": "Total monthly fee"
+      },
+      "contract": {
+        "title": "Issue contract (optional)",
+        "toggle": "Issue a contract for these units too",
+        "toggleHint": "When checked, bundles every unit into one contract minted in the same transaction. When unchecked, only equipment is created; link the contract later in Contracts.",
+        "termMonths": "Term (months)",
+        "totalValue": "Total contract value",
+        "totalValueHint": "Total deposit + monthly fee × {months}mo",
+        "totalValueHintSale": "Total sale price",
+        "numberPreview": "Contract number",
+        "autoAssigned": "Auto-assigned",
+        "numberPreviewHint": "Customer code + earliest install date"
+      }
+    },
+    "installationHistory": {
+      "title": "Installation history",
+      "subtitle": "Bulk-register batches and INSTALLATION visit log.",
+      "viewMode": { "batch": "Batches", "visit": "Visits" },
+      "columns": {
+        "batch": {
+          "registeredAt": "Registered at",
+          "registeredBy": "Registered by",
+          "quantity": "Qty",
+          "serviceType": "Service"
+        },
+        "visit": {
+          "scheduledAt": "Scheduled",
+          "customer": "Customer",
+          "model": "Model",
+          "equipmentCode": "Serial",
+          "technician": "Tech",
+          "state": "State"
+        }
+      }
+    },
     "filterHistory": {
       "title": "Filter replacement history",
       "addManual": "+ Add filter",
@@ -483,6 +837,7 @@
   "contracts": {
     "title": "Contracts",
     "newContract": "+ New contract",
+    "newContractFromEquipment": "+ Contract from installed equipment",
     "createContract": "Create contract",
     "install": {
       "cta": "+ Install equipment",
@@ -639,6 +994,7 @@
       "step2": "2. Type & equipment",
       "step3": "3. Pricing",
       "step4": "4. Review",
+      "fromEquipmentHint": "Create a contract from already-installed equipment. Pick a customer first; in step 2 you can choose from that customer's installed units.",
       "pickCustomer": "Pick customer",
       "newCustomer": "New customer",
       "newCustomerTitle": "Quick customer create",
@@ -913,6 +1269,20 @@
   "visits": {
     "title": "Visits",
     "newVisit": "+ New visit",
+    "pendingDocPrefix": "Pending",
+    "pendingDocsTooltip": "Auto-issued when the visit is confirmed as SCHEDULED.",
+    "docKinds": {
+      "DELIVERY_RECEIPT": "Delivery receipt",
+      "SALE_RECEIPT_B2C": "Sale receipt",
+      "DELIVERY_SLIP_B2B": "Delivery slip",
+      "PERIODIC_CHECK_B2C": "Periodic check",
+      "PERIODIC_CHECK_B2B": "Periodic check",
+      "WORK_CONFIRMATION": "Work confirmation",
+      "RECEIPT": "Receipt",
+      "CONTRACT": "Contract",
+      "TAX_INVOICE": "Tax invoice",
+      "DELIVERY_SLIP": "Delivery slip"
+    },
     "searchPlaceholder": "Search visits...",
     "noVisits": "No visits yet.",
     "noResults": "No visits match.",
@@ -966,7 +1336,6 @@
     "load": "{n} visit(s) on this day",
     "manualPick": "Pick a different technician",
     "addCollaborator": "Add collaborator",
-    "scheduleWindow": "Window (e.g. morning, 14:00-16:00)",
     "reasonRequired": "Reason (3-500 chars)",
     "saving": "Saving...",
     "createForm": {
@@ -980,7 +1349,6 @@
       "equipmentPick": "— Select equipment —",
       "type": "Service type",
       "scheduledFor": "Scheduled date + time",
-      "scheduledWindow": "Window",
       "expectedAmount": "Expected amount (VND)",
       "notes": "Internal notes",
       "submit": "Create visit"
@@ -992,6 +1360,8 @@
       "FILTER_REPLACEMENT": "Filter replacement",
       "RELOCATION": "Relocation",
       "PAYMENT_COLLECTION": "Payment collection",
+      "RETRIEVAL": "Equipment retrieval",
+      "CONSUMABLE_DELIVERY": "Consumable delivery",
       "OTHER": "Other"
     },
     "states": {
@@ -1008,6 +1378,28 @@
       "photos": "Photos",
       "activity": "Activity",
       "payments": "Payments"
+    },
+    "relatedSr": {
+      "title": "Related service request",
+      "paid": "Paid",
+      "free": "Free",
+      "submittedAt": "Submitted",
+      "preferredVisitAt": "Preferred visit"
+    },
+    "relatedOrders": {
+      "title": "Related orders",
+      "totalLabel": "Total",
+      "fromServiceRequest": "From service request",
+      "forEquipment": "For equipment",
+      "colProduct": "Item",
+      "colQty": "Qty",
+      "colUnitPrice": "Unit price",
+      "colTotal": "Amount",
+      "states": {
+        "PENDING": "Pending",
+        "DELIVERED": "Delivered",
+        "CANCELLED": "Cancelled"
+      }
     },
     "documents": {
       "title": "Documents to carry",
@@ -1035,6 +1427,7 @@
     "title": "Service requests",
     "unreadMessage": "New customer message",
     "newRequest": "+ New request",
+    "originSr": "From service request:",
     "newPageTitle": "New service request (office intake)",
     "customerLabel": "Customer",
     "customerPlaceholder": "Search by code / name",
@@ -1204,7 +1597,6 @@
       "cleanTitle": "Clean · inspect",
       "everyMonths": "every {n} months",
       "everyVisit": "every visit",
-      "windowLabel": "Time window",
       "expectedAmountLabel": "Expected amount (VND)",
       "introInstallation": "Install the new equipment, commission it, and verify operation. Bring all accessories and the install kit.",
       "introPeriodicInspection": "Periodic inspection. Check and clean the filters listed below, replace any that are due, and verify leaks, water quality, and overall operation.",

@@ -1,1678 +1,987 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng (Office Manual)
+# Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
-**Phiên bản**: 2026-06-02
+**Phiên bản**: 2026-07 (cập nhật lớn — thêm Đại lý, Thiết bị, Lượt thăm, Đơn hàng)
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Kỹ thuật viên](./field.md) · [Hướng dẫn Khách hàng](./customer.md)
-
-Tài liệu này dành cho tất cả nhân viên văn phòng tại trụ sở Seoul Aqua sử dụng SOMS. Bao gồm toàn bộ màn hình và mọi tác vụ hàng ngày, có chú thích sự khác biệt về quyền giữa **Quản trị viên / Quản lý / Nhân viên**.
 
 ---
 
 ## Mục lục
 
-- [Chương 1. Bắt đầu](#chương-1-bắt-đầu)
-- [Chương 2. Phân quyền — Ai có thể làm gì](#chương-2-phân-quyền--ai-có-thể-làm-gì)
-- [Chương 3. Một ngày làm việc của nhân viên văn phòng (tổng quan quy trình)](#chương-3-một-ngày-làm-việc-của-nhân-viên-văn-phòng-tổng-quan-quy-trình)
-- [Chương 4. Đăng nhập và Màn hình đầu](#chương-4-đăng-nhập-và-màn-hình-đầu)
+- [Chương 1. Giới thiệu hệ thống](#chương-1-giới-thiệu-hệ-thống)
+- [Chương 2. Phân quyền](#chương-2-phân-quyền)
+- [Chương 3. Một ngày làm việc (tổng quan quy trình)](#chương-3-một-ngày-làm-việc-tổng-quan-quy-trình)
+- [Chương 4. Đăng nhập và Màn hình chính](#chương-4-đăng-nhập-và-màn-hình-chính)
 - [Chương 5. Quản lý Khách hàng](#chương-5-quản-lý-khách-hàng)
-- [Chương 6. Quản lý Hợp đồng](#chương-6-quản-lý-hợp-đồng)
-- [Chương 7. Quản lý Lượt thăm](#chương-7-quản-lý-lượt-thăm)
-- [Chương 8. Xử lý Yêu cầu Dịch vụ](#chương-8-xử-lý-yêu-cầu-dịch-vụ)
-- [Chương 9. Nhập và Đối soát Thanh toán](#chương-9-nhập-và-đối-soát-thanh-toán)
-- [Chương 10. Hóa đơn GTGT (chỉ B2B)](#chương-10-hóa-đơn-gtgt-chỉ-b2b)
-- [Chương 11. Báo cáo và Nhật ký Kiểm toán](#chương-11-báo-cáo-và-nhật-ký-kiểm-toán)
-- [Chương 12. Quản lý Hệ thống (chỉ ADMIN)](#chương-12-quản-lý-hệ-thống-chỉ-admin)
-- [Chương 13. Các tình huống thường gặp](#chương-13-các-tình-huống-thường-gặp)
-- [Chương 14. Quy tắc Bảo mật](#chương-14-quy-tắc-bảo-mật)
+- [Chương 6. Quản lý Đại lý/Nhân viên Bán hàng (mới)](#chương-6-quản-lý-đại-lýnhân-viên-bán-hàng-mới)
+- [Chương 7. Quản lý Thiết bị (cải tiến toàn diện)](#chương-7-quản-lý-thiết-bị-cải-tiến-toàn-diện)
+- [Chương 8. Quản lý Hợp đồng](#chương-8-quản-lý-hợp-đồng)
+- [Chương 9. Quản lý Lượt thăm (hỗ trợ nhiều loại & nhiều chứng từ)](#chương-9-quản-lý-lượt-thăm-hỗ-trợ-nhiều-loại--nhiều-chứng-từ)
+- [Chương 10. Quản lý Đơn hàng / Giao hàng tiêu hao (mới)](#chương-10-quản-lý-đơn-hàng--giao-hàng-tiêu-hao-mới)
+- [Chương 11. Xử lý Yêu cầu Dịch vụ](#chương-11-xử-lý-yêu-cầu-dịch-vụ)
+- [Chương 12. Nhập và Đối soát Thanh toán](#chương-12-nhập-và-đối-soát-thanh-toán)
+- [Chương 13. Hóa đơn GTGT (chỉ B2B)](#chương-13-hóa-đơn-gtgt-chỉ-b2b)
+- [Chương 14. Báo cáo và Nhật ký Kiểm toán](#chương-14-báo-cáo-và-nhật-ký-kiểm-toán)
+- [Chương 15. Quản lý Hệ thống (chỉ ADMIN)](#chương-15-quản-lý-hệ-thống-chỉ-admin)
+- [Chương 16. Các tình huống thường gặp](#chương-16-các-tình-huống-thường-gặp)
 - [Phụ lục A. Tìm Menu nhanh](#phụ-lục-a-tìm-menu-nhanh)
-- [Phụ lục B. Danh mục Thông báo](#phụ-lục-b-danh-mục-thông-báo)
-- [Phụ lục C. Từ điển Trạng thái](#phụ-lục-c-từ-điển-trạng-thái)
+- [Phụ lục B. Ma trận Chứng từ](#phụ-lục-b-ma-trận-chứng-từ)
+- [Phụ lục C. Danh mục Thông báo](#phụ-lục-c-danh-mục-thông-báo)
+- [Phụ lục D. Từ điển Trạng thái](#phụ-lục-d-từ-điển-trạng-thái)
 
 ---
 
-## Chương 1. Bắt đầu
+## Chương 1. Giới thiệu hệ thống
 
 ### 1.1 SOMS là gì?
 
-**SOMS (Service Operation Management System, Hệ thống Quản lý Vận hành Dịch vụ)** là hệ thống tích hợp của Seoul Aqua. Từ đăng ký khách hàng, hợp đồng, lắp đặt máy lọc nước, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ, đến nhật ký kiểm toán — mọi công việc của công ty đều được xử lý ở một nơi.
+**SOMS (Service Operation Management System)** là hệ thống tích hợp của Seoul Aqua. Đăng ký khách hàng, hợp đồng, lắp đặt thiết bị, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ và nhật ký kiểm toán — tất cả được xử lý tại một nơi.
 
-Thay thế cho sổ giấy và bảng tính Excel, với các ưu điểm sau:
+Lợi ích so với sổ giấy và bảng tính Excel:
 
-- **Một khách hàng = Một màn hình**: Toàn bộ thiết bị, hợp đồng, lịch sử thanh toán, ngày bảo trì kế tiếp của một khách hàng hiển thị tại một chỗ.
-- **Thông báo tự động**: Email 14 ngày trước bảo trì định kỳ, SMS 1 ngày trước, leo thang công nợ tự động, v.v.
-- **Ba ngôn ngữ**: Có thể chuyển đổi tức thì giữa Tiếng Hàn / Tiếng Việt / Tiếng Anh.
-- **Phân tách di động**: Màn hình văn phòng tối ưu cho máy tính, màn hình kỹ thuật viên tối ưu cho điện thoại — cả hai trong cùng hệ thống.
+- **1 khách hàng = 1 màn hình**: thiết bị, hợp đồng, lịch bảo trì, công nợ — tất cả trong một tab
+- **Tự động thông báo**: email D-14 trước bảo trì, SMS D-1, leo thang công nợ tự động
+- **3 ngôn ngữ**: tiếng Việt · tiếng Hàn · tiếng Anh — chuyển đổi ngay lập tức
+- **Phân quyền rõ ràng**: văn phòng (tối ưu PC) + kỹ thuật viên (tối ưu mobile) dùng chung hệ thống
 
-### 1.2 Hướng dẫn này dành cho ai?
+### 1.2 Địa chỉ truy cập
 
-| Vai trò | Trách nhiệm | Phần cần xem |
-|---|---|---|
-| **ADMIN (Quản trị viên)** | Giám đốc, người đại diện. Chịu trách nhiệm toàn bộ hệ thống | Toàn bộ chương + Chương 12 (Quản lý hệ thống) |
-| **MANAGER (Quản lý)** | Trưởng phụ trách kinh doanh/vận hành. Quyền về giá và hóa đơn GTGT | Chương 5~11, một phần Chương 12 (đọc) |
-| **STAFF (Nhân viên văn phòng)** | Xử lý công việc hàng ngày | Chương 4~9 là chính, Chương 10~12 để tham khảo |
+| Ứng dụng | URL |
+|---|---|
+| **Văn phòng** | `https://soms.seoulaqua.com.vn/o/vi/login` |
+| **Kỹ thuật viên** | `https://soms.seoulaqua.com.vn/f/vi/login` |
+| **Cổng khách hàng** | `https://portal.seoulaqua.com.vn/vi/login` |
 
-Trong mỗi mô tả màn hình, **các thao tác cần quyền sẽ được đánh dấu màu đỏ hoặc ký hiệu**.
+> Tên miền có thể thay đổi theo môi trường triển khai. Vui lòng dùng địa chỉ công ty thông báo.
 
-### 1.3 Yêu cầu môi trường
+### 1.3 Yêu cầu
 
-- **Máy tính có internet** (Chrome, Edge, Firefox, Safari đều được)
-- **Số điện thoại cá nhân** (ID đăng nhập)
-- **Mật khẩu tạm thời** (Quản trị viên đã gửi qua SMS)
-- **Điện thoại cá nhân** (để xác thực SMS và nhận thông báo)
-
-> **Lưu ý**: SOMS chạy trên trình duyệt internet. Không cần cài đặt phần mềm riêng.
+- Máy tính có kết nối Internet (Chrome · Edge · Firefox · Safari phiên bản mới nhất)
+- Số điện thoại di động cá nhân (ID đăng nhập)
+- Mật khẩu tạm thời nhận qua SMS từ quản trị viên
 
 ---
 
-## Chương 2. Phân quyền — Ai có thể làm gì
+## Chương 2. Phân quyền
 
-Vì công ty nhỏ nên không có các phòng ban kinh doanh/kế toán/vận hành riêng. Thay vào đó là **3 cấp bậc** + **nhân viên hiện trường**.
+### 2.1 Cơ cấu vai trò
 
-```mermaid
-flowchart TB
-  subgraph HQ["Nhân viên trụ sở"]
-    direction TB
-    A["ADMIN (Quản trị viên)<br/>Quyền cao nhất<br/>1~2 người"]
-    M["MANAGER (Quản lý)<br/>2~3 người"]
-    S["STAFF (Nhân viên)<br/>Còn lại"]
-    A --> M --> S
-  end
-  T["TECHNICIAN (Kỹ thuật viên hiện trường)<br/>~80 người<br/>Chỉ dùng di động"]
+```
+ADMIN (Quản trị viên)  ← Toàn bộ hệ thống + quản lý người dùng + mọi quyền MANAGER
+  └─ MANAGER (Quản lý) ← Thay đổi giá, hóa đơn GTGT, đặt lại MK khách hàng + mọi quyền STAFF
+       └─ STAFF (Nhân viên) ← Tác vụ hàng ngày (khách hàng, hợp đồng, lượt thăm, thanh toán)
 
-  HQ -.Không có quyền trụ sở.-> T
+TECHNICIAN (Kỹ thuật viên) ← App mobile riêng, không có quyền văn phòng
 ```
 
-### 2.1 Bảng phân quyền đầy đủ
+### 2.2 Bảng quyền theo chức năng
 
-| Tính năng | ADMIN | MANAGER | STAFF |
+| Chức năng | ADMIN | MANAGER | STAFF |
 |---|:---:|:---:|:---:|
-| **Cài đặt hệ thống · Thêm người dùng** | ● | — | — |
-| **Xuất CSV Nhật ký Kiểm toán** | ● | — | — |
-| Xem màn hình Nhật ký Kiểm toán | ● | ● | — |
-| **Đổi giá · Sửa hợp đồng** | ● | ● | — |
-| **Phát hành hóa đơn GTGT** | ● | ● | — |
-| **Đặt lại mật khẩu khách hàng** | ● | ● | — |
-| Khóa sổ hàng tháng | ● | ● | — |
-| **Duyệt yêu cầu dịch vụ có phí** | ● | ● | ● |
-| Đăng ký, sửa khách hàng·hợp đồng·thiết bị | ● | ● | ● |
-| Tạo·thay đổi lịch thăm | ● | ● | ● |
-| Nhập thanh toán·đối soát chuyển khoản | ● | ● | ● |
-| Xem menu kinh doanh | ● | ● | ● |
-| Xem menu kế toán | ● | ● | ● |
+| Thêm/vô hiệu hóa người dùng | ● | — | — |
+| Xuất nhật ký kiểm toán CSV | ● | — | — |
+| Xem nhật ký kiểm toán | ● | ● | — |
+| Thay đổi giá / Sửa hợp đồng | ● | ● | — |
+| Phát hành hóa đơn GTGT | ● | ● | — |
+| Đặt lại mật khẩu khách hàng | ● | ● | — |
+| Gán vai trò Đại lý (isSalesRep) | ● | ● | — |
+| Chốt sổ tháng | ● | ● | — |
+| Phê duyệt yêu cầu dịch vụ có phí | ● | ● | ● |
+| Thêm/sửa khách hàng, hợp đồng, thiết bị | ● | ● | ● |
+| Tạo/thay đổi lịch lượt thăm | ● | ● | ● |
+| Tạo đơn hàng (vật tư tiêu hao) | ● | ● | ● |
+| Nhập thanh toán / Đối soát chuyển khoản | ● | ● | ● |
 | Xem báo cáo | ● | ● | ● |
+| Xem menu Đại lý | ● | ● | ● |
 
-> **Lưu ý**: STAFF cũng xem được menu kế toán và kinh doanh. Tuy nhiên các thao tác trọng trách như **đổi số tiền hoặc phát hành hóa đơn GTGT** chỉ MANAGER trở lên mới thực hiện được. Không phân quyền theo phòng ban.
-
-### 2.2 Màn hình khi thiếu quyền
-
-Khi click vào menu không có quyền, bạn sẽ thấy một trong các trường hợp:
-
-- **Menu không hiển thị** — Với STAFF, menu "Quản lý hệ thống" trong sidebar bị ẩn.
-- **Nút màu xám** — Vào được màn hình nhưng nút "Phát hành" bị vô hiệu hóa.
-- **Thông báo thiếu quyền** — Hiện thông báo kiểu "Tác vụ này cần MANAGER trở lên".
+> **Không có phòng ban riêng biệt**: STAFF cũng thấy toàn bộ menu kinh doanh và kế toán. Các thao tác có trách nhiệm lớn (thay đổi giá, hóa đơn GTGT) chỉ dành cho MANAGER trở lên.
 
 ---
 
-## Chương 3. Một ngày làm việc của nhân viên văn phòng (tổng quan quy trình)
+## Chương 3. Một ngày làm việc (tổng quan quy trình)
 
-Trước khi vào chi tiết từng màn hình, hãy xem **luồng công việc trong một ngày**. Biết trước việc nào xảy ra khi nào sẽ giúp bạn không bối rối.
-
-### 3.1 Cái nhìn tổng quan
-
-```mermaid
-flowchart TB
-  A[Đến công ty<br/>Đăng nhập] --> B[Kiểm tra Bảng điều khiển<br/>Lịch thăm hôm nay · Công nợ · Tiền chờ nộp]
-  B --> C{Công việc buổi sáng}
-  C --> D[Đăng ký khách hàng mới]
-  C --> E[Soạn hợp đồng mới<br/>+ In PDF]
-  C --> F[Nhận tiền mặt<br/>từ kỹ thuật viên hôm qua]
-  C --> G[Lên lịch thăm mới<br/>Hệ thống gợi ý kỹ thuật viên]
-
-  D --> H{Công việc buổi chiều}
-  E --> H
-  F --> H
-  G --> H
-
-  H --> I[Trả lời điện thoại khách hàng<br/>Đổi lịch · Yêu cầu dịch vụ]
-  H --> J[Đối soát chuyển khoản<br/>Nhập thanh toán]
-  H --> K[Yêu cầu dịch vụ có phí<br/>Đánh giá + Báo giá]
-
-  I --> L[Trước khi về<br/>Kiểm tra việc chưa xong]
-  J --> L
-  K --> L
-  L --> M[Đăng xuất]
+```
+Đến làm → Đăng nhập → Kiểm tra bảng điều khiển
+  ├─ Sáng: Phân công lượt thăm / Nhận tiền mặt từ KTV / Đăng ký khách hàng & hợp đồng mới
+  ├─ Chiều: Xét duyệt yêu cầu dịch vụ / Đối soát chuyển khoản / Xử lý đơn hàng vật tư
+  └─ Trước khi về: Kiểm tra việc chưa xử lý → Đăng xuất
 ```
 
-### 3.2 Thời gian trung bình của từng bước
+### Việc hệ thống tự động làm (nhân viên không cần lo)
 
-| Tác vụ | Thời gian trung bình |
+| Tác vụ tự động | Thời điểm |
 |---|---|
-| Tìm 1 khách hàng | Dưới 5 giây |
-| Đăng ký khách hàng mới (B2C) | 1~2 phút |
-| Đăng ký khách hàng mới (B2B, có cơ sở) | 3~5 phút |
-| Soạn hợp đồng mới + In PDF | 5 phút |
-| Đối soát 1 chuyển khoản | 30 giây |
-| Nhận tiền từ 1 kỹ thuật viên (5~10 lượt) | 3~5 phút |
-| Đánh giá yêu cầu dịch vụ có phí + Báo giá | 2~5 phút |
-| Tải lên hóa đơn GTGT (sau khi phát hành ngoài) | 1 phút |
-
-### 3.3 Việc xử lý tự động — Nhân viên không cần lo
-
-| Tự động xử lý | Khi nào |
-|---|---|
-| Gửi SMS mật khẩu tạm thời cho khách hàng mới | Ngay sau đăng ký khách hàng |
-| SMS chào mừng đến người ký hợp đồng | Sau khi kích hoạt hợp đồng |
-| Email D-14 bảo trì định kỳ | Tự động 03:00 mỗi ngày |
-| SMS D-1 bảo trì định kỳ | Tự động 03:00 mỗi ngày |
-| Email D+7 nhắc công nợ | Tự động 03:00 mỗi ngày |
-| SMS D+30 công nợ | Tự động 03:00 mỗi ngày |
-| Email D-60/30 sắp hết hạn thuê | Tự động 03:00 mỗi ngày |
-| Tự động gửi email hóa đơn thu tiền | Ngay sau khi nhập thanh toán |
-| Tự động gửi email phiếu xác nhận công việc | Ngay sau khi kỹ thuật viên hoàn thành lượt thăm |
-| Cảnh báo D+1 chưa nộp tiền mặt (gửi ADMIN) | Ngày làm việc kế tiếp tự động |
+| SMS mật khẩu tạm thời cho khách | Ngay sau khi tạo tài khoản |
+| Email nhắc bảo trì D-14 | 03:00 giờ VN mỗi ngày |
+| SMS nhắc bảo trì D-1 | 03:00 giờ VN mỗi ngày |
+| Email nhắc công nợ D+7/D+14 | 03:00 giờ VN mỗi ngày |
+| SMS leo thang công nợ D+30 | 03:00 giờ VN mỗi ngày |
+| Email nhắc hết hạn thuê D-60/D-30 | 03:00 giờ VN mỗi ngày |
+| Thông báo ADMIN khi KTV chưa nộp tiền D+1 | Ngày làm việc tiếp theo |
+| Email phiếu xác nhận công việc sau lượt thăm | Ngay sau khi KTV đánh dấu hoàn thành |
 
 ---
 
-## Chương 4. Đăng nhập và Màn hình đầu
+## Chương 4. Đăng nhập và Màn hình chính
 
-### 4.1 Màn hình Đăng nhập
+### 4.1 Đăng nhập
 
-Trang đăng nhập cho nhân viên trụ sở là **`soms.seoulaqua.com.vn/o/login`** (tên miền thực tế do công ty thông báo).
+![Màn hình đăng nhập](../screenshots/vi/office/01-login.png)
 
-![Màn hình Đăng nhập](../screenshots/vi/office/01-login.png)
+Trang đăng nhập nhân viên văn phòng: `/o/vi/login`
 
-| Trường nhập | Mô tả |
+| Trường | Mô tả |
 |---|---|
-| **Số điện thoại hoặc Tên người dùng** | Số điện thoại cá nhân (ví dụ: `0901234567`) hoặc tên người dùng do ADMIN cấp (ví dụ: `admin`, `manager`) |
-| **Mật khẩu** | Mật khẩu cá nhân |
-| Nút Đăng nhập | Click để vào Bảng điều khiển (màn hình chính) |
+| **Số điện thoại** | Số di động cá nhân (ví dụ: `0901234567`) |
+| **Mật khẩu** | Mật khẩu của bạn (lần đầu: mật khẩu tạm thời nhận qua SMS) |
 
-**Cơ chế bảo mật quan trọng**:
-
-- **3 lần thất bại liên tiếp** sẽ khóa tài khoản tự động trong 1 giờ.
-- Nếu có 2 người dùng cùng tên người dùng, **đăng nhập sẽ bị từ chối** (chính sách bảo mật). Trường hợp này hãy đăng nhập bằng số điện thoại.
-- Nếu kỹ thuật viên hiện trường thử đăng nhập tại trang văn phòng, hệ thống sẽ **tự động chuyển sang trang đăng nhập hiện trường (`/f/login`)**.
+**Bảo mật**:
+- 3 lần đăng nhập sai → khóa tự động 1 giờ
+- Nếu có 2 người dùng cùng tên → chỉ đăng nhập được bằng số điện thoại
+- Tài khoản KTV thử đăng nhập văn phòng → hệ thống hướng dẫn dùng `/f/login`
 
 ### 4.2 Đổi mật khẩu lần đầu
 
-Khi ADMIN tạo tài khoản mới, **mật khẩu tạm thời** sẽ được gửi qua SMS. Ngay sau lần đăng nhập đầu, màn hình bắt buộc đổi mật khẩu sẽ hiện ra.
+Sau khi quản trị viên tạo tài khoản, bạn nhận SMS mật khẩu tạm thời. Đăng nhập lần đầu sẽ hiển thị màn hình đổi mật khẩu ngay. Tối thiểu 8 ký tự, khuyến nghị kết hợp chữ và số.
 
-**Quy tắc mật khẩu**:
-
-- Tối thiểu 8 ký tự
-- Khuyến nghị kết hợp chữ + số (không bắt buộc)
-- Không chia sẻ mật khẩu với người khác
-
-> **Quên mật khẩu**: Hãy nhờ ADMIN hoặc MANAGER. Mật khẩu tạm thời mới sẽ được gửi qua SMS.
-
-### 4.3 Bảng điều khiển (Màn hình chính)
-
-Là màn hình đầu tiên hiện ra sau đăng nhập. Mọi việc cần xử lý hôm nay đều thấy ở đây.
+### 4.3 Bảng điều khiển
 
 ![Bảng điều khiển](../screenshots/vi/office/02-dashboard.png)
 
-**Cấu trúc màn hình**:
+Màn hình đầu tiên sau đăng nhập. Các thẻ hiển thị công việc cần xử lý trong ngày.
 
-| Vùng | Nội dung |
+| Thẻ | Nội dung |
 |---|---|
-| **Lời chào trên cùng** | Tên và chức vụ cá nhân |
-| **Lượt thăm hôm nay** | Số lượng dự kiến + tỉ lệ đang tiến hành / hoàn thành |
-| **Yêu cầu dịch vụ chờ duyệt** | Yêu cầu có phí của khách hàng chưa được đánh giá |
-| **Cảnh báo Công nợ** | Danh sách khách theo từng giai đoạn D+7, D+14, D+30 |
-| **Tiền mặt chờ nộp** | Tiền mặt kỹ thuật viên nhận hôm qua chưa nộp văn phòng |
-| **Tóm tắt doanh thu tháng** | Tổng hợp đồng mới · Thu tiền (chỉ MANAGER+ thấy) |
-| **Chuông thông báo** | Thông báo hệ thống (yêu cầu dịch vụ mới, v.v.) |
+| Lượt thăm hôm nay | Số lượng theo kế hoạch + tỷ lệ đang thực hiện/hoàn thành |
+| Yêu cầu chờ xét duyệt | Yêu cầu có phí từ khách hàng chưa xử lý |
+| Cảnh báo công nợ | Khách hàng theo giai đoạn D+7/D+14/D+30 |
+| Tiền mặt chờ bàn giao | KTV đã thu nhưng chưa nộp văn phòng |
+| Tóm tắt doanh thu tháng | (Chỉ MANAGER+) |
 
-Click vào mỗi thẻ để đi thẳng đến màn hình tương ứng.
+Nhấp vào thẻ để chuyển đến màn hình tương ứng.
 
-### 4.4 Menu Sidebar
+### 4.4 Menu thanh bên
 
-Menu nằm bên trái màn hình. Một số menu bị ẩn theo quyền cá nhân.
+![Thanh bên](../screenshots/vi/office/03-sidebar.png)
+
+Thanh bên trái chứa toàn bộ menu. Một số mục bị ẩn tùy theo quyền.
 
 ```
-┌─ Bảng điều khiển
-├─ Khách hàng
-├─ Hợp đồng
-├─ Thiết bị
-├─ Lượt thăm
-├─ Phân công hôm nay   ← Mới ở Phase 6 (biểu tượng LayoutGrid)
-├─ In hàng loạt        ← Mới ở Phase 6 (biểu tượng Printer)
-├─ Yêu cầu dịch vụ
-├─ Thanh toán
-├─ Hóa đơn GTGT        (MANAGER+)
-├─ Báo cáo
-│   ├─ Doanh thu
-│   ├─ Công nợ
-│   ├─ Năng suất KTV
-│   └─ Nhật ký kiểm toán (MANAGER+)
-└─ Quản lý hệ thống    (ADMIN)
-    ├─ Người dùng
-    ├─ Catalog sản phẩm
-    └─ Trọng số lập lịch
+Trang chủ
+Khách hàng
+Đại lý          ← Mới (danh sách nhân viên isSalesRep=true + KPI)
+Hợp đồng
+Thiết bị
+  ├─ Danh sách thiết bị
+  ├─ Đăng ký hàng loạt  ← Mới — wizard 3 bước
+  └─ Lịch sử lắp đặt   ← Mới
+Lượt thăm
+  ├─ Danh sách / Lịch
+  └─ In hàng loạt
+Bảng phân công hôm nay
+Yêu cầu dịch vụ
+Thanh toán
+Hóa đơn GTGT   (MANAGER+)
+Báo cáo
+Quản lý hệ thống  (ADMIN)
 ```
-
-> 📋 **"Phân công hôm nay"** và **"In hàng loạt"** là menu hỗ trợ quản lý lượt thăm bổ sung ở Phase 6 (merge ngày 2026-06-03). Xem hướng dẫn chi tiết ở §7.8 / §7.10. Hiển thị cho ADMIN / MANAGER / STAFF (TECHNICIAN có màn hình mobile riêng).
 
 ### 4.5 Chuyển ngôn ngữ
 
-Dùng **nút chọn ngôn ngữ** ở góc trên bên phải để chuyển ngay giữa Tiếng Hàn (KO) / Tiếng Việt (VI) / Tiếng Anh (EN). Màn hình đang xem được giữ nguyên, chỉ văn bản đổi.
+Nhấn nút ngôn ngữ ở góc trên bên phải để chuyển ngay giữa Tiếng Việt (VI) · Tiếng Hàn (KO) · Tiếng Anh (EN). Màn hình hiện tại không thay đổi, chỉ văn bản thay đổi.
 
 ---
 
 ## Chương 5. Quản lý Khách hàng
 
-### 5.1 Màn hình Danh sách Khách hàng
+### 5.1 Danh sách khách hàng
 
-**Menu trái → Click "Khách hàng"**
+**Thanh bên → Khách hàng**
 
-![Danh sách Khách hàng](../screenshots/vi/office/03-customers-list.png)
+![Danh sách khách hàng](../screenshots/vi/office/04-customers-list.png)
 
-Cấu trúc màn hình:
+- **Ô tìm kiếm**: Nhập tên, số điện thoại hoặc mã (`KH00001` v.v.)
+- **Bộ lọc bên**: Loại khách hàng (B2C/B2B) · Tỉnh/thành · Trạng thái · Đại lý phụ trách
+- Nút **Khách hàng mới** (góc trên phải)
+- **Xuất CSV** (tải kết quả tìm kiếm ra Excel)
 
-- **Ô tìm kiếm**: nhập tên · số điện thoại · mã (KH0001, v.v.)
-- **Bộ lọc**: Loại (B2C/B2B), Thành phố, Tình trạng hoạt động, v.v.
-- Nút **Khách hàng mới** (góc trên bên phải)
-- Nút **Xuất CSV** (tải kết quả tìm kiếm dạng Excel)
-- **Danh sách**: Mã, Tên, Loại, Điện thoại, Thành phố, Ngày đăng ký
+Nhấp vào dòng để chuyển đến trang chi tiết khách hàng.
 
-Click vào một dòng để vào trang chi tiết.
+### 5.2 Đăng ký khách hàng mới — B2C (Hộ gia đình)
 
-### 5.2 Đăng ký Khách hàng mới — B2C (Hộ gia đình)
+**Danh sách khách hàng → Khách hàng mới → Chọn B2C**
 
-**Danh sách Khách hàng → Nút "Khách hàng mới"**
+#### Thông tin bắt buộc
 
-![Đăng ký Khách hàng mới](../screenshots/vi/office/04-customers-new.png)
-
-#### Bước 1: Chọn loại
-
-Phía trên màn hình chọn **B2C (Hộ gia đình)** hoặc **B2B (Doanh nghiệp)**. Khi chọn B2C, các trường sau hiển thị.
-
-#### Bước 2: Nhập bắt buộc
-
-| Mục | Mô tả | Ví dụ |
-|---|---|---|
-| **Tên** | Tên khách hàng | `Nguyễn Văn A` hoặc `김철수` |
-| **Số điện thoại** | Liên lạc chính (di động) — ngay dưới Tên | `0901234567` |
-
-> **Cập nhật 2026-06-22:** CCCD/Hộ chiếu, Liên hệ vận hành (OPS) và Người đại diện pháp luật (B2B) đều **chuyển sang tùy chọn**. Với B2C **phần Bên ký hợp đồng đã được loại bỏ** — Tên + Số điện thoại + Email + Ngôn ngữ ở trên cùng được tự động dùng làm Bên ký hợp đồng.
-
-#### Bước 3: Nhập địa chỉ — Cascading kiểu Shopee
-
-Địa chỉ nhập theo 4 cấp (giống Shopee VN):
-
-1. **Tỉnh / Thành phố** — chọn từ dropdown. VD: `Thành phố Hồ Chí Minh`
-2. **Quận / Huyện** — kích hoạt sau khi chọn Tỉnh. VD: `Quận 1`
-3. **Phường / Xã** — kích hoạt sau khi chọn Quận. VD: `Phường Bến Nghé`
-4. **Địa chỉ chi tiết** — số nhà, tòa nhà, tầng. VD: `123 Lê Lợi`
-
-> Nếu không có trong danh sách, gõ trực tiếp rồi nhấn tùy chọn **"\"giá trị\""** để nhập tự do.
-
-#### Bước 4: Nhập tùy chọn (khuyến khích)
-
-| Mục | Mô tả |
+| Trường | Mô tả |
 |---|---|
-| **CCCD / Hộ chiếu** | Theo cư trú — có thể bổ sung khi phát hành hợp đồng |
-| **Ngày cấp · Nơi cấp** | Thông tin cấp CCCD/Hộ chiếu (in lên hợp đồng) |
-| **Số điện thoại 2** | Liên lạc phụ |
-| **Email** | Để gửi hóa đơn thu tiền · phiếu xác nhận |
-| **Liên hệ vận hành (OPS)** | Người nhận thông báo lịch hẹn (cho phép 0 người) |
-| **Khu vực ưu tiên** | Ưu tiên khi xếp KTV bảo trì định kỳ (ví dụ: `HCMC-D1`) |
-| **KTV ưu tiên** | Khi khách hàng chỉ định KTV cụ thể |
-| **Ghi chú** | Thông tin đặc biệt (mã ra vào, vị trí cây nước, dị ứng, v.v.) |
+| **Tên** | Họ và tên khách hàng (ví dụ: `Nguyễn Văn A`) |
+| **Số điện thoại** | Liên hệ chính — ID đăng nhập cổng khách hàng |
 
-#### Bước 4: Tự động kích hoạt cổng khách hàng
+> Người ký hợp đồng (CONTRACT_PARTY) được tự động tạo từ thông tin khách hàng, không cần nhập riêng.
 
-Mặc định bật **Kích hoạt cổng tự động**. Ngay khi lưu:
+#### Nhập địa chỉ (dropdown theo tầng)
 
-1. Hệ thống tự cấp mã khách hàng (`KH00001` kiểu 5 chữ số).
-2. **SMS mật khẩu tạm thời** được gửi đến số điện thoại của khách.
-3. Khách hàng đăng nhập lần đầu tại `seoulaqua.com.vn/login` → đặt mật khẩu mới → bắt đầu sử dụng.
+1. Chọn Tỉnh/Thành phố
+2. Chọn Quận/Huyện
+3. Chọn Phường/Xã
+4. Nhập địa chỉ chi tiết
 
-Sau khi lưu chuyển đến trang chi tiết khách hàng.
+Nếu khu vực không có trong danh sách, gõ tên và chọn tùy chọn "**Nhập thủ công**".
 
-### 5.3 Đăng ký Khách hàng mới — B2B (Doanh nghiệp)
+#### Thông tin tùy chọn
 
-**Danh sách Khách hàng → Nút "Khách hàng mới" → Chọn B2B**
-
-Khác với B2C:
-
-| Mục | Khác biệt |
+| Trường | Mục đích |
 |---|---|
-| **Tên** | Không phải tên người mà là **tên doanh nghiệp** (ví dụ: `CÔNG TY TNHH SHV`) |
-| **Mã số thuế (taxCode)** | Mã số đăng ký kinh doanh Việt Nam **bắt buộc** (ví dụ: `0301234567`) |
-| **Viết tắt (shortcode)** | 2~5 chữ cái viết tắt (ví dụ: `SHV`) — dùng trong mã hợp đồng |
+| CCCD / Hộ chiếu | Ghi vào hợp đồng |
+| Email | Gửi biên lai, phiếu xác nhận |
+| Liên hệ vận hành (OPS) | Người nhận SMS thông báo lượt thăm |
+| Đại lý phụ trách | Tổng hợp doanh số |
+| Khu vực / KTV ưu tiên | Gợi ý phân công tự động |
 
-> **Cập nhật 2026-06-22:** Đã loại bỏ trường **Người đại diện pháp luật**. Người ký hợp đồng là người trong vai **CONTRACT_PARTY**. **Cho phép 0 liên hệ OPS** để hỗ trợ bán lẻ một lần.
+#### Kích hoạt cổng tự động
 
-#### Thêm Cơ sở (Site) — chỉ B2B
+Sau khi lưu, hệ thống ngay lập tức gửi SMS mật khẩu tạm thời đến điện thoại khách hàng, cho phép đăng nhập cổng ngay.
 
-Khi khách B2B có nhiều nhà máy hoặc tòa nhà, **đăng ký từng cơ sở dạng Site**.
+### 5.3 Đăng ký khách hàng mới — B2B (Doanh nghiệp)
 
-Sau khi lưu khách hàng, ở trang chi tiết khách hàng:
+Điểm khác biệt so với B2C:
 
-1. Click tab "**Cơ sở**"
-2. Nút "**Cơ sở mới**"
-3. Nhập:
-   - **Tên cơ sở**: `Trụ sở`, `Nhà máy A`, `Tòa nhà R&D`, v.v.
-   - **Địa chỉ đầy đủ**: Địa chỉ cơ sở
-   - **Khu vực**: Mã khu vực (tùy chọn)
-   - **Điện thoại**: Tổng đài cơ sở (tùy chọn)
-4. Lưu → Thêm Site khác (nếu cần)
+| Trường | Đặc thù B2B |
+|---|---|
+| **Tên** | Tên công ty (ví dụ: `CÔNG TY TNHH SHV`) |
+| **Mã số thuế** | Mã số thuế Việt Nam (bắt buộc, ví dụ: `0301234567`) |
+| **Mã viết tắt (shortcode)** | 2–5 ký tự tiếng Anh (ví dụ: `SHV`) — dùng trong số hợp đồng |
 
-> **B2C không cần Site.** Hộ gia đình chỉ có một nơi, địa chỉ chính của khách là địa chỉ lắp đặt.
+**Thêm địa điểm (Site)** — chỉ B2B:
 
-### 5.4 Trang Chi tiết Khách hàng
+Sau khi lưu, vào Chi tiết khách hàng → tab "**Địa điểm lắp đặt**" → nút "Địa điểm mới" để thêm địa điểm. Nhập tên địa điểm, địa chỉ và khu vực.
 
-Click vào khách hàng để xem toàn bộ thông tin được tổ chức theo tab.
+> B2C không cần địa điểm. Với hộ gia đình, địa chỉ khách hàng chính là địa chỉ lắp đặt.
 
-Cấu trúc tab:
+### 5.4 Cấu trúc tab Chi tiết khách hàng
+
+![Chi tiết khách hàng — tab Tổng quan](../screenshots/vi/office/05-customer-detail-overview.png)
 
 | Tab | Nội dung |
 |---|---|
-| **Thông tin cơ bản** | Tên, điện thoại, địa chỉ, ghi chú, v.v. (có thể chỉnh sửa) |
-| **Liên hệ** | Bên ký hợp đồng + Liên hệ vận hành (1+N) |
-| **Cơ sở** (chỉ B2B) | Danh sách cơ sở |
-| **Thiết bị** | Tất cả máy lọc nước/máy lọc không khí, v.v. khách đang dùng |
-| **Hợp đồng** | Toàn bộ hợp đồng đã ký (đang hoạt động + đã hết hạn) |
-| **Lịch sử thăm** | Mọi lượt thăm khách hàng này |
-| **Lịch sử thanh toán** | Tất cả thanh toán (chờ · đã xong · công nợ) |
-| **Yêu cầu dịch vụ** | Mọi yêu cầu khách hàng đã gửi |
+| **Tổng quan** | Tên, điện thoại, địa chỉ, ghi chú, đại lý phụ trách (có thể chỉnh sửa) |
+| **Thiết bị** | Bảng điều khiển master-detail + bảng cấu hình dịch vụ hợp nhất |
+| **Hợp đồng** | Tất cả hợp đồng: đang hoạt động, nháp, hoàn thành, đã hủy |
+| **Lịch sử bảo trì** | Toàn bộ lượt thăm của khách hàng này |
+| **Thanh toán** | Lịch sử thanh toán (đã lập, hoàn thành, quá hạn, miễn) |
+| **Lịch sử mua hàng** | Lịch sử mua vật tư từ lượt thăm CONSUMABLE_DELIVERY |
+| **Đơn hàng (bán hàng)** | Danh sách đơn hàng Order/OrderItem |
+| **Địa điểm lắp đặt** | Danh sách Site B2B (ẩn với B2C) |
+| **Ghi chú** | Ghi chú nội bộ (khách hàng không thấy) |
 
-### 5.5 Thêm Liên hệ — Bên ký hợp đồng + Liên hệ vận hành
+### 5.5 Tab Thiết bị — Bảng điều khiển Master-Detail
 
-Chi tiết khách hàng → Tab "Liên hệ"
+![Tab thiết bị](../screenshots/vi/office/06-customer-equipment-tab.png)
 
-```mermaid
-flowchart TB
-  Customer["Khách hàng (Customer)"]
-  Customer --> CP["Bên ký hợp đồng<br/>CONTRACT_PARTY<br/>Đúng 1 người"]
-  Customer --> OPS1["Liên hệ vận hành 1<br/>OPS_CONTACT"]
-  Customer --> OPS2["Liên hệ vận hành 2<br/>OPS_CONTACT"]
-  Customer --> OPSn["Liên hệ vận hành N<br/>..."]
-```
+Nhấp vào một thiết bị trong danh sách bên trái để xem chi tiết bên phải.
 
-**Bên ký hợp đồng (CONTRACT_PARTY)** được tự tạo 1 người khi đăng ký khách hàng. Muốn thay đổi cần quyền MANAGER trở lên.
+**Bảng cấu hình dịch vụ hợp nhất** — chu kỳ kiểm tra và chu kỳ thay lõi lọc hiển thị trong một bảng:
 
-**Liên hệ vận hành (OPS_CONTACT)** được thêm khi khách hàng cần:
-
-- Khi B2B có nhiều phòng ban (HR phụ trách, Cơ sở phụ trách, Mua hàng phụ trách, v.v.)
-- Khi B2C ngoài chủ hộ còn có vợ/chồng đặt lịch
-
-#### Các bước thêm liên hệ vận hành
-
-1. Chi tiết khách hàng → Tab Liên hệ → Nút "**Liên hệ mới**"
-2. Nhập:
-   - **Tên · Chức vụ**: `Kim Trưởng phòng (Quản lý cơ sở)`
-   - **Số điện thoại**: Số trực tiếp cá nhân (ví dụ: `0987654321`)
-   - **Email**: Tùy chọn
-   - **Ngôn ngữ**: `KO` / `VI` / `EN` — Tiếng mẹ đẻ của họ
-   - **scope**: `CUSTOMER` (toàn tổ chức) hoặc `SITE` (chỉ một cơ sở)
-   - **siteId**: Khi scope=SITE thì chọn cơ sở phụ trách
-   - **Kích hoạt cổng**: Mặc định BẬT (có cấp quyền đăng nhập cổng hay không)
-3. Lưu → SMS mật khẩu tạm thời tự gửi đến liên hệ mới
-
-#### Quy tắc định tuyến thông báo theo liên hệ
-
-| Loại thông báo | Gửi cho ai |
+| Cột | Mô tả |
 |---|---|
-| Hợp đồng, hóa đơn GTGT, thông báo pháp lý | Chỉ **Bên ký hợp đồng** |
-| SMS lịch bảo trì, hóa đơn thu tiền | **Liên hệ vận hành (chính)**, không có thì Bên ký hợp đồng |
-| Đòi công nợ | Bên ký hợp đồng + **toàn bộ Liên hệ vận hành** (CC) |
-| Trên mobile "Gọi khách hàng" | Liên hệ vận hành (chính) trước, không có thì Bên ký hợp đồng |
+| Loại dịch vụ | Kiểm tra định kỳ / Thay lõi lọc |
+| Chu kỳ | Khoảng cách thay (tháng) |
+| Lần thay gần nhất | Ngày thực tế hoàn thành |
+| Lần thay dự kiến tiếp theo | Hệ thống tự tính |
+| Trạng thái | Bình thường / Sắp đến hạn / Quá hạn |
 
-**Cài đặt ngôn ngữ của mỗi liên hệ sẽ quyết định ngôn ngữ nội dung thông báo**.
+### 5.6 Tab Lịch sử mua hàng (mới)
 
-### 5.6 Chỉnh sửa thông tin khách hàng
+![Tab mua hàng](../screenshots/vi/office/08-customer-purchase-tab.png)
 
-Chi tiết khách hàng → Tab "Thông tin cơ bản" → Nút "**Sửa**"
+Hiển thị lịch sử mua vật tư liên kết với lượt thăm `CONSUMABLE_DELIVERY`. Xem được ngày lượt thăm, hàng hóa, số tiền và thông tin KTV.
 
-Trường có thể sửa:
+### 5.7 Tab Đơn hàng (bán hàng) (mới)
 
-- Tên, điện thoại, email, địa chỉ, thành phố, khu vực, ghi chú — Mọi quyền
-- **Mã số thuế, Tên doanh nghiệp** — MANAGER trở lên (B2B có ảnh hưởng pháp lý)
-- **Đổi Bên ký hợp đồng** — MANAGER trở lên (có thể cần ký lại hợp đồng)
+![Tab đơn hàng](../screenshots/vi/office/09-customer-orders-tab.png)
 
-Khi lưu, **trước/sau của thay đổi tự ghi vào Nhật ký Kiểm toán (Audit Log)**.
+Hiển thị đơn hàng vật tư liên kết với Order/OrderItem. Có thể đăng ký đơn hàng mới ngay từ tab này.
 
-### 5.7 Vô hiệu hóa · Kích hoạt lại khách hàng
+### 5.8 Quản lý liên hệ — CONTRACT_PARTY / OPS_CONTACT
 
-Khi khách hàng ngừng giao dịch (đóng cửa · chuyển đi · kết thúc hợp đồng):
+Mỗi khách hàng có **1 người ký hợp đồng (CONTRACT_PARTY)** và **0–N liên hệ vận hành (OPS_CONTACT)**.
 
-**Vô hiệu hóa (MANAGER trở lên)**:
+| Vai trò | Nhận thông báo |
+|---|---|
+| CONTRACT_PARTY | Hợp đồng, hóa đơn GTGT, thông báo pháp lý |
+| OPS_CONTACT (chính) | SMS lượt thăm, biên lai, nhắc bảo trì |
+| Toàn bộ OPS_CONTACT | CC nhắc công nợ |
 
-1. Chi tiết khách hàng → Tab "Thông tin cơ bản" → Nút "**Vô hiệu hóa**"
-2. Nhập lý do (ví dụ: "Đóng cửa", "Xuất ngoại dài hạn", "Kết thúc hợp đồng")
-3. Xác nhận → Mọi thiết bị đang hoạt động tự chuyển sang trạng thái `DEACTIVATED`
-4. Sau đó vẫn tìm được trong danh sách nhưng không soạn hợp đồng mới được
+Thêm OPS_CONTACT:
+1. Chi tiết khách hàng → tab **Tổng quan** → phần Liên hệ → nút "**Liên hệ mới**"
+2. Nhập tên, điện thoại, email, ngôn ngữ, phạm vi (CUSTOMER hoặc SITE)
+3. Lưu → Hệ thống tự gửi SMS mật khẩu tạm thời cho cổng
 
-**Kích hoạt lại (chỉ ADMIN)**:
+### 5.9 Vô hiệu hóa khách hàng
 
-Để kích hoạt lại khách hàng đã vô hiệu hóa cần quyền ADMIN. An toàn kép.
+Từ MANAGER trở lên:
+1. Chi tiết khách hàng → nút "**Vô hiệu hóa**"
+2. Nhập lý do → Xác nhận
+3. Tất cả thiết bị đang hoạt động tự chuyển sang trạng thái `DEACTIVATED`
 
-> **Xóa hoàn toàn không được**. Mọi dữ liệu phải lưu 24 tháng theo yêu cầu pháp lý.
+> Không thể xóa. Quy định pháp lý yêu cầu lưu trữ dữ liệu 24 tháng.
 
 ---
 
-## Chương 6. Quản lý Hợp đồng
+## Chương 6. Quản lý Đại lý/Nhân viên Bán hàng (mới)
 
-> **Cập nhật 2026-06-22 — Contract Domain v2**
->
-> - **Tiền cọc thuê + Xử lý khi hết hạn**: Khi tạo hợp đồng thuê, nhập tiền cọc và chọn cách xử lý cuối kỳ — "Chuyển sở hữu cho khách (mặc định)" hoặc "Thu hồi thiết bị". Nếu chọn thu hồi, hệ thống tự tạo lượt thăm RETRIEVAL vào ngày hết hạn và báo cho văn phòng.
-> - **Tab Thanh toán**: Tab [Thanh toán] trong chi tiết hợp đồng hiển thị tổng theo từng loại (cọc, phí thuê, phí dịch vụ, hoàn tiền…).
-> - **Chuyển Thuê → Bán**: Trên hợp đồng thuê đang ACTIVE bấm [Chuyển sang Bán] để chuyển tại chỗ và quyết định việc hoàn cọc. Sau chuyển, thiết bị tự chuyển sang sở hữu khách (MANAGER+).
-> - **Huỷ giữa kỳ**: Trên hợp đồng ACTIVE bấm [Huỷ hợp đồng giữa kỳ]. Số tiền hoàn và lượt thu hồi thiết bị được xử lý trong cùng một dialog (MANAGER+).
-> - **SMS hết hạn không tự gửi**: Văn phòng phải bấm nút [Gửi SMS hết hạn] thì SMS mới được gửi cho khách.
-> - **Hợp đồng bảo trì cho thiết bị bên ngoài**: Có thể tạo hợp đồng MAINTENANCE cho thiết bị không có trong catalog. Trong modal thêm thiết bị, bật "Thiết bị bên ngoài" và nhập mô tả + chu kỳ bảo trì trực tiếp.
+### 6.1 Đại lý là ai?
 
-> **Cập nhật bổ sung 2026-06-22 — Tạm ngừng thiết bị = Gia hạn kết thúc (độc lập theo thiết bị)**
->
-> - **Tài liệu hợp đồng KHÔNG đổi**: Phí thuê, phí bảo trì, ngày kết thúc trong hợp đồng giữ nguyên. Thời gian tạm ngừng chỉ được ghi nhận và xử lý **theo từng thiết bị nội bộ**.
-> - **Vô hiệu hóa thiết bị → tạm ngừng tính phí**: Khi bấm [Vô hiệu hóa] trên chi tiết thiết bị, dòng tương ứng trong các hợp đồng RENTAL/MAINTENANCE đang ACTIVE/AMENDED sẽ ghi nhận thời điểm bắt đầu tạm ngừng. Khi kích hoạt lại, số ngày tạm ngừng được cộng dồn.
-> - **Ngày kết thúc thực tế theo thiết bị = endDate hợp đồng + tổng số ngày tạm ngừng**: Tab Thiết bị trong chi tiết hợp đồng hiển thị cột [Ngày kết thúc thực tế] cho từng dòng. Nhiều thiết bị trong cùng một hợp đồng có thể kết thúc vào những ngày khác nhau.
-> - **Xử lý kết thúc theo từng thiết bị, độc lập**: Cron kiểm tra từng dòng; thiết bị nào đến hạn thực tế thì xử lý dòng đó (chuyển sở hữu hoặc tạo lượt thu hồi). Hợp đồng chỉ chuyển sang COMPLETED khi mọi dòng đã settle.
+Nhân viên được đặt `isSalesRep = true`. ADMIN hoặc MANAGER gán quyền đại lý cho nhân viên từ trang Quản lý hệ thống. Đại lý vẫn là STAFF/MANAGER bình thường nhưng đồng thời được tổng hợp doanh số phụ trách.
 
-> **Cập nhật bổ sung 2026-06-22 — Lắp đặt theo hợp đồng + Cơ sở**
->
-> - **Lắp đặt thiết bị phải chọn hợp đồng trước**: Luồng "Thiết bị → Lắp đặt mới" cũ đã được thay bằng luồng chọn hợp đồng trước. Bấm [+ Lắp đặt thiết bị] trong tab Thiết bị của chi tiết hợp đồng, hoặc vào trang Lắp đặt và chọn hợp đồng. Không còn lắp đặt thiết bị tự do ngoài hợp đồng.
-> - **Số lượng theo model + số serial liên tiếp**: Modal lắp đặt cho phép mỗi dòng có model + số lượng + số serial bắt đầu + cơ sở + sở hữu. Nếu số serial bắt đầu kết thúc bằng số (ví dụ `PTS-2100-000010`), hệ thống tự sinh các serial liên tiếp (`...000010`, `...000011`, `...000012`).
-> - **Khách hàng nhiều cơ sở: bắt buộc chọn cơ sở**: Với khách hàng có ≥2 cơ sở, mỗi dòng lắp đặt phải chỉ định cơ sở. Khách hàng B2C / một cơ sở có thể để trống.
-> - **Yêu cầu dịch vụ — tuỳ chọn cơ sở**: Khách hàng nhiều cơ sở thấy ô chọn cơ sở khi gửi yêu cầu. Nếu họ không nhớ, có thể bỏ trống; văn phòng sẽ bổ sung khi phân kỹ thuật viên.
-> - **Lượt thăm gắn cơ sở tự động**: Nếu lượt thăm có thiết bị, cơ sở của thiết bị sẽ tự gán vào lượt thăm. Tên cơ sở hiển thị trên danh sách lượt thăm và Phiếu xác nhận công việc PDF.
+### 6.2 Danh sách Đại lý
 
-### 6.1 Các loại hợp đồng
+**Thanh bên → Đại lý**
 
-| Loại | Tiếng Hàn | Tiếng Việt | Mô tả |
+![Danh sách đại lý](../screenshots/vi/office/10-sales-reps-list.png)
+
+Bố cục dạng thẻ hiển thị KPI từng đại lý:
+
+| KPI | Mô tả |
+|---|---|
+| **Số khách hàng phụ trách** | Số khách hàng đang hoạt động do đại lý này phụ trách |
+| **Hợp đồng mới tháng này** | Số hợp đồng mới ký trong tháng |
+| **Doanh thu kỳ** | Tổng doanh thu trong kỳ đã chọn |
+| **Tổng công nợ** | Tổng công nợ của khách hàng phụ trách |
+
+### 6.3 Chi tiết Đại lý
+
+Nhấp vào thẻ để mở màn hình chi tiết với 3 tab.
+
+![Chi tiết đại lý](../screenshots/vi/office/11-sales-rep-detail.png)
+
+#### Tab Khách hàng phụ trách
+
+![Tab khách hàng phụ trách](../screenshots/vi/office/12-sales-rep-customers-tab.png)
+
+Danh sách khách hàng do đại lý này phụ trách. Xem tên, mã, loại, số thiết bị, trạng thái hợp đồng. Nhấp tên khách hàng để chuyển đến trang chi tiết.
+
+#### Tab Doanh thu theo kỳ
+
+![Tab doanh thu](../screenshots/vi/office/13-sales-rep-revenue-tab.png)
+
+Đặt kỳ (từ ngày – đến ngày) để xem doanh thu từng thiết bị của đại lý trong kỳ đó.
+
+**Công thức tính doanh thu**: Doanh thu thiết bị = Tiền đặt cọc + Phí tháng × Số tháng đã qua
+
+#### Tab Công nợ theo kỳ
+
+![Tab công nợ](../screenshots/vi/office/14-sales-rep-receivables-tab.png)
+
+Xem công nợ của khách hàng phụ trách theo kỳ. Kiểm tra số lượng, số tiền, ngày đến hạn và trạng thái.
+
+### 6.4 Gán Đại lý cho Khách hàng
+
+Chi tiết khách hàng → tab **Tổng quan** → dropdown "Đại lý phụ trách" → chọn nhân viên. Chỉ nhân viên được gán vai trò đại lý mới xuất hiện trong danh sách.
+
+---
+
+## Chương 7. Quản lý Thiết bị (cải tiến toàn diện)
+
+### 7.1 Thay đổi chính
+
+- Thêm trường: `deposit` (tiền đặt cọc), `monthlyFee` (phí tháng), `serviceType` (RENTAL/MAINTENANCE/SALE), `managementType` (FULL_SERVICE/SELF_MANAGED/OTHER), `lifecycleStage` (ACTIVE/INACTIVE/RETRIEVED/TRANSFERRED)
+- Bảng điều khiển master-detail: danh sách + chi tiết cùng một màn hình
+- Bảng cấu hình dịch vụ hợp nhất: lịch kiểm tra + lịch thay lõi lọc trong một bảng
+- Wizard đăng ký hàng loạt: 3 bước để đăng ký nhiều thiết bị cùng lúc
+- Lịch sử lắp đặt: chuyển đổi giữa chế độ xem theo lô và theo lượt thăm
+
+### 7.2 Danh sách thiết bị
+
+**Thanh bên → Thiết bị**
+
+![Danh sách thiết bị](../screenshots/vi/office/15-equipment-list.png)
+
+Bộ lọc: Loại khách (B2C/B2B) · Loại dịch vụ (thuê/bảo trì/bán) · Trạng thái vòng đời · KTV
+
+### 7.3 Chi tiết thiết bị — Bảng cấu hình dịch vụ hợp nhất
+
+![Chi tiết thiết bị](../screenshots/vi/office/16-equipment-detail.png)
+
+Nhấp vào một thiết bị để xem:
+
+**Phần thông tin cơ bản**:
+- Số serial, mẫu, thương hiệu, danh mục
+- Ngày lắp đặt, tiền đặt cọc, phí tháng, loại dịch vụ
+- Trạng thái vòng đời hiện tại (ACTIVE/INACTIVE v.v.)
+
+**Bảng cấu hình dịch vụ hợp nhất**:
+Chu kỳ kiểm tra và chu kỳ thay lõi lọc được hợp nhất vào một bảng — xem ngày lượt thăm trước, ngày dự kiến tiếp theo và chu kỳ thay.
+
+Phần **Lịch sử lượt thăm liên kết** cũng hiển thị trên cùng trang.
+
+### 7.4 Wizard đăng ký thiết bị hàng loạt (mới)
+
+**Thanh bên → Thiết bị → Đăng ký hàng loạt**
+
+![Đăng ký hàng loạt bước 1](../screenshots/vi/office/17-bulk-register-step1.png)
+
+Wizard 3 bước để đăng ký nhiều thiết bị cùng lúc.
+
+#### Bước 1: Chọn khách hàng và hợp đồng
+
+- Tìm kiếm khách hàng (theo mã hoặc tên)
+- Chọn hợp đồng liên kết (thiết bị phải gắn với hợp đồng)
+- Khách hàng B2B nhiều địa điểm: chọn thêm địa điểm
+
+#### Bước 2: Nhập thông tin thiết bị
+
+Nhập mỗi thiết bị trên một dòng dưới dạng bảng:
+- Chọn mẫu (dropdown Brand → Model)
+- Số lượng (nhiều thiết bị cùng mẫu)
+- Số serial (tự động đánh số hoặc nhập thủ công)
+  - Nếu serial kết thúc bằng số (ví dụ: `PTS-2100-000010`) → tự động đánh tiếp theo số lượng (`...000011`, `...000012`)
+- Tiền đặt cọc, phí tháng (áp dụng mặc định từ mẫu, có thể sửa)
+- Loại dịch vụ: RENTAL / SALE / MAINTENANCE
+
+#### Bước 3: Xác nhận và đăng ký
+
+Kiểm tra thông tin tóm tắt rồi nhấn "**Đăng ký**" để lưu hàng loạt.
+
+> Sau khi đăng ký, dữ liệu được ghi vào Lịch sử lắp đặt và phản ánh trong tab [Thiết bị] của hợp đồng tương ứng.
+
+### 7.5 Lịch sử lắp đặt (mới)
+
+**Thanh bên → Thiết bị → Lịch sử lắp đặt**
+
+![Lịch sử lắp đặt](../screenshots/vi/office/18-installation-history.png)
+
+Theo dõi cách thức và thời điểm đăng ký từng thiết bị.
+
+**Chuyển đổi chế độ xem**:
+- **Xem theo lô**: Theo đợt đăng ký hàng loạt — xem ai đã đăng ký bao nhiêu thiết bị vào lúc nào
+- **Xem theo lượt thăm**: Theo lượt thăm INSTALLATION — xem thiết bị nào được lắp trong từng lượt thăm
+
+---
+
+## Chương 8. Quản lý Hợp đồng
+
+### 8.1 Loại hợp đồng
+
+| Loại | Mô tả |
+|---|---|
+| **SALE** | Mua một lần, thanh toán đầy đủ, khách hàng sở hữu ngay |
+| **RENTAL** | Thuê 36 tháng, thu phí hàng tháng. Hết hạn: chuyển quyền sở hữu (mặc định) hoặc thu hồi thiết bị |
+| **MAINTENANCE** | Chỉ bảo trì — thiết bị đã thuộc sở hữu khách hàng. Có thể đăng ký thiết bị ngoài danh mục |
+
+### 8.2 Danh sách hợp đồng
+
+**Thanh bên → Hợp đồng**
+
+![Danh sách hợp đồng](../screenshots/vi/office/19-contracts-list.png)
+
+Tab: Đang hoạt động / Nháp / Hết hạn / Tất cả
+Bộ lọc: Loại khách · Loại hợp đồng · Trạng thái · Đại lý
+
+### 8.3 Tab Chi tiết hợp đồng
+
+![Chi tiết hợp đồng](../screenshots/vi/office/20-contract-detail.png)
+
+| Tab | Nội dung |
+|---|---|
+| **Tổng quan** | Số HĐ, loại, trạng thái, khách hàng, thời hạn |
+| **Thiết bị** | Danh sách thiết bị trong HĐ này + ngày hủy hiệu lực |
+| **Phụ lục** | Lịch sử sửa đổi HĐ B2B (Appendix) |
+| **Thanh toán** | Tiền đặt cọc, phí thuê, phí dịch vụ, hoàn tiền |
+| **Hoạt động** | Lịch sử thay đổi trạng thái, ký kết, ghi chú |
+
+### 8.4 Tạo hợp đồng mới
+
+1. Danh sách hợp đồng → nút "**Hợp đồng mới**"
+2. Chọn khách hàng → Chọn loại hợp đồng
+3. Thêm thiết bị (chọn từ danh mục)
+4. Lưu → Số HĐ tự động cấp:
+   - B2C: `HD-20260702/SA-KH00001`
+   - B2B: `HD-20260702/SA-SHV`
+5. Tạo PDF → Khách ký → Nhấn "**Kích hoạt**"
+6. Sau khi kích hoạt, lượt thăm lắp đặt được tạo tự động
+
+### 8.5 Sửa đổi hợp đồng (Amend)
+
+Chỉ từ MANAGER trở lên.
+
+- **Sửa HĐ B2C**: Chỉnh sửa trực tiếp giá và thiết bị. Thay đổi trước/sau được ghi tự động vào nhật ký kiểm toán.
+- **Thêm Phụ lục HĐ B2B**: Chi tiết HĐ → nút "**Thêm phụ lục**" → Nhập thiết bị hoặc điều khoản mới → Số phụ lục tự động cấp (ví dụ: `HD-.../SA-SHV-A1`)
+
+### 8.6 Gia hạn hợp đồng (Renew)
+
+Chuyển hợp đồng thuê hết hạn sang bảo trì:
+1. HĐ hết hạn → nút "**Gia hạn: Bảo trì**"
+2. Nhập phí quản lý tháng mới + ngày bắt đầu
+3. Xác nhận → HĐ thuê cũ chuyển sang `COMPLETED` + chuyển quyền sở hữu thiết bị + tự động tạo HĐ bảo trì mới
+
+### 8.7 Luồng trạng thái hợp đồng
+
+```
+DRAFT → ACTIVE → OVERDUE → ACTIVE (khi thanh toán xong)
+                           TERMINATED_EARLY (hủy sớm)
+              ACTIVE → COMPLETED (thanh toán đầy đủ)
+              COMPLETED → (thuê: chuyển quyền sở hữu thiết bị)
+```
+
+---
+
+## Chương 9. Quản lý Lượt thăm (hỗ trợ nhiều loại & nhiều chứng từ)
+
+### 9.1 Loại lượt thăm (toàn bộ danh sách)
+
+| Mã | Tiếng Việt | Phát sinh khi |
+|---|---|---|
+| INSTALLATION | Lắp đặt | Tự động tạo khi HĐ được kích hoạt |
+| PERIODIC_INSPECTION | Kiểm tra định kỳ | Cron tự động (hàng tháng hoặc 2 tháng/lần) |
+| REPAIR | Sửa chữa | Từ yêu cầu (FAULT_REPORT) hoặc thủ công |
+| FILTER_REPLACEMENT | Thay lõi lọc | Cron hoặc thủ công |
+| RELOCATION | Di chuyển lắp đặt | Từ yêu cầu dịch vụ hoặc thủ công |
+| PAYMENT_COLLECTION | Thu tiền | Thủ công |
+| RETRIEVAL | Thu hồi thiết bị | Tự động khi hết HĐ thuê hoặc hủy sớm |
+| **CONSUMABLE_DELIVERY** | **Giao hàng tiêu hao** | **Liên kết Đơn hàng (Order) — mới** |
+| OTHER | Khác | Thủ công |
+
+> **Lượt thăm nhiều loại**: Một lượt thăm có thể có loại chính và thêm nhiều loại bổ sung (`additionalTypes`). Ví dụ: Kiểm tra định kỳ + Giao hàng tiêu hao cùng một lượt.
+
+### 9.2 Danh sách lượt thăm
+
+**Thanh bên → Lượt thăm**
+
+![Danh sách lượt thăm](../screenshots/vi/office/21-visits-list.png)
+
+Chuyển đổi giữa **Chế độ lịch** / **Chế độ danh sách**.
+
+Bộ lọc: Trạng thái · KTV · Khách hàng · Khoảng ngày · Loại lượt thăm · Loại khách
+
+**Huy hiệu chưa phân công**: Số lượt thăm chưa phân công hiển thị bên cạnh menu Lượt thăm trên thanh bên.
+
+### 9.3 Chi tiết lượt thăm — cấu trúc mới
+
+![Chi tiết lượt thăm](../screenshots/vi/office/22-visit-detail.png)
+
+Màn hình chi tiết lượt thăm có thêm các thẻ mới:
+
+#### Thẻ Yêu cầu dịch vụ liên kết (mới)
+
+Nếu lượt thăm được tạo để xử lý một yêu cầu dịch vụ (SR) cụ thể, thông tin SR liên kết (mã, loại, trạng thái) sẽ hiển thị ở đây cùng với liên kết trực tiếp đến SR đó.
+
+#### Thẻ Mua hàng liên kết (mới)
+
+Với lượt thăm `CONSUMABLE_DELIVERY`, thông tin Đơn hàng liên kết (hàng hóa, số lượng, số tiền) hiển thị tại đây. Có thể liên kết đơn hàng hoặc đăng ký đơn hàng mới ngay từ thẻ này.
+
+#### Thẻ Chứng từ (phát hành nhiều chứng từ)
+
+Tùy theo loại lượt thăm và loại bổ sung, **nhiều chứng từ được đề xuất tự động**. Ví dụ:
+- `PERIODIC_INSPECTION` + `CONSUMABLE_DELIVERY` (khách B2B) → Phiếu kiểm tra B2B + Phiếu xuất kho (Mẫu 02-VT) cùng lúc
+
+Mỗi chứng từ có nút **Phát hành** riêng. Chứng từ đã phát hành hiển thị nút **Phát hành lại**.
+
+### 9.4 Bảng đề xuất chứng từ tự động
+
+| Loại lượt thăm | Loại khách | Loại HĐ | Chứng từ đề xuất |
 |---|---|---|---|
-| **SALE** | 판매 | Bán | Trả một lần và thuộc sở hữu khách hàng |
-| **RENTAL** | 임대 | Thuê | Thuê 36 tháng, thu tiền hàng tháng — chọn **Chuyển sở hữu (mặc định)** hoặc **Thu hồi thiết bị** khi hết hạn |
-| **MAINTENANCE** | 유지관리 | Bảo trì | Chỉ kiểm tra — thiết bị thuộc khách hàng (gồm cả thiết bị bên ngoài catalog) |
+| Lắp đặt | B2C | Thuê | Phiếu giao nhận thiết bị (DELIVERY_RECEIPT) |
+| Lắp đặt | B2C | Bán | Biên lai bán hàng B2C (SALE_RECEIPT_B2C) |
+| Lắp đặt | B2B | Tất cả | Phiếu xuất kho Mẫu 02-VT (DELIVERY_SLIP_B2B) |
+| Kiểm tra định kỳ | B2C | — | Phiếu kiểm tra định kỳ hộ gia đình (PERIODIC_CHECK_B2C) |
+| Kiểm tra định kỳ | B2B | — | Phiếu kiểm tra định kỳ B2B (PERIODIC_CHECK_B2B) |
+| Giao hàng tiêu hao | B2C | — | Biên lai bán hàng B2C (SALE_RECEIPT_B2C) |
+| Giao hàng tiêu hao | B2B | — | Phiếu xuất kho (DELIVERY_SLIP_B2B) |
+| Sửa chữa/lọc/di chuyển/thu tiền/khác | Tất cả | — | Phiếu xác nhận công việc (WORK_CONFIRMATION) |
 
-### 6.2 Màn hình Danh sách Hợp đồng
+> **Nguồn dòng chứng từ giao hàng tiêu hao**: Ưu tiên dùng Order.items liên kết; nếu không có thì dùng dòng hợp đồng làm dự phòng.
 
-**Menu trái → Click "Hợp đồng"**
+**Điều kiện phát hành**: Lượt thăm phải có KTV phụ trách (leadTechnicianId) và chưa bị hủy/thất bại.
 
-![Danh sách Hợp đồng](../screenshots/vi/office/05-contracts-list.png)
+### 9.5 Tạo lượt thăm mới
 
-Cấu trúc màn hình:
+**Danh sách lượt thăm → Lượt thăm mới**
 
-- **Tab**: Đang hoạt động / Bản nháp / Hết hạn / Tất cả
-- **Bộ lọc**: Loại khách hàng (B2C/B2B), Loại hợp đồng (SALE/RENTAL/MAINTENANCE), Trạng thái
-- **Tìm kiếm**: Mã hợp đồng (`HD-...`), Tên khách, Mã
-- Nút **Hợp đồng mới**
+![Lượt thăm mới](../screenshots/vi/office/23-visit-new.png)
 
-Click từng dòng để vào trang chi tiết hợp đồng.
+1. Tìm kiếm khách hàng + Chọn ngày + Chọn loại lượt thăm chính
+2. **Loại bổ sung**: Tích chọn để tạo lượt thăm kết hợp (ví dụ: Kiểm tra định kỳ + Giao hàng tiêu hao)
+3. Kiểm tra KTV được hệ thống gợi ý (thứ tự ưu tiên: KTV ưa thích → khớp khu vực → cân bằng tải)
+4. Thêm KTV phụ trách/hỗ trợ nếu cần
+5. Chọn thiết bị
+6. Lưu → SMS tự động gửi đến cả khách hàng và KTV
 
-### 6.3 Soạn Hợp đồng mới
+### 9.6 Đổi lịch và Hủy
 
-**Danh sách Hợp đồng → Nút "Hợp đồng mới"**
+- **Đổi lịch**: Chi tiết lượt thăm → nút "Đổi lịch" → Chọn ngày mới + Lý do → Lượt thăm cũ thành `RESCHEDULED`, tự động tạo lượt thăm mới
+- **Hủy**: Chi tiết lượt thăm → nút "Hủy" → Nhập lý do → `CANCELLED`
+  - Không thể hủy lượt thăm đang ở trạng thái `IN_PROGRESS` — xử lý bằng ghi chú sau khi hoàn thành
 
-![Hợp đồng mới](../screenshots/vi/office/06-contracts-new.png)
+### 9.7 Bảng phân công hôm nay
 
-#### Bước 1: Chọn khách hàng
+**Thanh bên → Bảng phân công hôm nay**
 
-Tìm khách hàng trong dropdown. Nếu là khách mới, đăng ký theo mục 5.2/5.3 trước rồi quay lại.
+![Bảng phân công](../screenshots/vi/office/28-schedule-board.png)
 
-#### Bước 2: Chọn loại hợp đồng
+Bảng xử lý lượt thăm chưa phân công trong ngày.
 
-Chọn `SALE` / `RENTAL` / `MAINTENANCE`.
+- **Hàng chờ bên trái**: Danh sách thẻ lượt thăm `SUGGESTED` (hiển thị KTV được hệ thống gợi ý)
+- **Cột KTV bên phải**: Mỗi KTV một cột, sắp xếp theo thời gian
 
-Tùy theo lựa chọn sẽ hiện các trường khác nhau:
+Cách dùng:
+1. Kiểm tra KTV được gợi ý trên thẻ chưa phân công
+2. Nhấn "**Xác nhận**" → Phân công xong, thẻ chuyển sang cột bên phải
+3. Nếu không hài lòng với gợi ý, chọn KTV khác từ danh sách ứng viên rồi xác nhận
+4. Nút **In** ở đầu cột KTV → In tất cả chứng từ trong ngày của KTV đó thành một file PDF
 
-**Khi chọn SALE**:
-- Tổng giá bán (VND)
-- Phương thức thanh toán (một lần / trả góp)
+> Sau khi xác nhận, SMS tự động gửi cho cả khách hàng và KTV.
 
-**Khi chọn RENTAL**:
-- Phí thuê hàng tháng (VND)
-- Thời hạn (mặc định 36 tháng)
-- Thời hạn bắt buộc (mặc định 24 tháng) — Căn cứ tính phí phá vỡ hợp đồng sớm
-- Ngày bắt đầu
+### 9.8 In hàng loạt
 
-**Khi chọn MAINTENANCE**:
-- Phí bảo trì hàng tháng
-- Thời hạn (mặc định 12 tháng, có thể gia hạn)
-- Ngày bắt đầu
+**Thanh bên → Lượt thăm → In hàng loạt** (hoặc nút In theo KTV trên bảng phân công)
 
-#### Bước 3: Chọn thiết bị
+![In hàng loạt](../screenshots/vi/office/24-visits-print.png)
 
-Nút "**Thêm thiết bị**" → Chọn từ thiết bị hiện có của khách hoặc thêm mới:
+Chọn ngày và KTV để xem trước tất cả chứng từ KTV đó mang đi trong ngày dưới dạng **một file PDF duy nhất**.
 
-- **Thêm thiết bị mới**: Chọn từ catalog model (Brand → Model)
-- **Số lượng**: Cho phép nhiều cái cùng model
-- **Đơn giá**: Tự động theo model, có thể chỉnh tay khi thương lượng (chỉ MANAGER+)
+- Nếu có lượt thăm **Lắp đặt**, hợp đồng PDF sẽ tự đính kèm 2 bản (bản khách hàng + bản công ty)
+- Chứng từ chưa phát hành được tự động phát hành trước khi in
+- Lượt thăm `SUGGESTED` (chưa phân công) tự động bị loại trừ
 
-#### Bước 4: Tự động cấp mã hợp đồng
-
-Ngay sau khi lưu, mã hợp đồng tự sinh:
-
-- **B2C**: `HD-YYYYmmDD/SA-KH####` (ví dụ: `HD-20260602/SA-KH00001`)
-- **B2B**: `HD-YYYYmmDD/SA-{shortcode}` (ví dụ: `HD-20260602/SA-SHV`)
-
-Mã này được in trong PDF hợp đồng.
-
-#### Bước 5: Tạo PDF hợp đồng
-
-Sau khi lưu, ở trang chi tiết hợp đồng nhấn nút "**Tạo PDF**":
-
-- **PDF song ngữ** tự sinh (Tiếng Việt bên trái, Tiếng Hàn/Anh bên phải)
-- "Party A (Bên A)" = Seoul Aqua, "Party B (Bên B)" = Khách hàng
-- Ô để khách ký được đánh dấu
-
-Sau khi in PDF, gửi giấy hoặc PDF cho khách.
-
-#### Bước 6: Nhận chữ ký và kích hoạt
-
-Sau khi nhận chữ ký khách:
-
-1. Chi tiết hợp đồng → Nút "**Kích hoạt hợp đồng**"
-2. Nhập tên người ký
-3. Chụp ảnh giấy đã ký và tải lên (chính sách E.1)
-4. Lưu → Trạng thái hợp đồng tự chuyển **DRAFT → ACTIVE**
-5. **Lượt thăm lắp đặt** tự sinh (đúng ngày bắt đầu)
-
-### 6.4 Trang chi tiết Hợp đồng
-
-Click một hợp đồng để xem mọi thông tin:
-
-- Số hợp đồng, Loại, Trạng thái (đầu trang)
-- Thông tin khách hàng (link)
-- Danh sách thiết bị (số serial, ngày lắp, trạng thái)
-- Lịch sử thanh toán (tính phí hàng tháng + thu tiền)
-- Lịch sử thăm (mọi lượt liên quan đến hợp đồng này)
-- PDF đính kèm (Hợp đồng, Phiếu xác nhận công việc, v.v.)
-
-### 6.5 Máy trạng thái Hợp đồng
-
-```mermaid
-stateDiagram-v2
-  [*] --> DRAFT: Soạn
-  DRAFT --> ACTIVE: Ký + Kích hoạt
-  DRAFT --> CANCELLED: Hủy
-
-  ACTIVE --> OVERDUE: Công nợ quá D+7
-  OVERDUE --> ACTIVE: Đã thanh toán
-  OVERDUE --> TERMINATED_EARLY: MANAGER chấm dứt sớm
-
-  ACTIVE --> COMPLETED: Đã thanh toán toàn bộ kỳ
-  OVERDUE --> COMPLETED: Đã thanh toán cộng dồn
-  ACTIVE --> TERMINATED_EARLY: Khách yêu cầu + MANAGER duyệt
-
-  COMPLETED --> [*]
-  TERMINATED_EARLY --> [*]
-  CANCELLED --> [*]
-```
-
-**Khi chuyển sang COMPLETED tự động xử lý**:
-- Thiết bị RENTAL **tự chuyển sở hữu sang khách hàng** (chính sách B.3).
-- Gửi **email kết thúc** tự động cho khách hàng và Bên ký hợp đồng.
-
-### 6.6 Sửa hợp đồng (B2C và B2B khác nhau)
-
-#### Sửa hợp đồng B2C — Chỉnh trực tiếp
-
-- Khi đổi giá hoặc thiết bị thì sửa ngay tại chỗ
-- Trước/sau ghi vào Nhật ký Kiểm toán
-- Không phát hành hợp đồng mới
-
-**Quyền**: Đổi giá là MANAGER trở lên, còn lại STAFF có thể.
-
-#### Sửa hợp đồng B2B — Phụ lục (Appendix)
-
-Khi B2B muốn thêm thiết bị vào hợp đồng hiện tại, tạo **Phụ lục (Appendix)**.
-
-1. Trang hợp đồng gốc → Nút "**Thêm Phụ lục**"
-2. Nhập thiết bị hoặc giá mới
-3. Lưu → Sinh dòng hợp đồng mới
-   - Mã: `HD-YYYYmmDD/SA-SHV-A1` (thêm `-A1`)
-   - `amendmentRevision = 1` (lần sau là `-A2`, revision=2)
-   - Tự liên kết với hợp đồng gốc
-4. Tạo PDF Phụ lục → Khách ký lại
-
-**Vì sao là Phụ lục?**: Khách B2B thường tiện kế toán khi giữ cùng mã hợp đồng. Phụ lục được quản lý dạng "gốc + thay đổi" như một bộ.
-
-### 6.7 Gia hạn hợp đồng — Thuê → Bảo trì (1-Click)
-
-Khi hết hạn thuê, nếu khách muốn "giữ thiết bị và tiếp tục bảo trì thì có thể **chuyển sang hợp đồng bảo trì bằng 1-Click**.
-
-1. Trang hợp đồng thuê đã hết hạn → Nút "**Gia hạn: Bảo trì**"
-2. Nhập phí bảo trì hàng tháng mới (thường rẻ hơn phí thuê)
-3. Nhập ngày bắt đầu (thường là ngày sau khi thuê hết hạn)
-4. **Xác nhận** — Tự xử lý:
-   - Hợp đồng thuê cũ → `COMPLETED`
-   - Sở hữu thiết bị → Tên khách
-   - Sinh hợp đồng bảo trì mới tự động (liên kết qua `parentContractId`)
-   - Bảo trì định kỳ kế tiếp được lên lịch theo hợp đồng mới
-
-### 6.8 Chấm dứt hợp đồng sớm
-
-Khi khách yêu cầu hoặc công nợ kéo dài không giải quyết:
-
-**STAFF chỉ đề nghị, MANAGER trở lên duyệt**
-
-1. Chi tiết hợp đồng → Nút "**Đề nghị chấm dứt sớm**"
-2. Nhập lý do (dropdown: `Khách chuyển đi`, `Đóng cửa`, `Thỏa thuận hoàn tiền`, `Công nợ dài hạn`, `Khác`)
-3. Hiện vào danh sách "**Chờ duyệt**" trên màn hình MANAGER
-4. MANAGER kiểm tra + duyệt / từ chối
-5. Khi duyệt:
-   - Trạng thái hợp đồng → `TERMINATED_EARLY`
-   - Nếu là RENTAL thì **Lượt thăm thu hồi tự sinh**
-   - Tính phí phá vỡ hoặc hoàn tiền do ADMIN xử lý trực tiếp (trong menu Thanh toán)
+**Cách in**: Nhấn "Mở PDF trong tab mới" → Trong tab mới: Ctrl+P (hoặc Cmd+P)
 
 ---
 
-## Chương 7. Quản lý Lượt thăm
+## Chương 10. Quản lý Đơn hàng / Giao hàng tiêu hao (mới)
 
-### 7.1 Các loại lượt thăm
+### 10.1 Đơn hàng là gì?
 
-| Loại | Tiếng Hàn | Tiếng Việt | Điều kiện phát sinh |
-|---|---|---|---|
-| INSTALLATION | 설치 | Lắp đặt | Tự động sau khi kích hoạt hợp đồng mới |
-| PERIODIC | 정기점검 | Bảo trì định kỳ | Hàng tháng hoặc 2 tháng/lần, tự động bằng cron |
-| REPAIR | 수리 | Sửa chữa | Yêu cầu của khách (FAULT_REPORT) |
-| RELOCATION | 이전 설치 | Di dời lắp đặt | Yêu cầu của khách (RELOCATION) |
-| PART_REPLACEMENT | 부품 교체 | Thay thế phụ tùng | Yêu cầu của khách (PART_REPLACEMENT) |
-| RETRIEVAL | 회수 | Thu hồi | Tự động khi thuê kết thúc |
-| OTHER | 기타 | Khác | Văn phòng tạo thủ công |
+Đơn hàng (Order) ghi lại giao dịch bán vật tư tiêu hao (bộ lõi lọc, phụ kiện, sản phẩm khác) cho khách hàng. Mỗi `Order` chứa nhiều `OrderItem`.
 
-### 7.2 Màn hình Danh sách Lượt thăm
+Đơn hàng có thể liên kết với lượt thăm `CONSUMABLE_DELIVERY` hoặc tồn tại độc lập.
 
-**Menu trái → Click "Lượt thăm"**
+### 10.2 Tạo đơn hàng
 
-![Danh sách Lượt thăm](../screenshots/vi/office/07-visits-list.png)
+Có 2 cách tạo đơn hàng:
 
-Cấu trúc màn hình (sau Phase 6 — 2026-06-03, 3 tab):
+**Cách 1 — Từ Chi tiết khách hàng**:
+1. Chi tiết khách hàng → tab "**Đơn hàng (bán hàng)**"
+2. Nút "**Đơn hàng mới**"
+3. Chọn thiết bị liên kết + Chọn vật tư (OrderItem)
+4. Nhập số lượng, đơn giá → Lưu
 
-- **Xem lịch** — Lịch tuần (lưới KTV × ngày), kéo để đổi lịch
-- **Xem danh sách** — Sắp xếp theo ngày hoặc KTV
-- **Chưa phân công ✱N** — Chỉ hiển thị lượt thăm `SUGGESTED` (chưa gán KTV). Huy hiệu góc trên phải cập nhật số lượng theo thời gian thực
-- **Bộ lọc**: Trạng thái, KTV, Khách hàng, Khoảng ngày
-- Nút **Lượt thăm mới**
+**Cách 2 — Từ Chi tiết lượt thăm**:
+1. Chi tiết lượt thăm → thẻ "**Mua hàng liên kết**"
+2. Nhấn "**Liên kết đơn hàng**" hoặc "**Đăng ký đơn hàng mới**"
+3. Nhập thông tin như trên rồi lưu
 
-> 💡 **Mẹo dùng tab "Chưa phân công"**: Việc đầu tiên buổi sáng — mở tab này, xử lý hết các thẻ chưa phân công. Mỗi thẻ có KTV đề xuất hiển thị inline, click **Xác nhận ▸** một cái là xong. Nếu thấy phiền vì xử lý từng thẻ, hãy dùng **"Bảng phân công hôm nay"** ở §7.8 — nhanh hơn.
+### 10.3 Liên kết với lượt thăm Giao hàng tiêu hao
 
-![Tab Chưa phân công](../screenshots/vi/office/17-visits-unassigned.png)
+Sau khi tạo đơn hàng, tạo lượt thăm `CONSUMABLE_DELIVERY` hoặc liên kết vào lượt thăm có sẵn:
+- Thẻ chứng từ trong chi tiết lượt thăm tự động đề xuất **chứng từ dựa trên Order.items**
+  - B2C: Biên lai bán hàng (SALE_RECEIPT_B2C) — hàng hóa từ đơn hàng được điền tự động
+  - B2B: Phiếu xuất kho (DELIVERY_SLIP_B2B) — điền tự động theo biểu mẫu chuẩn chính phủ
 
-### 7.3 Tạo lượt thăm mới
+---
 
-**Danh sách Lượt thăm → Nút "Lượt thăm mới"**
+## Chương 11. Xử lý Yêu cầu Dịch vụ
 
-![Lượt thăm mới](../screenshots/vi/office/08-visits-new.png)
+### 11.1 Loại yêu cầu dịch vụ
 
-#### Bước 1: Chọn khách hàng và ngày
-
-- Tìm khách hàng
-- Loại lượt thăm (tham khảo bảng trên)
-- Ngày mong muốn
-- Khung giờ (ví dụ: `09:00~11:00`, `Sáng`, `Chiều`)
-  - B2C: Nên lấy khung giờ cụ thể (người đi làm có ràng buộc thời gian)
-  - B2B: Thường "Sáng" / "Chiều" là đủ
-
-#### Bước 2: Xác nhận KTV được hệ thống đề xuất
-
-Hệ thống tự động hiển thị KTV được đề xuất. Ưu tiên:
-
-1. **KTV khách ưu tiên** (khi `Customer.preferredTechnicianId` được đặt và rảnh hôm đó)
-2. **Khớp khu vực** — Khu vực ưu tiên của KTV trùng với khu vực khách
-3. **Cân bằng tải** — KTV ít lượt thăm hôm đó được ưu tiên
-
-#### Bước 3: Xác nhận hoặc đổi KTV
-
-- Click "**Nhận đề xuất**" để gán KTV ưu tiên số 1
-- Hoặc chọn KTV khác từ danh sách
-- **Khi cần hợp tác** (cơ sở lớn B2B):
-  - Chỉ định 1 người là **KTV chính (Lead)**
-  - Thêm những người còn lại làm **KTV phụ (Collaborator)**
-
-#### Bước 4: Chọn thiết bị
-
-Chọn thiết bị cần làm trong lượt thăm này (có thể chỉ chọn một số trong tất cả thiết bị của khách).
-
-#### Bước 5: Lưu
-
-Ngay sau khi lưu:
-- **SMS thông báo gửi cả khách và KTV** tự động
-- Thêm vào tab "Hôm nay" hoặc "Sắp tới" trên màn hình mobile của KTV
-
-### 7.4 Đổi lịch
-
-Khi khách điện thoại "Mai tôi không tiếp được":
-
-1. Tìm lượt thăm đó
-2. Chi tiết lượt thăm → Nút "**Đổi lịch**"
-3. Chọn ngày mới + Lý do (dropdown: `Khách yêu cầu`, `KTV vướng`, `Thời tiết`, `Khách vắng mặt`, `Khác`)
-4. Lưu → **Lượt thăm cũ chuyển trạng thái `RESCHEDULED`, sinh thẻ lượt thăm mới, 2 dòng được liên kết**
-5. SMS thông báo khách·KTV tự gửi lại
-
-### 7.5 Hủy lượt thăm
-
-Khi khách "Hủy bỏ":
-
-1. Chi tiết lượt thăm → Nút "**Hủy**"
-2. Nhập lý do
-3. Trạng thái → `CANCELLED`
-
-> **Lưu ý**: Lượt thăm KTV đã bắt đầu (`IN_PROGRESS`) không hủy được. Thay vào đó hãy xử lý "**Hoàn thành**" và ghi lý do thích hợp vào ghi chú.
-
-### 7.6 Máy trạng thái Lượt thăm
-
-```mermaid
-stateDiagram-v2
-  [*] --> SCHEDULED: Tạo
-  SCHEDULED --> CONFIRMED: Khách xác nhận
-  SCHEDULED --> RESCHEDULED: Đổi lịch
-  RESCHEDULED --> SCHEDULED: Dòng mới
-
-  CONFIRMED --> IN_PROGRESS: KTV đến nơi
-  SCHEDULED --> IN_PROGRESS: B2B tiến hành không cần xác nhận
-
-  IN_PROGRESS --> COMPLETED: KTV hoàn tất
-  IN_PROGRESS --> NEEDS_REVISIT: Thiếu linh kiện v.v.
-
-  SCHEDULED --> CUSTOMER_NO_SHOW: Khách vắng mặt
-  CUSTOMER_NO_SHOW --> RESCHEDULED
-  SCHEDULED --> CANCELLED: Hủy
-
-  COMPLETED --> [*]
-  NEEDS_REVISIT --> SCHEDULED
-  CANCELLED --> [*]
-```
-
-### 7.7 Tự tạo lượt thăm bảo trì định kỳ — Văn phòng không cần lo
-
-Hệ thống tự tạo lượt thăm định kỳ vào sáng sớm mỗi ngày.
-
-```mermaid
-flowchart TB
-  Cron[03:00 mỗi ngày<br/>cron-filter-due] --> Find[Tìm thiết bị sắp đến ngày thay lõi]
-  Find --> D14[D-14<br/>Email cho Liên hệ vận hành]
-  Find --> D1[D-1<br/>SMS cho Liên hệ vận hành]
-  D1 --> Create[Tự sinh PERIODIC Visit<br/>+ Tự gán KTV]
-  Create --> Queue[Hiển thị trong hàng đợi mobile KTV]
-```
-
-Văn phòng chỉ cần **kiểm tra danh sách** các lượt thăm được tự sinh hàng tháng. Khi cần, điều chỉnh lịch hoặc đổi KTV khác.
-
-### 7.8 Bảng Phân công Hôm nay (Phase 6 — 2026-06-03)
-
-**Sidebar trái → "Phân công hôm nay"** (biểu tượng LayoutGrid)
-
-![Bảng Phân công Hôm nay](../screenshots/vi/office/16-schedule-board.png)
-
-Bảng xử lý phân công lượt thăm theo ngày **trên một màn hình duy nhất**. Nếu §7.2 tab "Chưa phân công" là "xử lý từng thẻ một", thì bảng này là "trực quan hóa cả ngày, xử lý cùng lúc".
-
-#### Cấu trúc màn hình
-
-- **Trên cùng** — Bộ chọn ngày (mặc định hôm nay)
-- **Cột trái** — **Hàng đợi chưa phân công**: thẻ các lượt thăm `SUGGESTED` (chưa có KTV) của ngày đó
-- **Các cột phải** — **Ngày của từng KTV**: mỗi KTV một cột, sắp xếp theo giờ, đầu cột có chip hiển thị số lượt thăm trong ngày
-
-#### Luồng sử dụng
-
-1. Xem 1 thẻ trong hàng đợi chưa phân công — KTV đề xuất đã được hiển thị inline trong thẻ
-2. Nút **Xác nhận ▸** một cái → gán ngay cho KTV đó, thẻ chuyển sang cột phải tương ứng
-3. Muốn đổi đề xuất → chọn KTV khác từ danh sách ứng viên trong thẻ rồi xác nhận
-4. Nhìn cột phải, nếu tải dồn vào một KTV → các thẻ còn lại gán cho KTV ít tải hơn
-
-#### Nút "🖨 In" ở đầu cột KTV
-
-Mỗi cột KTV có nút **🖨 In** ở đầu — bấm sẽ mở tất cả giấy tờ KTV đó cần mang trong ngày (đã tự khớp theo loại lượt thăm), được **gộp thành 1 PDF** trong tab mới. Xem chi tiết §7.10.
-
-> ⚠️ **Sau khi xác nhận, SMS tự động gửi cho cả khách và KTV.** Không dùng cho việc gán tạm thời.
-
-### 7.9 Cấp phát Giấy tờ Mang theo cho Lượt thăm (Phase 6 — 2026-06-03)
-
-Mỗi lượt thăm được tự khớp với 1 loại giấy tờ để giao khách. Văn phòng phải **bấm nút "Cấp" thủ công** thì PDF mới được sinh và lưu xuống đĩa.
-
-#### Bảng khớp 6 loại giấy tờ
-
-| Loại lượt thăm | Loại khách | Loại hợp đồng | → Giấy tờ đề xuất |
-|---|---|---|---|
-| Lắp đặt (INSTALLATION) | B2C | Thuê (RENTAL) | **Biên nhận thiết bị** (DELIVERY_RECEIPT) |
-| Lắp đặt (INSTALLATION) | B2C | Bán (SALE) | **Hóa đơn bán hàng** (SALE_RECEIPT_B2C) |
-| Lắp đặt (INSTALLATION) | B2B | Tất cả | **Phiếu xuất kho B2B Mẫu 02-VT** (DELIVERY_SLIP_B2B) |
-| Bảo trì định kỳ (PERIODIC_INSPECTION) | B2C | — | **Phiếu bảo trì hộ gia đình** (PERIODIC_CHECK_B2C) |
-| Bảo trì định kỳ (PERIODIC_INSPECTION) | B2B | — | **Phiếu xác nhận bảo trì B2B** (PERIODIC_CHECK_B2B) |
-| Sửa chữa/lõi lọc/di dời/thu tiền/khác | Tất cả | — | **Phiếu xác nhận công việc** (WORK_CONFIRMATION) |
-
-#### Điều kiện cho phép cấp
-
-| Trạng thái lượt thăm | Cấp được? | Thông báo |
+| Loại | Chi phí | Xử lý |
 |---|---|---|
-| SUGGESTED (chưa gán KTV) | ❌ Chặn | "Có thể cấp sau khi phân công KTV" |
-| SCHEDULED / IN_PROGRESS / COMPLETED / RESCHEDULED + có KTV | ✅ Cho | Tùy ý cấp / cấp lại |
-| CANCELLED | ❌ Chặn | "Lượt thăm đã hủy không thể cấp" |
-| FAILED_NO_SHOW | ❌ Chặn | "Lượt thăm thất bại không thể cấp" |
+| INSPECTION (Kiểm tra) | Miễn phí | Tự động duyệt → Tạo lượt thăm ngay |
+| CONSULTATION (Tư vấn) | Miễn phí | Tự động duyệt |
+| FAULT_REPORT (Sự cố) | Bảo hành/thuê miễn phí, còn lại có phí | Văn phòng xét duyệt |
+| FILTER_REPLACEMENT_AD_HOC | RENTAL miễn phí, SALE có phí | Văn phòng xét duyệt |
+| PART_REPLACEMENT (Thay phụ kiện) | Có phí | Xét duyệt + Báo giá |
+| RELOCATION (Di chuyển) | Có phí | Xét duyệt + Báo giá |
+| OTHER | Nhân viên quyết định | Xét duyệt |
 
-#### Màn hình cấp phát
+### 11.2 Danh sách yêu cầu dịch vụ
 
-**Danh sách lượt thăm → Click lượt thăm cần cấp** → Trang chi tiết
+**Thanh bên → Yêu cầu dịch vụ**
 
-![Thẻ cấp phát giấy tờ](../screenshots/vi/office/18-visit-document-issue.png)
+![Danh sách yêu cầu dịch vụ](../screenshots/vi/office/25-service-requests-list.png)
 
-Cấu trúc thẻ **"Giấy tờ mang theo"** ở đầu trang:
+Tab: Chờ xét duyệt / Đã duyệt / Đang xử lý / Hoàn thành / Từ chối / Tất cả
 
-- **Nút cấp theo đề xuất mặc định** — Cấp ngay giấy tờ đề xuất trong bảng khớp
-- **Dropdown cấp thêm** — Cấp thêm 1 trong 5 loại còn lại (dropdown custom có ô tìm kiếm, ≥5 mục)
-- **Bảng lịch sử cấp** — Tên file + Ngày cấp + Người cấp + Hành động Tải về / Cấp lại
+### 11.3 Xử lý yêu cầu có phí
 
-#### Hành vi cấp lại
+![Chi tiết yêu cầu dịch vụ](../screenshots/vi/office/26-service-request-detail.png)
 
-- Nút **Cấp lại** → PDF cũ được tự động archive (`renderer.persistWithArchive`), tạo phiên bản mới
-- Mọi lần cấp / cấp lại đều được ghi vào **AuditLog** là `DOCUMENT_ISSUED` hoặc `DOCUMENT_REISSUED` (before/after = { kind, version })
-- Khách mất bản sao hóa đơn xin lại → Cấp lại từ cùng lượt thăm → In ra rồi gửi bưu điện hoặc giao lúc lượt thăm sau
+1. Tab Chờ xét duyệt → Nhấp vào yêu cầu
+2. Kiểm tra thông tin khách hàng, nội dung yêu cầu, ảnh đính kèm
+3. Nhập số tiền báo giá
+4. **Duyệt** → Tự động gửi SMS (số tiền + lịch) + Email (PDF báo giá) cho khách hàng
+   - Hoặc **Từ chối** → Nhập lý do → Tự động gửi SMS + Email cho khách hàng
 
-#### Đa ngôn ngữ
+### 11.4 Chuỗi liên kết SR → Đơn hàng → Lượt thăm
 
-- Mọi giấy tờ lượt thăm bố trí **VI chính + KO phụ** 2 ngôn ngữ chồng nhau (ví dụ: `Khách hàng / 고객`)
-- Header 1 dòng: `SEOUL AQUA · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)`
-- Watermark là logo công ty (độ mờ 0.07, 200×200pt) — Đặt bên trong mỗi bản sao để sau khi cắt theo đường nét đứt vẫn còn ở cả 2 bản
-
-### 7.10 In Hàng loạt (Phase 6 — 2026-06-03)
-
-**Sidebar trái → "In hàng loạt"** (biểu tượng Printer) hoặc **Nút 🖨 ở đầu cột KTV trong Bảng Phân công Hôm nay**
-
-![Màn hình In hàng loạt](../screenshots/vi/office/19-visits-print.png)
-
-Với 1 ngày + 1 KTV cụ thể, gộp tất cả giấy tờ lượt thăm trong ngày thành **1 PDF duy nhất** để in.
-
-#### Luồng sử dụng
-
-1. Chọn **bộ chọn ngày** + **dropdown chọn KTV** (có ô tìm kiếm) để xác định đối tượng gộp
-2. Khu vực xem trước bên phải hiển thị ngay **PDF gộp đơn** trong `<iframe>`
-3. Nút **"In PDF ở tab mới"** → Mở trong tab trình duyệt với trình xem PDF → Cmd+P (hoặc Ctrl+P) để in
-4. Khi trình xem PDF của trình duyệt in trực tiếp → **In ra A4 chuẩn**. Nếu in từ trong iframe, một số trình duyệt làm méo kích thước trang — vì vậy khuyến nghị mở tab mới.
-
-#### Tự động bao gồm
-
-- Nếu là **lượt thăm lắp đặt (INSTALLATION)**, **PDF hợp đồng** mới nhất ACTIVE/PENDING_SIGNATURE của khách sẽ được **tự động thêm 2 bản** (bản khách + bản công ty). KTV không thể đi lắp đặt đầu tiên mà chỉ cầm biên nhận thôi. Hợp đồng này chính là **PDF y hệt khi xem ở menu Hợp đồng** — không phải tạo mới cho việc in hàng loạt
-- **Lượt thăm chưa cấp** giấy tờ đề xuất sẽ được **tự động cấp** ngay trước khi in. Không cần cấp tay từng cái
-- **Lượt thăm SUGGESTED (chưa phân công)** được tự loại trừ khỏi việc in (theo chính sách không thể cấp)
-
-#### Thời điểm khuyến nghị dùng
-
-- **Sáng sớm** — In một lần cho mỗi KTV của ngày, xếp tập giấy lên bàn của từng KTV
-- **Trước trưa** — Kiểm tra có lượt thăm nào được thêm vào buổi chiều không, in lại nếu cần
-- **Khi thêm khẩn cấp** — Ngay sau khi xác nhận thẻ chưa phân công, dùng nút 🖨 ở cột của KTV đó để in phần thêm
-
-#### Mobile cũng được
-
-TECHNICIAN cũng truy cập màn hình tương đương ở `/f/{locale}/visits/print?date=...` (tự lọc theo lượt thăm mình là lead). Dùng khi không nhận được giấy từ văn phòng.
+Khi SR có phí được duyệt và khách hàng thanh toán:
+1. Văn phòng tạo Đơn hàng liên kết với SR
+2. Tạo lượt thăm `CONSUMABLE_DELIVERY` hoặc `REPAIR` và liên kết SR
+3. Thẻ "Yêu cầu dịch vụ liên kết" trong chi tiết lượt thăm hiển thị SR
+4. Sau khi lượt thăm hoàn thành, tự động tạo PDF phiếu xác nhận công việc
 
 ---
 
-## Chương 8. Xử lý Yêu cầu Dịch vụ
+## Chương 12. Nhập và Đối soát Thanh toán
 
-### 8.1 Yêu cầu dịch vụ là gì?
+### 12.1 Phương thức thanh toán
 
-Là **yêu cầu khách hàng gửi trực tiếp từ cổng**. Bảo trì máy lọc nước, sửa chữa, thay phụ tùng, di dời lắp đặt, v.v.
+| Mã | Mô tả |
+|---|---|
+| CASH_AT_VISIT | KTV thu tiền mặt tại hiện trường → Nộp văn phòng ngày hôm sau |
+| BANK_TRANSFER | Khách hàng chuyển khoản trực tiếp → Văn phòng đối soát |
+| B2B_EINVOICE | Phát hành hóa đơn GTGT rồi đối soát chuyển khoản |
+| B2B_NO_INVOICE | Chuyển khoản mà không có hóa đơn GTGT |
 
-Thay vì gọi văn phòng, khách hàng đăng ký từ cổng → văn phòng nhận thông báo tự động → xử lý → thông báo kết quả cho khách.
+### 12.2 Danh sách thanh toán
 
-### 8.2 Các loại yêu cầu dịch vụ
+**Thanh bên → Thanh toán**
 
-| Loại | Chi phí | Phương thức xử lý |
+![Danh sách thanh toán](../screenshots/vi/office/27-payments-list.png)
+
+Tab: Chờ bàn giao / Chờ đối soát / Hoàn thành / Quá hạn / Tất cả
+
+### 12.3 Đối soát chuyển khoản
+
+1. Tab Chờ đối soát → Tìm dòng của khách hàng → nút "**Đối soát**"
+2. Nhập số tiền, mã tham chiếu chuyển khoản, ngày nhận, ghi chú
+3. Lưu → Trạng thái `PENDING → RECEIVED → RECONCILED` → Tự động gửi email biên lai cho khách hàng
+
+### 12.4 Nhận tiền mặt bàn giao
+
+1. Tab Chờ bàn giao → Xem theo nhóm KTV
+2. Kiểm tra phong bì tiền mặt từ KTV
+3. Nếu số tiền khớp: Nhấn "**Nhận tất cả**" → Xử lý hàng loạt
+4. Nếu không khớp: Kiểm tra từng dòng + Ghi chú chênh lệch
+
+### 12.5 Leo thang công nợ tự động
+
+| Giai đoạn | Thời điểm | Xử lý tự động |
 |---|---|---|
-| **INSPECTION** (Bảo trì) | Miễn phí | Tự duyệt → Lịch ngay |
-| **CONSULTATION** (Tư vấn) | Miễn phí | Tự duyệt |
-| **FAULT_REPORT** (Báo hỏng) | Bảo hành/thuê miễn phí, khác có phí | Văn phòng đánh giá |
-| **FILTER_REPLACEMENT_AD_HOC** (Thay lõi đột xuất) | RENTAL miễn phí, SALE có phí | Văn phòng đánh giá |
-| **PART_REPLACEMENT** (Thay phụ tùng) | Có phí | Văn phòng đánh giá + Báo giá |
-| **RELOCATION** (Di dời lắp đặt) | Có phí | Văn phòng đánh giá + Báo giá |
-| **OTHER** | Nhân viên phán đoán | Văn phòng đánh giá |
-
-### 8.3 Màn hình Yêu cầu Dịch vụ
-
-**Menu trái → Click "Yêu cầu dịch vụ"**
-
-![Yêu cầu dịch vụ](../screenshots/vi/office/09-service-requests.png)
-
-Cấu trúc màn hình:
-
-- **Tab**: Chờ duyệt / Đã duyệt / Đang xử lý / Hoàn thành / Từ chối / Tất cả
-- Tab Chờ duyệt là mặc định (nơi xem nhiều nhất)
-- **Bộ lọc**: Loại khách hàng, Loại yêu cầu, Khoảng ngày
-- **Tìm kiếm**: Tên khách, Mã yêu cầu
-
-### 8.4 Xử lý yêu cầu chờ duyệt (yêu cầu có phí)
-
-#### Bước 1: Click yêu cầu → Màn hình chi tiết
-
-Thông tin hiển thị trên màn hình:
-
-- Thông tin khách hàng
-- Loại yêu cầu + Mô tả (khách tự nhập)
-- Ảnh đính kèm (nếu khách tải lên)
-- Thiết bị liên quan
-- Thời điểm khách gửi
-
-#### Bước 2: Nhập báo giá
-
-Nhập số tiền (VND) vào ô "**Báo giá**".
-
-#### Bước 3: Quyết định
-
-**Duyệt (Approve)**:
-
-1. Click nút "**Duyệt**"
-2. **Hệ thống tự xử lý**:
-   - Gửi **SMS** cho khách (`số tiền + lịch`)
-   - Gửi **email** cho khách (PDF báo giá)
-   - Khi khách chuyển khoản, văn phòng đối soát → Lịch thăm được xác nhận
-
-**Từ chối (Reject)**:
-
-1. Click nút "**Từ chối**"
-2. Nhập **Lý do từ chối** (dropdown: `Ngoài bảo hành`, `Không chẩn đoán được tại chỗ`, `Khác`)
-3. Hệ thống gửi SMS + email cho khách (kèm lý do)
-
-### 8.5 Yêu cầu miễn phí — Xử lý tự động
-
-Yêu cầu miễn phí như INSPECTION, CONSULTATION được **tự duyệt** → Lịch thăm được sinh ngay.
-
-Văn phòng chỉ cần xác nhận lịch đã sinh. Không cần thao tác riêng.
-
-### 8.6 Trao đổi tin nhắn trong yêu cầu dịch vụ
-
-Khi khách gửi thêm thông tin hoặc văn phòng cần hỏi thêm:
-
-Trên trang chi tiết yêu cầu có vùng **luồng tin nhắn**.
-
-- Tự làm mới mỗi 30 giây (tự nhận tin nhắn mới của bên kia)
-- Có thể đính kèm ảnh
-- Cả 2 phía đều ghi vào Nhật ký Kiểm toán
-
-Tin nhắn mới của khách được hiển thị trong chuông thông báo văn phòng.
+| D+7 | Quá hạn 7 ngày | Email → Người ký HĐ + CC OPS |
+| D+14 | Quá hạn 14 ngày | Gửi lại email |
+| D+30 | Quá hạn 30 ngày | SMS → Người ký HĐ + toàn bộ OPS. HĐ chuyển sang `OVERDUE` |
 
 ---
 
-## Chương 9. Nhập và Đối soát Thanh toán
+## Chương 13. Hóa đơn GTGT (chỉ B2B)
 
-### 9.1 Các phương thức thanh toán
+Phiên bản v1 sử dụng hệ thống hóa đơn điện tử bên ngoài (Viettel SInvoice / MISA v.v.) để phát hành, sau đó tải PDF lên SOMS.
 
-| Mã | Tiếng Hàn / Việt | Luồng xử lý |
-|---|---|---|
-| **CASH_AT_VISIT** | 방문 시 현금 / Tiền mặt khi thăm | KTV thu → Sáng hôm sau nộp văn phòng → Đối soát |
-| **BANK_TRANSFER** | 송금 / Chuyển khoản | Khách chuyển → Văn phòng đối soát |
-| **B2B_EINVOICE** | B2B 세금계산서 / Hóa đơn GTGT B2B | Phát hành hóa đơn GTGT bên ngoài + Tải lên PDF → Đối soát chuyển khoản |
-| **B2B_NO_INVOICE** | B2B 무세금계산서 / B2B không hóa đơn | Chỉ chuyển khoản (một số B2B không nhận hóa đơn GTGT) |
+**Các bước tải lên**:
+1. Phát hành hóa đơn trong hệ thống bên ngoài → Tải PDF về máy
+2. Thanh bên → "Hóa đơn GTGT" → nút "**Hóa đơn mới**"
+3. Nhập khách hàng, hợp đồng, số hóa đơn, ngày phát hành, số tiền và file PDF
+4. Lưu → Tự động gửi email (đính kèm PDF) cho người ký hợp đồng của khách hàng
 
-### 9.2 Màn hình Danh sách Thanh toán
-
-**Menu trái → Click "Thanh toán"**
-
-![Danh sách Thanh toán](../screenshots/vi/office/10-payments.png)
-
-Cấu trúc màn hình:
-
-- **Tab**: Chờ nộp / Chờ đối soát / Hoàn tất / Quá hạn / Tất cả
-- Nơi xem nhiều nhất: **"Chờ đối soát"** (công việc chính hàng ngày)
-- **Bộ lọc**: Phương thức thanh toán, Khách hàng, Khoảng ngày, Khoảng số tiền
-- **Tìm kiếm**: Mã khách, Mã tham chiếu chuyển khoản
-
-### 9.3 Đối soát chuyển khoản (BANK_TRANSFER)
-
-Khi khách chuyển vào tài khoản, nhân viên văn phòng đối soát xem là của khách nào, hợp đồng nào, kỳ tháng nào.
-
-#### Bước 1: Xác nhận nhận tiền trên tài khoản
-
-Vào internet banking để xác nhận tiền mới về. Ghi nhớ tên người chuyển, số tiền, số tham chiếu (memo).
-
-#### Bước 2: Đối soát trong tab "Chờ đối soát"
-
-Tìm khách hàng tương ứng → Tìm dòng công nợ → Nút "**Đối soát**"
-
-#### Bước 3: Nhập trong màn hình đối soát
-
-- **Số tiền**: Tự động (có thể chỉnh)
-- **Mã tham chiếu**: Số hiển thị trên tài khoản
-- **Ngày thanh toán**: Ngày tiền về
-- **Ghi chú**: Lưu ý đặc biệt (ví dụ: "Tiền cọc trước")
-
-Khi lưu:
-
-- Trạng thái thanh toán: `PENDING` → `RECEIVED` → `RECONCILED`
-- Số kỳ thanh toán cộng dồn của hợp đồng tự tăng
-- **Email hóa đơn thu tiền** tự gửi cho khách
-- Nếu trước đó là trạng thái quá hạn → Tự khôi phục `OVERDUE` → `ACTIVE`
-
-### 9.4 Nhận tiền mặt (CASH_AT_VISIT)
-
-KTV mang đến văn phòng vào sáng ngày làm việc kế tiếp số tiền mặt đã nhận hôm qua từ khách.
-
-#### Bước 1: Tab "Chờ nộp"
-
-![Chờ nộp](../screenshots/vi/office/10-payments.png)
-
-- Tất cả dòng KTV đã thu hôm qua
-- Nhóm theo KTV
-- Tự tính tổng số tiền
-
-#### Bước 2: Kiểm tra phong bì tiền mặt KTV mang đến
-
-- Đếm tiền mặt trong phong bì
-- Nhận bản sao hóa đơn (KTV đã phát cho khách)
-
-#### Bước 3: Đối soát
-
-- Kiểm tra tổng trên màn hình và tổng tiền trong phong bì có khớp không
-- Khớp thì nút "**Nhận toàn bộ**" → Xử lý cả lô
-- Không khớp thì kiểm từng dòng + Ghi lý do chênh lệch
-
-#### Bước 4: Khi có chênh lệch
-
-- Thiếu biên lai, thất lạc, v.v. → **Báo cáo ADMIN ngay lập tức**
-- Hệ thống cũng tự gửi cảnh báo cho ADMIN (cron chưa nộp D+1)
-
-### 9.5 Máy trạng thái Thanh toán
-
-```mermaid
-stateDiagram-v2
-  [*] --> PENDING: cron hoặc tạo thủ công
-  PENDING --> RECEIVED: Thu tiền mặt / chuyển khoản tới
-  RECEIVED --> RECONCILED: Đối soát với hợp đồng
-  PENDING --> WAIVED: Miễn (ADMIN/MANAGER)
-  PENDING --> BOUNCED: Chuyển khoản thất bại
-
-  BOUNCED --> RECEIVED: Chuyển lại
-  WAIVED --> [*]
-  RECONCILED --> [*]
-```
-
-### 9.6 Leo thang công nợ tự động
-
-Khi khách hàng quá hạn thanh toán, hệ thống tự gửi thông báo:
-
-| Giai đoạn | Thời điểm | Thông báo |
-|---|---|---|
-| **D+7** | Trễ 7 ngày | Email → Bên ký hợp đồng + Liên hệ vận hành (CC) |
-| **D+14** | Trễ 14 ngày | Email thêm 1 lần |
-| **D+30** | Trễ 30 ngày | SMS → Bên ký hợp đồng + Tất cả Liên hệ vận hành<br/>Trạng thái hợp đồng → `OVERDUE` |
-
-Tới giai đoạn D+30 sẽ hiển thị trên **màn hình "Thông báo cưỡng chế" của bảng điều khiển văn phòng**. Là lúc cần hành động trực tiếp như gọi điện, đến tận nơi.
-
-### 9.7 Miễn thanh toán (Waive)
-
-Khi tình huống khách (đóng cửa, thỏa thuận phá sản, v.v.) khiến phải miễn thanh toán:
-
-**MANAGER trở lên**:
-
-1. Click dòng thanh toán → Nút "**Miễn**"
-2. Nhập lý do (bắt buộc)
-3. Xác nhận → Trạng thái `PENDING` → `WAIVED`
-4. Ghi vào Nhật ký Kiểm toán (ai, khi nào, vì sao)
+> Chỉ từ MANAGER trở lên mới có thể phát hành và sửa. PDF được lưu trữ 10 năm.
 
 ---
 
-## Chương 10. Hóa đơn GTGT (chỉ B2B)
+## Chương 14. Báo cáo và Nhật ký Kiểm toán
 
-### 10.1 Cách xử lý hóa đơn GTGT v1
-
-Trong v1, **PDF do hệ thống e-Invoice ngoài (Viettel SInvoice / MISA / VNPT eHoadon, v.v.) phát hành** sẽ được tải lên SOMS.
-
-```mermaid
-sequenceDiagram
-  participant Mgr as MANAGER
-  participant Ext as e-Invoice ngoài<br/>(Viettel/MISA/VNPT)
-  participant SOMS
-  participant CP as Bên ký hợp đồng B2B
-
-  Mgr->>Ext: Phát hành hóa đơn GTGT trên hệ thống ngoài
-  Ext-->>Mgr: Tải về PDF
-
-  Mgr->>SOMS: /o/tax-invoices/new<br/>(Khách, Hợp đồng, Tải PDF, Số, Ngày phát hành)
-  SOMS->>SOMS: Lưu PDF + Liên kết dòng thanh toán
-  SOMS->>CP: EMAIL_TAX_INVOICE_ISSUED<br/>(Đính kèm PDF, kênh email vận hành)
-
-  CP->>SOMS: Chuyển khoản
-  Mgr->>SOMS: Đối soát chuyển khoản
-  SOMS->>SOMS: Trạng thái thanh toán → RECONCILED
-```
-
-### 10.2 Màn hình Hóa đơn GTGT (chỉ MANAGER+ thấy)
-
-**Menu trái → "Hóa đơn GTGT"**
-
-![Hóa đơn GTGT](../screenshots/vi/office/11-tax-invoices.png)
-
-Cấu trúc màn hình:
-
-- Danh sách phát hành (theo ngày)
-- Bộ lọc: Khách hàng, Tháng phát hành, Trạng thái thanh toán
-- Nút **Hóa đơn GTGT mới**
-
-### 10.3 Các bước tải lên Hóa đơn GTGT
-
-#### Chuẩn bị trước
-
-1. Đăng nhập hệ thống e-Invoice ngoài
-2. Nhập thông tin khách, số tiền hợp đồng để phát hành hóa đơn GTGT
-3. **Tải về PDF** — Đây là file sẽ tải lên SOMS
-
-#### Tải lên SOMS
-
-1. Menu **Hóa đơn GTGT → Nút "Hóa đơn GTGT mới"**
-2. Nhập:
-   - **Khách hàng**: Chọn từ dropdown
-   - **Hợp đồng liên quan**: Hóa đơn GTGT này cho hợp đồng nào
-   - **Số hóa đơn**: Số do hệ thống ngoài cấp
-   - **Ngày phát hành**: Ngày phát hành ở hệ thống ngoài
-   - **Số tiền**: VND (có thể tự đối soát)
-   - **Tải lên PDF**: Chọn file PDF đã tải về
-3. **Lưu**
-4. Hệ thống tự xử lý:
-   - **Tự gửi email cho khách** (đính kèm PDF)
-   - Liên kết dòng thanh toán → Chờ chuyển khoản
-   - Thêm vào Nhật ký Kiểm toán
-
-### 10.4 Lưu trữ Hóa đơn GTGT
-
-- PDF hóa đơn GTGT lưu trữ **10 năm** (khuyến nghị pháp luật Việt Nam)
-- Hóa đơn thu tiền thông thường lưu **5 năm**
-- Tự đếm từ thời điểm kết thúc
-
-### 10.5 Một số câu hỏi thường gặp
-
-**Q1: Tôi nhập sai số hóa đơn GTGT.**
-
-→ Nếu vừa phát hành, nhờ ADMIN sửa. Phải sửa cùng lúc cả ở hệ thống ngoài. Lịch sử thay đổi lưu trong Nhật ký Kiểm toán.
-
-**Q2: Khách bảo không cần hóa đơn GTGT.**
-
-→ B2B nhưng không cần hóa đơn GTGT thì đăng ký phương thức thanh toán là `B2B_NO_INVOICE`. Xử lý như chuyển khoản thông thường.
-
-**Q3: Hệ thống e-Invoice ngoài bị lỗi.**
-
-→ Chờ hệ thống ngoài khôi phục rồi phát hành + tải lên. Trong SOMS có thể để ghi chú tạm.
-
----
-
-## Chương 11. Báo cáo và Nhật ký Kiểm toán
-
-### 11.1 Menu Báo cáo
-
-**Menu trái → "Báo cáo"**
-
-Menu phụ:
+### 14.1 Các loại báo cáo
 
 | Menu | Nội dung |
 |---|---|
-| **Doanh thu** | Doanh thu theo tháng·kỳ (phân tách theo loại hợp đồng) |
-| **Công nợ** | Danh sách khách theo giai đoạn quá hạn (D+7, D+14, D+30) |
-| **Năng suất KTV** | Số lượt, thời gian trung bình, số tiền thu theo KTV |
-| **Lõi sắp hết hạn** | Khách cần thay lõi trong 30 ngày tới |
-| **Hợp đồng sắp hết hạn** | RENTAL hết hạn trong 60 ngày tới |
-| **Nhật ký kiểm toán** | Chỉ MANAGER+ — Mọi lịch sử thay đổi của hệ thống |
+| Doanh thu | Theo tháng/kỳ (phân theo loại hợp đồng) |
+| Công nợ | Danh sách khách hàng theo giai đoạn D+7/D+14/D+30 |
+| Năng suất KTV | Số lượt thăm, thời gian trung bình, tiền thu theo KTV |
+| Lõi lọc sắp hết hạn | Lịch thay lọc trong 30 ngày tới |
+| Hợp đồng sắp hết hạn | Hợp đồng RENTAL hết hạn trong 60 ngày tới |
+| Nhật ký kiểm toán | Chỉ MANAGER+ — Toàn bộ lịch sử thay đổi hệ thống |
 
-### 11.2 Nhật ký Kiểm toán (Audit Log) — MANAGER+
+### 14.2 Nhật ký kiểm toán
 
-![Nhật ký Kiểm toán](../screenshots/vi/office/12-reports-audit.png)
+MANAGER trở lên: Thanh bên → Báo cáo → Nhật ký kiểm toán
 
-Cấu trúc màn hình:
-
-- Tất cả hành động của hệ thống (thêm người dùng, kích hoạt hợp đồng, đổi mật khẩu, v.v.)
-- Bộ lọc: Loại hành động, Người dùng, Khoảng ngày
-- Click từng dòng để xem **JSON trước/sau thay đổi**
-- **Xuất CSV** (chỉ ADMIN làm được)
-
-#### Thời gian lưu trữ
-
-- Nhật ký kiểm toán: **24 tháng**
-- Cron dọn dẹp tự động: Mỗi ngày 03:30 VST
-
-#### Các loại hành động chính
-
-| Mã hành động | Mô tả |
-|---|---|
-| `USER_CREATED` | Đăng ký nhân viên mới |
-| `USER_DEACTIVATED` | Vô hiệu hóa nhân viên |
-| `PASSWORD_CHANGED` | Đổi mật khẩu (cá nhân hoặc reset) |
-| `CUSTOMER_CREATED` | Đăng ký khách hàng mới |
-| `CUSTOMER_UPDATED` | Sửa thông tin khách |
-| `CONTRACT_ACTIVATED` | Kích hoạt hợp đồng |
-| `CONTRACT_COMPLETED` | Kết thúc hợp đồng |
-| `PAYMENT_RECEIVED` | Thu thanh toán |
-| `PAYMENT_WAIVED` | Miễn thanh toán |
-| `VISIT_COMPLETED` | Hoàn thành lượt thăm |
-| `SR_APPROVED` | Duyệt yêu cầu dịch vụ |
-| `SR_REJECTED` | Từ chối yêu cầu dịch vụ |
-| `TAX_INVOICE_ISSUED` | Phát hành hóa đơn GTGT |
-| `AMBIGUOUS_USERNAME` | Chặn đăng nhập do trùng tên (bảo mật) |
-
-### 11.3 Mẹo sử dụng báo cáo
-
-**Khóa sổ cuối tháng**:
-1. Báo cáo doanh thu → Xem tổng hợp đồng mới + thu tiền trong tháng
-2. Báo cáo công nợ → Liên hệ trực tiếp với khách giai đoạn D+30
-3. Năng suất KTV → Xem KTV hoạt động nhiều nhất (để xem xét thưởng)
-
-**So sánh theo tháng**:
-- Dùng "Chọn kỳ" trên báo cáo để so sánh với tháng trước
-- Chuyển sang xem đồ thị để theo dõi xu hướng
+- Ghi lại mọi thao tác hệ thống (thêm người dùng, kích hoạt HĐ, miễn phí thanh toán v.v.)
+- Nhấp vào dòng → Xem JSON trước/sau thay đổi
+- Xuất CSV (chỉ ADMIN)
+- Thời gian lưu trữ: 24 tháng
 
 ---
 
-## Chương 12. Quản lý Hệ thống (chỉ ADMIN)
+## Chương 15. Quản lý Hệ thống (chỉ ADMIN)
 
-### 12.1 Quản lý người dùng
+**Thanh bên → Quản lý hệ thống**
 
-**Menu trái → "Quản lý hệ thống" → "Người dùng"**
+![Trang quản trị](../screenshots/vi/office/29-admin-users.png)
 
-![Quản lý người dùng](../screenshots/vi/office/13-admin-users.png)
+### 15.1 Quản lý người dùng
 
 #### Đăng ký người dùng mới
 
 1. Nút "**Người dùng mới**"
-2. Nhập:
-   - **Tên người dùng** (ví dụ: `manager_kim`, `staff_a`) — Để hiển thị màn hình
-   - **Số điện thoại** — ID đăng nhập + Nhận SMS
-   - **Email** (tùy chọn)
-   - **Vai trò** (dropdown): `ADMIN` / `MANAGER` / `STAFF` / `TECHNICIAN`
-   - **Trạng thái hoạt động** (mặc định BẬT)
-3. Lưu → **Mật khẩu tạm thời gửi qua SMS đến điện thoại người dùng mới**
-4. Người dùng mới đăng nhập lần đầu → Đổi mật khẩu
+2. Nhập tên, số điện thoại, email, vai trò (ADMIN/MANAGER/STAFF/TECHNICIAN)
+3. Lưu → Tự động gửi SMS mật khẩu tạm thời
 
-#### Vô hiệu hóa người dùng
+#### Bật/tắt vai trò Đại lý (mới)
 
-Khi nhân viên thôi việc·nghỉ phép:
-
-1. Click người dùng đó → Nút "**Vô hiệu hóa**"
-2. Nhập lý do
-3. Ngay lập tức không đăng nhập được, mọi phiên tự kết thúc
-
-> **Không xóa được.** Vì lưu trữ Nhật ký Kiểm toán. Vô hiệu hóa là đủ.
+Trong chi tiết người dùng, bật công tắc "**Gán làm Đại lý**" để nhân viên đó xuất hiện trong menu Đại lý. MANAGER trở lên cũng có thể gán.
 
 #### Đặt lại mật khẩu
 
-Khi cá nhân quên mật khẩu, ADMIN xử lý:
+Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự động gửi SMS mật khẩu tạm thời → Toàn bộ phiên đăng nhập hiện tại bị kết thúc
 
-1. Click người dùng đó → Nút "**Đặt lại mật khẩu**"
-2. **Mật khẩu tạm thời mới tự sinh + Gửi SMS**
-3. Cá nhân đăng nhập lại → Đặt mật khẩu mới
+### 15.2 Danh mục sản phẩm
 
-### 12.2 Quản lý Catalog sản phẩm
+Đăng ký sản phẩm theo cấu trúc Brand → Model. Đăng ký chu kỳ thay lõi lọc tương thích cho từng model — cron kiểm tra định kỳ sẽ dựa vào đây để tự tính ngày thay tiếp theo.
 
-**Menu trái → "Quản lý hệ thống" → "Catalog sản phẩm"**
+### 15.3 Trọng số Bộ lập lịch
 
-![Catalog sản phẩm](../screenshots/vi/office/14-admin-products.png)
+Điều chỉnh trọng số thuật toán phân công lượt thăm tự động.
 
-#### Đăng ký Brand
-
-- Nút "**Brand mới**"
-- Nhập tên Brand (ví dụ: `Seoul Aqua`, `Coway`)
-
-#### Đăng ký Model
-
-1. Chọn Brand → Nút "**Model mới**"
-2. Nhập:
-   - **Mã model** (unique trong Brand)
-   - **Tên model (Tiếng Hàn)** — Bắt buộc
-   - **Tên model (Tiếng Việt)** — Bắt buộc
-   - **Tên model (Tiếng Anh)** — Bắt buộc
-   - **Danh mục** (Máy lọc nước, Máy lọc không khí, Bồn cầu thông minh, v.v.)
-   - **Giá mặc định** (tùy chọn)
-3. Lưu
-
-#### Đăng ký tương thích Filter
-
-- Chi tiết model → "**Thêm Filter tương thích**"
-- Nhập **Mã phụ tùng** + **Chu kỳ thay (tháng)**
-- Cron bảo trì định kỳ dùng thông tin này để tự tính ngày thay kế tiếp
-
-#### Tải CSV hàng loạt
-
-Khi cần đăng ký số lượng lớn:
-
-1. Nút "**Tải CSV**"
-2. Tải file mẫu → Điền bằng Excel
-3. Tải lên → Hệ thống kiểm tra hợp lệ → Thêm cả lô
-
-### 12.3 Trọng số lập lịch
-
-**Menu trái → "Quản lý hệ thống" → "Trọng số lập lịch"**
-
-![Trọng số lập lịch](../screenshots/vi/office/15-admin-scheduler-weights.png)
-
-Điều chỉnh trọng số ưu tiên của thuật toán tự gán lượt thăm.
-
-Cài đặt mặc định:
-- **KTV ưu tiên của khách**: 100 điểm
-- **Khớp khu vực**: 50 điểm
-- **Cân bằng tải**: 20 điểm
-
-Khi nhân lực KTV thay đổi, chính sách vận hành đổi thì ADMIN điều chỉnh. Sau khi đổi áp dụng ngay cho lượt thăm mới.
+Giá trị mặc định:
+- Khớp KTV ưa thích: 100 điểm
+- Khớp khu vực: 50 điểm
+- Cân bằng tải: 20 điểm
 
 ---
 
-## Chương 13. Các tình huống thường gặp
+## Chương 16. Các tình huống thường gặp
 
-### Tình huống 1: Khách điện thoại "Mai tôi không tiếp được"
+### Tình huống 1: Khách hàng "Ngày mai không đón được"
 
-Xử lý:
-1. Menu "Lượt thăm" → Tìm lượt thăm đó (tên khách hoặc ngày)
-2. Nút "**Đổi lịch**"
-3. Chọn ngày mới + Lý do "Khách yêu cầu"
-4. Lưu → SMS thông báo khách·KTV tự động
+1. Menu Lượt thăm → Tìm lượt thăm liên quan
+2. "**Đổi lịch**" → Chọn ngày mới + Lý do "Theo yêu cầu khách hàng"
+3. Lưu → Tự động SMS cho khách hàng và KTV
 
-### Tình huống 2: Khách bảo quên mật khẩu (MANAGER+)
+### Tình huống 2: Lượt thăm vừa kiểm tra vừa giao hàng tiêu hao
 
-Xử lý:
-1. Chi tiết khách hàng → Nút "**Đặt lại mật khẩu**"
-2. Xác nhận → Mật khẩu tạm thời mới tự gửi đến điện thoại khách
-3. **Tự đăng xuất mọi thiết bị khác** (bảo mật)
+1. Tạo lượt thăm mới → Loại chính: `Kiểm tra định kỳ` → Loại bổ sung: Tích chọn `Giao hàng tiêu hao`
+2. Liên kết đơn hàng trong thẻ Mua hàng liên kết
+3. Thẻ chứng từ → Phát hành đồng thời Phiếu kiểm tra + Phiếu xuất kho (hoặc Biên lai bán hàng)
+4. In hàng loạt
 
-### Tình huống 3: Khách B2B bảo "Cho tôi hóa đơn GTGT"
+### Tình huống 3: Khách B2B cần hóa đơn GTGT
 
-Xử lý:
-1. Phát hành hóa đơn GTGT trên hệ thống e-Invoice ngoài → Tải về PDF
-2. Menu SOMS "Hóa đơn GTGT" → "**Hóa đơn GTGT mới**"
-3. Khách·Hợp đồng·Tải PDF → Lưu
-4. Email được gửi tự động
+1. Phát hành trong hệ thống e-Invoice bên ngoài → Tải PDF về
+2. SOMS → Hóa đơn GTGT → "**Hóa đơn mới**" → Tải PDF lên → Lưu
 
-### Tình huống 4: Công ty khách có nhân viên mới phụ trách máy lọc
+### Tình huống 4: Nhân viên mới (Đại lý) gia nhập
 
-Xử lý:
-- **Nếu là khách B2B**: Bên ký hợp đồng có thể tự thêm trên cổng khách. Văn phòng không cần can thiệp.
-- **Nếu muốn can thiệp**: Chi tiết khách → Tab "Liên hệ" → "**Liên hệ mới**" (tham khảo mục 5.5)
+1. Quản lý hệ thống → Người dùng → "Người dùng mới" → Đăng ký
+2. Vai trò: STAFF (hoặc MANAGER)
+3. Bật công tắc "**Gán làm Đại lý**"
 
-### Tình huống 5: Cảnh báo công nợ hiện ra
+### Tình huống 5: Đăng ký nhiều thiết bị cùng lúc
 
-Xử lý:
-1. Bảng điều khiển → Click thẻ "Cảnh báo công nợ" hoặc "Thanh toán" → Tab "Quá hạn"
-2. Xem giai đoạn theo khách (D+7/D+14/D+30)
-3. Giai đoạn D+30 cần gọi điện trực tiếp hoặc đến tận nơi
-4. Khi tiền vào, đối soát → Tự khôi phục
+1. Thanh bên → Thiết bị → "**Đăng ký hàng loạt**"
+2. Bước 1: Chọn khách hàng, hợp đồng
+3. Bước 2: Nhập mẫu, số lượng, serial, phí vào bảng
+4. Bước 3: Xác nhận và đăng ký
 
-### Tình huống 6: Khách muốn chấm dứt hợp đồng sớm (MANAGER+)
+### Tình huống 6: In tất cả chứng từ của một KTV trong ngày
 
-Xử lý:
-1. Chi tiết hợp đồng → Nút "**Đề nghị chấm dứt sớm**"
-2. Chọn lý do + Ghi chú
-3. RENTAL tự sinh lượt thăm thu hồi
-4. Phí phá vỡ hoặc hoàn tiền do ADMIN trao đổi rồi xử lý trong menu Thanh toán
+1. Thanh bên → Lượt thăm → "In hàng loạt"
+2. Ngày: Hôm nay / Chọn KTV
+3. Xem trước PDF → "Mở trong tab mới" → Ctrl+P
 
-### Tình huống 7: Hợp đồng thuê hết hạn mà khách muốn chuyển sang bảo trì
+### Tình huống 7: Nhận cảnh báo công nợ
 
-Xử lý:
-1. Hợp đồng đã hết hạn → Nút "**Gia hạn: Bảo trì**"
-2. Nhập phí bảo trì hàng tháng mới
-3. Xác nhận → Tự xử lý (tham khảo mục 6.7)
+1. Bảng điều khiển → Thẻ "Cảnh báo công nợ" hoặc Thanh toán → Tab "Quá hạn"
+2. Kiểm tra giai đoạn (D+7/D+14/D+30)
+3. Giai đoạn D+30: Gọi điện trực tiếp hoặc lên kế hoạch lượt thăm thu tiền
+4. Khi nhận được thanh toán: Đối soát → Tự động phục hồi
 
-### Tình huống 8: Khách muốn "di dời máy lọc sang văn phòng khác"
+### Tình huống 8: Xem hiệu suất bán hàng theo đại lý
 
-Xử lý:
-1. Khách gửi yêu cầu RELOCATION qua cổng → Vào tab "Yêu cầu dịch vụ"
-2. Đánh giá + Nhập báo giá → Duyệt
-3. Khách chuyển khoản → Đối soát → Lượt thăm di dời tự sinh
-
-### Tình huống 9: Có 2 nhân viên cùng tên nên không đăng nhập được (bảo mật)
-
-Xử lý:
-- **Đăng nhập bằng số điện thoại** (số điện thoại chắc chắn 1 người 1 số)
-- Hoặc ADMIN đổi 1 trong các tên người dùng
-
-### Tình huống 10: KTV không nộp tiền mặt thu hôm qua
-
-Xử lý:
-1. "Thanh toán" → Tab "Chờ nộp" xem dòng của KTV đó
-2. Gọi điện·liên lạc KTV (D+1 không nộp tự gửi cảnh báo ADMIN)
-3. Trễ từ D+2 trở lên báo ADMIN
-
-### Tình huống 11: Khách muốn "đổi Bên ký hợp đồng" (ví dụ: đổi giám đốc)
-
-Xử lý — **Chỉ MANAGER trở lên**:
-1. Chi tiết khách hàng → Tab "Liên hệ" → Chọn Bên ký hợp đồng
-2. Nút "**Đổi**" → Nhập thông tin người mới
-3. **Khuyến nghị phát hành PDF hợp đồng mới + Ký lại** (an toàn pháp lý)
-4. Lịch sử thay đổi tự ghi vào Nhật ký Kiểm toán
-
-### Tình huống 12: Khách chuyển khoản nhầm (vào tên khách khác)
-
-Xử lý:
-1. Thanh toán → Tab "**Không khớp**" (hoặc kho tạm)
-2. Báo ADMIN → Sau khi xác nhận với khách thì đối soát hoặc hoàn tiền
-3. Khi hoàn tiền sinh dòng Payment âm
-
-### Tình huống 13: Văn phòng tìm thông tin khách mà không ra
-
-Kiểm tra:
-- Khách có bị vô hiệu hóa không (toggle "Bao gồm không hoạt động" trên sidebar)
-- Nhập đúng mã khách (`KH...`)
-- Kiểm tra dấu cách trong tên doanh nghiệp B2B
-
-### Tình huống 14: Thông tin khách nhập sai cần sửa
-
-Xử lý:
-- Thông tin đơn giản (tên·điện thoại·địa chỉ): STAFF tự sửa
-- Mã số thuế·Tên doanh nghiệp có ảnh hưởng pháp lý: MANAGER trở lên
-
-Sau khi sửa, lịch sử thay đổi tự lưu vào Nhật ký Kiểm toán.
-
-### Tình huống 15: Sáng nay tích lũy 12 lượt thăm chưa phân công (Phase 6)
-
-Xử lý:
-1. Sidebar trái → Click **"Phân công hôm nay"** (§7.8)
-2. Xử lý các thẻ trong hàng đợi chưa phân công bên trái từ trên xuống — mỗi thẻ có KTV đề xuất
-3. Nút **Xác nhận ▸** 1-click cho mỗi thẻ → Chuyển ngay sang cột bên phải
-4. Nhìn chip tải của các cột phải, nếu tải dồn vào 1 KTV → các thẻ còn lại gán cho KTV ít tải hơn
-5. Khi đã xử lý xong, dùng nút **🖨 In** ở mỗi cột KTV để in hàng loạt giấy tờ cả ngày → Tập giấy lên bàn KTV
-
-> 💡 Khác với Tình huống 1: Tình huống 1 là "đổi lịch của 1 khách", Tình huống 15 là "phân công nhiều lượt thăm cùng lúc". Cái sau nhanh với bảng phân công.
-
-### Tình huống 16: Khách điện thoại "cho tôi xin lại bản sao hóa đơn" (Phase 6)
-
-Xử lý:
-1. Menu lượt thăm → Tìm lượt thăm liên quan → Vào chi tiết
-2. Thẻ **"Giấy tờ mang theo"** ở đầu → Tìm loại tương ứng trong lịch sử cấp
-3. Click **Tải về** → Lấy PDF → Gửi email cho khách hoặc in ra rồi gửi bưu điện / giao lúc lượt thăm sau
-4. Nếu thiết kế đã đổi và cần phiên bản mới → Click **Cấp lại** → Sinh PDF mới, bản cũ được archive
-5. Tự ghi vào AuditLog là `DOCUMENT_REISSUED`
-
-### Tình huống 17: Lượt thăm lắp đặt cần mang theo hợp đồng (Phase 6)
-
-Xử lý:
-1. Menu **In hàng loạt** (hoặc 🖨 ở cột KTV trong **Phân công hôm nay**)
-2. Chọn ngày + KTV liên quan
-3. Bản xem trước in **tự bao gồm 2 bản hợp đồng** (bản khách + bản công ty) — không cần thao tác tay
-4. **"In PDF ở tab mới"** → Tab mới → Cmd+P → In A4
-
-> ⚠️ Nếu hợp đồng vẫn ở trạng thái DRAFT chứ chưa ACTIVE/PENDING_SIGNATURE thì không tự kèm. Hãy kích hoạt ở menu Hợp đồng trước hoặc đưa lên PENDING_SIGNATURE.
-
----
-
-## Chương 14. Quy tắc Bảo mật
-
-### 14.1 Tuyệt đối không được làm
-
-#### Viết mật khẩu lên giấy
-
-Đặc biệt là post-it cạnh màn hình bị cấm. Ai chụp 1 ảnh là xong.
-
-> Quên thì dùng "Quên mật khẩu" hoặc nhờ ADMIN.
-
-#### Để người khác làm việc bằng tài khoản của bạn
-
-Tất cả hành động bằng tài khoản cá nhân sẽ ghi **tên cá nhân vào Nhật ký Kiểm toán**. Sai sót của đồng nghiệp khi dùng tài khoản bạn là trách nhiệm của bạn.
-
-#### Không lưu thông tin đăng nhập trên máy tính dùng chung
-
-Tắt tùy chọn "Lưu mật khẩu" của trình duyệt.
-
-#### Cấm chia sẻ mật khẩu
-
-Mật khẩu cá nhân chỉ **mình bạn biết**. Cấm cho đồng nghiệp "mượn dùng tạm".
-
-### 14.2 Khuyến nghị
-
-#### Đăng xuất hoặc khóa màn hình khi rời chỗ
-
-Buổi trưa·họp·ra ngoài bắt buộc đăng xuất hoặc khóa máy tính.
-
-#### Đổi mật khẩu định kỳ
-
-Khuyến nghị tự đổi 3~6 tháng/lần.
-
-#### Báo cáo ngay hoạt động khả nghi
-
-- Nếu thấy hành động bạn không làm hiện trong Nhật ký Kiểm toán → Báo ADMIN ngay
-- Nếu người lạ hỏi thông tin tài khoản của bạn → Bỏ qua + báo cáo
-
-### 14.3 Bảo mật tự động hệ thống
-
-Hệ thống tự xử lý các điều sau:
-
-- **3 lần đăng nhập thất bại** → Tự khóa tài khoản 1 giờ
-- **Đăng nhập bằng tên người dùng trùng** → Tự từ chối (ghi `AMBIGUOUS_USERNAME`)
-- **Khi đổi mật khẩu** → Tự đăng xuất mọi thiết bị khác
-- **Khi đăng xuất** → Tự xóa mọi dữ liệu cache trên thiết bị đó
-
-### 14.4 Sự cố bảo mật thường gặp và cách phòng tránh
-
-| Sự cố | Phòng tránh |
-|---|---|
-| Đồng nghiệp miễn thanh toán bằng tài khoản bạn | Cấm chia sẻ mật khẩu + Khóa máy khi rời chỗ |
-| Rò rỉ thông tin khách ra ngoài | Xuất CSV chỉ dùng trong email nội bộ, cấm USB |
-| Mất điện thoại → SMS bị chiếm | Báo ADMIN ngay → Buộc kết thúc mọi phiên + Đặt lại mật khẩu |
+1. Thanh bên → "Đại lý"
+2. Nhấp vào thẻ đại lý cần xem
+3. Tab Doanh thu theo kỳ → Đặt kỳ → Xem doanh thu từng thiết bị
+4. Tab Công nợ theo kỳ → Xem tình trạng quá hạn của khách hàng phụ trách
 
 ---
 
 ## Phụ lục A. Tìm Menu nhanh
 
-| Muốn làm gì | Đường dẫn menu | Quyền cần |
-|---|---|---|
-| Xem·tìm thông tin khách | Khách hàng | STAFF+ |
-| Đăng ký khách mới | Khách hàng → Khách mới | STAFF+ |
-| Soạn hợp đồng mới | Hợp đồng → Hợp đồng mới (hoặc trang khách) | STAFF+ |
-| Sửa giá hợp đồng | Hợp đồng → Sửa | MANAGER+ |
-| Lập lịch thăm mới | Lượt thăm → Lượt thăm mới | STAFF+ |
-| Đổi lịch thăm | Lượt thăm → Đổi lịch | STAFF+ |
-| Phân công cùng lúc các lượt thăm chưa có KTV | Phân công hôm nay (hoặc Lượt thăm → tab Chưa phân công) | STAFF+ |
-| Cấp / cấp lại giấy tờ mang theo lượt thăm | Lượt thăm → Chi tiết → Thẻ Giấy tờ mang theo | STAFF+ |
-| In hàng loạt giấy tờ cả ngày của 1 KTV | In hàng loạt (hoặc Phân công hôm nay → 🖨 ở cột KTV) | STAFF+ |
-| Đối soát chuyển khoản khách | Thanh toán → Chờ đối soát | STAFF+ |
-| Nhận tiền mặt KTV | Thanh toán → Chờ nộp | STAFF+ |
-| Miễn thanh toán | Thanh toán → Click dòng → Miễn | MANAGER+ |
-| Tải lên hóa đơn GTGT | Hóa đơn GTGT → Hóa đơn GTGT mới | MANAGER+ |
-| Đánh giá yêu cầu dịch vụ | Yêu cầu dịch vụ → Chờ duyệt | STAFF+ |
-| Báo cáo doanh thu | Báo cáo → Doanh thu | STAFF+ |
-| Xem nhật ký kiểm toán | Báo cáo → Nhật ký kiểm toán | MANAGER+ |
-| Xuất nhật ký kiểm toán | Báo cáo → Nhật ký kiểm toán → CSV | ADMIN |
-| Đăng ký nhân viên mới | Quản lý hệ thống → Người dùng → Người dùng mới | ADMIN |
-| Đặt lại mật khẩu nhân viên | Quản lý hệ thống → Người dùng → Click dòng | ADMIN |
-| Đặt lại mật khẩu khách | Trang khách → Đặt lại mật khẩu | MANAGER+ |
-| Đăng ký model sản phẩm mới | Quản lý hệ thống → Catalog sản phẩm | ADMIN |
-| Điều chỉnh trọng số lập lịch | Quản lý hệ thống → Trọng số lập lịch | ADMIN |
-
----
-
-## Phụ lục B. Danh mục Thông báo
-
-Danh sách tất cả thông báo hệ thống tự gửi.
-
-### Chỉ SMS (7 — bảo mật·khẩn cấp)
-
-| Mã | Thời điểm | Người nhận |
-|---|---|---|
-| SMS_PORTAL_WELCOME | Đăng ký khách·nhân viên mới | Cá nhân |
-| SMS_PASSWORD_RESET | Đặt lại mật khẩu | Cá nhân |
-| SMS_VISIT_REMINDER | D-1 lượt thăm | Liên hệ vận hành |
-| SMS_SR_APPROVED | Duyệt cuối yêu cầu dịch vụ có phí + Lịch | Khách |
-| SMS_SR_REJECTED | Từ chối yêu cầu dịch vụ + Lý do | Khách |
-| SMS_PAYMENT_OVERDUE_FINAL | Công nợ D+30 | Bên ký hợp đồng + Tất cả OPS |
-| SMS_CONTRACT_RENEWAL_FINAL | D-7 hết hạn thuê | Bên ký hợp đồng |
-
-### Chỉ Email (9 — hóa đơn·hướng dẫn)
-
-| Mã | Thời điểm | Người nhận |
-|---|---|---|
-| EMAIL_SR_RECEIVED | Ngay khi tiếp nhận yêu cầu dịch vụ | Khách |
-| EMAIL_VISIT_COMPLETED | Ngay khi hoàn thành lượt thăm | Liên hệ vận hành (đính kèm PDF) |
-| EMAIL_PAYMENT_RECEIPT | Ngay khi đối soát thanh toán | Liên hệ vận hành |
-| EMAIL_RENTAL_DUE | Mỗi ngày 1 hàng tháng (RENTAL/MAINTENANCE) | Bên ký hợp đồng |
-| EMAIL_PAYMENT_OVERDUE_D7 | Công nợ D+7 | Bên ký hợp đồng + CC |
-| EMAIL_PAYMENT_OVERDUE_D14 | Công nợ D+14 | Bên ký hợp đồng + CC |
-| EMAIL_FILTER_DUE_D14 | D-14 thay lõi | Liên hệ vận hành |
-| EMAIL_CONTRACT_RENEWAL_D60 | D-60 hết hạn thuê | Bên ký hợp đồng |
-| EMAIL_CONTRACT_RENEWAL_D30 | D-30 hết hạn thuê | Bên ký hợp đồng |
-| EMAIL_TAX_INVOICE_ISSUED | Ngay khi tải hóa đơn GTGT | Bên ký hợp đồng (đính kèm PDF) |
-
-### Hybrid — Gửi đồng thời SMS + Email
-
-| Mã | Thời điểm |
+| Chức năng cần tìm | Đường dẫn menu |
 |---|---|
-| Duyệt SR (có phí) | SMS (lịch ngắn) + Email (PDF báo giá) |
-| Portal Welcome (mới) | SMS (mật khẩu tạm) + Email (hướng dẫn dài) |
-
-> **Tin nhắn hệ thống** (đặt lại mật khẩu, hóa đơn thu tiền) được **gửi bỏ qua opt-out**. Chỉ tin nhắn thông thường mới được khách tắt.
+| Đăng ký / Tìm khách hàng | Khách hàng |
+| Xem KPI đại lý | Đại lý |
+| Đăng ký thiết bị (đơn lẻ) | Thiết bị → Thiết bị mới |
+| Đăng ký thiết bị (hàng loạt) | Thiết bị → Đăng ký hàng loạt |
+| Xem lịch sử lắp đặt | Thiết bị → Lịch sử lắp đặt |
+| Tạo / Sửa hợp đồng | Hợp đồng |
+| Quản lý lịch lượt thăm | Lượt thăm |
+| Xử lý phân công ngày hôm nay | Bảng phân công hôm nay |
+| In chứng từ hàng loạt | Lượt thăm → In hàng loạt |
+| Xét duyệt yêu cầu dịch vụ | Yêu cầu dịch vụ |
+| Đối soát chuyển khoản | Thanh toán |
+| Tải lên hóa đơn GTGT | Hóa đơn GTGT (MANAGER+) |
+| Báo cáo / Nhật ký kiểm toán | Báo cáo |
+| Quản lý người dùng / Danh mục | Quản lý hệ thống (ADMIN) |
 
 ---
 
-## Phụ lục C. Từ điển Trạng thái
+## Phụ lục B. Ma trận Chứng từ
 
-### Trạng thái Hợp đồng
-
-| Trạng thái | Tiếng Việt | Ý nghĩa |
+| Loại chứng từ | Mã | Điều kiện phát hành |
 |---|---|---|
-| `DRAFT` | Bản nháp | Đang soạn, chưa ký |
-| `ACTIVE` | Đang hoạt động | Vận hành bình thường |
-| `OVERDUE` | Quá hạn | Công nợ D+7 trở lên |
-| `COMPLETED` | Kết thúc | Đã thanh toán hết các kỳ hoặc hết hạn |
-| `TERMINATED_EARLY` | Chấm dứt sớm | Khách yêu cầu hoặc chấm dứt bắt buộc |
-| `CANCELLED` | Hủy | Hủy trong khi soạn |
+| Phiếu giao nhận thiết bị | DELIVERY_RECEIPT | Lắp đặt + B2C thuê |
+| Biên lai bán hàng | SALE_RECEIPT_B2C | Lắp đặt (B2C bán) hoặc Giao hàng tiêu hao (B2C) |
+| Phiếu xuất kho B2B | DELIVERY_SLIP_B2B | Lắp đặt (B2B) hoặc Giao hàng tiêu hao (B2B) |
+| Phiếu kiểm tra định kỳ hộ gia đình | PERIODIC_CHECK_B2C | Kiểm tra định kỳ + B2C |
+| Phiếu kiểm tra định kỳ B2B | PERIODIC_CHECK_B2B | Kiểm tra định kỳ + B2B |
+| Phiếu xác nhận công việc | WORK_CONFIRMATION | Sửa chữa, thay lọc, di chuyển, thu tiền, khác |
+
+Tất cả chứng từ sử dụng bố cục 2 ngôn ngữ **Tiếng Việt (chính) + Tiếng Hàn (phụ)** xếp chồng.
+
+---
+
+## Phụ lục C. Danh mục Thông báo
+
+| Mã | Kênh | Người nhận | Thời điểm |
+|---|---|---|---|
+| SMS_PORTAL_WELCOME | SMS | Khách hàng | Ngay sau khi tạo tài khoản |
+| SMS_PASSWORD_RESET | SMS | Khách hàng | Đặt lại mật khẩu |
+| SMS_VISIT_REMINDER | SMS | OPS_CONTACT | Trước lượt thăm D-1 |
+| SMS_SR_APPROVED | SMS | Người ký HĐ | SR có phí được duyệt |
+| SMS_SR_REJECTED | SMS | Người ký HĐ | SR bị từ chối |
+| SMS_PAYMENT_OVERDUE_FINAL | SMS | Người ký HĐ + OPS | Quá hạn D+30 |
+| EMAIL_RECEIPT | Email | OPS_CONTACT | Ngay sau thanh toán |
+| EMAIL_VISIT_COMPLETED | Email | OPS_CONTACT | Ngay sau lượt thăm hoàn thành |
+| EMAIL_CONTRACT_ACTIVATED | Email | Người ký HĐ | Khi kích hoạt HĐ |
+| EMAIL_TAX_INVOICE_ISSUED | Email | Người ký HĐ | Khi tải lên hóa đơn GTGT |
+
+---
+
+## Phụ lục D. Từ điển Trạng thái
 
 ### Trạng thái Lượt thăm
 
-| Trạng thái | Tiếng Việt | Ý nghĩa |
-|---|---|---|
-| `SCHEDULED` | Đã lên lịch | Đã có lịch |
-| `CONFIRMED` | Đã xác nhận | Khách xác nhận |
-| `IN_PROGRESS` | Đang tiến hành | KTV bắt đầu |
-| `COMPLETED` | Hoàn thành | Đã xong công việc |
-| `RESCHEDULED` | Đã đổi lịch | Chuyển sang ngày khác |
-| `CUSTOMER_NO_SHOW` | Khách vắng | KTV đến nhưng khách không có |
-| `NEEDS_REVISIT` | Cần thăm lại | Thiếu linh kiện, v.v. |
-| `CANCELLED` | Hủy | Khách·Văn phòng hủy |
+| Mã | Ý nghĩa |
+|---|---|
+| SUGGESTED | Đã tạo, chưa phân công KTV |
+| SCHEDULED | Đã phân công KTV |
+| CONFIRMED | Khách hàng xác nhận |
+| IN_PROGRESS | KTV đến nơi, bắt đầu |
+| COMPLETED | Hoàn thành |
+| RESCHEDULED | Đã đổi lịch |
+| CUSTOMER_NO_SHOW | Khách hàng vắng mặt |
+| CANCELLED | Đã hủy |
+| FAILED_NO_SHOW | Thất bại (vắng mặt v.v.) |
+
+### Trạng thái Hợp đồng
+
+| Mã | Ý nghĩa |
+|---|---|
+| DRAFT | Nháp (chưa ký) |
+| ACTIVE | Đang hoạt động |
+| OVERDUE | Công nợ quá 30 ngày |
+| COMPLETED | Kết thúc bình thường |
+| TERMINATED_EARLY | Hủy sớm |
+| CANCELLED | Hủy bỏ |
 
 ### Trạng thái Thanh toán
 
-| Trạng thái | Tiếng Việt | Ý nghĩa |
-|---|---|---|
-| `PENDING` | Chờ | Mới tạo hóa đơn |
-| `RECEIVED` | Đã nhận | Tiền mặt hoặc chuyển khoản đến |
-| `RECONCILED` | Đã đối soát | Đã xác định hợp đồng·kỳ — Bình thường |
-| `WAIVED` | Miễn | Văn phòng miễn thanh toán |
-| `BOUNCED` | Thất bại | Chuyển khoản thất bại / phá sản |
-
-### Trạng thái Thiết bị
-
-| Trạng thái | Tiếng Việt | Ý nghĩa |
-|---|---|---|
-| `PENDING_INSTALL` | Chờ lắp | Sau kích hoạt hợp đồng, trước lắp |
-| `ACTIVE` | Đang hoạt động | Đang sử dụng |
-| `REPLACED` | Đã thay | Đã đổi sang thiết bị khác |
-| `RELOCATED` | Đang di chuyển | Đang chuyển sang Cơ sở khác |
-| `RETRIEVED` | Đã thu hồi | Thu khi RENTAL kết thúc |
-| `DEACTIVATED` | Không hoạt động | Cascade vô hiệu hóa khách |
-
-### Trạng thái Yêu cầu Dịch vụ
-
-| Trạng thái | Tiếng Việt | Ý nghĩa |
-|---|---|---|
-| `SUBMITTED` | Đã gửi | Khách gửi |
-| `AUTO_APPROVED` | Tự duyệt | Loại miễn phí |
-| `APPROVED` | Đã duyệt | Văn phòng đánh giá duyệt |
-| `REJECTED` | Từ chối | Văn phòng từ chối |
-| `SCHEDULED` | Đã lên lịch | Đã xác định lịch thăm |
-| `COMPLETED` | Hoàn thành | Đã hoàn thành lượt thăm |
-| `CANCELLED` | Hủy | Khách hủy |
-
----
-
-## Khi cần trợ giúp
-
-- **Hệ thống chạy lạ** → Báo MANAGER hoặc ADMIN
-- **Quên mật khẩu** → "Quên mật khẩu" hoặc nhờ ADMIN
-- **Bối rối cách dùng tính năng** → Tìm trong mục lục tài liệu này hoặc hỏi đồng nghiệp
-- **Phát hiện lỗi** → Chụp màn hình + Ghi các bước tái tạo gửi ADMIN
-
-Chúc một ngày tốt lành — Đội ngũ vận hành Seoul Aqua.
+| Mã | Ý nghĩa |
+|---|---|
+| PENDING | Đã lập hóa đơn |
+| RECEIVED | Xác nhận đã thu |
+| RECONCILED | Đã đối soát với HĐ |
+| WAIVED | Miễn phí |
+| BOUNCED | Chuyển khoản thất bại |

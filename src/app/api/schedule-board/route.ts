@@ -49,7 +49,6 @@ export const GET = defineQuery({
         type: true,
         state: true,
         scheduledFor: true,
-        scheduledWindow: true,
         customerId: true,
         siteId: true,
         leadTechnicianId: true,
@@ -103,7 +102,6 @@ export const GET = defineQuery({
         type: true,
         state: true,
         scheduledFor: true,
-        scheduledWindow: true,
         leadTechnicianId: true,
         collaboratorTechnicianIds: true,
         customer: {

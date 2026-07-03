@@ -119,7 +119,7 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => router.push(`/contracts/${id}/amend`)}
+            onClick={() => router.push(`/o/contracts/${id}/amend`)}
           >
             {t("actions.amend")}
           </Button>
@@ -128,7 +128,7 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => router.push(`/contracts/${id}/renew`)}
+            onClick={() => router.push(`/o/contracts/${id}/renew`)}
           >
             {t("actions.renew")}
           </Button>

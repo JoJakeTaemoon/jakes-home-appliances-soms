@@ -55,10 +55,25 @@ export const GET = defineQuery({
         },
         equipment: {
           where: { status: { not: "REPLACED" } },
-          include: { model: true, site: true },
+          include: {
+            model: true,
+            site: true,
+            contracts: {
+              include: {
+                contract: {
+                  select: { id: true, contractNumber: true, type: true, state: true },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
+          },
           orderBy: { createdAt: "desc" },
         },
         contracts: { orderBy: { createdAt: "desc" }, take: 10 },
+        salesRep: {
+          select: { id: true, username: true, title: true, avatarUrl: true },
+        },
       },
     });
     if (!customer) throw new NotFoundError("Customer not found");
@@ -141,6 +156,12 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           city: data.addressProvinceName,
           preferredRegion: data.preferredRegion,
           preferredTechnicianId: data.preferredTechnicianId ?? null,
+          // salesRepId is undefined → leave alone; null → unassign; string → assign.
+          // The contract/receivable aggregations in /api/sales-reps/[id]/*
+          // read off customer.salesRepId, so every contract this customer
+          // already owns automatically re-routes to the new rep.
+          salesRepId:
+            data.salesRepId === undefined ? undefined : data.salesRepId,
           notes: data.notes,
         },
       });

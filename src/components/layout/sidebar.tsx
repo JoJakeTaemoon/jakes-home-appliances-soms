@@ -42,6 +42,9 @@ type LabelKey =
   | "notificationTemplates"
   | "companyContact"
   | "products"
+  | "equipmentBulkRegister"
+  | "equipmentInstallHistory"
+  | "salesReps"
   | "auditLog";
 
 type RoleKey = "ADMIN" | "MANAGER" | "STAFF" | "TECHNICIAN";
@@ -57,6 +60,8 @@ interface NavItem {
   Icon: typeof LayoutDashboard;
   disabled?: boolean;
   roles: readonly RoleKey[];
+  /** Sub-items rendered indented under this entry. */
+  children?: readonly NavItem[];
 }
 
 const ALL_OFFICE_ROLES: readonly RoleKey[] = [
@@ -67,20 +72,31 @@ const ALL_OFFICE_ROLES: readonly RoleKey[] = [
 ];
 const ADMIN_MANAGER: readonly RoleKey[] = ["ADMIN", "MANAGER"];
 
+// Top-level menu order (2026-06-26):
+//   1. 대시보드  2. 고객  3. 장비 (+sub)  4. 계약
+//   5. 서비스 요청  6. 오늘의 배정  7. 일괄 인쇄
+//   8. 수금  9. 세금계산서  10. 판매원  11. 보고서
 const navItems: NavItem[] = [
   { href: "/o/dashboard", labelKey: "dashboard", Icon: LayoutDashboard, roles: ALL_OFFICE_ROLES },
   { href: "/o/customers", labelKey: "customers", Icon: Users, roles: ALL_OFFICE_ROLES },
+  {
+    href: "/o/equipment",
+    labelKey: "equipment",
+    Icon: Cpu,
+    roles: ALL_OFFICE_ROLES,
+    children: [
+      { href: "/o/equipment/bulk-register", labelKey: "equipmentBulkRegister", Icon: Cpu, roles: ALL_OFFICE_ROLES },
+      { href: "/o/equipment/installation-history", labelKey: "equipmentInstallHistory", Icon: Cpu, roles: ALL_OFFICE_ROLES },
+    ],
+  },
   { href: "/o/contracts", labelKey: "contracts", Icon: FileText, roles: ALL_OFFICE_ROLES },
-  { href: "/o/schedule-board", labelKey: "scheduleBoard", Icon: LayoutGrid, roles: ALL_OFFICE_ROLES },
-  { href: "/o/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
-  { href: "/o/visits/print", labelKey: "visitsPrint", Icon: Printer, roles: ALL_OFFICE_ROLES },
   { href: "/o/service-requests", labelKey: "serviceRequests", Icon: Inbox, roles: ALL_OFFICE_ROLES },
-  // Equipment moved below service-requests (2026-06-22) — equipment is
-  // installed via the contract creation flow now, not as a standalone
-  // entry point, so it belongs further down the day-to-day list.
-  { href: "/o/equipment", labelKey: "equipment", Icon: Cpu, roles: ALL_OFFICE_ROLES },
+  { href: "/o/visits", labelKey: "visits", Icon: CalendarCheck, roles: ALL_OFFICE_ROLES },
+  { href: "/o/schedule-board", labelKey: "scheduleBoard", Icon: LayoutGrid, roles: ALL_OFFICE_ROLES },
+  { href: "/o/visits/print", labelKey: "visitsPrint", Icon: Printer, roles: ALL_OFFICE_ROLES },
   { href: "/o/payments", labelKey: "payments", Icon: Wallet, roles: ALL_OFFICE_ROLES },
   { href: "/o/tax-invoices", labelKey: "taxInvoices", Icon: Receipt, roles: ALL_OFFICE_ROLES },
+  { href: "/o/sales-reps", labelKey: "salesReps", Icon: Users, roles: ALL_OFFICE_ROLES },
   { href: "/o/reports", labelKey: "reports", Icon: BarChart3, roles: ALL_OFFICE_ROLES },
 ];
 
@@ -146,11 +162,15 @@ export function Sidebar() {
   const visibleMain = visibleFor(navItems, role);
   const visibleAdmin = visibleFor(adminNavItems, role);
   const visibleAdminSettings = visibleFor(adminSettingsItems, role);
+  // Flatten parents + children so isItemActive sees every entry that
+  // could win an exact-match.
+  const flattenHrefs = (items: readonly NavItem[]): string[] =>
+    items.flatMap((it) => [it.href, ...(it.children?.map((c) => c.href) ?? [])]);
   const allHrefs = [
-    ...navItems,
-    ...adminNavItems,
-    ...adminSettingsItems,
-  ].map((i) => i.href);
+    ...flattenHrefs(navItems),
+    ...flattenHrefs(adminNavItems),
+    ...flattenHrefs(adminSettingsItems),
+  ];
   const showAdminSection =
     visibleAdmin.length > 0 || visibleAdminSettings.length > 0;
 
@@ -207,6 +227,7 @@ export function Sidebar() {
 
             const showUnreadBadge =
               item.labelKey === "serviceRequests" && unreadCount > 0;
+            const visibleChildren = visibleFor(item.children ?? [], role);
             return (
               <li key={item.href}>
                 <Link
@@ -234,6 +255,29 @@ export function Sidebar() {
                     </span>
                   )}
                 </Link>
+                {visibleChildren.length > 0 && (
+                  <ul className="mt-0.5 ml-7 space-y-0.5 border-l border-[#e5e5e5] pl-2">
+                    {visibleChildren.map((child) => {
+                      const childActive = isItemActive(child.href, pathname, allHrefs);
+                      return (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            aria-current={childActive ? "page" : undefined}
+                            className={
+                              childActive
+                                ? "flex max-md:min-h-[40px] items-center gap-2 rounded-md bg-[var(--brand-blue-50)] px-2.5 py-1.5 text-xs font-medium text-[var(--brand-blue-700)]"
+                                : "flex max-md:min-h-[40px] items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-normal text-[#737373] hover:bg-[#f5f5f5] hover:text-[#000000]"
+                            }
+                          >
+                            <span className="inline-block size-1.5 rounded-full bg-current opacity-50" />
+                            <span>{t(child.labelKey)}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </li>
             );
           })}

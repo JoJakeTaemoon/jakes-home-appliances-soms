@@ -2,7 +2,7 @@
  * POST /api/service-requests/[id]/approve — UC-SR-02.
  *
  * MANAGER+ only. Body: `{ approvedPrice, approvedDate, scheduledFor?,
- * scheduledWindow?, leadTechnicianId?, notes? }`. Sets SR state APPROVED
+ * leadTechnicianId?, notes? }`. Sets SR state APPROVED
  * (or SCHEDULED if a lead is picked), creates a linked Visit, and queues
  * `SMS_SR_APPROVED` + `EMAIL_SR_APPROVED_DETAILS`.
  */

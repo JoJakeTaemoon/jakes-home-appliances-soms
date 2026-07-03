@@ -28,62 +28,75 @@ enum UserStatus {
 }
 
 model User {
-  id                String      @id @default(cuid())
+  id                         String     @id @default(cuid())
   // Phone is the login key for every staff role (admin/manager/staff/technician).
   // username is a free-form display label (e.g. "admin", "Nguyễn Văn A") — not unique.
-  username          String
-  phone             String      @unique
-  email             String?
-  passwordHash      String
-  role              StaffRole
-  status            UserStatus  @default(ACTIVE)
-  preferredRegion   String?     // scheduler input
-  mustChangePassword Boolean    @default(false)
-  lastLoginAt       DateTime?
-  failedLoginCount  Int         @default(0)
-  lockedUntil       DateTime?
+  username                   String
+  phone                      String     @unique
+  email                      String?
+  passwordHash               String
+  role                       StaffRole
+  status                     UserStatus @default(ACTIVE)
+  preferredRegion            String? // scheduler input
+  mustChangePassword         Boolean    @default(false)
+  /// True when this user is a candidate in the sales-rep selector. Set by
+  /// ADMIN. Independent from `role` so a STAFF or MANAGER can be marked as
+  /// sales rep, while TECHNICIAN/ADMIN are never picked.
+  isSalesRep                 Boolean    @default(false)
+  /// Display title shown next to the user's name on customer-detail headers,
+  /// table avatars, and SMS signatures (e.g. "구매팀 차장", "본인").
+  title                      String?
+  /// Avatar image URL (Vercel Blob / Gravatar / fallback initials).
+  avatarUrl                  String?
+  lastLoginAt                DateTime?
+  failedLoginCount           Int        @default(0)
+  lockedUntil                DateTime?
   // Self-service password recovery (SMS verification → temp password).
-  passwordResetCodeHash       String?
-  passwordResetCodeExpiresAt  DateTime?
-  passwordResetAttempts       Int       @default(0)
-  passwordResetLastRequestAt  DateTime?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  passwordResetCodeHash      String?
+  passwordResetCodeExpiresAt DateTime?
+  passwordResetAttempts      Int        @default(0)
+  passwordResetLastRequestAt DateTime?
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
 
-  sessions               Session[]
-  leadVisits             Visit[]     @relation("LeadTechnician")
-  auditActions           AuditLog[]  @relation("ActorUser")
-  collectedPayments      Payment[]
-  loginAttempts          LoginAttempt[]
-  preferredByCustomers   Customer[]  @relation("PreferredTech")
+  sessions             Session[]
+  leadVisits           Visit[]        @relation("LeadTechnician")
+  auditActions         AuditLog[]     @relation("ActorUser")
+  collectedPayments    Payment[]
+  loginAttempts        LoginAttempt[]
+  preferredByCustomers Customer[]     @relation("PreferredTech")
+  assignedCustomers    Customer[]     @relation("CustomerSalesRep")
+  registeredEquipment  Equipment[]    @relation("EquipmentRegisteredBy")
+  createdOrders        Order[]        @relation("OrderCreatedBy")
 
   @@index([role, status])
+  @@index([isSalesRep])
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshToken String   @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String    @unique
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
   revokedAt    DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
 }
 
 model LoginAttempt {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   username    String
   userId      String?
-  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   ipAddress   String?
   userAgent   String?
   success     Boolean
-  attemptedAt DateTime  @default(now())
+  attemptedAt DateTime @default(now())
 
   @@index([username, attemptedAt])
 }
@@ -93,24 +106,24 @@ model LoginAttempt {
 // ─────────────────────────────────────────────────────────────────────────
 
 enum ActorType {
-  USER         // staff
-  CUSTOMER     // portal account
-  SYSTEM       // cron / scheduler
+  USER // staff
+  CUSTOMER // portal account
+  SYSTEM // cron / scheduler
 }
 
 model AuditLog {
-  id          String     @id @default(cuid())
-  actorType   ActorType
-  actorId     String?
-  actorUser   User?      @relation("ActorUser", fields: [actorId], references: [id], onDelete: SetNull)
-  action      String     // e.g. "CUSTOMER_CREATE", "CONTRACT_AMEND"
-  entityType  String     // e.g. "Customer", "Contract"
-  entityId    String?
-  before      Json?
-  after       Json?
-  ipAddress   String?
-  userAgent   String?
-  at          DateTime   @default(now())
+  id         String    @id @default(cuid())
+  actorType  ActorType
+  actorId    String?
+  actorUser  User?     @relation("ActorUser", fields: [actorId], references: [id], onDelete: SetNull)
+  action     String // e.g. "CUSTOMER_CREATE", "CONTRACT_AMEND"
+  entityType String // e.g. "Customer", "Contract"
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+  at         DateTime  @default(now())
 
   @@index([entityType, entityId])
   @@index([actorId])
@@ -146,8 +159,8 @@ enum ContactRole {
 }
 
 enum ContactScope {
-  CUSTOMER     // organization-level (always for CONTRACT_PARTY)
-  SITE         // site-specific (OPS_CONTACT only)
+  CUSTOMER // organization-level (always for CONTRACT_PARTY)
+  SITE // site-specific (OPS_CONTACT only)
 }
 
 enum Locale {
@@ -157,148 +170,157 @@ enum Locale {
 }
 
 model Customer {
-  id                     String         @id @default(cuid())
-  code                   String         @unique  // KH#####
-  legacyCode             String?        @unique  // pre-migration code (A.2)
-  type                   CustomerType
-  status                 CustomerStatus @default(ACTIVE)
+  id         String         @id @default(cuid())
+  code       String         @unique // KH#####
+  legacyCode String?        @unique // pre-migration code (A.2)
+  type       CustomerType
+  status     CustomerStatus @default(ACTIVE)
 
   // B2C: just name; B2B: legal entity name
-  name                   String
-  shortcode              String?        @unique  // B2B 2-5 letter; used in contract code (B.2)
-  taxCode                String?        // B2B Vietnamese tax code (MST)
+  name      String
+  shortcode String? @unique // B2B 2-5 letter; used in contract code (B.2)
+  taxCode   String? // B2B Vietnamese tax code (MST)
 
   // ── Legal-identity block (required for contract issuance) ───────────────
   /// B2C only: DOMESTIC or FOREIGN. Optional — neither CCCD nor passport is
   /// required at creation (collected later when the contract is issued).
   /// Ignored for B2B (which uses CONTRACT_PARTY contact as the signatory).
-  residency              CustomerResidency? @default(DOMESTIC)
+  residency          CustomerResidency? @default(DOMESTIC)
   /// B2C DOMESTIC: Vietnamese national ID (CCCD / Căn cước công dân). Optional.
-  nationalId             String?
+  nationalId         String?
   /// B2C FOREIGN: passport number. Optional.
-  passportNumber         String?
+  passportNumber     String?
   /// B2C FOREIGN: ISO country name (e.g. "Korea", "Japan"). Optional.
-  nationality            String?
+  nationality        String?
   /// Issue date for whichever identity document (CCCD or passport) is on file.
-  documentIssueDate      DateTime?
+  documentIssueDate  DateTime?
   /// Issue place for the identity document. Free-text (e.g. "Cục Cảnh sát QLHC ĐKQG").
-  documentIssuePlace     String?
+  documentIssuePlace String?
 
   // Primary address — Shopee VN style: province → district → ward + street.
   // Legacy `address/district/city` kept nullable for back-compat read-only display.
-  addressProvinceCode    String?
-  addressProvinceName    String?
-  addressDistrictCode    String?
-  addressDistrictName    String?
-  addressWardCode        String?
-  addressWardName        String?
-  addressStreet          String?
+  addressProvinceCode String?
+  addressProvinceName String?
+  addressDistrictCode String?
+  addressDistrictName String?
+  addressWardCode     String?
+  addressWardName     String?
+  addressStreet       String?
   /// @deprecated Use addressStreet. Populated for legacy rows only.
-  address                String?
+  address             String?
   /// @deprecated Use addressDistrictName. Populated for legacy rows only.
-  district               String?
+  district            String?
   /// @deprecated Use addressProvinceName. Populated for legacy rows only.
-  city                   String?
+  city                String?
 
-  preferredTechnicianId  String?
-  preferredTechnician    User?          @relation("PreferredTech", fields: [preferredTechnicianId], references: [id], onDelete: SetNull, map: "Customer_preferredTechnicianId_fkey")
-  preferredRegion        String?        // soft hint for scheduler (C.2)
+  preferredTechnicianId String?
+  preferredTechnician   User?   @relation("PreferredTech", fields: [preferredTechnicianId], references: [id], onDelete: SetNull, map: "Customer_preferredTechnicianId_fkey")
+  preferredRegion       String? // soft hint for scheduler (C.2)
 
-  notes                  String?
+  /// Sales rep (담당 판매원) — User with isSalesRep=true. Used in the customer
+  /// list "담당 판매원" column and the sales-rep menu's per-rep aggregations
+  /// (new contracts / receivables by period).
+  salesRepId String?
+  salesRep   User?   @relation("CustomerSalesRep", fields: [salesRepId], references: [id], onDelete: SetNull)
 
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
-  deactivatedAt          DateTime?
-  deactivationReason     String?
+  notes String?
 
-  sites                  Site[]
-  contacts               CustomerContact[]
-  equipment              Equipment[]
-  contracts              Contract[]
-  serviceRequests        ServiceRequest[]
-  visits                 Visit[]
-  payments               Payment[]
-  notificationLogs       NotificationLog[]
-  documents              Document[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deactivatedAt      DateTime?
+  deactivationReason String?
+
+  sites            Site[]
+  contacts         CustomerContact[]
+  equipment        Equipment[]
+  contracts        Contract[]
+  orders           Order[]
+  serviceRequests  ServiceRequest[]
+  visits           Visit[]
+  payments         Payment[]
+  notificationLogs NotificationLog[]
+  documents        Document[]
 
   @@index([code])
   @@index([type, status])
   @@index([shortcode])
+  @@index([salesRepId])
 }
 
 model Site {
-  id           String   @id @default(cuid())
-  customerId   String
-  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  name         String   // e.g. "본사 사옥", "지점 1"
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String // e.g. "본사 사옥", "지점 1"
 
   // Structured address (Shopee VN style). All optional — legacy rows may carry
   // only `address` until migrated.
-  addressProvinceCode    String?
-  addressProvinceName    String?
-  addressDistrictCode    String?
-  addressDistrictName    String?
-  addressWardCode        String?
-  addressWardName        String?
-  addressStreet          String?
+  addressProvinceCode String?
+  addressProvinceName String?
+  addressDistrictCode String?
+  addressDistrictName String?
+  addressWardCode     String?
+  addressWardName     String?
+  addressStreet       String?
   /// @deprecated Use addressStreet.
-  address      String?
+  address             String?
   /// @deprecated Use addressDistrictName.
-  district     String?
+  district            String?
   /// @deprecated Use addressProvinceName.
-  city         String?
-  region       String?  // scheduler input
-  notes        String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  city                String?
+  region              String? // scheduler input
+  notes               String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   contacts        CustomerContact[]
   equipment       Equipment[]
   visits          Visit[]
   serviceRequests ServiceRequest[]
+  orders          Order[]
 
   @@index([customerId])
   @@index([region])
 }
 
 model CustomerContact {
-  id                String       @id @default(cuid())
-  customerId        String
-  customer          Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  siteId            String?
-  site              Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId     String?
+  site       Site?    @relation(fields: [siteId], references: [id], onDelete: SetNull)
 
   role                ContactRole
   scope               ContactScope @default(CUSTOMER)
-  isPrimary           Boolean      @default(false)  // exactly one primary OPS per customer (or per site)
-  isAccountingContact Boolean      @default(false)  // at most one accounting OPS per customer (CUSTOMER scope) — receives tax invoices / accounting comms
+  isPrimary           Boolean      @default(false) // exactly one primary OPS per customer (or per site)
+  isAccountingContact Boolean      @default(false) // at most one accounting OPS per customer (CUSTOMER scope) — receives tax invoices / accounting comms
 
-  name              String
-  title             String?      // e.g. "관리부장", "Mrs."
-  phone1            String       // primary phone (login key for portal)
-  phone2            String?
-  email             String?
-  language          Locale       @default(vi)
+  name     String
+  title    String? // e.g. "관리부장", "Mrs."
+  phone1   String // primary phone (login key for portal)
+  phone2   String?
+  email    String?
+  language Locale  @default(vi)
 
   // Portal account
-  portalEnabled     Boolean      @default(false)
-  passwordHash      String?
-  mustChangePassword Boolean     @default(false)
-  lastLoginAt       DateTime?
-  failedLoginCount  Int          @default(0)
-  lockedUntil       DateTime?
+  portalEnabled      Boolean   @default(false)
+  passwordHash       String?
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime?
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
 
   // Opt-outs (F.3)
-  smsOptOut         Boolean      @default(false)
-  emailOptOut       Boolean      @default(false)
+  smsOptOut   Boolean @default(false)
+  emailOptOut Boolean @default(false)
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  customerSessions  CustomerSession[]
-  serviceRequests   ServiceRequest[]
-  notificationLogs  NotificationLog[]
+  customerSessions CustomerSession[]
+  serviceRequests  ServiceRequest[]
+  notificationLogs NotificationLog[]
 
   @@index([customerId, role])
   @@index([siteId])
@@ -334,15 +356,44 @@ enum EquipmentCategory {
 
 enum EquipmentStatus {
   ACTIVE
-  REPLACED       // replaced by another unit (legacy retained)
+  REPLACED // replaced by another unit (legacy retained)
   RELOCATED
-  DEACTIVATED    // customer cancelled (A.3 — lifecycle preserved, no delete)
-  TERMINATED     // contract terminated
+  DEACTIVATED // customer cancelled (A.3 — lifecycle preserved, no delete)
+  TERMINATED // contract terminated
+}
+
+/// Per-equipment service shape — decoupled from Contract.type so equipment can
+/// exist without a contract (e.g. SELF_MANAGED inspection-only units, or a
+/// SALE delivered without a maintenance contract).
+enum EquipmentServiceType {
+  RENTAL
+  MAINTENANCE
+  SALE
+}
+
+/// Per-equipment management shape — whether Seoul Aqua provides full service
+/// (FULL_SERVICE: inspection + filter swaps included) or the customer manages
+/// it themselves (SELF_MANAGED: we just push filter-due alerts).
+enum ManagementType {
+  FULL_SERVICE
+  SELF_MANAGED
+  OTHER
+}
+
+/// Equipment lifecycle stage — independent from any Contract. Drives the
+/// "운영 중 / 정지" badge in the customer-detail equipment list, monthly
+/// revenue aggregation, and the rental-to-maintenance auto-transition.
+enum LifecycleStage {
+  INSTALLED // freshly registered, INSTALLATION visit pending
+  IN_RENTAL // rental term active
+  IN_MAINTENANCE // out of rental, on maintenance / standalone-managed
+  RETRIEVED // device physically returned to Seoul Aqua
+  REPLACED // replaced by another row
 }
 
 enum EquipmentOwnership {
-  COMPANY        // rental — owned by Seoul Aqua
-  CUSTOMER       // sold or post-rental transfer (B.3)
+  COMPANY // rental — owned by Seoul Aqua
+  CUSTOMER // sold or post-rental transfer (B.3)
 }
 
 // ProductCategory — multilingual catalog category (replaces the
@@ -360,7 +411,7 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models    EquipmentModel[]
+  models EquipmentModel[]
 
   @@index([isActive, sortOrder])
 }
@@ -375,47 +426,48 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models    EquipmentModel[]
+  models EquipmentModel[]
 
   @@index([isActive, sortOrder])
 }
 
 model EquipmentModel {
-  id                  String            @id @default(cuid())
+  id                      String             @id @default(cuid())
   /// Legacy SKU-like identifier. UI no longer surfaces this field; new rows
   /// may leave it null. Kept on the table for back-compat with existing data.
   /// NULL is allowed (Postgres permits multiple NULL rows under @unique).
-  modelCode           String?           @unique
+  modelCode               String?            @unique
   // Customer-facing product names in KO/VI/EN. The model code itself
   // stays single-language (alphanumeric/symbol). The previous single-language
   // `name` column was dropped — UI / API now picks the locale-appropriate
   // value via `pickModelName(model, locale)` from `src/lib/products/name.ts`.
-  nameKo              String?
-  nameVi              String?
-  nameEn              String?
-  brandId             String?
-  brand               Brand?            @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  nameKo                  String?
+  nameVi                  String?
+  nameEn                  String?
+  brandId                 String?
+  brand                   Brand?             @relation(fields: [brandId], references: [id], onDelete: SetNull)
   // Legacy enum classification — kept during the ProductCategory rollout so
   // existing list filters & seeded code paths keep working. Prefer `categoryId`.
-  category            EquipmentCategory?
-  categoryId          String?
-  productCategory     ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  description         String?
-  filterPolicy        Json?             // legacy: { filters: [{type, replaceEveryDays}, ...] } — use Consumable instead
-  retailPrice         Decimal?          @db.Decimal(14, 2)
-  monthlyRentalPrice  Decimal?          @db.Decimal(14, 2)
-  monthlyMaintenancePrice Decimal?      @db.Decimal(14, 2)
+  category                EquipmentCategory?
+  categoryId              String?
+  productCategory         ProductCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description             String?
+  filterPolicy            Json? // legacy: { filters: [{type, replaceEveryDays}, ...] } — use Consumable instead
+  retailPrice             Decimal?           @db.Decimal(14, 2)
+  monthlyRentalPrice      Decimal?           @db.Decimal(14, 2)
+  monthlyMaintenancePrice Decimal?           @db.Decimal(14, 2)
   // Periodic inspection cycle (months). 1 for water purifiers (PDF A.2).
-  inspectionEveryMonths Int?
+  inspectionEveryMonths   Int?
   // Warranty months for SALE customers — used by charge-policy default rules.
-  warrantyMonths      Int?              @default(12)
-  isActive            Boolean           @default(true)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  warrantyMonths          Int?               @default(12)
+  isActive                Boolean            @default(true)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
 
-  equipment           Equipment[]
-  consumables         ConsumableOnModel[]
-  accessories         AccessoryOnModel[]
+  equipment   Equipment[]
+  consumables ConsumableOnModel[]
+  accessories AccessoryOnModel[]
+  orderItems  OrderItem[]
 
   @@index([category, isActive])
   @@index([categoryId, isActive])
@@ -428,8 +480,8 @@ model EquipmentModel {
 // At least one of replaceEveryMonths/cleanEveryMonths must be non-null —
 // enforced in Zod (see src/lib/validators/product.ts).
 model Consumable {
-  id                 String                @id @default(cuid())
-  sku                String                @unique
+  id                 String   @id @default(cuid())
+  sku                String   @unique
   nameKo             String
   nameVi             String
   nameEn             String
@@ -438,17 +490,18 @@ model Consumable {
   // PDF A.4: pre-filters are cleaned on every periodic-inspection visit
   // (no fixed month-based cycle). When true, recommender prefills CLEAN
   // on every PERIODIC_INSPECTION visit regardless of cycle math.
-  cleanOnEveryVisit  Boolean               @default(false)
-  retailPrice        Decimal               @db.Decimal(14, 2)
+  cleanOnEveryVisit  Boolean  @default(false)
+  retailPrice        Decimal  @db.Decimal(14, 2)
   notes              String?
-  isActive           Boolean               @default(true)
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  compatibleModels   ConsumableOnModel[]
-  visitLogs          VisitConsumableLog[]
-  chargePolicies     ChargePolicy[]
-  equipmentLinks     EquipmentConsumable[]
+  compatibleModels ConsumableOnModel[]
+  visitLogs        VisitConsumableLog[]
+  chargePolicies   ChargePolicy[]
+  equipmentLinks   EquipmentConsumable[]
+  orderItems       OrderItem[]
 
   @@index([isActive])
 }
@@ -456,20 +509,20 @@ model Consumable {
 // Non-cyclical attachments (mounts, adapters, hoses…) sold or replaced
 // on demand. No replacement cycle, just a sale price + compatibility.
 model Accessory {
-  id          String              @id @default(cuid())
-  sku         String              @unique
+  id          String   @id @default(cuid())
+  sku         String   @unique
   nameKo      String
   nameVi      String
   nameEn      String
   // PDF C.2 — small parts (cocks, valves, hoses, fittings) are still free
   // for MAINTENANCE customers, while larger parts (compressor, hot-water
   // tank, PCB…) are billed. Feeds the default charge-policy rule.
-  isMinorPart Boolean             @default(false)
-  retailPrice Decimal             @db.Decimal(14, 2)
+  isMinorPart Boolean  @default(false)
+  retailPrice Decimal  @db.Decimal(14, 2)
   notes       String?
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   compatibleModels AccessoryOnModel[]
   chargePolicies   ChargePolicy[]
@@ -519,19 +572,19 @@ enum ChargePolicyContractType {
 // Rows in this table override the default for one specific
 // (part, contractType, withinWarranty) tuple.
 model ChargePolicy {
-  id             String                    @id @default(cuid())
+  id             String                   @id @default(cuid())
   accessoryId    String?
   consumableId   String?
   contractType   ChargePolicyContractType
   // SALE only — for RENTAL/MAINTENANCE this is stored as `false` so the
   // unique index still works without conditional uniqueness.
-  withinWarranty Boolean                   @default(false)
+  withinWarranty Boolean                  @default(false)
   isChargeable   Boolean
   notes          String?
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  accessory      Accessory?                @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
-  consumable     Consumable?               @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  accessory      Accessory?               @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  consumable     Consumable?              @relation(fields: [consumableId], references: [id], onDelete: Cascade)
 
   @@unique([accessoryId, contractType, withinWarranty])
   @@unique([consumableId, contractType, withinWarranty])
@@ -565,57 +618,200 @@ model VisitConsumableLog {
 }
 
 model Equipment {
-  id                    String             @id @default(cuid())
-  customerId            String
-  customer              Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  siteId                String?
-  site                  Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  id                      String             @id @default(cuid())
+  customerId              String
+  customer                Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                  String?
+  site                    Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
   /// Optional since 2026-06: MAINTENANCE contracts can register a customer's
   /// externally-purchased (off-catalog) device with no EquipmentModel — see
   /// `customDescription` + `customMaintenanceCycle` below.
-  modelId               String?
-  model                 EquipmentModel?    @relation(fields: [modelId], references: [id])
+  modelId                 String?
+  model                   EquipmentModel?    @relation(fields: [modelId], references: [id])
   /// Free-text description of the device when modelId is null
   /// (e.g. "타사 정수기 모델 XYZ"). Required when modelId is null —
   /// enforced at the validator layer.
-  customDescription     String?            @db.VarChar(500)
+  customDescription       String?            @db.VarChar(500)
   /// Periodic inspection cycle in months for external equipment. Used by the
   /// scheduler when EquipmentModel.inspectionEveryMonths is unavailable.
-  customMaintenanceCycle Int?
-  serialNumber          String?
-  status                EquipmentStatus    @default(ACTIVE)
-  ownership             EquipmentOwnership @default(COMPANY)
-  installedAt           DateTime?
+  customMaintenanceCycle  Int?
+  serialNumber            String?
+  status                  EquipmentStatus    @default(ACTIVE)
+  ownership               EquipmentOwnership @default(COMPANY)
+  installedAt             DateTime?
   installedByTechnicianId String?
   /// Effective deactivation moment chosen by office staff. Past dates
   /// are allowed (back-dated DEACTIVATE) and feed the per-equipment
   /// pause ledger. Null while ACTIVE / never deactivated.
-  deactivatedAt         DateTime?
+  deactivatedAt           DateTime?
   /// Effective termination moment chosen by office staff. Past dates
   /// are allowed. Independent from `retrievedAt` — termination decides
   /// "no more billing"; retrieval records when the physical device
   /// actually came back.
-  terminatedAt          DateTime?
+  terminatedAt            DateTime?
   /// Date the device was physically retrieved. Set only AFTER the unit
   /// is in TERMINATED state. Past dates allowed (the retrieval often
   /// happens in the field and is logged later).
-  retrievedAt           DateTime?
-  filterPolicyOverride  Json?              // per-unit override
-  replacedByEquipmentId String?            @unique
-  notes                 String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  retrievedAt             DateTime?
+  filterPolicyOverride    Json? // per-unit override
+  replacedByEquipmentId   String?            @unique
+  notes                   String?
 
-  contracts             ContractEquipment[]
-  visits                Visit[]
-  serviceRequests       ServiceRequest[]
-  payments              Payment[]
-  consumables           EquipmentConsumable[]
+  // ── Equipment-centric domain shift (added 2026-06) ────────────────────
+  // Pricing + service identity belongs to the device, not the contract.
+  // Contract.deposit/monthlyMaintenanceFee continue to exist as SUM caches
+  // (refreshed by src/lib/contracts/recalculate-cache.ts).
+  /// Per-unit deposit (refundable). Required when serviceType=RENTAL.
+  deposit               Decimal?              @db.Decimal(14, 2)
+  /// Per-unit monthly fee (rental fee for RENTAL, maintenance fee for
+  /// MAINTENANCE, null for SALE).
+  monthlyFee            Decimal?              @db.Decimal(14, 2)
+  /// Per-unit service shape (RENTAL / MAINTENANCE / SALE). Independent
+  /// from any linked Contract.type; equipment can exist without a contract.
+  serviceType           EquipmentServiceType?
+  /// FULL_SERVICE (we manage inspections + filters) vs SELF_MANAGED
+  /// (customer manages; we only alert on filter-due) vs OTHER.
+  managementType        ManagementType?
+  /// Lifecycle stage decoupled from Contract.state — defaults to INSTALLED
+  /// at registration, transitions IN_RENTAL while a RENTAL contract is
+  /// active, then IN_MAINTENANCE on natural end-of-term (or RETRIEVED for
+  /// retrieval contracts).
+  lifecycleStage        LifecycleStage        @default(INSTALLED)
+  /// Per-unit inspection cycle override (months). Falls back to
+  /// model.inspectionEveryMonths when null.
+  customInspectionCycle Int?
+  /// Optional per-unit image (Vercel Blob). Falls back to model.imageUrl.
+  imageUrl              String?
+  /// Office user who registered this unit (the staff member who ran the
+  /// bulk-register wizard). Distinct from `installedByTechnicianId` which
+  /// is the field technician who physically installs.
+  registeredById        String?
+  registeredBy          User?                 @relation("EquipmentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
+  /// Optional asset code (자산 코드) — internal inventory identifier used
+  /// during bulk installation (e.g. WA260501001). Distinct from serial.
+  assetCode             String?               @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts       ContractEquipment[]
+  visits          Visit[]
+  serviceRequests ServiceRequest[]
+  payments        Payment[]
+  consumables     EquipmentConsumable[]
+  orders          Order[]
+  /// Order lines tied to this specific unit (per-item "linked
+  /// equipment" from the order-create modal). Sibling to `orders`
+  /// (which is the whole-order link via `Order.equipmentId`).
+  orderItems      OrderItem[]           @relation("OrderItemEquipment")
 
   @@index([customerId, status])
   @@index([siteId])
   @@index([modelId])
   @@index([serialNumber])
+  @@index([assetCode])
+  @@index([serviceType, lifecycleStage])
+  @@index([managementType])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ORDERS / 주문 (added 2026-06) — feeds Customer-detail "구매 이력" +
+// "주문 내역(판매)" tabs and the per-equipment 구매 이력 widget. Distinct
+// from Payment (post-installation cash flow) — Order is the pre-cash
+// purchase document.
+// ─────────────────────────────────────────────────────────────────────────
+
+enum OrderState {
+  PENDING // created, awaiting delivery
+  DELIVERED // physically delivered
+  CANCELLED
+}
+
+enum ProductKind {
+  EQUIPMENT // a unit from the EquipmentModel catalog
+  CONSUMABLE // a filter or other consumable
+  OTHER // off-catalog item (free text)
+}
+
+model Order {
+  id          String     @id @default(cuid())
+  /// Auto-generated `SO{YYMMDD}-{seq:03d}`.
+  orderNumber String     @unique
+  customerId  String
+  customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  /// Optional link to a specific Equipment row — used for "이 장비를 위해
+  /// 주문한 소모품" surfacing on the equipment-detail purchase-history widget.
+  equipmentId String?
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  siteId      String?
+  site        Site?      @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  /// Optional link to a Contract when the order is part of a contract
+  /// fulfilment (initial install, scheduled replacement). Not required —
+  /// off-contract sales are common.
+  contractId  String?
+  contract    Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  /// Delivery / installation visit the office scheduled at order creation.
+  /// Every order created via /api/orders POST gets a SUGGESTED visit so
+  /// the field tech sees the work on their queue; null only for orders
+  /// imported from legacy data or backfilled before this rollout.
+  visitId          String?
+  visit            Visit?           @relation("OrderVisit", fields: [visitId], references: [id], onDelete: SetNull)
+  /// Origin link: the order was raised from a ServiceRequest the customer
+  /// submitted. Set when the office uses the [+ 주문 등록] CTA on the SR
+  /// detail page. Optional — most orders are direct office entries.
+  serviceRequestId String?
+  serviceRequest   ServiceRequest?  @relation("OrderServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  orderedAt   DateTime
+  deliveredAt DateTime?
+  state       OrderState @default(PENDING)
+  notes       String?
+  createdById String?
+  createdBy   User?      @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  items OrderItem[]
+
+  @@index([customerId, orderedAt])
+  @@index([equipmentId])
+  @@index([state])
+  @@index([visitId])
+  @@index([serviceRequestId])
+}
+
+model OrderItem {
+  id               String          @id @default(cuid())
+  orderId          String
+  order            Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productKind      ProductKind
+  /// Set when productKind=CONSUMABLE. Mutually exclusive with
+  /// equipmentModelId + customName (validator-enforced).
+  consumableId     String?
+  consumable       Consumable?     @relation(fields: [consumableId], references: [id], onDelete: SetNull)
+  /// Set when productKind=EQUIPMENT.
+  equipmentModelId String?
+  equipmentModel   EquipmentModel? @relation(fields: [equipmentModelId], references: [id], onDelete: SetNull)
+  /// Set when productKind=OTHER (off-catalog free text).
+  customName       String?
+  /// Optional per-item link to a specific installed Equipment row so
+  /// the office can say "this filter is for THAT purifier". Drives the
+  /// per-line consumable-picker filter in the order-create modal (the
+  /// dropdown shows only consumables compatible with this device's
+  /// model) and lets the equipment-detail page surface which orders
+  /// were logged against it.
+  equipmentId      String?
+  equipment        Equipment?      @relation("OrderItemEquipment", fields: [equipmentId], references: [id], onDelete: SetNull)
+  quantity         Int
+  unitPrice        Decimal         @db.Decimal(14, 2)
+  totalPrice       Decimal         @db.Decimal(14, 2)
+  /// Free-text purpose (e.g. "교체용", "유지보수", "관리용").
+  purpose          String?
+  notes            String?
+
+  @@index([orderId])
+  @@index([consumableId])
+  @@index([equipmentModelId])
+  @@index([equipmentId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -640,25 +836,25 @@ model Equipment {
 //   - Cycle: EquipmentConsumable.replaceEveryMonths > Consumable.replaceEveryMonths
 // ─────────────────────────────────────────────────────────────────────────
 model EquipmentConsumable {
-  id                  String      @id @default(cuid())
-  equipmentId         String
-  equipment           Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  id                 String      @id @default(cuid())
+  equipmentId        String
+  equipment          Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   /// Catalog filter (preferred). Mutually exclusive with `customName`.
-  consumableId        String?
-  consumable          Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
+  consumableId       String?
+  consumable         Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
   /// Off-catalog filter description (e.g. "타사 RO 멤브레인 호환"). Used
   /// when consumableId is null. Required in that case (enforced in the
   /// validator).
-  customName          String?
-  quantity            Int         @default(1)
+  customName         String?
+  quantity           Int         @default(1)
   /// Override cycle in months. When null, falls back to the catalog
   /// consumable's `replaceEveryMonths`. For manual filters with
   /// customName, this is the authoritative cycle.
-  replaceEveryMonths  Int?
-  unitPrice           Decimal?    @db.Decimal(14, 2)
-  notes               String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  replaceEveryMonths Int?
+  unitPrice          Decimal?    @db.Decimal(14, 2)
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   @@index([equipmentId])
   @@index([consumableId])
@@ -679,9 +875,9 @@ enum ContractState {
   PENDING_SIGNATURE
   ACTIVE
   AMENDED
-  COMPLETED        // rental term ended naturally
-  TERMINATED       // early termination
-  CANCELLED        // never activated
+  COMPLETED // rental term ended naturally
+  TERMINATED // early termination
+  CANCELLED // never activated
 }
 
 /// RENTAL contracts only — what happens to the leased equipment when the
@@ -694,61 +890,62 @@ enum EndOfTermAction {
 }
 
 model Contract {
-  id                     String         @id @default(cuid())
-  contractNumber         String         @unique  // HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode}
-  legacyContractNumber   String?        @unique
-  customerId             String
-  customer               Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  type                   ContractType
-  state                  ContractState  @default(DRAFT)
+  id                   String        @id @default(cuid())
+  contractNumber       String        @unique // HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode}
+  legacyContractNumber String?       @unique
+  customerId           String
+  customer             Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  type                 ContractType
+  state                ContractState @default(DRAFT)
 
-  startDate              DateTime?
-  endDate                DateTime?      // rental: start + 36 months
-  termMonths             Int?           // for rental
+  startDate  DateTime?
+  endDate    DateTime? // rental: start + 36 months
+  termMonths Int? // for rental
 
-  monthlyMaintenanceFee  Decimal?       @db.Decimal(14, 2)
-  totalContractValue     Decimal?       @db.Decimal(14, 2)
+  monthlyMaintenanceFee Decimal?         @db.Decimal(14, 2)
+  totalContractValue    Decimal?         @db.Decimal(14, 2)
   /// RENTAL: deposit collected up-front at the installation visit and
   /// refundable on early termination per business rules. Null for SALE /
   /// MAINTENANCE.
-  deposit                Decimal?       @db.Decimal(14, 2)
+  deposit               Decimal?         @db.Decimal(14, 2)
   /// RENTAL only: what happens at end-of-term (TRANSFER_OWNERSHIP or
   /// RETRIEVE_DEVICE). Defaults to TRANSFER_OWNERSHIP for back-compat.
-  endOfTermAction        EndOfTermAction? @default(TRANSFER_OWNERSHIP)
-  filterPolicy           Json?          // override of EquipmentModel.filterPolicy
+  endOfTermAction       EndOfTermAction? @default(TRANSFER_OWNERSHIP)
+  filterPolicy          Json? // override of EquipmentModel.filterPolicy
 
   // B2B amendment chain (B.2 + B.5)
-  parentContractId       String?
-  parentContract         Contract?      @relation("ContractAmendment", fields: [parentContractId], references: [id])
-  amendments             Contract[]     @relation("ContractAmendment")
-  amendmentRevision      Int            @default(0)
-  amendmentReason        String?
+  parentContractId  String?
+  parentContract    Contract?  @relation("ContractAmendment", fields: [parentContractId], references: [id])
+  amendments        Contract[] @relation("ContractAmendment")
+  amendmentRevision Int        @default(0)
+  amendmentReason   String?
 
-  signedByCustomerAt     DateTime?
-  signedByCompanyAt      DateTime?
-  activatedAt            DateTime?
-  terminatedAt           DateTime?
-  terminationReason      String?
+  signedByCustomerAt      DateTime?
+  signedByCompanyAt       DateTime?
+  activatedAt             DateTime?
+  terminatedAt            DateTime?
+  terminationReason       String?
   /// Refund returned to customer at early termination (recorded for audit
   /// alongside any DEPOSIT_REFUND payment row generated).
-  terminationRefundAmount Decimal?      @db.Decimal(14, 2)
+  terminationRefundAmount Decimal?  @db.Decimal(14, 2)
 
   /// In-place RENTAL→SALE conversion bookkeeping. When set, the contract's
   /// current `type` reflects the post-conversion shape; `convertedFromType`
   /// preserves the pre-conversion type for audit/UI surfacing.
-  convertedFromType      ContractType?
-  convertedAt            DateTime?
+  convertedFromType ContractType?
+  convertedAt       DateTime?
 
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  equipment              ContractEquipment[]
-  payments               Payment[]
-  documents              Document[]
+  equipment ContractEquipment[]
+  payments  Payment[]
+  documents Document[]
   /// Visits auto-spawned by the contract lifecycle (RETRIEVAL at end of
   /// term, plus future INSTALLATION wiring). Optional on Visit so existing
   /// historical visits stay valid.
-  visits                 Visit[]
+  visits    Visit[]
+  orders    Order[]
 
   @@index([customerId, state])
   @@index([state])
@@ -757,15 +954,15 @@ model Contract {
 }
 
 model ContractEquipment {
-  id           String     @id @default(cuid())
-  contractId   String
-  contract     Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  equipmentId  String
-  equipment    Equipment  @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
-  unitPrice    Decimal?   @db.Decimal(14, 2)
-  quantity     Int        @default(1)
-  notes        String?
-  createdAt    DateTime   @default(now())
+  id          String    @id @default(cuid())
+  contractId  String
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  unitPrice   Decimal?  @db.Decimal(14, 2)
+  quantity    Int       @default(1)
+  notes       String?
+  createdAt   DateTime  @default(now())
 
   // ── Per-equipment pause tracking (added 2026-06) ──────────────────
   // Policy: the Contract document (endDate, totalContractValue, monthly
@@ -778,15 +975,15 @@ model ContractEquipment {
   /// Days this line has been paused (DEACTIVATED) within this contract,
   /// rolled up at each reactivation. Used by the billing pro-rata logic
   /// and the per-equipment effectiveEndDate calculation.
-  cumulativePausedDays   Int        @default(0)
+  cumulativePausedDays  Int       @default(0)
   /// Set while the line is currently paused; null while billing is on.
   /// Reactivation rolls the elapsed days into cumulativePausedDays.
-  currentPauseStartedAt  DateTime?
+  currentPauseStartedAt DateTime?
   /// Per-equipment settlement timestamp — set when this specific line
   /// reaches its effectiveEndDate (= contract.endDate + cumulativePausedDays)
   /// and the cron flips ownership / spawns a RETRIEVAL visit for it.
   /// Independent of sibling lines in the same contract.
-  settledAt              DateTime?
+  settledAt             DateTime?
 
   @@unique([contractId, equipmentId])
   @@index([equipmentId])
@@ -815,35 +1012,35 @@ enum ServiceRequestState {
 }
 
 model ServiceRequest {
-  id            String              @id @default(cuid())
-  code          String              @unique  // SR-####
-  customerId    String
-  customer      Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id               String              @id @default(cuid())
+  code             String              @unique // SR-####
+  customerId       String
+  customer         Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
   /// Optional site picker (added 2026-06). Multi-site customers can
   /// specify which site the request belongs to; B2C / single-site
   /// customers leave it null. Always nullable — the customer may not
   /// remember which site, and the office will reconcile later.
-  siteId        String?
-  site          Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  contactId     String?
-  contact       CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  equipmentId   String?
-  equipment     Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
-  type          ServiceRequestType
-  isPaid        Boolean             @default(false)
-  state         ServiceRequestState @default(PENDING_REVIEW)
-  description   String
-  attachments   Json?               // [{ url, filename, type }]
+  siteId           String?
+  site             Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  contactId        String?
+  contact          CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  equipmentId      String?
+  equipment        Equipment?          @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  type             ServiceRequestType
+  isPaid           Boolean             @default(false)
+  state            ServiceRequestState @default(PENDING_REVIEW)
+  description      String
+  attachments      Json? // [{ url, filename, type }]
   // Customer's preferred visit time captured at submission. Office uses
   // it to pre-fill the approval modal's scheduledFor and to know when to
   // call the customer to negotiate a different slot.
   preferredVisitAt DateTime?
-  approvedPrice Decimal?            @db.Decimal(14, 2)
-  approvedDate  DateTime?
-  rejectionReason String?
-  submittedAt   DateTime            @default(now())
-  decidedAt     DateTime?
-  decidedById   String?
+  approvedPrice    Decimal?            @db.Decimal(14, 2)
+  approvedDate     DateTime?
+  rejectionReason  String?
+  submittedAt      DateTime            @default(now())
+  decidedAt        DateTime?
+  decidedById      String?
   // Team-wide "last read" marker for the office side of the customer
   // message thread. Any office user (ADMIN / MANAGER / STAFF) hitting
   // the mark-read endpoint advances this for everyone, so the unread
@@ -852,10 +1049,13 @@ model ServiceRequest {
   // actorType='CUSTOMER' for this SR tells us if there are new
   // customer messages to surface.
   lastOfficeReadAt DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-  visit         Visit?
+  visit Visit?
+  /// Orders raised from this service request (office uses the
+  /// [+ 주문 등록] CTA on SR detail). Usually 0..1.
+  orders Order[] @relation("OrderServiceRequest")
 
   @@index([customerId, state])
   @@index([state, submittedAt])
@@ -867,10 +1067,10 @@ model ServiceRequest {
 // ─────────────────────────────────────────────────────────────────────────
 
 enum VisitState {
-  SUGGESTED        // scheduler proposed
-  SCHEDULED        // office confirmed
-  IN_PROGRESS      // technician opened on mobile
-  COMPLETED        // lead tech marked done
+  SUGGESTED // scheduler proposed
+  SCHEDULED // office confirmed
+  IN_PROGRESS // technician opened on mobile
+  COMPLETED // lead tech marked done
   FAILED_NO_SHOW
   RESCHEDULED
   CANCELLED
@@ -887,59 +1087,80 @@ enum VisitType {
   /// a RENTAL contract with endOfTermAction=RETRIEVE_DEVICE reaches its end
   /// date, or by a mid-term cancellation flagged for retrieval.
   RETRIEVAL
+  /// Consumable / spare-part delivery raised via a customer purchase
+  /// order. Piggy-backs on an upcoming visit (added to `additionalTypes`)
+  /// or spawns a fresh delivery-only visit — see POST /api/orders.
+  CONSUMABLE_DELIVERY
   OTHER
 }
 
 model Visit {
-  id                       String     @id @default(cuid())
-  customerId               String
-  customer                 Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  siteId                   String?
+  id               String          @id @default(cuid())
+  customerId       String
+  customer         Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId           String?
   /// Site relation — added 2026-06 so multi-site B2B visits can be
   /// grouped + filtered by location. SetNull preserves visit history if
   /// the site is later removed.
-  site                     Site?      @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  equipmentId              String?
-  equipment                Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  site             Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  equipmentId      String?
+  equipment        Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   /// Set when the visit was auto-spawned by a contract lifecycle event
   /// (RETRIEVAL at end-of-term, or potential future INSTALLATION wiring).
   /// Optional + onDelete: SetNull so the contract can be soft-purged without
   /// losing visit history.
-  contractId               String?
-  contract                 Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  serviceRequestId         String?    @unique
-  serviceRequest           ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
-  type                     VisitType
-  state                    VisitState @default(SUGGESTED)
+  contractId       String?
+  contract         Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  serviceRequestId String?         @unique
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  type             VisitType
+  /// Secondary visit types layered on top of `type` — a single field
+  /// visit may cover multiple work streams (e.g. a scheduled inspection
+  /// where the tech also drops off a consumable order the customer paid
+  /// for). Empty when the visit only does its primary `type` work. See
+  /// POST /api/orders "attachToVisitId" flow for the canonical use case.
+  additionalTypes  VisitType[]     @default([])
+  /// Document kinds queued to auto-issue when this visit becomes
+  /// SCHEDULED (or immediately if it already is). Populated by POST
+  /// /api/orders — consumable orders drop the customer-appropriate
+  /// delivery kind (DELIVERY_RECEIPT for B2C, DELIVERY_SLIP_B2B for
+  /// B2B) here. Each kind is removed from the array as its PDF is
+  /// rendered by `VisitWorkflow.schedule` so the field stays a live
+  /// worklist rather than an audit trail.
+  pendingDocumentKinds DocumentKind[] @default([])
+  state            VisitState      @default(SUGGESTED)
 
-  scheduledFor             DateTime
-  scheduledWindow          String?    // e.g. "morning", "14:00-16:00"
+  scheduledFor    DateTime
 
-  leadTechnicianId         String?
-  leadTechnician           User?      @relation("LeadTechnician", fields: [leadTechnicianId], references: [id], onDelete: SetNull)
-  collaboratorTechnicianIds String[]  @default([])
+  leadTechnicianId          String?
+  leadTechnician            User?    @relation("LeadTechnician", fields: [leadTechnicianId], references: [id], onDelete: SetNull)
+  collaboratorTechnicianIds String[] @default([])
 
-  expectedAmount           Decimal?   @db.Decimal(14, 2)
-  findings                 String?
-  partsReplaced            Json?
-  photos                   Json?      // [{ url, takenAt }]
+  expectedAmount            Decimal? @db.Decimal(14, 2)
+  findings                  String?
+  partsReplaced             Json?
+  photos                    Json? // [{ url, takenAt }]
   // Technician → HQ relay thread. Technicians never contact customers directly,
   // so customer phone numbers are hidden in the field; instead the technician
   // leaves handoff messages here for the office. NOT shown on customer-facing
   // documents (the work-confirmation PDF only renders `findings`).
-  officeNotes              Json?      // [{ at, authorId, authorName, text }]
+  officeNotes               Json? // [{ at, authorId, authorName, text }]
   customerSignaturePhotoUrl String?
 
-  startedAt                DateTime?
-  completedAt              DateTime?
-  failureReason            String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failureReason String?
 
-  createdAt                DateTime   @default(now())
-  updatedAt                DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  payments                 Payment[]
-  documents                Document[]
-  consumableLogs           VisitConsumableLog[]
+  payments       Payment[]
+  documents      Document[]
+  consumableLogs VisitConsumableLog[]
+  /// Orders whose delivery/install is fulfilled by this visit. Usually
+  /// 0..1 — one order per visit — but the join is many-to-one to allow
+  /// merging two same-customer orders onto a single trip when needed.
+  orders         Order[]              @relation("OrderVisit")
 
   @@index([leadTechnicianId, state])
   @@index([customerId, state])
@@ -960,10 +1181,10 @@ enum PaymentMethod {
 }
 
 enum PaymentState {
-  EXPECTED        // invoice issued, awaiting payment
-  COLLECTED       // technician collected cash
-  HANDED_OVER     // tech deposited at office
-  RECONCILED      // manager approved final
+  EXPECTED // invoice issued, awaiting payment
+  COLLECTED // technician collected cash
+  HANDED_OVER // tech deposited at office
+  RECONCILED // manager approved final
   OVERDUE_D7
   OVERDUE_D14
   OVERDUE_D30
@@ -974,52 +1195,52 @@ enum PaymentState {
 /// Drives the per-contract payment history view + reporting aggregates.
 /// Defaults to RENTAL_FEE so legacy rows remain interpretable.
 enum PaymentKind {
-  DEPOSIT             // RENTAL up-front deposit (refundable)
-  RENTAL_FEE          // RENTAL monthly fee
-  SALE_PAYMENT        // SALE outright purchase or post-conversion balance
-  MAINTENANCE_FEE     // MAINTENANCE monthly/periodic fee
-  SERVICE_FEE         // ad-hoc paid service charge (out-of-warranty repairs)
-  DEPOSIT_REFUND      // refund returned at termination / RENTAL→SALE conversion
+  DEPOSIT // RENTAL up-front deposit (refundable)
+  RENTAL_FEE // RENTAL monthly fee
+  SALE_PAYMENT // SALE outright purchase or post-conversion balance
+  MAINTENANCE_FEE // MAINTENANCE monthly/periodic fee
+  SERVICE_FEE // ad-hoc paid service charge (out-of-warranty repairs)
+  DEPOSIT_REFUND // refund returned at termination / RENTAL→SALE conversion
 }
 
 model Payment {
-  id                  String        @id @default(cuid())
-  customerId          String
-  customer            Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  contractId          String?
-  contract            Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  visitId             String?
-  visit               Visit?        @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  id            String     @id @default(cuid())
+  customerId    String
+  customer      Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  contractId    String?
+  contract      Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  visitId       String?
+  visit         Visit?     @relation(fields: [visitId], references: [id], onDelete: SetNull)
   /// Optional link to a specific Equipment row (added 2026-06).
   /// Technicians can mark "this payment is for THAT device" when a
   /// visit covers multiple units, so the office can audit which
   /// equipment a fee was collected against.
-  equipmentId         String?
-  equipment           Equipment?    @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
-  collectedById       String?       // technician
-  collectedBy         User?         @relation(fields: [collectedById], references: [id], onDelete: SetNull)
+  equipmentId   String?
+  equipment     Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  collectedById String? // technician
+  collectedBy   User?      @relation(fields: [collectedById], references: [id], onDelete: SetNull)
 
-  kind                PaymentKind   @default(RENTAL_FEE)
-  method              PaymentMethod
-  state               PaymentState  @default(EXPECTED)
-  expectedAmount      Decimal       @db.Decimal(14, 2)
-  actualAmount        Decimal       @db.Decimal(14, 2) @default(0)
-  carryoverAmount     Decimal       @db.Decimal(14, 2) @default(0)  // D.3
-  currency            String        @default("VND")
-  reference           String?       // bank transfer ref number
+  kind            PaymentKind   @default(RENTAL_FEE)
+  method          PaymentMethod
+  state           PaymentState  @default(EXPECTED)
+  expectedAmount  Decimal       @db.Decimal(14, 2)
+  actualAmount    Decimal       @default(0) @db.Decimal(14, 2)
+  carryoverAmount Decimal       @default(0) @db.Decimal(14, 2) // D.3
+  currency        String        @default("VND")
+  reference       String? // bank transfer ref number
 
-  collectedAt         DateTime?
-  handedOverAt        DateTime?
-  reconciledAt        DateTime?
+  collectedAt  DateTime?
+  handedOverAt DateTime?
+  reconciledAt DateTime?
 
-  dueDate             DateTime?
+  dueDate DateTime?
 
-  notes               String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  taxInvoice          TaxInvoice?
-  documents           Document[]
+  taxInvoice TaxInvoice?
+  documents  Document[]
 
   @@index([customerId, state])
   @@index([contractId, kind])
@@ -1034,7 +1255,7 @@ model Payment {
 
 enum InvoiceProvider {
   MANUAL_UPLOAD
-  VIETTEL_SINVOICE   // Phase 8+
+  VIETTEL_SINVOICE // Phase 8+
 }
 
 model TaxInvoice {
@@ -1070,8 +1291,8 @@ enum NotificationStatus {
   QUEUED
   SENT
   FAILED
-  MOCKED        // mock provider used
-  SKIPPED       // recipient opted out + non-system message
+  MOCKED // mock provider used
+  SKIPPED // recipient opted out + non-system message
 }
 
 model NotificationLog {
@@ -1080,16 +1301,16 @@ model NotificationLog {
   customer          Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   contactId         String?
   contact           CustomerContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  templateCode      String              // e.g. "SMS_VISIT_REMINDER"
+  templateCode      String // e.g. "SMS_VISIT_REMINDER"
   channel           NotificationChannel
   locale            Locale
-  provider          String              // "mock" / "esms" / "resend"
-  recipient         String              // phone or email
-  payload           Json?               // rendered body + subject + variables
+  provider          String // "mock" / "esms" / "resend"
+  recipient         String // phone or email
+  payload           Json? // rendered body + subject + variables
   status            NotificationStatus  @default(QUEUED)
   providerMessageId String?
   errorMessage      String?
-  segmentsUsed      Int?                // SMS segments billed
+  segmentsUsed      Int? // SMS segments billed
   sentAt            DateTime?
   createdAt         DateTime            @default(now())
 
@@ -1107,38 +1328,38 @@ enum DocumentKind {
   CONTRACT
   RECEIPT
   WORK_CONFIRMATION
-  DELIVERY_SLIP          // legacy alias — DELIVERY_SLIP_B2B is the new canonical kind (kept for back-compat)
-  PERIODIC_INSPECTION    // legacy alias — PERIODIC_CHECK_B2C / B2B are the new canonical kinds
+  DELIVERY_SLIP // legacy alias — DELIVERY_SLIP_B2B is the new canonical kind (kept for back-compat)
+  PERIODIC_INSPECTION // legacy alias — PERIODIC_CHECK_B2C / B2B are the new canonical kinds
   TAX_INVOICE
   // Phase 6+ visit-document expansion (2026-06-03):
-  DELIVERY_RECEIPT       // B2C rental — install + handover slip & receipt (DOCUMENT_TEMPLATES §4)
-  SALE_RECEIPT_B2C       // B2C sale — sale receipt + handover (§5)
-  DELIVERY_SLIP_B2B      // B2B install — Mẫu số 02-VT delivery slip (§3)
-  PERIODIC_CHECK_B2C     // B2C periodic — inspection + receipt (§6)
-  PERIODIC_CHECK_B2B     // B2B periodic — inspection confirmation (no prices, §7)
+  DELIVERY_RECEIPT // B2C rental — install + handover slip & receipt (DOCUMENT_TEMPLATES §4)
+  SALE_RECEIPT_B2C // B2C sale — sale receipt + handover (§5)
+  DELIVERY_SLIP_B2B // B2B install — Mẫu số 02-VT delivery slip (§3)
+  PERIODIC_CHECK_B2C // B2C periodic — inspection + receipt (§6)
+  PERIODIC_CHECK_B2B // B2B periodic — inspection confirmation (no prices, §7)
   OTHER
 }
 
 model Document {
-  id            String       @id @default(cuid())
-  kind          DocumentKind
-  customerId    String?
-  customer      Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  contractId    String?
-  contract      Contract?    @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  visitId       String?
-  visit         Visit?       @relation(fields: [visitId], references: [id], onDelete: SetNull)
-  paymentId     String?
-  payment       Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  templateCode  String       // e.g. "CONTRACT_B2C_RENTAL"
-  locale        Locale       @default(vi)  // primary language (always vi for bilingual docs)
-  secondaryLocale Locale?    // bilingual secondary language (ko default / en) — null for legacy single-locale docs
-  storageKey    String       // path under uploads/ (or future Supabase Storage)
-  filename      String
-  mimeType      String       @default("application/pdf")
-  sizeBytes    Int?
-  generatedAt   DateTime     @default(now())
-  generatedById String?
+  id              String       @id @default(cuid())
+  kind            DocumentKind
+  customerId      String?
+  customer        Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contractId      String?
+  contract        Contract?    @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  visitId         String?
+  visit           Visit?       @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  paymentId       String?
+  payment         Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  templateCode    String // e.g. "CONTRACT_B2C_RENTAL"
+  locale          Locale       @default(vi) // primary language (always vi for bilingual docs)
+  secondaryLocale Locale? // bilingual secondary language (ko default / en) — null for legacy single-locale docs
+  storageKey      String // path under uploads/ (or future Supabase Storage)
+  filename        String
+  mimeType        String       @default("application/pdf")
+  sizeBytes       Int?
+  generatedAt     DateTime     @default(now())
+  generatedById   String?
 
   @@index([customerId, kind])
   @@index([contractId])
@@ -1156,18 +1377,18 @@ model Document {
  * Composite unique key on (code, locale).
  */
 model NotificationTemplate {
-  id            String              @id @default(cuid())
-  code          String              // e.g. "SMS_VISIT_REMINDER"
-  channel       NotificationChannel
-  locale        Locale
-  subject       String?             // email only
-  body          String
+  id          String              @id @default(cuid())
+  code        String // e.g. "SMS_VISIT_REMINDER"
+  channel     NotificationChannel
+  locale      Locale
+  subject     String? // email only
+  body        String
   /// Admin-controlled per-(code, locale) on/off switch. When false, the
   /// send pipeline records a SKIPPED log and the message is never dispatched.
-  enabled       Boolean             @default(true)
-  updatedAt     DateTime            @updatedAt
-  updatedById   String?
-  createdAt     DateTime            @default(now())
+  enabled     Boolean             @default(true)
+  updatedAt   DateTime            @updatedAt
+  updatedById String?
+  createdAt   DateTime            @default(now())
 
   @@unique([code, locale])
   @@index([code])

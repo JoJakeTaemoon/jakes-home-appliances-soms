@@ -18,9 +18,11 @@ export const GET = defineQuery({
   query: equipmentModelListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, category, isActive, page, pageSize } = query;
+    const { q, category, brandId, categoryId, isActive, page, pageSize } = query;
     const where: Prisma.EquipmentModelWhereInput = {};
     if (category) where.category = category;
+    if (brandId) where.brandId = brandId;
+    if (categoryId) where.categoryId = categoryId;
     if (typeof isActive === "boolean") where.isActive = isActive;
     if (q) {
       where.OR = [

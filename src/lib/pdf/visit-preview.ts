@@ -112,6 +112,29 @@ interface FetchedVisit {
   } | null;
   technicianName: string;
   collaboratorNames: string[];
+  /** Purchase orders attached to this visit (Order.visitId). When
+   *  non-empty, the CONSUMABLE_DELIVERY-shaped documents
+   *  (SALE_RECEIPT_B2C / DELIVERY_SLIP_B2B) render these line items
+   *  instead of the customer's contract lines — that's what the
+   *  customer actually paid for on this trip. */
+  orders: Array<{
+    id: string;
+    orderNumber: string;
+    items: Array<{
+      productKind: "EQUIPMENT" | "CONSUMABLE" | "OTHER";
+      /** Free-text override for OTHER kind, or missing model/consumable. */
+      customName: string | null;
+      /** SKU / model code — best-effort. Empty string when the item is a
+       *  bare customName line (OTHER). */
+      code: string;
+      /** VI-primary label (falls back through nameKo / nameEn / customName). */
+      name: string;
+      /** Only meaningful for productKind=EQUIPMENT with a linked Equipment row. */
+      serialNumber: string | null;
+      quantity: number;
+      unitPrice: number;
+    }>;
+  }>;
 }
 
 async function fetchVisit(visitId: string): Promise<FetchedVisit> {
@@ -129,6 +152,33 @@ async function fetchVisit(visitId: string): Promise<FetchedVisit> {
       },
       equipment: { include: { model: true } },
       leadTechnician: { select: { id: true, username: true } },
+      orders: {
+        orderBy: { orderedAt: "asc" },
+        select: {
+          id: true,
+          orderNumber: true,
+          items: {
+            select: {
+              productKind: true,
+              customName: true,
+              quantity: true,
+              unitPrice: true,
+              consumable: {
+                select: { sku: true, nameKo: true, nameVi: true, nameEn: true },
+              },
+              equipmentModel: {
+                select: {
+                  modelCode: true,
+                  nameKo: true,
+                  nameVi: true,
+                  nameEn: true,
+                },
+              },
+              equipment: { select: { serialNumber: true } },
+            },
+          },
+        },
+      },
     },
   });
   if (!v) throw new NotFoundError("Visit not found");
@@ -201,6 +251,39 @@ async function fetchVisit(visitId: string): Promise<FetchedVisit> {
       : null,
     technicianName: v.leadTechnician?.username ?? "—",
     collaboratorNames,
+    orders: v.orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      items: o.items.map((it) => {
+        const consName = it.consumable
+          ? it.consumable.nameVi ??
+            it.consumable.nameKo ??
+            it.consumable.nameEn ??
+            it.consumable.sku ??
+            ""
+          : "";
+        const modelName = it.equipmentModel
+          ? it.equipmentModel.nameVi ??
+            it.equipmentModel.nameKo ??
+            it.equipmentModel.nameEn ??
+            it.equipmentModel.modelCode ??
+            ""
+          : "";
+        const code = it.consumable?.sku
+          ?? it.equipmentModel?.modelCode
+          ?? "";
+        const label = consName || modelName || it.customName || "";
+        return {
+          productKind: it.productKind as "EQUIPMENT" | "CONSUMABLE" | "OTHER",
+          customName: it.customName,
+          code,
+          name: label,
+          serialNumber: it.equipment?.serialNumber ?? null,
+          quantity: it.quantity,
+          unitPrice: Number(it.unitPrice),
+        };
+      }),
+    })),
   };
 }
 
@@ -325,8 +408,23 @@ async function buildSaleReceiptB2c(
   }
   const contract = await pickContract(v.customer.id, "SALE");
   const hqPhone = await getHqPhone();
+  // Line source priority (same rule as DELIVERY_SLIP_B2B):
+  //   1. Attached purchase orders — the customer's actual purchase for
+  //      this trip (CONSUMABLE_DELIVERY visits + any visit piggybacking
+  //      a paid consumable order).
+  //   2. Contract SALE lines — B2C outright-purchase installations.
+  //   3. Single-line fallback from Visit.equipment.
+  const orderLines = v.orders.flatMap((o) => o.items);
   let lines: SaleReceiptPayload["lines"] = [];
-  if (contract?.lines.length) {
+  if (orderLines.length > 0) {
+    lines = orderLines.map((it) => ({
+      modelCode: it.code,
+      modelName: it.name,
+      serialNumber: it.serialNumber,
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+    }));
+  } else if (contract?.lines.length) {
     lines = contract.lines.map((l) => ({
       modelCode: l.modelCode,
       modelName: l.modelName,
@@ -376,8 +474,26 @@ async function buildDeliverySlipB2b(
   }
   const contract = await pickContract(v.customer.id, null);
   const hqPhone = await getHqPhone();
+  // Line source priority:
+  //   1. Attached purchase orders (Order.visitId) — the customer's actual
+  //      purchase for this trip. Applies to CONSUMABLE_DELIVERY visits +
+  //      any visit that piggybacks a paid consumable order.
+  //   2. Contract equipment lines — INSTALLATION visits handing over the
+  //      contracted device set.
+  //   3. Single-line fallback from the visit's attached equipment when
+  //      no contract exists (rare — usually B2B installs have contracts).
+  const orderLines = v.orders.flatMap((o) => o.items);
   let lines: DeliverySlipB2bPayload["lines"] = [];
-  if (contract?.lines.length) {
+  if (orderLines.length > 0) {
+    lines = orderLines.map((it) => ({
+      modelCode: it.code,
+      modelName: it.name,
+      serialNumber: it.serialNumber,
+      unit: "Cái",
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+    }));
+  } else if (contract?.lines.length) {
     lines = contract.lines.map((l) => ({
       modelCode: l.modelCode,
       modelName: l.modelName,
