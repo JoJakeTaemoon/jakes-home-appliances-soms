@@ -45,9 +45,14 @@ export const GET = defineQuery({
 
     const repIds = reps.map((r) => r.id);
 
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    // Fixed 30-day window ending "now" — the sales-reps list card shows
+    // "지난 30일 매출" (2026-07-03 policy). Revenue == money that came in:
+    // Payment.actualAmount for RENTAL_FEE + SALE_PAYMENT collected in the
+    // window, plus paid consumable OrderItem totals for orders placed in
+    // the window. Deposits, refunds, maintenance, and ad-hoc service fees
+    // are excluded per the "임대료 및 구매금액" spec.
+    const windowEnd = new Date();
+    const windowStart = new Date(windowEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // ── Customer count per rep ──
     const customerGroups = await prisma.customer.groupBy({
@@ -60,37 +65,53 @@ export const GET = defineQuery({
       if (g.salesRepId) customersByRep.set(g.salesRepId, g._count._all);
     }
 
-    // ── This-month new equipment + revenue per rep ──
-    // Equipment-centric aggregation (2026-07-02 policy) — the rep's
-    // numbers roll up from devices installed this month for their
-    // assigned customers. "monthlyContracts" name is kept on the
-    // response for backward compat with the sales-rep list card
-    // markup, but it now counts equipment.
-    const monthlyEquipment = await prisma.equipment.findMany({
-      where: {
-        installedAt: { gte: monthStart },
-        status: { not: "REPLACED" },
-        customer: { salesRepId: { in: repIds } },
-      },
-      select: {
-        deposit: true,
-        monthlyFee: true,
-        customer: { select: { salesRepId: true } },
-      },
-    });
-    const monthlyCountByRep = new Map<string, number>();
-    const monthlyRevenueByRep = new Map<string, number>();
-    /** First-year book value per install: deposit + 12 recurring months. */
-    const REVENUE_MONTHS = 12;
-    for (const eq of monthlyEquipment) {
-      const repId = eq.customer.salesRepId;
+    // ── Past-30d revenue per rep ──
+    const [collectedPayments, paidOrderItems] = await Promise.all([
+      prisma.payment.findMany({
+        where: {
+          customer: { salesRepId: { in: repIds } },
+          kind: { in: ["RENTAL_FEE", "SALE_PAYMENT"] },
+          state: { in: ["COLLECTED", "HANDED_OVER", "RECONCILED"] },
+          collectedAt: { gte: windowStart, lte: windowEnd },
+        },
+        select: {
+          actualAmount: true,
+          customer: { select: { salesRepId: true } },
+        },
+      }),
+      prisma.orderItem.findMany({
+        where: {
+          productKind: "CONSUMABLE",
+          unitPrice: { gt: 0 },
+          order: {
+            state: { not: "CANCELLED" },
+            orderedAt: { gte: windowStart, lte: windowEnd },
+            customer: { salesRepId: { in: repIds } },
+          },
+        },
+        select: {
+          totalPrice: true,
+          order: {
+            select: { customer: { select: { salesRepId: true } } },
+          },
+        },
+      }),
+    ]);
+    const last30dRevenueByRep = new Map<string, number>();
+    for (const p of collectedPayments) {
+      const repId = p.customer.salesRepId;
       if (!repId) continue;
-      monthlyCountByRep.set(repId, (monthlyCountByRep.get(repId) ?? 0) + 1);
-      const revenue =
-        Number(eq.deposit ?? 0) + Number(eq.monthlyFee ?? 0) * REVENUE_MONTHS;
-      monthlyRevenueByRep.set(
+      last30dRevenueByRep.set(
         repId,
-        (monthlyRevenueByRep.get(repId) ?? 0) + revenue,
+        (last30dRevenueByRep.get(repId) ?? 0) + Number(p.actualAmount ?? 0),
+      );
+    }
+    for (const item of paidOrderItems) {
+      const repId = item.order.customer.salesRepId;
+      if (!repId) continue;
+      last30dRevenueByRep.set(
+        repId,
+        (last30dRevenueByRep.get(repId) ?? 0) + Number(item.totalPrice ?? 0),
       );
     }
 
@@ -124,8 +145,7 @@ export const GET = defineQuery({
       ...r,
       stats: {
         customerCount: customersByRep.get(r.id) ?? 0,
-        monthlyContracts: monthlyCountByRep.get(r.id) ?? 0,
-        monthlyRevenue: monthlyRevenueByRep.get(r.id) ?? 0,
+        last30dRevenue: last30dRevenueByRep.get(r.id) ?? 0,
         receivables: receivablesByRep.get(r.id) ?? 0,
       },
     }));

@@ -1,6 +1,11 @@
 /**
- * GET /api/sales-reps/[id] — single sales rep + aggregates over the
- * current month (assigned customers, new contracts, receivables).
+ * GET /api/sales-reps/[id] — single sales rep + roster/finance summary.
+ *
+ * `last30dRevenue` = money collected in the last 30 days for this rep's
+ * customers: RENTAL_FEE + SALE_PAYMENT payments (COLLECTED/HANDED_OVER/
+ * RECONCILED) plus paid CONSUMABLE order items. Deposits, refunds, and
+ * maintenance/service fees are excluded (matches the /api/sales-reps
+ * list card definition; see that file for the "why").
  */
 
 import { z } from "zod";
@@ -32,34 +37,50 @@ export const GET = defineQuery({
     });
     if (!rep) throw new NotFoundError("Sales rep not found");
 
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
+    const windowEnd = new Date();
+    const windowStart = new Date(windowEnd.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const [customerCount, monthlyContracts, payments] = await Promise.all([
-      prisma.customer.count({ where: { salesRepId: params.id } }),
-      // Equipment-centric aggregation (2026-07-02): "monthlyContracts"
-      // now counts this-month new equipment for the rep's customers.
-      // The field name is preserved for markup back-compat with the
-      // rep-detail KPI card.
-      prisma.equipment.count({
-        where: {
-          customer: { salesRepId: params.id },
-          status: { not: "REPLACED" },
-          installedAt: { gte: monthStart },
-        },
-      }),
-      prisma.payment.findMany({
-        where: {
-          customer: { salesRepId: params.id },
-          state: { in: ["EXPECTED", "OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"] },
-        },
-        select: { expectedAmount: true, actualAmount: true },
-      }),
-    ]);
+    const [customerCount, collectedPayments, paidOrderItems, receivablePayments] =
+      await Promise.all([
+        prisma.customer.count({ where: { salesRepId: params.id } }),
+        prisma.payment.findMany({
+          where: {
+            customer: { salesRepId: params.id },
+            kind: { in: ["RENTAL_FEE", "SALE_PAYMENT"] },
+            state: { in: ["COLLECTED", "HANDED_OVER", "RECONCILED"] },
+            collectedAt: { gte: windowStart, lte: windowEnd },
+          },
+          select: { actualAmount: true },
+        }),
+        prisma.orderItem.findMany({
+          where: {
+            productKind: "CONSUMABLE",
+            unitPrice: { gt: 0 },
+            order: {
+              state: { not: "CANCELLED" },
+              orderedAt: { gte: windowStart, lte: windowEnd },
+              customer: { salesRepId: params.id },
+            },
+          },
+          select: { totalPrice: true },
+        }),
+        prisma.payment.findMany({
+          where: {
+            customer: { salesRepId: params.id },
+            state: {
+              in: ["EXPECTED", "OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"],
+            },
+          },
+          select: { expectedAmount: true, actualAmount: true },
+        }),
+      ]);
+
+    let last30dRevenue = 0;
+    for (const p of collectedPayments) last30dRevenue += Number(p.actualAmount ?? 0);
+    for (const item of paidOrderItems) last30dRevenue += Number(item.totalPrice ?? 0);
 
     let receivables = 0;
-    for (const p of payments) {
+    for (const p of receivablePayments) {
       receivables += Math.max(
         0,
         Number(p.expectedAmount ?? 0) - Number(p.actualAmount ?? 0),
@@ -70,7 +91,7 @@ export const GET = defineQuery({
       ...rep,
       stats: {
         customerCount,
-        monthlyContracts,
+        last30dRevenue,
         receivables,
       },
     };

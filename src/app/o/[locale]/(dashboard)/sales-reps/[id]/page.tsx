@@ -20,7 +20,7 @@ interface RepDetail {
   phone: string;
   stats: {
     customerCount: number;
-    monthlyContracts: number;
+    last30dRevenue: number;
     receivables: number;
   };
 }
@@ -40,11 +40,11 @@ interface EquipmentRow {
   serialNumber: string | null;
   customDescription?: string | null;
   monthlyFee: string | null;
-  deposit?: string | null;
   serviceType?: string | null;
   status?: string;
   installedAt?: string | null;
-  /** Populated by the revenue endpoint; = deposit + monthlyFee × 12. */
+  /** Populated by the revenue endpoint; sum of collected payments +
+   *  paid consumable purchases attributed to this equipment in period. */
   revenue?: number;
   model: {
     modelCode: string | null;
@@ -110,7 +110,6 @@ export default function SalesRepDetailPage() {
     totalValue: number;
     totalEquipment: number;
     totalCustomers: number;
-    revenueMonths: number;
   }>(id ? `/api/sales-reps/${id}/contracts?from=${from}&to=${to}` : null);
   const receivablesQuery = useApiQuery<{
     customers: ReceivableCustomerGroup[];
@@ -141,12 +140,11 @@ export default function SalesRepDetailPage() {
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <KpiCard label={t("kpi.customers")} value={rep.stats.customerCount} />
-        <KpiCard label={t("kpi.monthlyContracts")} value={rep.stats.monthlyContracts} />
         <KpiCard
-          label={t("kpi.monthlyRevenue")}
-          value={formatMoney(contracts?.totalValue ?? 0)}
+          label={t("kpi.last30dRevenue")}
+          value={formatMoney(rep.stats.last30dRevenue)}
           variant="money"
         />
         <KpiCard
@@ -289,11 +287,12 @@ type Tn = ReturnType<typeof useTranslations>;
 
 /**
  * Revenue tab: one card per customer, each card lists every piece of
- * equipment installed during the period for that customer, with the
- * model, serial, install date, deposit, monthly fee, and per-device
- * first-year revenue (`deposit + monthlyFee × N`, where N comes from
- * the server via `revenueMonths`). Aggregation is equipment-centric
- * (2026-07-02 policy).
+ * equipment that received revenue in the selected period, with the
+ * model, serial, install date, service type, monthly fee (context), and
+ * per-device revenue = sum of collected rental / equipment-sale payments
+ * plus paid CONSUMABLE order-item totals attributed to that device
+ * (2026-07-03 policy — replaces the earlier deposit + monthlyFee × 12
+ * first-year book value).
  */
 function RevenueByCustomer({
   data,
@@ -307,7 +306,6 @@ function RevenueByCustomer({
         totalValue: number;
         totalEquipment: number;
         totalCustomers: number;
-        revenueMonths: number;
       }
     | undefined;
   locale: string;
@@ -333,9 +331,7 @@ function RevenueByCustomer({
           emphasis
         />
       </div>
-      <p className="text-xs text-gray-500">
-        {t("revenue.formulaHint").replace("{months}", String(data.revenueMonths))}
-      </p>
+      <p className="text-xs text-gray-500">{t("revenue.formulaHint")}</p>
 
       {data.customers.map((cust) => (
         <article
@@ -370,7 +366,6 @@ function RevenueByCustomer({
                   <th className="px-3 py-2">{t("revenue.serial")}</th>
                   <th className="px-3 py-2">{t("revenue.installedAt")}</th>
                   <th className="px-3 py-2">{t("revenue.serviceType")}</th>
-                  <th className="px-3 py-2 text-right">{t("revenue.deposit")}</th>
                   <th className="px-3 py-2 text-right">{t("revenue.monthlyFee")}</th>
                   <th className="px-3 py-2 text-right">{t("revenue.perEquipmentRevenue")}</th>
                 </tr>
@@ -389,9 +384,6 @@ function RevenueByCustomer({
                     </td>
                     <td className="px-3 py-2 text-gray-500">
                       {eq.serviceType ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right text-gray-700 tabular-nums">
-                      {eq.deposit ? formatMoney(Number(eq.deposit)) : "—"}
                     </td>
                     <td className="px-3 py-2 text-right text-gray-700 tabular-nums">
                       {eq.monthlyFee ? formatMoney(Number(eq.monthlyFee)) : "—"}

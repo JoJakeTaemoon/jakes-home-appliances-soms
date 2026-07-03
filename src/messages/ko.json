@@ -364,8 +364,7 @@
     "periodTo": "종료일",
     "kpi": {
       "customers": "담당 고객 수",
-      "monthlyContracts": "이번 달 신규 계약",
-      "monthlyRevenue": "기간 매출",
+      "last30dRevenue": "지난 30일 매출",
       "receivables": "누적 미수금"
     },
     "tabs": {
@@ -380,10 +379,9 @@
       "serial": "시리얼",
       "installedAt": "설치일",
       "serviceType": "서비스 유형",
-      "deposit": "보증금",
       "monthlyFee": "월 요금",
       "perEquipmentRevenue": "장비별 매출",
-      "formulaHint": "장비별 매출 = 보증금 + 월 요금 × {months}개월"
+      "formulaHint": "장비별 매출 = 선택 기간 내 수금된 임대료 · 판매 결제 · 유상 소모품 구매금액의 합계 (보증금 · 환급 제외)"
     },
     "receivables": {
       "paymentCount": "건수",

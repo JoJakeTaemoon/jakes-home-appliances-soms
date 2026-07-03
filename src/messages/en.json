@@ -364,8 +364,7 @@
     "periodTo": "To",
     "kpi": {
       "customers": "Customers",
-      "monthlyContracts": "Monthly contracts",
-      "monthlyRevenue": "Period revenue",
+      "last30dRevenue": "Last-30-day revenue",
       "receivables": "Receivables"
     },
     "tabs": {
@@ -380,10 +379,9 @@
       "serial": "Serial",
       "installedAt": "Installed",
       "serviceType": "Service type",
-      "deposit": "Deposit",
       "monthlyFee": "Monthly",
       "perEquipmentRevenue": "Per-device revenue",
-      "formulaHint": "Per-device revenue = deposit + monthly fee × {months} months"
+      "formulaHint": "Per-device revenue = collected rental + sale payments + paid consumable purchases attributed to this device within the selected period (deposits and refunds excluded)"
     },
     "receivables": {
       "paymentCount": "Items",

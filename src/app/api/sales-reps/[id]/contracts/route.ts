@@ -1,27 +1,37 @@
 /**
  * GET /api/sales-reps/[id]/contracts?from=&to=
  *
- * Period revenue for one sales rep, grouped by customer with the
- * equipment installed for that customer during the period. Aggregation
- * is equipment-centric (2026-07-02 policy change) — the rep's numbers
- * roll up from the devices at their assigned customers, not from the
- * contract objects that happen to reference those customers.
+ * Period revenue for one sales rep, grouped by customer with per-equipment
+ * revenue breakdown. Revenue = money that actually came in during the
+ * window (2026-07-03 policy — replaces the earlier "deposit + monthlyFee ×
+ * 12" first-year book value):
  *
- * Filter: Equipment.installedAt ∈ [from, to] AND
- *         Equipment.customer.salesRepId = id AND
- *         Equipment.status != REPLACED  (replaced units get a fresh row).
+ *   1. Collected rental / equipment-sale payments — `Payment.actualAmount`
+ *      where kind ∈ (RENTAL_FEE, SALE_PAYMENT), state ∈ (COLLECTED,
+ *      HANDED_OVER, RECONCILED), collectedAt ∈ [from, to], customer's
+ *      salesRepId = this rep.
+ *   2. Paid consumable purchases — `OrderItem.totalPrice` where the item's
+ *      unitPrice > 0 AND its productKind = CONSUMABLE AND the parent
+ *      Order is not CANCELLED AND Order.orderedAt ∈ [from, to] AND
+ *      customer's salesRepId = this rep.
  *
- * Per-equipment revenue: `deposit + monthlyFee × 12` — treats each
- * install as its "first-year book value", the number the rep is
- * usually credited with. Deposit is one-time; monthlyFee is the
- * recurring, so 12 months captures the annualized contribution
- * regardless of the contract's actual term. This matches how the
- * office already talks about "이번 달 매출" in the standup.
+ * Deposits, deposit refunds, maintenance fees, and service fees are
+ * excluded — the office asked for "rental fees and purchase amounts"
+ * specifically. Adding them back is a one-enum edit if the definition
+ * shifts.
+ *
+ * Equipment attribution per revenue item:
+ *   - Payment.equipmentId set → attribute the full amount to that unit.
+ *   - Payment has contract but no equipmentId → split the amount evenly
+ *     across the contract's equipment rows.
+ *   - Payment has neither → counted in customer totalValue only (no
+ *     per-equipment row created).
+ *   - OrderItem.equipmentId set → attribute to that unit.
+ *   - OrderItem without equipmentId → counted in customer totalValue only.
  *
  * Legacy note: the URL still says "/contracts" because the sales-rep
- * detail page hits it under that name. Response shape is now
- * equipment-first; renaming the route would break bookmarks and
- * client-side query keys, so we live with the misnomer for now.
+ * detail page hits it under that name. Renaming the route would break
+ * bookmarks and client-side query keys.
  */
 
 import { z } from "zod";
@@ -34,8 +44,8 @@ const querySchema = z.object({
   to: z.coerce.date().optional(),
 });
 
-/** Standard annualization window for per-install book value. */
-const REVENUE_MONTHS = 12;
+const COLLECTED_STATES = ["COLLECTED", "HANDED_OVER", "RECONCILED"] as const;
+const REVENUE_KINDS = ["RENTAL_FEE", "SALE_PAYMENT"] as const;
 
 export const GET = defineQuery({
   audience: "staff",
@@ -43,34 +53,129 @@ export const GET = defineQuery({
   query: querySchema,
   handler: async ({ params, query }) => {
     const { from, to } = query;
-    const equipment = await prisma.equipment.findMany({
-      where: {
-        customer: { salesRepId: params.id },
-        status: { not: "REPLACED" },
-        ...(from || to
-          ? {
-              installedAt: {
-                ...(from ? { gte: from } : {}),
-                ...(to ? { lte: to } : {}),
-              },
-            }
-          : {}),
-      },
-      include: {
-        customer: {
-          select: { id: true, code: true, name: true, type: true },
+
+    const collectedAtRange =
+      from || to
+        ? {
+            collectedAt: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {};
+    const orderedAtRange =
+      from || to
+        ? {
+            orderedAt: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {};
+
+    const [payments, orders] = await Promise.all([
+      prisma.payment.findMany({
+        where: {
+          customer: { salesRepId: params.id },
+          kind: { in: [...REVENUE_KINDS] },
+          state: { in: [...COLLECTED_STATES] },
+          ...collectedAtRange,
         },
-        model: {
-          select: {
-            modelCode: true,
-            nameKo: true,
-            nameVi: true,
-            nameEn: true,
+        include: {
+          customer: {
+            select: { id: true, code: true, name: true, type: true },
+          },
+          equipment: {
+            select: {
+              id: true,
+              serialNumber: true,
+              customDescription: true,
+              installedAt: true,
+              status: true,
+              serviceType: true,
+              managementType: true,
+              lifecycleStage: true,
+              monthlyFee: true,
+              model: {
+                select: {
+                  modelCode: true,
+                  nameKo: true,
+                  nameVi: true,
+                  nameEn: true,
+                },
+              },
+            },
+          },
+          contract: {
+            select: {
+              equipment: {
+                include: {
+                  equipment: {
+                    select: {
+                      id: true,
+                      serialNumber: true,
+                      customDescription: true,
+                      installedAt: true,
+                      status: true,
+                      serviceType: true,
+                      managementType: true,
+                      lifecycleStage: true,
+                      monthlyFee: true,
+                      model: {
+                        select: {
+                          modelCode: true,
+                          nameKo: true,
+                          nameVi: true,
+                          nameEn: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: [{ installedAt: "desc" }, { createdAt: "desc" }],
-    });
+      }),
+      prisma.order.findMany({
+        where: {
+          customer: { salesRepId: params.id },
+          state: { not: "CANCELLED" },
+          ...orderedAtRange,
+        },
+        include: {
+          customer: {
+            select: { id: true, code: true, name: true, type: true },
+          },
+          items: {
+            where: { productKind: "CONSUMABLE", unitPrice: { gt: 0 } },
+            include: {
+              equipment: {
+                select: {
+                  id: true,
+                  serialNumber: true,
+                  customDescription: true,
+                  installedAt: true,
+                  status: true,
+                  serviceType: true,
+                  managementType: true,
+                  lifecycleStage: true,
+                  monthlyFee: true,
+                  model: {
+                    select: {
+                      modelCode: true,
+                      nameKo: true,
+                      nameVi: true,
+                      nameEn: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
 
     interface EqRow {
       id: string;
@@ -81,7 +186,6 @@ export const GET = defineQuery({
       serviceType: string | null;
       managementType: string | null;
       lifecycleStage: string;
-      deposit: string | null;
       monthlyFee: string | null;
       revenue: number;
       model: {
@@ -99,21 +203,38 @@ export const GET = defineQuery({
       equipmentCount: number;
       totalValue: number;
       equipment: EqRow[];
+      _equipmentById: Map<string, EqRow>;
     }
 
     const byCustomer = new Map<string, CustomerGroup>();
-    let totalValue = 0;
-    let totalEquipment = 0;
 
-    for (const eq of equipment) {
-      const deposit = Number(eq.deposit ?? 0);
-      const monthly = Number(eq.monthlyFee ?? 0);
-      // First-year book value: one-time deposit + 12 recurring months.
-      const revenue = deposit + monthly * REVENUE_MONTHS;
-      totalValue += revenue;
-      totalEquipment += 1;
+    function ensureCustomer(c: {
+      id: string;
+      code: string;
+      name: string;
+      type: "B2C" | "B2B";
+    }): CustomerGroup {
+      const existing = byCustomer.get(c.id);
+      if (existing) return existing;
+      const g: CustomerGroup = {
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        type: c.type,
+        equipmentCount: 0,
+        totalValue: 0,
+        equipment: [],
+        _equipmentById: new Map(),
+      };
+      byCustomer.set(c.id, g);
+      return g;
+    }
 
-      const eqRow: EqRow = {
+    type EqSource = NonNullable<(typeof payments)[number]["equipment"]>;
+    function ensureEquipment(group: CustomerGroup, eq: EqSource): EqRow {
+      const cached = group._equipmentById.get(eq.id);
+      if (cached) return cached;
+      const row: EqRow = {
         id: eq.id,
         serialNumber: eq.serialNumber,
         customDescription: eq.customDescription,
@@ -122,49 +243,69 @@ export const GET = defineQuery({
         serviceType: eq.serviceType,
         managementType: eq.managementType,
         lifecycleStage: eq.lifecycleStage,
-        deposit: eq.deposit?.toString() ?? null,
         monthlyFee: eq.monthlyFee?.toString() ?? null,
-        revenue,
-        model: eq.model
-          ? {
-              modelCode: eq.model.modelCode,
-              nameKo: eq.model.nameKo,
-              nameVi: eq.model.nameVi,
-              nameEn: eq.model.nameEn,
-            }
-          : null,
+        revenue: 0,
+        model: eq.model,
       };
+      group.equipment.push(row);
+      group._equipmentById.set(eq.id, row);
+      group.equipmentCount += 1;
+      return row;
+    }
 
-      const existing = byCustomer.get(eq.customer.id);
-      if (existing) {
-        existing.equipment.push(eqRow);
-        existing.equipmentCount += 1;
-        existing.totalValue += revenue;
-      } else {
-        byCustomer.set(eq.customer.id, {
-          id: eq.customer.id,
-          code: eq.customer.code,
-          name: eq.customer.name,
-          type: eq.customer.type,
-          equipmentCount: 1,
-          totalValue: revenue,
-          equipment: [eqRow],
-        });
+    for (const p of payments) {
+      const amount = Number(p.actualAmount ?? 0);
+      if (amount <= 0) continue;
+      const group = ensureCustomer(p.customer);
+      group.totalValue += amount;
+
+      if (p.equipment) {
+        ensureEquipment(group, p.equipment).revenue += amount;
+      } else if (p.contract && p.contract.equipment.length > 0) {
+        const eqs = p.contract.equipment.map((ce) => ce.equipment);
+        const share = amount / eqs.length;
+        for (const eq of eqs) {
+          ensureEquipment(group, eq).revenue += share;
+        }
+      }
+      // Payments without a direct equipment link and no contract sit at
+      // the customer level only — visible in totalValue, absent from the
+      // per-equipment table.
+    }
+
+    for (const o of orders) {
+      const group = ensureCustomer(o.customer);
+      for (const item of o.items) {
+        const amount = Number(item.totalPrice ?? 0);
+        if (amount <= 0) continue;
+        group.totalValue += amount;
+        if (item.equipment) {
+          ensureEquipment(group, item.equipment).revenue += amount;
+        }
+        // Items without an equipment link (off-catalog purchase or one
+        // that pre-dates the per-line link) show up in totalValue only.
       }
     }
 
-    // Highest-revenue customer first — matches the office's
-    // "who's the top mover this month" glance.
-    const customers = Array.from(byCustomer.values()).sort(
-      (a, b) => b.totalValue - a.totalValue,
-    );
+    let totalValue = 0;
+    let totalEquipment = 0;
+
+    const customers = Array.from(byCustomer.values())
+      .map(({ _equipmentById: _unused, ...c }) => {
+        totalValue += c.totalValue;
+        totalEquipment += c.equipmentCount;
+        // Rank each customer's equipment by contribution — most-revenue
+        // device first, matching how the office reads the report.
+        c.equipment.sort((a, b) => b.revenue - a.revenue);
+        return c;
+      })
+      .sort((a, b) => b.totalValue - a.totalValue);
 
     return {
       customers,
       totalValue,
       totalEquipment,
       totalCustomers: customers.length,
-      revenueMonths: REVENUE_MONTHS,
     };
   },
 });

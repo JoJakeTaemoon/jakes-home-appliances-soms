@@ -13,8 +13,7 @@ interface RepRow {
   role: string;
   stats: {
     customerCount: number;
-    monthlyContracts: number;
-    monthlyRevenue: number;
+    last30dRevenue: number;
     receivables: number;
   };
 }
@@ -50,12 +49,11 @@ export default function SalesRepsPage() {
                 <div className="text-xs text-gray-500">{r.title ?? r.role}</div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+            <div className="grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
               <Stat label={t("kpi.customers")} value={String(r.stats.customerCount)} />
-              <Stat label={t("kpi.monthlyContracts")} value={String(r.stats.monthlyContracts)} />
               <Stat
-                label={t("kpi.monthlyRevenue")}
-                value={formatMoney(r.stats.monthlyRevenue)}
+                label={t("kpi.last30dRevenue")}
+                value={formatMoney(r.stats.last30dRevenue)}
               />
               <Stat
                 label={t("kpi.receivables")}

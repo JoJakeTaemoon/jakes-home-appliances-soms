@@ -364,8 +364,7 @@
     "periodTo": "Đến",
     "kpi": {
       "customers": "Khách phụ trách",
-      "monthlyContracts": "HĐ mới (tháng)",
-      "monthlyRevenue": "Doanh thu kỳ",
+      "last30dRevenue": "Doanh thu 30 ngày",
       "receivables": "Công nợ tích lũy"
     },
     "tabs": {
@@ -380,10 +379,9 @@
       "serial": "Serial",
       "installedAt": "Ngày lắp",
       "serviceType": "Loại dịch vụ",
-      "deposit": "Đặt cọc",
       "monthlyFee": "Phí/tháng",
       "perEquipmentRevenue": "Doanh thu/TB",
-      "formulaHint": "Doanh thu/TB = đặt cọc + phí/tháng × {months} tháng"
+      "formulaHint": "Doanh thu/TB = tổng tiền thuê + thanh toán bán + mua vật tư có phí đã thu trong kỳ, quy về thiết bị (không tính đặt cọc và hoàn trả)"
     },
     "receivables": {
       "paymentCount": "Số mục",
