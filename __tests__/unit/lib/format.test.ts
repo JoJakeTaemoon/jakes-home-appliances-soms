@@ -21,7 +21,9 @@ describe("formatDate", () => {
 
 describe("formatDateTime", () => {
   it("appends 24h time", () => {
-    const d = new Date(2026, 4, 27, 14, 5);
+    // 14:05 VST (Asia/Ho_Chi_Minh, UTC+7) → 07:05 UTC. Constructing via
+    // a UTC ISO string keeps the expectation stable across runner TZs.
+    const d = new Date("2026-05-27T07:05:00Z");
     expect(formatDateTime(d, "vi")).toBe("27/05/2026 14:05");
     expect(formatDateTime(d, "ko")).toBe("2026-05-27 14:05");
   });
