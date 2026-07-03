@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useBreadcrumbOverrides } from "@/lib/nav/breadcrumb-context";
 import {
   computeOfficeCrumbs,
@@ -20,6 +20,7 @@ import {
  */
 export function OfficeBreadcrumb() {
   const pathname = usePathname();
+  const router = useRouter();
   const t = useTranslations("nav");
   const overrides = useBreadcrumbOverrides();
   const crumbs = computeOfficeCrumbs(pathname);
@@ -31,6 +32,27 @@ export function OfficeBreadcrumb() {
   // (e.g. /customers), depth 2+ = at least one ancestor below "home".
   const parent: Crumb | null =
     crumbs.length >= 3 ? crumbs[lastIdx - 1] : null;
+
+  // "뒤로" prefers real in-app history — arriving at a visit detail from
+  // the schedule board should hop back to the board, not to /visits which
+  // the route-map hard-codes as this detail's parent. Fall back to
+  // parent.href only when the user landed via external referrer / direct
+  // link. Same heuristic as `components/ui/back-button.tsx`.
+  function goBack() {
+    if (!parent) return;
+    if (typeof window !== "undefined" && document.referrer) {
+      try {
+        const ref = new URL(document.referrer);
+        if (ref.origin === window.location.origin) {
+          router.back();
+          return;
+        }
+      } catch {
+        // Malformed referrer — fall through to the parent-route fallback.
+      }
+    }
+    router.push(parent.href as "/o");
+  }
 
   // Detail pages can replace a `[id]` crumb's static label ("상세") with
   // the resolved entity name via `<BreadcrumbLabel />`. Keys are the
@@ -50,13 +72,14 @@ export function OfficeBreadcrumb() {
       className="mb-4 flex flex-wrap items-center gap-2"
     >
       {parent && (
-        <Link
-          href={parent.href as "/o"}
+        <button
+          type="button"
+          onClick={goBack}
           className="inline-flex items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-xs font-medium text-[#525252] transition-colors hover:bg-[#f5f5f5] hover:text-[#171717]"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           {t("back")}
-        </Link>
+        </button>
       )}
       <ol className="flex flex-wrap items-center gap-1 text-xs text-[#737373]">
         {crumbs.map((c, i) => {
