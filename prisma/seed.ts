@@ -3373,6 +3373,66 @@ async function main() {
     dueDate: daysFromNow(-30),
   });
 
+  // ─── Overdue-carryover demo ─────────────────────────────────────────
+  // Reuses seed-pay-006 (KH00007 OVERDUE_D30) as the outstanding balance.
+  // Adds a past COMPLETED visit + issued SALE_RECEIPT_B2C so the "last
+  // 지참 서류" lookup has something concrete to hit, then a fresh SCHEDULED
+  // visit with pendingDocumentKinds already populated with SALE_RECEIPT_B2C
+  // — the exact shape VisitWorkflow.create writes when it detects overdue.
+  // Verify by opening seed-visit-overdue-next in the office UI: the doc
+  // card should list SALE_RECEIPT_B2C as pre-attached without any manual
+  // pick. Creating a brand-new visit for KH00007 through POST /api/visits
+  // should reproduce the same pending-kind for a clean end-to-end check.
+  const kh00007 = b2cCustomers["KH00007"];
+  const kh00007FirstEq = firstEquipmentByCustomer.get(kh00007.id) ?? null;
+  const priorOverdueVisitAt = at(daysFromNow(-30), 10, 30);
+  await ensureVisit("seed-visit-overdue-prior", {
+    customerId: kh00007.id,
+    ...(kh00007FirstEq ? { equipmentId: kh00007FirstEq } : {}),
+    type: "PAYMENT_COLLECTION",
+    state: "COMPLETED",
+    scheduledFor: priorOverdueVisitAt,
+    leadTechnicianId: tech1.id,
+    startedAt: at(daysFromNow(-30), 10, 45),
+    completedAt: at(daysFromNow(-30), 11, 10),
+    findings: "고객 부재 · 다음 방문 시 재수금 (seed demo).",
+  });
+  await prisma.document.upsert({
+    where: { id: "seed-doc-overdue-prior" },
+    update: {},
+    create: {
+      id: "seed-doc-overdue-prior",
+      kind: "SALE_RECEIPT_B2C",
+      customerId: kh00007.id,
+      visitId: "seed-visit-overdue-prior",
+      paymentId: "seed-pay-006",
+      templateCode: "SALE_RECEIPT_B2C",
+      locale: "vi",
+      secondaryLocale: "ko",
+      storageKey: "seed-demo/overdue-prior-receipt.pdf",
+      filename: "SR-seed-overdue-prior.pdf",
+      mimeType: "application/pdf",
+      generatedAt: at(daysFromNow(-30), 11, 15),
+    },
+  });
+  // Fresh SCHEDULED visit for the same customer with the carryover kind
+  // pre-attached — matches what VisitWorkflow.create would emit today.
+  await ensureVisit("seed-visit-overdue-next", {
+    customerId: kh00007.id,
+    ...(kh00007FirstEq ? { equipmentId: kh00007FirstEq } : {}),
+    type: "PAYMENT_COLLECTION",
+    state: "SCHEDULED",
+    scheduledFor: at(daysFromNow(2), 10),
+    leadTechnicianId: tech1.id,
+    pendingDocumentKinds: ["SALE_RECEIPT_B2C"],
+  });
+  // The ensureVisit path is create-only; re-sync pending kinds on repeat
+  // seed runs so the demo stays intact if the row already exists.
+  await prisma.visit.update({
+    where: { id: "seed-visit-overdue-next" },
+    data: { pendingDocumentKinds: ["SALE_RECEIPT_B2C"] },
+  });
+
   // HANDED_OVER — deposited at office, awaiting manager reconciliation.
   const payHandedOver = await ensurePayment("seed-pay-007", {
     customerId: b2bCustomers["KH00012"].id,

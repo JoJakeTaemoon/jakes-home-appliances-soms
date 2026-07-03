@@ -51,6 +51,7 @@ import {
 } from "@/lib/visits/complete";
 import { ServiceRequestWorkflow } from "@/lib/service-requests/workflow";
 import { issueVisitDocument } from "@/lib/visits/issue-document";
+import { resolveOverdueCarryoverKind } from "@/lib/visits/overdue-carryover";
 import type { PdfKind } from "@/lib/pdf/renderer";
 import { NotFoundError, ValidationError } from "@/lib/api/error";
 import type { Prisma, VisitType } from "@/generated/prisma/client";
@@ -165,6 +166,22 @@ async function create(
     },
   });
 
+  // If this customer still has overdue balance, drop the matching
+  // receipt kind onto the new visit's pendingDocumentKinds so the
+  // technician arrives with paperwork ready to collect. See
+  // resolveOverdueCarryoverKind for the "same-kind as last time" logic.
+  const carryoverKind = await resolveOverdueCarryoverKind(prisma, {
+    customerId: customer.id,
+    customerType: customer.type,
+    excludeVisitId: visit.id,
+  });
+  if (carryoverKind) {
+    await prisma.visit.update({
+      where: { id: visit.id },
+      data: { pendingDocumentKinds: { push: carryoverKind } },
+    });
+  }
+
   await logAudit({
     actorType: "USER",
     actorId: actor.userId,
@@ -175,6 +192,7 @@ async function create(
       customerId: visit.customerId,
       type: visit.type,
       scheduledFor: visit.scheduledFor,
+      overdueCarryoverKind: carryoverKind,
     },
     request: request ?? null,
   });
