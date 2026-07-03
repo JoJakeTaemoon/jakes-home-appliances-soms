@@ -209,6 +209,25 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   // are based on what the technician actually invoiced on-site.
   let paymentId: string | null = null;
   if (input.collectedAmount !== null && input.collectedAmount !== undefined) {
+    // When the technician picked a paymentEquipmentId, verify it belongs
+    // to this visit's customer — silently null it out otherwise so a
+    // mistyped picker doesn't poison the audit trail.
+    if (input.paymentEquipmentId) {
+      const eq = await prisma.equipment.findUnique({
+        where: { id: input.paymentEquipmentId },
+        select: { customerId: true },
+      });
+      if (!eq || eq.customerId !== current.customerId) {
+        throw new ValidationError(
+          "paymentEquipmentId must belong to this visit's customer",
+        );
+      }
+    }
+    // Resolve which Equipment the payment was collected against:
+    //   1. explicit paymentEquipmentId from the technician (preferred)
+    //   2. fall back to the visit's primary equipmentId
+    //   3. null when neither is set (rare — covers visits without any
+    //      equipment context, e.g. ad-hoc service)
     const collection = await recordCashCollection({
       visitId,
       customerId: current.customerId,
@@ -217,6 +236,8 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
       expectedAmount:
         effectiveCharged > 0 ? effectiveCharged : input.collectedAmount,
       method: input.paymentMethod ?? "CASH",
+      equipmentId:
+        input.paymentEquipmentId ?? current.equipmentId ?? null,
     });
     paymentId = collection.paymentId;
   }

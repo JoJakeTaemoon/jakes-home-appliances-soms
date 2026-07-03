@@ -448,6 +448,7 @@ model Consumable {
   compatibleModels   ConsumableOnModel[]
   visitLogs          VisitConsumableLog[]
   chargePolicies     ChargePolicy[]
+  equipmentLinks     EquipmentConsumable[]
 
   @@index([isActive])
 }
@@ -608,11 +609,59 @@ model Equipment {
   contracts             ContractEquipment[]
   visits                Visit[]
   serviceRequests       ServiceRequest[]
+  payments              Payment[]
+  consumables           EquipmentConsumable[]
 
   @@index([customerId, status])
   @@index([siteId])
   @@index([modelId])
   @@index([serialNumber])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// EQUIPMENT CONSUMABLE OVERRIDE (added 2026-06)
+//
+// Two responsibilities in one table:
+//
+//   1. Per-unit cycle override — office staff can force a different
+//      `replaceEveryMonths` for a given (equipment × consumable) pair
+//      when the standard model-level cycle doesn't fit (heavy-use
+//      restaurant, water hardness, customer request, etc.).
+//
+//   2. Manually-added consumables — a filter that isn't in the
+//      catalog-defined `ConsumableOnModel` for the equipment's model.
+//      Either by linking an existing Consumable that just isn't on the
+//      model's standard parts list, or via `customName` for an
+//      off-catalog filter the office types in free-text.
+//
+// Resolution order for the filter-history view:
+//   - Standard parts = EquipmentModel.consumables (ConsumableOnModel)
+//   - Plus every EquipmentConsumable row for this equipment
+//   - Cycle: EquipmentConsumable.replaceEveryMonths > Consumable.replaceEveryMonths
+// ─────────────────────────────────────────────────────────────────────────
+model EquipmentConsumable {
+  id                  String      @id @default(cuid())
+  equipmentId         String
+  equipment           Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  /// Catalog filter (preferred). Mutually exclusive with `customName`.
+  consumableId        String?
+  consumable          Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
+  /// Off-catalog filter description (e.g. "타사 RO 멤브레인 호환"). Used
+  /// when consumableId is null. Required in that case (enforced in the
+  /// validator).
+  customName          String?
+  quantity            Int         @default(1)
+  /// Override cycle in months. When null, falls back to the catalog
+  /// consumable's `replaceEveryMonths`. For manual filters with
+  /// customName, this is the authoritative cycle.
+  replaceEveryMonths  Int?
+  unitPrice           Decimal?    @db.Decimal(14, 2)
+  notes               String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([equipmentId])
+  @@index([consumableId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -941,6 +990,12 @@ model Payment {
   contract            Contract?     @relation(fields: [contractId], references: [id], onDelete: SetNull)
   visitId             String?
   visit               Visit?        @relation(fields: [visitId], references: [id], onDelete: SetNull)
+  /// Optional link to a specific Equipment row (added 2026-06).
+  /// Technicians can mark "this payment is for THAT device" when a
+  /// visit covers multiple units, so the office can audit which
+  /// equipment a fee was collected against.
+  equipmentId         String?
+  equipment           Equipment?    @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   collectedById       String?       // technician
   collectedBy         User?         @relation(fields: [collectedById], references: [id], onDelete: SetNull)
 
@@ -970,6 +1025,7 @@ model Payment {
   @@index([contractId, kind])
   @@index([state, dueDate])
   @@index([collectedById])
+  @@index([equipmentId])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

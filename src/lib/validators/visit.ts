@@ -174,6 +174,15 @@ export const completeVisitSchema = z
     paymentMethod: z
       .enum(["CASH", "BANK_TRANSFER", "CARD", "OTHER"])
       .optional(),
+    /**
+     * Which Equipment the technician collected the fee against. When
+     * the visit covers multiple devices (e.g. a B2B site with
+     * purifier + bidet + air purifier under one visit), this lets the
+     * office audit which unit a Payment row was tied to. Optional —
+     * when blank the workflow falls back to the visit's primary
+     * `equipmentId`.
+     */
+    paymentEquipmentId: optStr(60),
   })
   .superRefine((val, ctx) => {
     // chargedAmount supplied without a reason is invalid — the workflow

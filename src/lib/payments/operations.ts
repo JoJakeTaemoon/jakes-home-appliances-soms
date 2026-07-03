@@ -186,6 +186,11 @@ export interface RecordCashCollectionInput {
   expectedAmount?: number;
   method?: PaymentMethod;
   notes?: string | null;
+  /** Equipment that this payment was collected against (e.g. SR-driven
+   *  repair on a specific device). Optional — when blank the Payment
+   *  row carries `equipmentId = null` and the office attributes the fee
+   *  to the visit's primary equipment manually. */
+  equipmentId?: string | null;
 }
 
 export async function recordCashCollection(
@@ -199,6 +204,7 @@ export async function recordCashCollection(
       customerId: input.customerId,
       contractId: input.contractId ?? null,
       visitId: input.visitId,
+      equipmentId: input.equipmentId ?? null,
       collectedById: input.collectedById,
       method: input.method ?? "CASH",
       state: "COLLECTED",

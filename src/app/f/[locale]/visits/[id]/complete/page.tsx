@@ -128,6 +128,15 @@ function CompleteWizard() {
     number | null
   >(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
+  /**
+   * Which Equipment the cash was collected against. Pre-fills to the
+   * visit's primary equipment when the office assigned one; falls back
+   * to the first row of `customerEquipment` when not. Only shown when
+   * the customer has ≥2 active devices.
+   */
+  const [paymentEquipmentId, setPaymentEquipmentId] = useState<string | null>(
+    null,
+  );
   const [chargeOverrideReason, setChargeOverrideReason] = useState<string>("");
   // unselectedSuggestionKeys tracks what the technician UN-checked.
   // Default-selected state is computed from the query's recommendations.
@@ -163,7 +172,22 @@ function CompleteWizard() {
   // their in-progress numbers or re-include consumable rows they
   // explicitly unchecked. staleTime: Infinity + no refetch-on-focus
   // keeps the initial server snapshot until the page unmounts.
-  const visitQuery = useApiQuery<{ expectedAmount: string | null }>(
+  interface MobileVisit {
+    expectedAmount: string | null;
+    equipmentId: string | null;
+    customerEquipment?: Array<{
+      id: string;
+      serialNumber: string | null;
+      customDescription: string | null;
+      model: {
+        modelCode: string | null;
+        nameKo: string | null;
+        nameVi: string | null;
+        nameEn: string | null;
+      } | null;
+    }>;
+  }
+  const visitQuery = useApiQuery<MobileVisit>(
     id ? `/api/mobile/visits/${id}` : null,
     { staleTime: Infinity, refetchOnWindowFocus: false },
   );
@@ -348,6 +372,10 @@ function CompleteWizard() {
           : undefined,
       collectedAmount: collectedAmount > 0 ? collectedAmount : null,
       paymentMethod: collectedAmount > 0 ? paymentMethod : undefined,
+      paymentEquipmentId:
+        collectedAmount > 0 && paymentEquipmentId
+          ? paymentEquipmentId
+          : undefined,
     };
     if (!online) {
       // Offline path — queue locally and bounce back to the visit detail.
@@ -740,6 +768,32 @@ function CompleteWizard() {
               />
             </FormField>
           )}
+          {collectedAmount > 0 &&
+            (visitQuery.data?.customerEquipment?.length ?? 0) >= 2 && (
+              <FormField label={t("paymentEquipment")}>
+                <Combobox
+                  value={paymentEquipmentId}
+                  onChange={setPaymentEquipmentId}
+                  options={(visitQuery.data?.customerEquipment ?? []).map(
+                    (e) => {
+                      const modelLabel =
+                        e.model?.modelCode ??
+                        e.model?.nameKo ??
+                        e.customDescription ??
+                        e.id;
+                      const serial = e.serialNumber ? ` · ${e.serialNumber}` : "";
+                      return {
+                        value: e.id,
+                        label: `${modelLabel}${serial}`,
+                      };
+                    },
+                  )}
+                  placeholder={t("paymentEquipmentPlaceholder")}
+                  searchable
+                  allowClear
+                />
+              </FormField>
+            )}
           {chargedAmount > 0 && (
             <p className="text-xs text-[#737373]">
               Charged: {chargedAmount.toLocaleString()} VND

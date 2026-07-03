@@ -76,12 +76,36 @@ export const GET = defineQuery({
     if (visit.type === "INSTALLATION" && latestContract) {
       signatureDocs.push("CONTRACT");
     }
+
+    // Other equipment the same customer owns — drives the "어떤 기기에
+    // 대한 수금?" picker on the complete screen when the visit covers
+    // multiple devices. We only ship the minimal columns the picker
+    // needs (id + serial + model label) to keep the mobile payload small.
+    const customerEquipment = await prisma.equipment.findMany({
+      where: { customerId: visit.customerId, status: "ACTIVE" },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        serialNumber: true,
+        customDescription: true,
+        model: {
+          select: {
+            modelCode: true,
+            nameKo: true,
+            nameVi: true,
+            nameEn: true,
+          },
+        },
+      },
+    });
+
     return {
       ...visit,
       customer: stripContactPhones(visit.customer),
       collaborators,
       hqPhone,
       signatureDocs,
+      customerEquipment,
       contract:
         visit.type === "INSTALLATION" && latestContract
           ? {

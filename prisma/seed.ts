@@ -3090,10 +3090,13 @@ async function main() {
   }
 
   // RECONCILED — collected on the completed visit, deposited & approved.
+  // Tagged with equipmentId so the equipment detail "수금 내역" section
+  // demonstrates a real per-device row out of the box.
   await ensurePayment("seed-pay-001", {
     customerId: b2c.id,
     contractId: c1.id,
     visitId: vCompleted.id,
+    equipmentId: b2c.equipment[0].id,
     collectedById: tech1.id,
     method: "CASH",
     state: "RECONCILED",
@@ -3201,6 +3204,72 @@ async function main() {
   });
 
   console.log(`  ✓ payments (10: expected/collected/handed-over/reconciled×4/overdue×3)`);
+
+  // ─── Equipment consumable history (2026-06 demo) ─────────────────────
+  // Seeds enough data for the equipment-detail "필터 교환 이력" table
+  // on KH00001's anchor purifier to show every column meaningfully:
+  //   - One catalog filter (Sediment) gets a per-unit cycle override
+  //     (3 mo → 4 mo) so cycleSource="OVERRIDE" renders.
+  //   - One off-catalog filter ("타사 활성탄") is attached manually so
+  //     source="MANUAL" renders.
+  //   - A REPLACE log on seed-visit-001 anchors the lastReplacedAt +
+  //     daysRemaining math.
+  const sedimentFilter = await prisma.consumable.findUnique({
+    where: { sku: "FLT-SED-11" },
+    select: { id: true },
+  });
+  if (sedimentFilter) {
+    await prisma.equipmentConsumable.upsert({
+      where: { id: "seed-eqcon-001" },
+      update: {},
+      create: {
+        id: "seed-eqcon-001",
+        equipmentId: b2c.equipment[0].id,
+        consumableId: sedimentFilter.id,
+        quantity: 1,
+        // Override the standard 3-month cycle to 4 — the customer's
+        // water source runs cleaner than average.
+        replaceEveryMonths: 4,
+        unitPrice: 200_000,
+        notes: "고객 요청 — 수질 안정으로 주기 1개월 연장",
+      },
+    });
+    // Replacement log on the past PERIODIC_INSPECTION visit so the
+    // table shows a real "lastReplacedAt" timestamp.
+    const existingLog = await prisma.visitConsumableLog.findFirst({
+      where: {
+        visitId: vCompleted.id,
+        consumableId: sedimentFilter.id,
+        action: "REPLACE",
+      },
+    });
+    if (!existingLog) {
+      await prisma.visitConsumableLog.create({
+        data: {
+          visitId: vCompleted.id,
+          consumableId: sedimentFilter.id,
+          action: "REPLACE",
+          notes: "정기 점검 시 교체",
+          createdAt: seedVisit001CompletedAt,
+        },
+      });
+    }
+  }
+  // Manually-attached off-catalog filter (customName, no consumableId).
+  await prisma.equipmentConsumable.upsert({
+    where: { id: "seed-eqcon-002" },
+    update: {},
+    create: {
+      id: "seed-eqcon-002",
+      equipmentId: b2c.equipment[0].id,
+      customName: "타사 호환 활성탄 필터",
+      quantity: 1,
+      replaceEveryMonths: 6,
+      unitPrice: 150_000,
+      notes: "고객이 직접 구입한 필터, 호환 가능",
+    },
+  });
+  console.log(`  ✓ equipment consumable demos (2 overrides + 1 replace log)`);
 
   // ─── Tax invoices (B2B only) ────────────────────────────────────────
   await prisma.taxInvoice.upsert({
