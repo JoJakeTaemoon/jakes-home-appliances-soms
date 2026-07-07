@@ -45,8 +45,6 @@ interface FormValues {
   // Structured Vietnamese address
   addressProvinceCode?: string | null;
   addressProvinceName?: string | null;
-  addressDistrictCode?: string | null;
-  addressDistrictName?: string | null;
   addressWardCode?: string | null;
   addressWardName?: string | null;
   addressStreet?: string | null;
@@ -93,21 +91,17 @@ export default function NewCustomerPage() {
   const { register, handleSubmit, control, reset, setValue, formState } = form;
   const { errors } = formState;
 
-  const address = useWatch({ control, name: ["addressProvinceCode", "addressProvinceName", "addressDistrictCode", "addressDistrictName", "addressWardCode", "addressWardName", "addressStreet"] });
+  const address = useWatch({ control, name: ["addressProvinceCode", "addressProvinceName", "addressWardCode", "addressWardName", "addressStreet"] });
   const addressValue: VnAddressValue = {
     provinceCode: address?.[0] ?? null,
     provinceName: address?.[1] ?? null,
-    districtCode: address?.[2] ?? null,
-    districtName: address?.[3] ?? null,
-    wardCode: address?.[4] ?? null,
-    wardName: address?.[5] ?? null,
-    street: address?.[6] ?? null,
+    wardCode: address?.[2] ?? null,
+    wardName: address?.[3] ?? null,
+    street: address?.[4] ?? null,
   };
   function setAddress(next: VnAddressValue) {
     setValue("addressProvinceCode", next.provinceCode ?? null);
     setValue("addressProvinceName", next.provinceName ?? null);
-    setValue("addressDistrictCode", next.districtCode ?? null);
-    setValue("addressDistrictName", next.districtName ?? null);
     setValue("addressWardCode", next.wardCode ?? null);
     setValue("addressWardName", next.wardName ?? null);
     setValue("addressStreet", next.street ?? null);
@@ -283,7 +277,6 @@ export default function NewCustomerPage() {
               locale={locale}
               labels={{
                 province: t("addressProvince"),
-                district: t("addressDistrict"),
                 ward: t("addressWard"),
                 street: t("addressStreet"),
               }}
@@ -509,8 +502,6 @@ function defaultsFor(tab: "B2C" | "B2B"): FormValues {
     language: tab === "B2C" ? "vi" : undefined,
     addressProvinceCode: null,
     addressProvinceName: null,
-    addressDistrictCode: null,
-    addressDistrictName: null,
     addressWardCode: null,
     addressWardName: null,
     addressStreet: null,

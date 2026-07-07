@@ -145,14 +145,13 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           documentIssuePlace: data.documentIssuePlace,
           addressProvinceCode: data.addressProvinceCode,
           addressProvinceName: data.addressProvinceName,
-          addressDistrictCode: data.addressDistrictCode,
-          addressDistrictName: data.addressDistrictName,
           addressWardCode: data.addressWardCode,
           addressWardName: data.addressWardName,
           addressStreet: data.addressStreet,
-          // Mirror into deprecated columns for legacy read paths.
+          // Mirror into deprecated columns for legacy read paths. Post-2025
+          // reform (no districts) the middle line is now the ward.
           address: data.addressStreet,
-          district: data.addressDistrictName,
+          district: data.addressWardName,
           city: data.addressProvinceName,
           preferredRegion: data.preferredRegion,
           preferredTechnicianId: data.preferredTechnicianId ?? null,

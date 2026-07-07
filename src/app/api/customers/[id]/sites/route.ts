@@ -56,14 +56,13 @@ export const POST = defineMutation({
         name: body.name,
         addressProvinceCode: body.addressProvinceCode ?? null,
         addressProvinceName: body.addressProvinceName ?? null,
-        addressDistrictCode: body.addressDistrictCode ?? null,
-        addressDistrictName: body.addressDistrictName ?? null,
         addressWardCode: body.addressWardCode ?? null,
         addressWardName: body.addressWardName ?? null,
         addressStreet: body.addressStreet ?? null,
         // Mirror into deprecated columns so legacy read paths keep working.
+        // Post-2025 reform (no districts) the middle line is now the ward.
         address: body.addressStreet ?? null,
-        district: body.addressDistrictName ?? null,
+        district: body.addressWardName ?? null,
         city: body.addressProvinceName ?? null,
         region: body.region ?? null,
         notes: body.notes ?? null,

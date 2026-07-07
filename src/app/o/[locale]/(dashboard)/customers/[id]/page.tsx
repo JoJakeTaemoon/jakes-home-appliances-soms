@@ -60,8 +60,6 @@ interface CustomerDetail {
   documentIssuePlace: string | null;
   addressProvinceCode: string | null;
   addressProvinceName: string | null;
-  addressDistrictCode: string | null;
-  addressDistrictName: string | null;
   addressWardCode: string | null;
   addressWardName: string | null;
   addressStreet: string | null;
@@ -119,8 +117,6 @@ interface SiteRow {
   name: string;
   addressProvinceCode: string | null;
   addressProvinceName: string | null;
-  addressDistrictCode: string | null;
-  addressDistrictName: string | null;
   addressWardCode: string | null;
   addressWardName: string | null;
   addressStreet: string | null;
@@ -297,7 +293,7 @@ export default function CustomerDetailPage() {
                     <span className="text-gray-900">
                       {[
                         data.addressStreet ?? data.address,
-                        data.addressDistrictName ?? data.district,
+                        data.addressWardName ?? data.district,
                         data.addressProvinceName ?? data.city,
                       ]
                         .filter(Boolean)
@@ -401,8 +397,7 @@ export default function CustomerDetailPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card label={tc("address")}>
               <Field label={t("addressProvince")} value={data.addressProvinceName ?? data.city} />
-              <Field label={t("addressDistrict")} value={data.addressDistrictName ?? data.district} />
-              <Field label={t("addressWard")} value={data.addressWardName} />
+              <Field label={t("addressWard")} value={data.addressWardName ?? data.district} />
               <Field label={t("addressStreet")} value={data.addressStreet ?? data.address} />
               <Field label={t("preferredRegion")} value={data.preferredRegion} />
             </Card>
@@ -1574,8 +1569,7 @@ function SiteCard({
         {!site.isActive && <StatusBadge tone="muted">INACTIVE</StatusBadge>}
       </div>
       <Field label={tSite("province")} value={site.addressProvinceName ?? site.city} />
-      <Field label={tSite("district")} value={site.addressDistrictName ?? site.district} />
-      <Field label={tSite("ward")} value={site.addressWardName} />
+      <Field label={tSite("ward")} value={site.addressWardName ?? site.district} />
       <Field label={tSite("street")} value={site.addressStreet ?? site.address} />
       <p className="text-xs text-[#737373]">
         {tSite("equipmentCount", { count: site._count?.equipment ?? 0 })} · {tSite("contactsCount", { count: site._count?.contacts ?? 0 })}
@@ -1652,8 +1646,6 @@ function AddSiteModal({
         name,
         addressProvinceCode: address.provinceCode ?? undefined,
         addressProvinceName: address.provinceName ?? undefined,
-        addressDistrictCode: address.districtCode ?? undefined,
-        addressDistrictName: address.districtName ?? undefined,
         addressWardCode: address.wardCode ?? undefined,
         addressWardName: address.wardName ?? undefined,
         addressStreet: address.street ?? undefined,
@@ -1691,7 +1683,6 @@ function AddSiteModal({
             locale={locale}
             labels={{
               province: t("province"),
-              district: t("district"),
               ward: t("ward"),
               street: t("street"),
             }}
@@ -1731,8 +1722,6 @@ function EditSiteModal({
   const [address, setAddress] = useState<VnAddressValue>({
     provinceCode: site.addressProvinceCode,
     provinceName: site.addressProvinceName,
-    districtCode: site.addressDistrictCode,
-    districtName: site.addressDistrictName,
     wardCode: site.addressWardCode,
     wardName: site.addressWardName,
     // Pre-fill from legacy `address` for unmigrated rows.
@@ -1748,8 +1737,6 @@ function EditSiteModal({
         name,
         addressProvinceCode: address.provinceCode ?? undefined,
         addressProvinceName: address.provinceName ?? undefined,
-        addressDistrictCode: address.districtCode ?? undefined,
-        addressDistrictName: address.districtName ?? undefined,
         addressWardCode: address.wardCode ?? undefined,
         addressWardName: address.wardName ?? undefined,
         addressStreet: address.street ?? undefined,
@@ -1787,7 +1774,6 @@ function EditSiteModal({
             locale={locale}
             labels={{
               province: t("province"),
-              district: t("district"),
               ward: t("ward"),
               street: t("street"),
             }}

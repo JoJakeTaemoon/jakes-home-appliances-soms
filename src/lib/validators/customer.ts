@@ -53,8 +53,6 @@ export const opsContactInputSchema = contactBase.extend({
 const addressFields = {
   addressProvinceCode: optString(20),
   addressProvinceName: optString(120),
-  addressDistrictCode: optString(20),
-  addressDistrictName: optString(120),
   addressWardCode: optString(20),
   addressWardName: optString(120),
   addressStreet: optString(255),

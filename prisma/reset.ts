@@ -32,6 +32,10 @@ async function main() {
     visit:              await prisma.visit.deleteMany(),
     serviceRequest:     await prisma.serviceRequest.deleteMany(),
     notificationLog:    await prisma.notificationLog.deleteMany(),
+    // Order → Customer is onDelete: Restrict, so orders must go before their
+    // parents (customer/contract/equipment). OrderItem → Order is Cascade.
+    orderItem:          await prisma.orderItem.deleteMany(),
+    order:              await prisma.order.deleteMany(),
     contractEquipment:  await prisma.contractEquipment.deleteMany(),
     contract:           await prisma.contract.deleteMany(),
     equipment:          await prisma.equipment.deleteMany(),

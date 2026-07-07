@@ -240,15 +240,14 @@ export async function POST(request: NextRequest) {
       documentIssuePlace: data.documentIssuePlace ?? null,
       addressProvinceCode: data.addressProvinceCode ?? null,
       addressProvinceName: data.addressProvinceName ?? null,
-      addressDistrictCode: data.addressDistrictCode ?? null,
-      addressDistrictName: data.addressDistrictName ?? null,
       addressWardCode: data.addressWardCode ?? null,
       addressWardName: data.addressWardName ?? null,
       addressStreet: data.addressStreet ?? null,
       // Mirror structured address into deprecated columns so legacy read paths
-      // (PDF templates, list search) keep working until they're migrated.
+      // (PDF templates, list search) keep working until they're migrated. Since
+      // the 2025 reform dropped districts, the middle line is now the ward.
       address: data.addressStreet ?? null,
-      district: data.addressDistrictName ?? null,
+      district: data.addressWardName ?? null,
       city: data.addressProvinceName ?? null,
       preferredRegion: data.preferredRegion ?? null,
       preferredTechnicianId: data.preferredTechnicianId ?? null,

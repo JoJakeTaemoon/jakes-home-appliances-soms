@@ -28,7 +28,6 @@ interface CustomerDetail {
   name: string;
   type: "B2C" | "B2B";
   addressStreet: string | null;
-  addressDistrictName: string | null;
   addressProvinceName: string | null;
   address: string | null;
   district: string | null;
@@ -159,7 +158,7 @@ function RegisterEquipmentInner() {
   const customerAddress = customer
     ? [
         customer.addressStreet ?? customer.address,
-        customer.addressDistrictName ?? customer.district,
+        customer.district,
         customer.addressProvinceName ?? customer.city,
       ].filter(Boolean).join(", ")
     : "";

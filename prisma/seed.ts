@@ -1383,13 +1383,11 @@ async function main() {
       nationalId: "079123456701",
       addressProvinceCode: "HCM",
       addressProvinceName: "Thành phố Hồ Chí Minh",
-      addressDistrictCode: "HCM-Q1",
-      addressDistrictName: "Quận 1",
-      addressWardCode: "HCM-Q1-BN",
-      addressWardName: "Phường Bến Nghé",
+      addressWardCode: "00257",
+      addressWardName: "Phường Bến Thành",
       addressStreet: "123 Lê Lợi",
       address: "123 Lê Lợi",
-      district: "Quận 1",
+      district: "Phường Bến Thành",
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech1.id,
       preferredRegion: "HCMC-D1",
@@ -1471,12 +1469,12 @@ async function main() {
       residency: null,
       addressProvinceCode: "HCM",
       addressProvinceName: "Thành phố Hồ Chí Minh",
-      addressDistrictCode: "HCM-Q1",
-      addressDistrictName: "Quận 1",
+      addressWardCode: "00656",
+      addressWardName: "Phường Sài Gòn",
       addressStreet: "Tầng 5, Tòa nhà HCMC HQ",
       address: "Tầng 5, Tòa nhà HCMC HQ",
       city: "Thành phố Hồ Chí Minh",
-      district: "Quận 1",
+      district: "Phường Sài Gòn",
       preferredRegion: "HCMC-D1",
       salesRepId: manager.id,
       contacts: {
@@ -1528,11 +1526,11 @@ async function main() {
             name: "HCMC HQ",
             addressProvinceCode: "HCM",
             addressProvinceName: "Thành phố Hồ Chí Minh",
-            addressDistrictCode: "HCM-Q1",
-            addressDistrictName: "Quận 1",
+            addressWardCode: "00656",
+            addressWardName: "Phường Sài Gòn",
             addressStreet: "Tầng 5, Tòa nhà ABC, 100 Nguyễn Huệ",
             address: "Tầng 5, Tòa nhà ABC, 100 Nguyễn Huệ",
-            district: "Quận 1",
+            district: "Phường Sài Gòn",
             city: "Thành phố Hồ Chí Minh",
             region: "HCMC-D1",
           },
@@ -1540,11 +1538,11 @@ async function main() {
             name: "Hanoi Branch",
             addressProvinceCode: "HN",
             addressProvinceName: "Thành phố Hà Nội",
-            addressDistrictCode: "HN-HK",
-            addressDistrictName: "Quận Hoàn Kiếm",
+            addressWardCode: "00104",
+            addressWardName: "Phường Hoàn Kiếm",
             addressStreet: "Số 50 Phố Trần Hưng Đạo",
             address: "Số 50 Phố Trần Hưng Đạo",
-            district: "Quận Hoàn Kiếm",
+            district: "Phường Hoàn Kiếm",
             city: "Thành phố Hà Nội",
             region: "HN-HK",
           },
@@ -1698,11 +1696,11 @@ async function main() {
       nationality: "Korea",
       addressProvinceCode: "HCM",
       addressProvinceName: "Thành phố Hồ Chí Minh",
-      addressDistrictCode: "HCM-Q5",
-      addressDistrictName: "Quận 5",
+      addressWardCode: "00172",
+      addressWardName: "Phường Chợ Lớn",
       addressStreet: "456 Nguyễn Trãi",
       address: "456 Nguyễn Trãi",
-      district: "Quận 5",
+      district: "Phường Chợ Lớn",
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech2.id,
       preferredRegion: "HCMC-D7",
@@ -1955,43 +1953,43 @@ async function main() {
     region: string;
     provinceCode: string;
     provinceName: string;
-    districtCode: string;
-    districtName: string;
+    wardCode: string;
+    wardName: string;
     addressStreet: string;
   };
   const multiSiteB2b: Array<{ code: string; sites: SiteFixture[]; equipmentMix: Array<"purifier" | "air" | "bidet" | "purifierPro"> }> = [
     {
       code: "KH00011", // ABC FOODS — 3 production sites
       sites: [
-        { name: "Nhà máy HCMC Bình Tân", region: "HCMC-D1", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-BT", districtName: "Quận Bình Tân", addressStreet: "Lô 12, Khu công nghiệp Tân Tạo" },
-        { name: "Nhà máy Hà Nội Long Biên", region: "HN-LB", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-LB", districtName: "Quận Long Biên", addressStreet: "Số 88 Đường Nguyễn Văn Linh" },
-        { name: "Nhà máy Đà Nẵng", region: "DN-LC", provinceCode: "DN", provinceName: "Thành phố Đà Nẵng", districtCode: "DN-LC", districtName: "Quận Liên Chiểu", addressStreet: "Lô 5, Khu công nghiệp Hòa Khánh" },
+        { name: "Nhà máy HCMC Bình Tân", region: "HCMC-D1", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00025", wardName: "Phường Bình Tân", addressStreet: "Lô 12, Khu công nghiệp Tân Tạo" },
+        { name: "Nhà máy Hà Nội Long Biên", region: "HN-LB", provinceCode: "HN", provinceName: "Thành phố Hà Nội", wardCode: "00355", wardName: "Phường Long Biên", addressStreet: "Số 88 Đường Nguyễn Văn Linh" },
+        { name: "Nhà máy Đà Nẵng", region: "DN-LC", provinceCode: "DN", provinceName: "Thành phố Đà Nẵng", wardCode: "00278", wardName: "Phường Liên Chiểu", addressStreet: "Lô 5, Khu công nghiệp Hòa Khánh" },
       ],
       equipmentMix: ["purifier", "purifier", "air"],
     },
     {
       code: "KH00012", // XYZ LOGISTICS — 2 warehouses
       sites: [
-        { name: "Kho phân phối HCMC Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 100 Đường Nguyễn Lương Bằng" },
-        { name: "Kho phân phối Hà Nội Gia Lâm", region: "HN-GL", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-GL", districtName: "Huyện Gia Lâm", addressStreet: "Số 200 Đường Ngô Xuân Quảng" },
+        { name: "Kho phân phối HCMC Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00201", wardName: "Phường Phú Mỹ", addressStreet: "Số 100 Đường Nguyễn Lương Bằng" },
+        { name: "Kho phân phối Hà Nội Gia Lâm", region: "HN-GL", provinceCode: "HN", provinceName: "Thành phố Hà Nội", wardCode: "00148", wardName: "Xã Gia Lâm", addressStreet: "Số 200 Đường Ngô Xuân Quảng" },
       ],
       equipmentMix: ["purifier", "purifier"],
     },
     {
       code: "KH00014", // GMA International School — 2 campuses
       sites: [
-        { name: "Cơ sở Quận 3 (Tiểu học)", region: "HCMC-D3", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q3", districtName: "Quận 3", addressStreet: "Số 12 Đường Võ Văn Tần" },
-        { name: "Cơ sở Quận 7 (Trung học)", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 50 Đường Nguyễn Hữu Thọ" },
+        { name: "Cơ sở Quận 3 (Tiểu học)", region: "HCMC-D3", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00308", wardName: "Phường Bàn Cờ", addressStreet: "Số 12 Đường Võ Văn Tần" },
+        { name: "Cơ sở Quận 7 (Trung học)", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00303", wardName: "Phường Tân Mỹ", addressStreet: "Số 50 Đường Nguyễn Hữu Thọ" },
       ],
       equipmentMix: ["purifier", "bidet"],
     },
     {
       code: "KH00016", // LOTTE MART VIỆT NAM — 4 stores
       sites: [
-        { name: "Lotte Mart Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-Q7", districtName: "Quận 7", addressStreet: "Số 469 Đường Nguyễn Hữu Thọ" },
-        { name: "Lotte Mart Gò Vấp", region: "HCMC-GV", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", districtCode: "HCM-GV", districtName: "Quận Gò Vấp", addressStreet: "Số 242 Đường Nguyễn Văn Lượng" },
-        { name: "Lotte Mart Cần Thơ", region: "CT-NK", provinceCode: "CT", provinceName: "Thành phố Cần Thơ", districtCode: "CT-NK", districtName: "Quận Ninh Kiều", addressStreet: "Số 84 Mậu Thân" },
-        { name: "Lotte Mart Hà Nội Đống Đa", region: "HN-DD", provinceCode: "HN", provinceName: "Thành phố Hà Nội", districtCode: "HN-DD", districtName: "Quận Đống Đa", addressStreet: "Số 229 Phố Tây Sơn" },
+        { name: "Lotte Mart Quận 7", region: "HCMC-D7", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00037", wardName: "Phường Tân Thuận", addressStreet: "Số 469 Đường Nguyễn Hữu Thọ" },
+        { name: "Lotte Mart Gò Vấp", region: "HCMC-GV", provinceCode: "HCM", provinceName: "Thành phố Hồ Chí Minh", wardCode: "00094", wardName: "Phường Gò Vấp", addressStreet: "Số 242 Đường Nguyễn Văn Lượng" },
+        { name: "Lotte Mart Cần Thơ", region: "CT-NK", provinceCode: "CT", provinceName: "Thành phố Cần Thơ", wardCode: "00075", wardName: "Phường Ninh Kiều", addressStreet: "Số 84 Mậu Thân" },
+        { name: "Lotte Mart Hà Nội Đống Đa", region: "HN-DD", provinceCode: "HN", provinceName: "Thành phố Hà Nội", wardCode: "00187", wardName: "Phường Đống Đa", addressStreet: "Số 229 Phố Tây Sơn" },
       ],
       equipmentMix: ["purifier", "air", "bidet"],
     },
@@ -2010,11 +2008,11 @@ async function main() {
           name: sf.name,
           addressProvinceCode: sf.provinceCode,
           addressProvinceName: sf.provinceName,
-          addressDistrictCode: sf.districtCode,
-          addressDistrictName: sf.districtName,
+          addressWardCode: sf.wardCode,
+          addressWardName: sf.wardName,
           addressStreet: sf.addressStreet,
           address: sf.addressStreet,
-          district: sf.districtName,
+          district: sf.wardName,
           city: sf.provinceName,
           region: sf.region,
         },

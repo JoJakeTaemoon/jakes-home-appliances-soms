@@ -197,18 +197,18 @@ model Customer {
   /// Issue place for the identity document. Free-text (e.g. "Cục Cảnh sát QLHC ĐKQG").
   documentIssuePlace String?
 
-  // Primary address — Shopee VN style: province → district → ward + street.
+  // Primary address — Shopee VN style. Post-2025 reform (district level
+  // abolished) this is 2-tier: province → ward + street.
   // Legacy `address/district/city` kept nullable for back-compat read-only display.
   addressProvinceCode String?
   addressProvinceName String?
-  addressDistrictCode String?
-  addressDistrictName String?
   addressWardCode     String?
   addressWardName     String?
   addressStreet       String?
   /// @deprecated Use addressStreet. Populated for legacy rows only.
   address             String?
-  /// @deprecated Use addressDistrictName. Populated for legacy rows only.
+  /// @deprecated Middle address line. Now denormalizes addressWardName (the
+  /// sub-province unit after the 2025 district abolition); old rows hold a district.
   district            String?
   /// @deprecated Use addressProvinceName. Populated for legacy rows only.
   city                String?
@@ -253,18 +253,16 @@ model Site {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   name       String // e.g. "본사 사옥", "지점 1"
 
-  // Structured address (Shopee VN style). All optional — legacy rows may carry
-  // only `address` until migrated.
+  // Structured address (Shopee VN style, 2-tier post-2025 reform). All optional
+  // — legacy rows may carry only `address` until migrated.
   addressProvinceCode String?
   addressProvinceName String?
-  addressDistrictCode String?
-  addressDistrictName String?
   addressWardCode     String?
   addressWardName     String?
   addressStreet       String?
   /// @deprecated Use addressStreet.
   address             String?
-  /// @deprecated Use addressDistrictName.
+  /// @deprecated Middle address line. Now denormalizes addressWardName.
   district            String?
   /// @deprecated Use addressProvinceName.
   city                String?

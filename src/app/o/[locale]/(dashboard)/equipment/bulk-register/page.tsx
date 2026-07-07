@@ -32,7 +32,6 @@ interface CustomerLite {
   // Address fields surfaced by /api/customers/[id]. The InfoStep stitches
   // them into a single read-only line.
   addressStreet: string | null;
-  addressDistrictName: string | null;
   addressProvinceName: string | null;
   address: string | null;
   district: string | null;
@@ -50,7 +49,7 @@ interface CustomerLite {
     id: string;
     name: string;
     addressStreet: string | null;
-    addressDistrictName: string | null;
+    addressWardName: string | null;
     addressProvinceName: string | null;
     address: string | null;
     region: string | null;
@@ -454,7 +453,7 @@ function InfoStep(props: Readonly<InfoStepProps>) {
   const customerAddress = customer
     ? [
         customer.addressStreet ?? customer.address,
-        customer.addressDistrictName ?? customer.district,
+        customer.district,
         customer.addressProvinceName ?? customer.city,
       ]
         .filter(Boolean)
@@ -474,14 +473,14 @@ function InfoStep(props: Readonly<InfoStepProps>) {
   // empty + disabled with a clear hint.
   const siteOptions = (customer?.sites ?? []).map((s) => ({
     value: s.id,
-    label: [s.name, s.addressDistrictName].filter(Boolean).join(" · "),
+    label: [s.name, s.addressWardName].filter(Boolean).join(" · "),
   }));
   const noSitesForCustomer = !!customer && customer.sites.length === 0;
   const selectedSite = customer?.sites.find((s) => s.id === siteId) ?? null;
   const siteAddress = selectedSite
     ? [
         selectedSite.addressStreet ?? selectedSite.address,
-        selectedSite.addressDistrictName,
+        selectedSite.addressWardName,
         selectedSite.addressProvinceName,
       ]
         .filter(Boolean)

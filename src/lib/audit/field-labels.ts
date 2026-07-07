@@ -37,7 +37,8 @@ const COMMON_FIELDS: Record<string, Triplet> = {
   language: { ko: "언어", en: "Language", vi: "Ngôn ngữ" },
   address: { ko: "주소", en: "Address", vi: "Địa chỉ" },
   region: { ko: "지역", en: "Region", vi: "Khu vực" },
-  district: { ko: "구/군", en: "District", vi: "Quận/Huyện" },
+  // Legacy `district` column; post-2025 reform it denormalizes the ward.
+  district: { ko: "동/꼬뮌", en: "Ward", vi: "Phường/Xã" },
   city: { ko: "도시", en: "City", vi: "Thành phố" },
   amount: { ko: "금액", en: "Amount", vi: "Số tiền" },
   currency: { ko: "통화", en: "Currency", vi: "Tiền tệ" },

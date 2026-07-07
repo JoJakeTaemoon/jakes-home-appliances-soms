@@ -45,8 +45,6 @@ interface CustomerDetail {
   documentIssuePlace: string | null;
   addressProvinceCode: string | null;
   addressProvinceName: string | null;
-  addressDistrictCode: string | null;
-  addressDistrictName: string | null;
   addressWardCode: string | null;
   addressWardName: string | null;
   addressStreet: string | null;
@@ -98,8 +96,6 @@ export default function EditCustomerPage() {
   const addressValue: VnAddressValue = {
     provinceCode: data?.addressProvinceCode ?? null,
     provinceName: data?.addressProvinceName ?? null,
-    districtCode: data?.addressDistrictCode ?? null,
-    districtName: data?.addressDistrictName ?? null,
     wardCode: data?.addressWardCode ?? null,
     wardName: data?.addressWardName ?? null,
     // Pre-fill street from legacy `address` when migrated row hasn't been
@@ -129,8 +125,6 @@ export default function EditCustomerPage() {
         documentIssuePlace: orEmpty(data.documentIssuePlace),
         addressProvinceCode: orEmpty(data.addressProvinceCode),
         addressProvinceName: orEmpty(data.addressProvinceName),
-        addressDistrictCode: orEmpty(data.addressDistrictCode),
-        addressDistrictName: orEmpty(data.addressDistrictName),
         addressWardCode: orEmpty(data.addressWardCode),
         addressWardName: orEmpty(data.addressWardName),
         addressStreet: orEmpty(data.addressStreet),
@@ -264,8 +258,6 @@ export default function EditCustomerPage() {
               patch({
                 addressProvinceCode: next.provinceCode ?? null,
                 addressProvinceName: next.provinceName ?? null,
-                addressDistrictCode: next.districtCode ?? null,
-                addressDistrictName: next.districtName ?? null,
                 addressWardCode: next.wardCode ?? null,
                 addressWardName: next.wardName ?? null,
                 addressStreet: next.street ?? null,
@@ -274,7 +266,6 @@ export default function EditCustomerPage() {
             locale={locale}
             labels={{
               province: t("addressProvince"),
-              district: t("addressDistrict"),
               ward: t("addressWard"),
               street: t("addressStreet"),
             }}

@@ -11,8 +11,6 @@ function optStr(max: number) {
 const structuredAddressFields = {
   addressProvinceCode: optStr(20),
   addressProvinceName: optStr(120),
-  addressDistrictCode: optStr(20),
-  addressDistrictName: optStr(120),
   addressWardCode: optStr(20),
   addressWardName: optStr(120),
   addressStreet: optStr(255),

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import { foldDiacritics } from "@/lib/vn-text";
 
 export interface ComboboxOption {
   value: string;
@@ -91,14 +92,16 @@ export function Combobox({
     [options, value],
   );
 
+  // Diacritic-insensitive search: fold both query and option so plain-ASCII
+  // typing ("Ho Chi") matches accented Vietnamese ("Thành phố Hồ Chí Minh").
   const filtered = useMemo(() => {
     if (!query.trim()) return options;
-    const q = query.trim().toLowerCase();
+    const q = foldDiacritics(query.trim());
     return options.filter(
       (o) =>
-        o.label.toLowerCase().includes(q) ||
-        o.description?.toLowerCase().includes(q) ||
-        o.value.toLowerCase().includes(q),
+        foldDiacritics(o.label).includes(q) ||
+        (o.description ? foldDiacritics(o.description).includes(q) : false) ||
+        foldDiacritics(o.value).includes(q),
     );
   }, [options, query]);
 
