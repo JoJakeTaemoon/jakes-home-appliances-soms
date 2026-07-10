@@ -73,8 +73,8 @@ interface ConsumableRow {
   nameKo: string;
   nameVi: string;
   nameEn: string;
-  replaceEveryMonths: number | null;
-  cleanEveryMonths: number | null;
+  replaceEveryDays: number | null;
+  cleanEveryDays: number | null;
   cleanOnEveryVisit: boolean;
   retailPrice: string;
   isActive: boolean;
@@ -1118,14 +1118,14 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     nameKo: "",
     nameVi: "",
     nameEn: "",
-    replaceEveryMonths: "" as string,
-    cleanEveryMonths: "" as string,
+    replaceEveryDays: "" as string,
+    cleanEveryDays: "" as string,
     cleanOnEveryVisit: false,
     retailPrice: 0,
     compatibleModelIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
-  const { sort, onClick } = useSort<"sku" | "nameVi" | "replaceEveryMonths" | "cleanEveryMonths" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
+  const { sort, onClick } = useSort<"sku" | "nameVi" | "replaceEveryDays" | "cleanEveryDays" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1148,8 +1148,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         nameKo: form.nameKo,
         nameVi: form.nameVi,
         nameEn: form.nameEn,
-        replaceEveryMonths: form.replaceEveryMonths === "" ? null : Number(form.replaceEveryMonths),
-        cleanEveryMonths: form.cleanEveryMonths === "" ? null : Number(form.cleanEveryMonths),
+        replaceEveryDays: form.replaceEveryDays === "" ? null : Number(form.replaceEveryDays),
+        cleanEveryDays: form.cleanEveryDays === "" ? null : Number(form.cleanEveryDays),
         cleanOnEveryVisit: form.cleanOnEveryVisit,
         retailPrice: form.retailPrice,
         compatibleModels: form.compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
@@ -1160,8 +1160,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         nameKo: "",
         nameVi: "",
         nameEn: "",
-        replaceEveryMonths: "",
-        cleanEveryMonths: "",
+        replaceEveryDays: "",
+        cleanEveryDays: "",
         cleanOnEveryVisit: false,
         retailPrice: 0,
         compatibleModelIds: [],
@@ -1230,8 +1230,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       sortRows(filtered, sort, {
         sku: (r) => r.sku,
         nameVi: (r) => pickLocaleName(r, locale),
-        replaceEveryMonths: (r) => r.replaceEveryMonths ?? -1,
-        cleanEveryMonths: (r) => r.cleanEveryMonths ?? -1,
+        replaceEveryDays: (r) => r.replaceEveryDays ?? -1,
+        cleanEveryDays: (r) => r.cleanEveryDays ?? -1,
         cleanOnEveryVisit: (r) => r.cleanOnEveryVisit,
         retailPrice: (r) => Number(r.retailPrice),
         isActive: (r) => r.isActive,
@@ -1292,10 +1292,10 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
             </FormField>
             <FormField label={t("colReplaceCycle")}>
-              <Input type="number" value={form.replaceEveryMonths} onChange={(e) => setForm({ ...form, replaceEveryMonths: e.target.value })} />
+              <Input type="number" value={form.replaceEveryDays} onChange={(e) => setForm({ ...form, replaceEveryDays: e.target.value })} />
             </FormField>
             <FormField label={t("colCleanCycle")}>
-              <Input type="number" value={form.cleanEveryMonths} onChange={(e) => setForm({ ...form, cleanEveryMonths: e.target.value })} />
+              <Input type="number" value={form.cleanEveryDays} onChange={(e) => setForm({ ...form, cleanEveryDays: e.target.value })} />
             </FormField>
             <FormField label={t("colRetailPrice")}>
               <Input type="number" value={form.retailPrice} onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })} />
@@ -1349,8 +1349,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           <tr>
             <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
             <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
-            <SortableTh column="replaceEveryMonths" sort={sort} onClick={onClick} align="right">{t("colReplaceCycle")}</SortableTh>
-            <SortableTh column="cleanEveryMonths" sort={sort} onClick={onClick} align="right">{t("colCleanCycle")}</SortableTh>
+            <SortableTh column="replaceEveryDays" sort={sort} onClick={onClick} align="right">{t("colReplaceCycle")}</SortableTh>
+            <SortableTh column="cleanEveryDays" sort={sort} onClick={onClick} align="right">{t("colCleanCycle")}</SortableTh>
             <SortableTh column="cleanOnEveryVisit" sort={sort} onClick={onClick} align="center">{t("colCleanOnVisit")}</SortableTh>
             <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
             <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
@@ -1366,8 +1366,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
                 <td className="p-2">{pickLocaleName(r, locale)}</td>
-                <td className="p-2 text-right">{r.replaceEveryMonths ?? t("cycleNone")}</td>
-                <td className="p-2 text-right">{r.cleanEveryMonths ?? t("cycleNone")}</td>
+                <td className="p-2 text-right">{r.replaceEveryDays ?? t("cycleNone")}</td>
+                <td className="p-2 text-right">{r.cleanEveryDays ?? t("cycleNone")}</td>
                 <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
                 <td className="p-2 text-xs">
@@ -1434,8 +1434,8 @@ function ConsumableEditModal({
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
-  const [replaceEveryMonths, setReplaceEveryMonths] = useState(row.replaceEveryMonths?.toString() ?? "");
-  const [cleanEveryMonths, setCleanEveryMonths] = useState(row.cleanEveryMonths?.toString() ?? "");
+  const [replaceEveryDays, setReplaceEveryMonths] = useState(row.replaceEveryDays?.toString() ?? "");
+  const [cleanEveryDays, setCleanEveryMonths] = useState(row.cleanEveryDays?.toString() ?? "");
   const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row.cleanOnEveryVisit);
   const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
   const [isActive, setIsActive] = useState(row.isActive);
@@ -1467,8 +1467,8 @@ function ConsumableEditModal({
     try {
       await api.patch(`/api/admin/products/consumables/${row.id}`, {
         nameKo, nameVi, nameEn,
-        replaceEveryMonths: replaceEveryMonths === "" ? null : Number(replaceEveryMonths),
-        cleanEveryMonths: cleanEveryMonths === "" ? null : Number(cleanEveryMonths),
+        replaceEveryDays: replaceEveryDays === "" ? null : Number(replaceEveryDays),
+        cleanEveryDays: cleanEveryDays === "" ? null : Number(cleanEveryDays),
         cleanOnEveryVisit,
         retailPrice,
         isActive,
@@ -1501,10 +1501,10 @@ function ConsumableEditModal({
           <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
           <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
           <FormField label={t("colReplaceCycle")}>
-            <Input type="number" value={replaceEveryMonths} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
+            <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
           </FormField>
           <FormField label={t("colCleanCycle")}>
-            <Input type="number" value={cleanEveryMonths} onChange={(e) => setCleanEveryMonths(e.target.value)} />
+            <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryMonths(e.target.value)} />
           </FormField>
           <FormField label={t("colRetailPrice")}>
             <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />

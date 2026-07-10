@@ -26,7 +26,7 @@ interface ModelInput {
   retailPrice: string;
   monthlyRentalPrice: string;
   monthlyMaintenancePrice: string;
-  inspectionEveryMonths: string;
+  inspectionEveryDays: string;
   warrantyMonths: string;
   filters: FilterRow[];
   isActive: boolean;
@@ -54,7 +54,7 @@ const EMPTY: ModelInput = {
   retailPrice: "",
   monthlyRentalPrice: "",
   monthlyMaintenancePrice: "",
-  inspectionEveryMonths: "",
+  inspectionEveryDays: "",
   warrantyMonths: "12",
   filters: [],
   isActive: true,
@@ -109,7 +109,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         retailPrice: data.retailPrice ? Number(data.retailPrice) : null,
         monthlyRentalPrice: data.monthlyRentalPrice ? Number(data.monthlyRentalPrice) : null,
         monthlyMaintenancePrice: data.monthlyMaintenancePrice ? Number(data.monthlyMaintenancePrice) : null,
-        inspectionEveryMonths: data.inspectionEveryMonths ? Number(data.inspectionEveryMonths) : null,
+        inspectionEveryDays: data.inspectionEveryDays ? Number(data.inspectionEveryDays) : null,
         warrantyMonths: data.warrantyMonths ? Number(data.warrantyMonths) : null,
         filterPolicy: data.filters.length > 0 ? { filters: data.filters } : null,
         isActive: data.isActive,
@@ -160,8 +160,8 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         </FormField>
         <FormField label={t("inspectionEveryMonths")}>
           <Input
-            value={data.inspectionEveryMonths}
-            onChange={(e) => setField("inspectionEveryMonths", e.target.value)}
+            value={data.inspectionEveryDays}
+            onChange={(e) => setField("inspectionEveryDays", e.target.value)}
             inputMode="numeric"
             placeholder="1"
           />

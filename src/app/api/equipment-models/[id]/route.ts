@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         retailPrice: data.retailPrice,
         monthlyRentalPrice: data.monthlyRentalPrice,
         monthlyMaintenancePrice: data.monthlyMaintenancePrice,
-        inspectionEveryMonths: data.inspectionEveryMonths,
+        inspectionEveryDays: data.inspectionEveryDays,
         warrantyMonths: data.warrantyMonths,
         // Prisma JSON columns don't accept literal null; use Prisma.DbNull.
         filterPolicy:

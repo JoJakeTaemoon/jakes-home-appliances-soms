@@ -45,7 +45,7 @@ export const GET = defineQuery({
                     nameKo: true,
                     nameVi: true,
                     nameEn: true,
-                    replaceEveryMonths: true,
+                    replaceEveryDays: true,
                     isActive: true,
                   },
                 },

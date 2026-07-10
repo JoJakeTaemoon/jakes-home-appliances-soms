@@ -987,7 +987,7 @@ function FilterAddManualModal({
     try {
       await api.post(`/api/equipment/${equipmentId}/consumables`, {
         customName: customName.trim(),
-        replaceEveryMonths: cycleMonths,
+        replaceEveryDays: cycleMonths,
         quantity,
         unitPrice,
       });
@@ -1035,7 +1035,7 @@ function FilterAddManualModal({
             value={cycleMonths}
             onChange={(e) => setCycleMonths(Number(e.target.value))}
             min={1}
-            max={120}
+            max={3600}
           />
         </FormField>
         <FormField label={t("filterHistory.quantity")}>
@@ -1096,12 +1096,12 @@ function FilterEditCycleModal({
       if (row.overrideId) {
         await api.patch(
           `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
-          { replaceEveryMonths: cycleMonths, quantity, unitPrice },
+          { replaceEveryDays: cycleMonths, quantity, unitPrice },
         );
       } else if (row.consumableId) {
         await api.post(`/api/equipment/${equipmentId}/consumables`, {
           consumableId: row.consumableId,
-          replaceEveryMonths: cycleMonths,
+          replaceEveryDays: cycleMonths,
           quantity,
           unitPrice,
         });
@@ -1161,7 +1161,7 @@ function FilterEditCycleModal({
             value={cycleMonths}
             onChange={(e) => setCycleMonths(Number(e.target.value))}
             min={1}
-            max={120}
+            max={3600}
           />
         </FormField>
         <FormField label={t("filterHistory.quantity")}>

@@ -75,15 +75,15 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     // Merge cycle fields with existing values to enforce the "at least one
     // cycle or cleanOnEveryVisit" invariant on the resulting state.
     const replaceMerged =
-      data.replaceEveryMonths === undefined ? before.replaceEveryMonths : data.replaceEveryMonths;
+      data.replaceEveryDays === undefined ? before.replaceEveryDays : data.replaceEveryDays;
     const cleanMerged =
-      data.cleanEveryMonths === undefined ? before.cleanEveryMonths : data.cleanEveryMonths;
+      data.cleanEveryDays === undefined ? before.cleanEveryDays : data.cleanEveryDays;
     const cleanOnVisitMerged =
       data.cleanOnEveryVisit === undefined ? before.cleanOnEveryVisit : data.cleanOnEveryVisit;
     if (replaceMerged == null && cleanMerged == null && !cleanOnVisitMerged) {
       throw new ValidationError(
-        "At least one of replaceEveryMonths, cleanEveryMonths or cleanOnEveryVisit must be set",
-        [{ path: ["replaceEveryMonths"], message: "required" }],
+        "At least one of replaceEveryDays, cleanEveryDays or cleanOnEveryVisit must be set",
+        [{ path: ["replaceEveryDays"], message: "required" }],
       );
     }
 
@@ -95,8 +95,8 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           nameKo: data.nameKo,
           nameVi: data.nameVi,
           nameEn: data.nameEn,
-          replaceEveryMonths: replaceMerged,
-          cleanEveryMonths: cleanMerged,
+          replaceEveryDays: replaceMerged,
+          cleanEveryDays: cleanMerged,
           cleanOnEveryVisit: data.cleanOnEveryVisit,
           retailPrice: data.retailPrice,
           notes: data.notes,

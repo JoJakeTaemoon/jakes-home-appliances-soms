@@ -26,7 +26,7 @@ interface EquipmentDetail {
   lifecycleStage: string;
   deposit: string | number | null;
   monthlyFee: string | number | null;
-  customInspectionCycle: number | null;
+  customInspectionCycleDays: number | null;
   imageUrl: string | null;
   notes: string | null;
   customDescription: string | null;
@@ -37,7 +37,7 @@ interface EquipmentDetail {
     nameKo: string | null;
     nameVi: string | null;
     nameEn: string | null;
-    inspectionEveryMonths: number | null;
+    inspectionEveryDays: number | null;
     imageUrl?: string | null;
   } | null;
   registeredBy: { id: string; username: string } | null;
@@ -155,8 +155,8 @@ export function EquipmentDetailContent({ equipmentId, embedded = false }: Readon
               <Field
                 label={t("detail.inspectionCycle")}
                 value={
-                  (detail.customInspectionCycle ?? detail.model?.inspectionEveryMonths ?? null) !== null
-                    ? `${detail.customInspectionCycle ?? detail.model?.inspectionEveryMonths} ${t("detail.months")}`
+                  (detail.customInspectionCycleDays ?? detail.model?.inspectionEveryDays ?? null) !== null
+                    ? `${detail.customInspectionCycleDays ?? detail.model?.inspectionEveryDays} ${t("detail.days")}`
                     : "—"
                 }
               />

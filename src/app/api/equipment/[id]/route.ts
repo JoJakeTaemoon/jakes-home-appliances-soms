@@ -89,10 +89,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         managementType:
           data.managementType === undefined ? undefined : data.managementType,
         lifecycleStage: data.lifecycleStage,
-        customInspectionCycle:
-          data.customInspectionCycle === undefined
+        customInspectionCycleDays:
+          data.customInspectionCycleDays === undefined
             ? undefined
-            : data.customInspectionCycle,
+            : data.customInspectionCycleDays,
         imageUrl: data.imageUrl,
       },
     });

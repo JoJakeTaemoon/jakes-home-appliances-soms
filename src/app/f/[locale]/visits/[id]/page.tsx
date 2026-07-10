@@ -33,8 +33,8 @@ interface ConsumableOnModel {
     nameKo: string;
     nameVi: string;
     nameEn: string;
-    replaceEveryMonths: number | null;
-    cleanEveryMonths: number | null;
+    replaceEveryDays: number | null;
+    cleanEveryDays: number | null;
     cleanOnEveryVisit: boolean;
     isActive: boolean;
   };
@@ -361,16 +361,16 @@ function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
   // replaceable filter.
   const cleanItems = active.filter((c) => {
     if (type === "PERIODIC_INSPECTION")
-      return c.consumable.cleanOnEveryVisit || c.consumable.cleanEveryMonths != null;
+      return c.consumable.cleanOnEveryVisit || c.consumable.cleanEveryDays != null;
     if (type === "FILTER_REPLACEMENT")
       return c.consumable.cleanOnEveryVisit;
     return false;
   });
   const replaceItems = active.filter((c) => {
     if (type === "PERIODIC_INSPECTION")
-      return c.consumable.replaceEveryMonths != null;
+      return c.consumable.replaceEveryDays != null;
     if (type === "FILTER_REPLACEMENT")
-      return c.consumable.replaceEveryMonths != null;
+      return c.consumable.replaceEveryDays != null;
     return false;
   });
 
@@ -417,8 +417,8 @@ function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
                 </span>
                 <span className="font-mono text-xs text-[#737373]">
                   {c.consumable.sku}
-                  {c.consumable.replaceEveryMonths
-                    ? ` · ${t("everyMonths", { n: c.consumable.replaceEveryMonths })}`
+                  {c.consumable.replaceEveryDays
+                    ? ` · ${t("everyDays", { n: c.consumable.replaceEveryDays })}`
                     : ""}
                 </span>
               </li>
@@ -436,8 +436,8 @@ function WorkScopeSection({ visit }: Readonly<{ visit: VisitDetail }>) {
             {cleanItems.map((c) => {
               let cycle = "";
               if (c.consumable.cleanOnEveryVisit) cycle = ` · ${t("everyVisit")}`;
-              else if (c.consumable.cleanEveryMonths != null)
-                cycle = ` · ${t("everyMonths", { n: c.consumable.cleanEveryMonths })}`;
+              else if (c.consumable.cleanEveryDays != null)
+                cycle = ` · ${t("everyDays", { n: c.consumable.cleanEveryDays })}`;
               return (
                 <li
                   key={`c-${c.consumable.id}`}

@@ -1105,7 +1105,7 @@ function AddEquipmentQuickModal({
   // model picker and accept a free-text description + cycle instead.
   const [isExternal, setIsExternal] = useState(false);
   const [customDescription, setCustomDescription] = useState("");
-  const [customMaintenanceCycle, setCustomMaintenanceCycle] =
+  const [customMaintenanceCycleDays, setCustomMaintenanceCycle] =
     useState<number>(3);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -1136,7 +1136,7 @@ function AddEquipmentQuickModal({
       };
       if (isExternal) {
         payload.customDescription = customDescription.trim();
-        payload.customMaintenanceCycle = customMaintenanceCycle || undefined;
+        payload.customMaintenanceCycleDays = customMaintenanceCycleDays || undefined;
       } else {
         payload.modelId = modelId;
       }
@@ -1199,12 +1199,12 @@ function AddEquipmentQuickModal({
             <FormField label={t("external.customMaintenanceCycle")}>
               <Input
                 type="number"
-                value={customMaintenanceCycle}
+                value={customMaintenanceCycleDays}
                 onChange={(e) =>
                   setCustomMaintenanceCycle(Number(e.target.value))
                 }
                 min={1}
-                max={120}
+                max={3600}
               />
             </FormField>
           </>

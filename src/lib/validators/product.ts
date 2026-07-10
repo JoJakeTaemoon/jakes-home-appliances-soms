@@ -56,12 +56,12 @@ export type UpdateProductCategoryInput = z.infer<typeof updateProductCategorySch
 export type ProductCategoryListQuery = z.infer<typeof productCategoryListQuerySchema>;
 
 // ─────────────────────────────────────────────────────────────────────────
-// Consumable — exactly one of replaceEveryMonths / cleanEveryMonths must
+// Consumable — exactly one of replaceEveryDays / cleanEveryDays must
 // be non-null; both may be set when a part has two distinct cycles
 // (e.g. RO membrane cleaned every 6mo, replaced every 24mo).
 // ─────────────────────────────────────────────────────────────────────────
 
-const monthCycle = z.coerce.number().int().min(1).max(600).nullable().optional();
+const dayCycle = z.coerce.number().int().min(1).max(18000).nullable().optional();
 
 // Per-model compatibility entry. `quantity` reflects how many units of the
 // part are installed on a single model (PDF A.1 — most are 1, oversize 2).
@@ -75,8 +75,8 @@ const consumableCoreShape = {
   nameKo: z.string().trim().min(1).max(180),
   nameVi: z.string().trim().min(1).max(180),
   nameEn: z.string().trim().min(1).max(180),
-  replaceEveryMonths: monthCycle,
-  cleanEveryMonths: monthCycle,
+  replaceEveryDays: dayCycle,
+  cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().default(false),
   retailPrice: z.coerce.number().nonnegative().max(99999999999.99),
   notes: optStr(2000),
@@ -85,19 +85,19 @@ const consumableCoreShape = {
 };
 
 function requireAtLeastOneCycle<T extends {
-  replaceEveryMonths?: number | null | undefined;
-  cleanEveryMonths?: number | null | undefined;
+  replaceEveryDays?: number | null | undefined;
+  cleanEveryDays?: number | null | undefined;
   cleanOnEveryVisit?: boolean | undefined;
 }>(data: T, ctx: z.RefinementCtx): void {
-  const r = data.replaceEveryMonths;
-  const c = data.cleanEveryMonths;
+  const r = data.replaceEveryDays;
+  const c = data.cleanEveryDays;
   const v = data.cleanOnEveryVisit;
   if (r == null && c == null && !v) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
-        "At least one of replaceEveryMonths, cleanEveryMonths or cleanOnEveryVisit must be set",
-      path: ["replaceEveryMonths"],
+        "At least one of replaceEveryDays, cleanEveryDays or cleanOnEveryVisit must be set",
+      path: ["replaceEveryDays"],
     });
   }
 }
@@ -111,8 +111,8 @@ export const updateConsumableSchema = z.object({
   nameKo: consumableCoreShape.nameKo.optional(),
   nameVi: consumableCoreShape.nameVi.optional(),
   nameEn: consumableCoreShape.nameEn.optional(),
-  replaceEveryMonths: monthCycle,
-  cleanEveryMonths: monthCycle,
+  replaceEveryDays: dayCycle,
+  cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().optional(),
   retailPrice: consumableCoreShape.retailPrice.optional(),
   notes: optStr(2000),

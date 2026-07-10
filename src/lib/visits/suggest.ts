@@ -20,6 +20,7 @@
  */
 
 import prisma from "@/lib/prisma";
+import { addDays } from "@/lib/contracts/pause-period";
 
 export type SuggestAction = "REPLACE" | "CLEAN";
 
@@ -32,25 +33,12 @@ export interface ConsumableRecommendation {
   action: SuggestAction;
   /** Last time this action was performed on this equipment; null if never. */
   lastDoneAt: Date | null;
-  /** Computed next due date (baseline + cycleMonths). */
+  /** Computed next due date (baseline + cycleMonths days). */
   nextDueAt: Date;
   /** Negative = overdue (still recommended within window). */
   daysUntilDue: number;
-  /** Cycle length in months that produced this recommendation. */
+  /** Cycle length in days that produced this recommendation (field name kept for API compat). */
   cycleMonths: number;
-}
-
-/** Add a whole number of calendar months without crossing month boundaries weirdly. */
-export function addMonths(base: Date, months: number): Date {
-  const d = new Date(base);
-  const targetMonth = d.getMonth() + months;
-  const originalDay = d.getDate();
-  d.setDate(1); // avoid overflow when setting month
-  d.setMonth(targetMonth);
-  // Clamp to last day of target month if original day exceeded it.
-  const lastDayOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(originalDay, lastDayOfMonth));
-  return d;
 }
 
 export function daysBetween(a: Date, b: Date): number {
@@ -70,8 +58,8 @@ export interface ConsumableMeta {
   nameKo: string;
   nameVi: string;
   nameEn: string;
-  replaceEveryMonths: number | null;
-  cleanEveryMonths: number | null;
+  replaceEveryDays: number | null;
+  cleanEveryDays: number | null;
   /** PDF A.4 — pre-filters cleaned on every periodic-inspection visit. */
   cleanOnEveryVisit?: boolean;
 }
@@ -127,11 +115,11 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
     });
   }
 
-  function evaluate(c: ConsumableMeta, action: SuggestAction, cycleMonths: number): void {
+  function evaluate(c: ConsumableMeta, action: SuggestAction, cycleDays: number): void {
     const lastDoneAt = lastByKey.get(`${c.id}:${action}`) ?? null;
     const baseline = lastDoneAt ?? installedAt;
     if (!baseline) return;
-    const nextDueAt = addMonths(baseline, cycleMonths);
+    const nextDueAt = addDays(baseline, cycleDays);
     const daysUntilDue = daysBetween(visitDate, nextDueAt);
     if (daysUntilDue < -windowDays || daysUntilDue > windowDays) return;
     out.push({
@@ -144,7 +132,7 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
       lastDoneAt,
       nextDueAt,
       daysUntilDue,
-      cycleMonths,
+      cycleMonths: cycleDays,
     });
   }
 
@@ -154,11 +142,11 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
     if (alwaysClean) {
       pushAlwaysClean(c);
     }
-    if (c.replaceEveryMonths != null) evaluate(c, "REPLACE", c.replaceEveryMonths);
+    if (c.replaceEveryDays != null) evaluate(c, "REPLACE", c.replaceEveryDays);
     // Skip cycle-based CLEAN when pushAlwaysClean already emitted one for
     // this consumable — otherwise the mobile UI shows two CLEAN rows for
     // the same SKU (one cycle-driven, one every-visit).
-    if (!alwaysClean && c.cleanEveryMonths != null) evaluate(c, "CLEAN", c.cleanEveryMonths);
+    if (!alwaysClean && c.cleanEveryDays != null) evaluate(c, "CLEAN", c.cleanEveryDays);
   }
 
   out.sort((a, b) => a.nextDueAt.getTime() - b.nextDueAt.getTime());
@@ -191,8 +179,8 @@ export async function suggestConsumablesForVisit(
                   nameKo: true,
                   nameVi: true,
                   nameEn: true,
-                  replaceEveryMonths: true,
-                  cleanEveryMonths: true,
+                  replaceEveryDays: true,
+                  cleanEveryDays: true,
                   cleanOnEveryVisit: true,
                   isActive: true,
                 },
@@ -217,8 +205,8 @@ export async function suggestConsumablesForVisit(
       nameKo: c.nameKo,
       nameVi: c.nameVi,
       nameEn: c.nameEn,
-      replaceEveryMonths: c.replaceEveryMonths,
-      cleanEveryMonths: c.cleanEveryMonths,
+      replaceEveryDays: c.replaceEveryDays,
+      cleanEveryDays: c.cleanEveryDays,
       cleanOnEveryVisit: c.cleanOnEveryVisit,
     }));
 

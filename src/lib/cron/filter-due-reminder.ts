@@ -2,7 +2,7 @@
  * Filter due reminder cron (UC-NT-06).
  *
  * For every ACTIVE Equipment whose model has compatible Consumables:
- *   - For each Consumable with a replaceEveryMonths and/or cleanEveryMonths
+ *   - For each Consumable with a replaceEveryDays and/or cleanEveryDays
  *     cycle, compute the next-due date from Equipment.installedAt + the
  *     last VisitConsumableLog for that (consumableId, action).
  *   - If the next-due date is within 14 days, queue EMAIL_FILTER_DUE_D14
@@ -19,7 +19,7 @@ import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import { formatDate } from "@/lib/format";
 import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
-import { addMonths } from "@/lib/visits/suggest";
+import { addDays } from "@/lib/contracts/pause-period";
 import type { Locale } from "@/generated/prisma/client";
 
 type CycleAction = "REPLACE" | "CLEAN";
@@ -105,8 +105,8 @@ interface EquipmentRow {
         nameKo: string;
         nameVi: string;
         nameEn: string;
-        replaceEveryMonths: number | null;
-        cleanEveryMonths: number | null;
+        replaceEveryDays: number | null;
+        cleanEveryDays: number | null;
         isActive: boolean;
       };
     }[];
@@ -153,11 +153,11 @@ async function processOne(
 
   for (const c of activeConsumables) {
     for (const action of ["REPLACE", "CLEAN"] as CycleAction[]) {
-      const cycle = action === "REPLACE" ? c.replaceEveryMonths : c.cleanEveryMonths;
+      const cycle = action === "REPLACE" ? c.replaceEveryDays : c.cleanEveryDays;
       if (cycle == null) continue;
       const baseline = lastByKey.get(`${c.id}:${action}`) ?? eq.installedAt;
       if (!baseline) continue;
-      const nextDue = addMonths(baseline, cycle);
+      const nextDue = addDays(baseline, cycle);
       const daysUntilDue = Math.floor(
         (nextDue.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
       );
@@ -249,8 +249,8 @@ export async function runFilterDueReminder(
                   nameKo: true,
                   nameVi: true,
                   nameEn: true,
-                  replaceEveryMonths: true,
-                  cleanEveryMonths: true,
+                  replaceEveryDays: true,
+                  cleanEveryDays: true,
                   isActive: true,
                 },
               },

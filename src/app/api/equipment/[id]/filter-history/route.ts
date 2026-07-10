@@ -10,9 +10,9 @@
  *      added off-catalog filters (customName)
  *
  * For each filter we resolve:
- *   - cycleMonths: EquipmentConsumable.replaceEveryMonths
- *                  ?? Consumable.replaceEveryMonths
- *                  ?? Equipment.customMaintenanceCycle (for external
+ *   - cycleMonths: EquipmentConsumable.replaceEveryDays
+ *                  ?? Consumable.replaceEveryDays
+ *                  ?? Equipment.customMaintenanceCycleDays (for external
  *                     devices with no catalog data)
  *   - lastReplacedAt: max VisitConsumableLog.createdAt (action=REPLACE)
  *   - history: every prior VisitConsumableLog (action=REPLACE)
@@ -30,21 +30,11 @@ import prisma from "@/lib/prisma";
 import { defineQuery } from "@/lib/api/mutation";
 import { canManageEquipment } from "@/lib/customers/access";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { addDays } from "@/lib/contracts/pause-period";
 
 const paramsSchema = z.object({ id: z.string() });
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function addMonths(base: Date, months: number): Date {
-  const d = new Date(base);
-  const target = d.getMonth() + months;
-  const day = d.getDate();
-  d.setDate(1);
-  d.setMonth(target);
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(day, lastDay));
-  return d;
-}
 
 export const GET = defineQuery({
   audience: "staff",
@@ -60,7 +50,7 @@ export const GET = defineQuery({
       select: {
         id: true,
         installedAt: true,
-        customMaintenanceCycle: true,
+        customMaintenanceCycleDays: true,
         model: {
           select: {
             consumables: {
@@ -73,8 +63,8 @@ export const GET = defineQuery({
                     nameKo: true,
                     nameVi: true,
                     nameEn: true,
-                    replaceEveryMonths: true,
-                    cleanEveryMonths: true,
+                    replaceEveryDays: true,
+                    cleanEveryDays: true,
                     retailPrice: true,
                   },
                 },
@@ -96,8 +86,8 @@ export const GET = defineQuery({
             nameKo: true,
             nameVi: true,
             nameEn: true,
-            replaceEveryMonths: true,
-            cleanEveryMonths: true,
+            replaceEveryDays: true,
+            cleanEveryDays: true,
             retailPrice: true,
           },
         },
@@ -137,7 +127,7 @@ export const GET = defineQuery({
     }
 
     const now = new Date();
-    const fallbackCycle = equipment.customMaintenanceCycle ?? null;
+    const fallbackCycle = equipment.customMaintenanceCycleDays ?? null;
 
     interface FilterRow {
       key: string;
@@ -181,10 +171,10 @@ export const GET = defineQuery({
       const c = ov.consumable;
       if (c) seenConsumableIds.add(c.id);
       const cycle =
-        ov.replaceEveryMonths ?? c?.replaceEveryMonths ?? fallbackCycle ?? null;
-      const cycleSource: FilterRow["cycleSource"] = ov.replaceEveryMonths
+        ov.replaceEveryDays ?? c?.replaceEveryDays ?? fallbackCycle ?? null;
+      const cycleSource: FilterRow["cycleSource"] = ov.replaceEveryDays
         ? "OVERRIDE"
-        : c?.replaceEveryMonths
+        : c?.replaceEveryDays
           ? "CATALOG"
           : fallbackCycle
             ? "CUSTOM_MAINTENANCE"
@@ -196,7 +186,7 @@ export const GET = defineQuery({
       const baseline = lastReplacedAt
         ? new Date(lastReplacedAt)
         : equipment.installedAt;
-      const nextDueAt = cycle && baseline ? addMonths(baseline, cycle) : null;
+      const nextDueAt = cycle && baseline ? addDays(baseline, cycle) : null;
       const daysRemaining = nextDueAt
         ? Math.floor((nextDueAt.getTime() - now.getTime()) / MS_PER_DAY)
         : null;
@@ -229,8 +219,8 @@ export const GET = defineQuery({
     for (const entry of standard) {
       const c = entry.consumable;
       if (seenConsumableIds.has(c.id)) continue;
-      const cycle = c.replaceEveryMonths ?? fallbackCycle ?? null;
-      const cycleSource: FilterRow["cycleSource"] = c.replaceEveryMonths
+      const cycle = c.replaceEveryDays ?? fallbackCycle ?? null;
+      const cycleSource: FilterRow["cycleSource"] = c.replaceEveryDays
         ? "CATALOG"
         : fallbackCycle
           ? "CUSTOM_MAINTENANCE"
@@ -242,7 +232,7 @@ export const GET = defineQuery({
       const baseline = lastReplacedAt
         ? new Date(lastReplacedAt)
         : equipment.installedAt;
-      const nextDueAt = cycle && baseline ? addMonths(baseline, cycle) : null;
+      const nextDueAt = cycle && baseline ? addDays(baseline, cycle) : null;
       const daysRemaining = nextDueAt
         ? Math.floor((nextDueAt.getTime() - now.getTime()) / MS_PER_DAY)
         : null;

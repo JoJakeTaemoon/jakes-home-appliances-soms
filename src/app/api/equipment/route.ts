@@ -136,7 +136,7 @@ export const POST = defineMutation({
         siteId: body.siteId ?? null,
         modelId: body.modelId ?? null,
         customDescription: body.customDescription ?? null,
-        customMaintenanceCycle: body.customMaintenanceCycle ?? null,
+        customMaintenanceCycleDays: body.customMaintenanceCycleDays ?? null,
         serialNumber: body.serialNumber ?? null,
         ownership: body.ownership,
         installedAt: body.installedAt ?? null,

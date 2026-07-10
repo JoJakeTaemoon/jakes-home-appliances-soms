@@ -44,9 +44,9 @@ export const createEquipmentSchema = z.object({
   customDescription: optStr(500),
   /**
    * Periodic inspection cycle (months) for external equipment when there's
-   * no EquipmentModel.inspectionEveryMonths to inherit. Optional.
+   * no EquipmentModel.inspectionEveryDays to inherit. Optional.
    */
-  customMaintenanceCycle: z.coerce.number().int().min(1).max(120).optional(),
+  customMaintenanceCycleDays: z.coerce.number().int().min(1).max(3600).optional(),
   serialNumber: optStr(60),
   assetCode: optStr(60),
   ownership: z.enum(["COMPANY", "CUSTOMER"]).default("COMPANY"),
@@ -57,7 +57,7 @@ export const createEquipmentSchema = z.object({
   monthlyFee: z.coerce.number().nonnegative().optional(),
   serviceType: equipmentServiceTypeEnum.optional(),
   managementType: managementTypeEnum.optional(),
-  customInspectionCycle: z.coerce.number().int().min(1).max(120).optional(),
+  customInspectionCycleDays: z.coerce.number().int().min(1).max(3600).optional(),
   imageUrl: optStr(500),
   notes: optStr(2000),
 }).superRefine((v, ctx) => {
@@ -148,11 +148,11 @@ export const updateEquipmentSchema = z.object({
   installedByTechnicianId: optStr(60),
   filterPolicyOverride: filterPolicySchema.nullable().optional(),
   customDescription: optStr(500),
-  customMaintenanceCycle: z.coerce
+  customMaintenanceCycleDays: z.coerce
     .number()
     .int()
     .min(1)
-    .max(120)
+    .max(3600)
     .nullable()
     .optional(),
   // Equipment-centric fields.
@@ -161,7 +161,7 @@ export const updateEquipmentSchema = z.object({
   serviceType: equipmentServiceTypeEnum.nullable().optional(),
   managementType: managementTypeEnum.nullable().optional(),
   lifecycleStage: lifecycleStageEnum.optional(),
-  customInspectionCycle: z.coerce.number().int().min(1).max(120).nullable().optional(),
+  customInspectionCycleDays: z.coerce.number().int().min(1).max(3600).nullable().optional(),
   imageUrl: optStr(500),
   notes: optStr(2000),
 });
@@ -188,7 +188,7 @@ export const bulkRegisterEquipmentSchema = z.object({
   managementType: managementTypeEnum.default("FULL_SERVICE"),
   deposit: z.coerce.number().nonnegative().optional(),
   monthlyFee: z.coerce.number().nonnegative().optional(),
-  customInspectionCycle: z.coerce.number().int().min(1).max(120).optional(),
+  customInspectionCycleDays: z.coerce.number().int().min(1).max(3600).optional(),
   defaultInstalledAt: z.coerce.date(),
   installedByTechnicianId: optStr(60),
   installNotes: optStr(2000),
@@ -203,7 +203,7 @@ export const bulkRegisterEquipmentSchema = z.object({
         .array(
           z.object({
             consumableId: z.string().trim().min(1),
-            replaceEveryMonths: z.coerce.number().int().min(1).max(120),
+            replaceEveryDays: z.coerce.number().int().min(1).max(3600),
             quantity: z.coerce.number().int().min(1).max(20).default(1),
           }),
         )

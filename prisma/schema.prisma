@@ -454,8 +454,8 @@ model EquipmentModel {
   retailPrice             Decimal?           @db.Decimal(14, 2)
   monthlyRentalPrice      Decimal?           @db.Decimal(14, 2)
   monthlyMaintenancePrice Decimal?           @db.Decimal(14, 2)
-  // Periodic inspection cycle (months). 1 for water purifiers (PDF A.2).
-  inspectionEveryMonths   Int?
+  // Periodic inspection cycle (days). 30 for water purifiers (PDF A.2).
+  inspectionEveryDays     Int?
   // Warranty months for SALE customers — used by charge-policy default rules.
   warrantyMonths          Int?               @default(12)
   isActive                Boolean            @default(true)
@@ -475,25 +475,25 @@ model EquipmentModel {
 // Catalog of replaceable/cleanable parts attached to an equipment model.
 // A consumable can carry both a replacement cycle and a cleaning cycle
 // (e.g. RO membrane: clean every 6 months, replace every 24 months).
-// At least one of replaceEveryMonths/cleanEveryMonths must be non-null —
+// At least one of replaceEveryDays/cleanEveryDays must be non-null —
 // enforced in Zod (see src/lib/validators/product.ts).
 model Consumable {
-  id                 String   @id @default(cuid())
-  sku                String   @unique
-  nameKo             String
-  nameVi             String
-  nameEn             String
-  replaceEveryMonths Int?
-  cleanEveryMonths   Int?
+  id                String   @id @default(cuid())
+  sku               String   @unique
+  nameKo            String
+  nameVi            String
+  nameEn            String
+  replaceEveryDays  Int?
+  cleanEveryDays    Int?
   // PDF A.4: pre-filters are cleaned on every periodic-inspection visit
   // (no fixed month-based cycle). When true, recommender prefills CLEAN
   // on every PERIODIC_INSPECTION visit regardless of cycle math.
-  cleanOnEveryVisit  Boolean  @default(false)
-  retailPrice        Decimal  @db.Decimal(14, 2)
-  notes              String?
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  cleanOnEveryVisit Boolean  @default(false)
+  retailPrice       Decimal  @db.Decimal(14, 2)
+  notes             String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   compatibleModels ConsumableOnModel[]
   visitLogs        VisitConsumableLog[]
@@ -616,78 +616,82 @@ model VisitConsumableLog {
 }
 
 model Equipment {
-  id                      String             @id @default(cuid())
-  customerId              String
-  customer                Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  siteId                  String?
-  site                    Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  id                         String             @id @default(cuid())
+  customerId                 String
+  customer                   Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId                     String?
+  site                       Site?              @relation(fields: [siteId], references: [id], onDelete: SetNull)
   /// Optional since 2026-06: MAINTENANCE contracts can register a customer's
   /// externally-purchased (off-catalog) device with no EquipmentModel — see
-  /// `customDescription` + `customMaintenanceCycle` below.
-  modelId                 String?
-  model                   EquipmentModel?    @relation(fields: [modelId], references: [id])
+  /// `customDescription` + `customMaintenanceCycleDays` below.
+  modelId                    String?
+  model                      EquipmentModel?    @relation(fields: [modelId], references: [id])
   /// Free-text description of the device when modelId is null
   /// (e.g. "타사 정수기 모델 XYZ"). Required when modelId is null —
   /// enforced at the validator layer.
-  customDescription       String?            @db.VarChar(500)
-  /// Periodic inspection cycle in months for external equipment. Used by the
-  /// scheduler when EquipmentModel.inspectionEveryMonths is unavailable.
-  customMaintenanceCycle  Int?
-  serialNumber            String?
-  status                  EquipmentStatus    @default(ACTIVE)
-  ownership               EquipmentOwnership @default(COMPANY)
-  installedAt             DateTime?
-  installedByTechnicianId String?
+  customDescription          String?            @db.VarChar(500)
+  /// Periodic inspection cycle in days for external equipment. Used by the
+  /// scheduler when EquipmentModel.inspectionEveryDays is unavailable.
+  customMaintenanceCycleDays Int?
+  serialNumber               String?
+  status                     EquipmentStatus    @default(ACTIVE)
+  ownership                  EquipmentOwnership @default(COMPANY)
+  installedAt                DateTime?
+  installedByTechnicianId    String?
   /// Effective deactivation moment chosen by office staff. Past dates
   /// are allowed (back-dated DEACTIVATE) and feed the per-equipment
   /// pause ledger. Null while ACTIVE / never deactivated.
-  deactivatedAt           DateTime?
+  deactivatedAt              DateTime?
   /// Effective termination moment chosen by office staff. Past dates
   /// are allowed. Independent from `retrievedAt` — termination decides
   /// "no more billing"; retrieval records when the physical device
   /// actually came back.
-  terminatedAt            DateTime?
+  terminatedAt               DateTime?
   /// Date the device was physically retrieved. Set only AFTER the unit
   /// is in TERMINATED state. Past dates allowed (the retrieval often
   /// happens in the field and is logged later).
-  retrievedAt             DateTime?
-  filterPolicyOverride    Json? // per-unit override
-  replacedByEquipmentId   String?            @unique
-  notes                   String?
+  retrievedAt                DateTime?
+  filterPolicyOverride       Json? // per-unit override
+  replacedByEquipmentId      String?            @unique
+  notes                      String?
 
   // ── Equipment-centric domain shift (added 2026-06) ────────────────────
   // Pricing + service identity belongs to the device, not the contract.
   // Contract.deposit/monthlyMaintenanceFee continue to exist as SUM caches
   // (refreshed by src/lib/contracts/recalculate-cache.ts).
   /// Per-unit deposit (refundable). Required when serviceType=RENTAL.
-  deposit               Decimal?              @db.Decimal(14, 2)
+  deposit                   Decimal?              @db.Decimal(14, 2)
   /// Per-unit monthly fee (rental fee for RENTAL, maintenance fee for
   /// MAINTENANCE, null for SALE).
-  monthlyFee            Decimal?              @db.Decimal(14, 2)
+  monthlyFee                Decimal?              @db.Decimal(14, 2)
+  /// Per-unit install fee (SALE). Independent from monthlyFee/deposit.
+  installFee                Decimal?              @db.Decimal(14, 2)
+  /// Per-unit sale price (SALE). monthlyFee stays rental/maintenance-only.
+  salePrice                 Decimal?              @db.Decimal(14, 2)
   /// Per-unit service shape (RENTAL / MAINTENANCE / SALE). Independent
   /// from any linked Contract.type; equipment can exist without a contract.
-  serviceType           EquipmentServiceType?
+  serviceType               EquipmentServiceType?
   /// FULL_SERVICE (we manage inspections + filters) vs SELF_MANAGED
   /// (customer manages; we only alert on filter-due) vs OTHER.
-  managementType        ManagementType?
+  managementType            ManagementType?
   /// Lifecycle stage decoupled from Contract.state — defaults to INSTALLED
   /// at registration, transitions IN_RENTAL while a RENTAL contract is
   /// active, then IN_MAINTENANCE on natural end-of-term (or RETRIEVED for
   /// retrieval contracts).
-  lifecycleStage        LifecycleStage        @default(INSTALLED)
-  /// Per-unit inspection cycle override (months). Falls back to
-  /// model.inspectionEveryMonths when null.
-  customInspectionCycle Int?
+  lifecycleStage            LifecycleStage        @default(INSTALLED)
+  /// Per-unit inspection cycle override (days). Falls back to
+  /// model.inspectionEveryDays when null.
+  customInspectionCycleDays Int?
   /// Optional per-unit image (Vercel Blob). Falls back to model.imageUrl.
-  imageUrl              String?
+  imageUrl                  String?
   /// Office user who registered this unit (the staff member who ran the
   /// bulk-register wizard). Distinct from `installedByTechnicianId` which
   /// is the field technician who physically installs.
-  registeredById        String?
-  registeredBy          User?                 @relation("EquipmentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
+  registeredById            String?
+  registeredBy              User?                 @relation("EquipmentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
   /// Optional asset code (자산 코드) — internal inventory identifier used
   /// during bulk installation (e.g. WA260501001). Distinct from serial.
-  assetCode             String?               @unique
+  assetCode                 String?               @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -732,41 +736,41 @@ enum ProductKind {
 }
 
 model Order {
-  id          String     @id @default(cuid())
+  id               String          @id @default(cuid())
   /// Auto-generated `SO{YYMMDD}-{seq:03d}`.
-  orderNumber String     @unique
-  customerId  String
-  customer    Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  orderNumber      String          @unique
+  customerId       String
+  customer         Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
   /// Optional link to a specific Equipment row — used for "이 장비를 위해
   /// 주문한 소모품" surfacing on the equipment-detail purchase-history widget.
-  equipmentId String?
-  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
-  siteId      String?
-  site        Site?      @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  equipmentId      String?
+  equipment        Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  siteId           String?
+  site             Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
   /// Optional link to a Contract when the order is part of a contract
   /// fulfilment (initial install, scheduled replacement). Not required —
   /// off-contract sales are common.
-  contractId  String?
-  contract    Contract?  @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  contractId       String?
+  contract         Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
   /// Delivery / installation visit the office scheduled at order creation.
   /// Every order created via /api/orders POST gets a SUGGESTED visit so
   /// the field tech sees the work on their queue; null only for orders
   /// imported from legacy data or backfilled before this rollout.
   visitId          String?
-  visit            Visit?           @relation("OrderVisit", fields: [visitId], references: [id], onDelete: SetNull)
+  visit            Visit?          @relation("OrderVisit", fields: [visitId], references: [id], onDelete: SetNull)
   /// Origin link: the order was raised from a ServiceRequest the customer
   /// submitted. Set when the office uses the [+ 주문 등록] CTA on the SR
   /// detail page. Optional — most orders are direct office entries.
   serviceRequestId String?
-  serviceRequest   ServiceRequest?  @relation("OrderServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
-  orderedAt   DateTime
-  deliveredAt DateTime?
-  state       OrderState @default(PENDING)
-  notes       String?
-  createdById String?
-  createdBy   User?      @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  serviceRequest   ServiceRequest? @relation("OrderServiceRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  orderedAt        DateTime
+  deliveredAt      DateTime?
+  state            OrderState      @default(PENDING)
+  notes            String?
+  createdById      String?
+  createdBy        User?           @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   items OrderItem[]
 
@@ -818,7 +822,7 @@ model OrderItem {
 // Two responsibilities in one table:
 //
 //   1. Per-unit cycle override — office staff can force a different
-//      `replaceEveryMonths` for a given (equipment × consumable) pair
+//      `replaceEveryDays` for a given (equipment × consumable) pair
 //      when the standard model-level cycle doesn't fit (heavy-use
 //      restaurant, water hardness, customer request, etc.).
 //
@@ -831,28 +835,28 @@ model OrderItem {
 // Resolution order for the filter-history view:
 //   - Standard parts = EquipmentModel.consumables (ConsumableOnModel)
 //   - Plus every EquipmentConsumable row for this equipment
-//   - Cycle: EquipmentConsumable.replaceEveryMonths > Consumable.replaceEveryMonths
+//   - Cycle: EquipmentConsumable.replaceEveryDays > Consumable.replaceEveryDays
 // ─────────────────────────────────────────────────────────────────────────
 model EquipmentConsumable {
-  id                 String      @id @default(cuid())
-  equipmentId        String
-  equipment          Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  id               String      @id @default(cuid())
+  equipmentId      String
+  equipment        Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   /// Catalog filter (preferred). Mutually exclusive with `customName`.
-  consumableId       String?
-  consumable         Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
+  consumableId     String?
+  consumable       Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
   /// Off-catalog filter description (e.g. "타사 RO 멤브레인 호환"). Used
   /// when consumableId is null. Required in that case (enforced in the
   /// validator).
-  customName         String?
-  quantity           Int         @default(1)
-  /// Override cycle in months. When null, falls back to the catalog
-  /// consumable's `replaceEveryMonths`. For manual filters with
+  customName       String?
+  quantity         Int         @default(1)
+  /// Override cycle in days. When null, falls back to the catalog
+  /// consumable's `replaceEveryDays`. For manual filters with
   /// customName, this is the authoritative cycle.
-  replaceEveryMonths Int?
-  unitPrice          Decimal?    @db.Decimal(14, 2)
-  notes              String?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  replaceEveryDays Int?
+  unitPrice        Decimal?    @db.Decimal(14, 2)
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@index([equipmentId])
   @@index([consumableId])
@@ -932,6 +936,11 @@ model Contract {
   /// preserves the pre-conversion type for audit/UI surfacing.
   convertedFromType ContractType?
   convertedAt       DateTime?
+
+  /// Manually-uploaded signed contract PDF — takes precedence over the
+  /// auto-rendered contract PDF when present.
+  pdfStorageKey String?
+  pdfUploadedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1050,7 +1059,7 @@ model ServiceRequest {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  visit Visit?
+  visit  Visit?
   /// Orders raised from this service request (office uses the
   /// [+ 주문 등록] CTA on SR detail). Usually 0..1.
   orders Order[] @relation("OrderServiceRequest")
@@ -1093,31 +1102,31 @@ enum VisitType {
 }
 
 model Visit {
-  id               String          @id @default(cuid())
-  customerId       String
-  customer         Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  siteId           String?
+  id                   String          @id @default(cuid())
+  customerId           String
+  customer             Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  siteId               String?
   /// Site relation — added 2026-06 so multi-site B2B visits can be
   /// grouped + filtered by location. SetNull preserves visit history if
   /// the site is later removed.
-  site             Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
-  equipmentId      String?
-  equipment        Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  site                 Site?           @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  equipmentId          String?
+  equipment            Equipment?      @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   /// Set when the visit was auto-spawned by a contract lifecycle event
   /// (RETRIEVAL at end-of-term, or potential future INSTALLATION wiring).
   /// Optional + onDelete: SetNull so the contract can be soft-purged without
   /// losing visit history.
-  contractId       String?
-  contract         Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  serviceRequestId String?         @unique
-  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
-  type             VisitType
+  contractId           String?
+  contract             Contract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  serviceRequestId     String?         @unique
+  serviceRequest       ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  type                 VisitType
   /// Secondary visit types layered on top of `type` — a single field
   /// visit may cover multiple work streams (e.g. a scheduled inspection
   /// where the tech also drops off a consumable order the customer paid
   /// for). Empty when the visit only does its primary `type` work. See
   /// POST /api/orders "attachToVisitId" flow for the canonical use case.
-  additionalTypes  VisitType[]     @default([])
+  additionalTypes      VisitType[]     @default([])
   /// Document kinds queued to auto-issue when this visit becomes
   /// SCHEDULED (or immediately if it already is). Populated by POST
   /// /api/orders — consumable orders drop the customer-appropriate
@@ -1125,10 +1134,10 @@ model Visit {
   /// B2B) here. Each kind is removed from the array as its PDF is
   /// rendered by `VisitWorkflow.schedule` so the field stays a live
   /// worklist rather than an audit trail.
-  pendingDocumentKinds DocumentKind[] @default([])
-  state            VisitState      @default(SUGGESTED)
+  pendingDocumentKinds DocumentKind[]  @default([])
+  state                VisitState      @default(SUGGESTED)
 
-  scheduledFor    DateTime
+  scheduledFor DateTime
 
   leadTechnicianId          String?
   leadTechnician            User?    @relation("LeadTechnician", fields: [leadTechnicianId], references: [id], onDelete: SetNull)

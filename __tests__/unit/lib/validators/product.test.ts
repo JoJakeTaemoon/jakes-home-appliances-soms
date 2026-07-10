@@ -40,12 +40,12 @@ describe("createConsumableSchema", () => {
   };
 
   it("accepts replace-only consumable", () => {
-    const res = createConsumableSchema.safeParse({ ...base, replaceEveryMonths: 24 });
+    const res = createConsumableSchema.safeParse({ ...base, replaceEveryDays: 24 });
     expect(res.success).toBe(true);
   });
 
   it("accepts clean-only consumable", () => {
-    const res = createConsumableSchema.safeParse({ ...base, cleanEveryMonths: 6 });
+    const res = createConsumableSchema.safeParse({ ...base, cleanEveryDays: 6 });
     expect(res.success).toBe(true);
   });
 
@@ -57,8 +57,8 @@ describe("createConsumableSchema", () => {
   it("accepts both cycles on one SKU (RO membrane)", () => {
     const res = createConsumableSchema.safeParse({
       ...base,
-      replaceEveryMonths: 24,
-      cleanEveryMonths: 6,
+      replaceEveryDays: 24,
+      cleanEveryDays: 6,
     });
     expect(res.success).toBe(true);
   });
@@ -67,14 +67,14 @@ describe("createConsumableSchema", () => {
     const res = createConsumableSchema.safeParse(base);
     expect(res.success).toBe(false);
     if (!res.success) {
-      expect(res.error.issues.some((i) => i.path.includes("replaceEveryMonths"))).toBe(true);
+      expect(res.error.issues.some((i) => i.path.includes("replaceEveryDays"))).toBe(true);
     }
   });
 
   it("accepts compatibleModels with quantity", () => {
     const res = createConsumableSchema.safeParse({
       ...base,
-      replaceEveryMonths: 12,
+      replaceEveryDays: 12,
       compatibleModels: [{ modelId: "m1", quantity: 2 }],
     });
     expect(res.success).toBe(true);
@@ -86,7 +86,7 @@ describe("createConsumableSchema", () => {
   it("defaults quantity to 1 when omitted in compatibleModels", () => {
     const res = createConsumableSchema.safeParse({
       ...base,
-      replaceEveryMonths: 12,
+      replaceEveryDays: 12,
       compatibleModels: [{ modelId: "m1" }],
     });
     expect(res.success).toBe(true);
@@ -97,13 +97,23 @@ describe("createConsumableSchema", () => {
 
   it("rejects negative retail price", () => {
     expect(
-      createConsumableSchema.safeParse({ ...base, replaceEveryMonths: 12, retailPrice: -1 }).success,
+      createConsumableSchema.safeParse({ ...base, replaceEveryDays: 12, retailPrice: -1 }).success,
     ).toBe(false);
   });
 
-  it("rejects monthsPolicy > 600 (50 years upper bound)", () => {
+  it("accepts a realistic day cycle (e.g. 720 days ~ 2 years) — day-scale, not month-scale", () => {
+    // Regression: CYCLE fields were renamed *Months -> *Days (factor 30) but
+    // the .max() cap was left at the old month number, so real day values
+    // like 720 were silently rejected. The fixtures above reused small
+    // month-era numbers (6/12/24) as "days" and never exercised this range.
     expect(
-      createConsumableSchema.safeParse({ ...base, replaceEveryMonths: 601 }).success,
+      createConsumableSchema.safeParse({ ...base, replaceEveryDays: 720 }).success,
+    ).toBe(true);
+  });
+
+  it("rejects dayCycle > 18000 (50 years upper bound in days)", () => {
+    expect(
+      createConsumableSchema.safeParse({ ...base, replaceEveryDays: 18001 }).success,
     ).toBe(false);
   });
 });
@@ -113,8 +123,8 @@ describe("updateConsumableSchema", () => {
     expect(updateConsumableSchema.safeParse({ notes: "new note" }).success).toBe(true);
   });
 
-  it("accepts unsetting cleanEveryMonths via null", () => {
-    expect(updateConsumableSchema.safeParse({ cleanEveryMonths: null }).success).toBe(true);
+  it("accepts unsetting cleanEveryDays via null", () => {
+    expect(updateConsumableSchema.safeParse({ cleanEveryDays: null }).success).toBe(true);
   });
 });
 

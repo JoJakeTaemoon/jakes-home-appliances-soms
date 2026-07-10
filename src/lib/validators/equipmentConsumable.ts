@@ -2,7 +2,7 @@
  * EquipmentConsumable validators (added 2026-06).
  *
  * Two responsibilities in one row:
- *   1. Per-unit cycle override (consumableId + replaceEveryMonths).
+ *   1. Per-unit cycle override (consumableId + replaceEveryDays).
  *   2. Manually-attached filter that isn't on the model's standard
  *      ConsumableOnModel list (consumableId — catalog-but-off-spec —
  *      OR customName — fully off-catalog free text).
@@ -38,7 +38,7 @@ export const createEquipmentConsumableSchema = z
     consumableId: optStr(60),
     customName: optStr(200),
     quantity: z.coerce.number().int().min(1).max(50).default(1),
-    replaceEveryMonths: z.coerce.number().int().min(1).max(120).optional(),
+    replaceEveryDays: z.coerce.number().int().min(1).max(3600).optional(),
     unitPrice: moneyOptional,
     notes: optStr(2000),
   })
@@ -57,12 +57,12 @@ export const createEquipmentConsumableSchema = z
         message: "consumableId and customName are mutually exclusive",
       });
     }
-    if (!v.consumableId && !v.replaceEveryMonths) {
+    if (!v.consumableId && !v.replaceEveryDays) {
       ctx.addIssue({
         code: "custom",
-        path: ["replaceEveryMonths"],
+        path: ["replaceEveryDays"],
         message:
-          "replaceEveryMonths is required when customName is used (no catalog cycle to fall back on)",
+          "replaceEveryDays is required when customName is used (no catalog cycle to fall back on)",
       });
     }
   });
@@ -74,7 +74,7 @@ export const createEquipmentConsumableSchema = z
 export const updateEquipmentConsumableSchema = z.object({
   customName: optStr(200).nullable(),
   quantity: z.coerce.number().int().min(1).max(50).optional(),
-  replaceEveryMonths: z.coerce.number().int().min(1).max(120).nullable().optional(),
+  replaceEveryDays: z.coerce.number().int().min(1).max(3600).nullable().optional(),
   unitPrice: moneyOptional,
   notes: optStr(2000),
 });

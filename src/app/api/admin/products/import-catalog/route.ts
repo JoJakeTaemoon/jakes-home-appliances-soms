@@ -316,18 +316,18 @@ export async function POST(request: NextRequest) {
             consumableId = existing.id;
             summary.duplicates.consumables++;
           } else {
-            const replaceEveryMonths = toInt(row[cReplace]);
+            const replaceEveryDays = toInt(row[cReplace]);
             const cleanRaw = (row[cClean] ?? "").trim().toLowerCase();
             const cleanOnEveryVisit = cleanRaw === "every visit";
-            const cleanEveryMonths = cleanOnEveryVisit ? null : toInt(row[cClean]);
+            const cleanEveryDays = cleanOnEveryVisit ? null : toInt(row[cClean]);
             const created = await prisma.consumable.create({
               data: {
                 sku: partSku,
                 nameEn: partNameEn,
                 nameKo: partNameKo,
                 nameVi: partNameVi,
-                replaceEveryMonths,
-                cleanEveryMonths,
+                replaceEveryDays,
+                cleanEveryDays,
                 cleanOnEveryVisit,
                 retailPrice: 0,
               },

@@ -66,7 +66,7 @@ interface PortalConsumable {
   nameKo: string;
   nameVi: string;
   nameEn: string;
-  replaceEveryMonths: number | null;
+  replaceEveryDays: number | null;
   isActive: boolean;
 }
 interface PortalEquipment {
@@ -159,7 +159,7 @@ export function DashboardClient() {
     const list = visits.data ?? [];
     // eslint-disable-next-line react-hooks/purity
     const todayMs = startOfTodayMs();
-    const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
     // First choice: an open FILTER_REPLACEMENT visit on the schedule —
     // the customer's date is whatever the office confirmed. We don't
@@ -213,9 +213,9 @@ export function DashboardClient() {
       const items = e.model.consumables ?? [];
       for (const c of items) {
         if (!c.consumable.isActive) continue;
-        const cycleMonths = c.consumable.replaceEveryMonths;
-        if (!cycleMonths || cycleMonths <= 0) continue;
-        const cycleMs = cycleMonths * MS_PER_MONTH;
+        const cycleDays = c.consumable.replaceEveryDays;
+        if (!cycleDays || cycleDays <= 0) continue;
+        const cycleMs = cycleDays * MS_PER_DAY;
         let due = baseline + cycleMs;
         while (due < todayMs) due += cycleMs;
         if (earliest === null || due < earliest.due) {

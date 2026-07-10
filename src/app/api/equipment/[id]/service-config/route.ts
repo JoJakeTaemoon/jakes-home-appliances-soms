@@ -19,21 +19,11 @@ import prisma from "@/lib/prisma";
 import { defineQuery } from "@/lib/api/mutation";
 import { canManageEquipment } from "@/lib/customers/access";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { addDays } from "@/lib/contracts/pause-period";
 
 const paramsSchema = z.object({ id: z.string() });
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-function addMonths(base: Date, months: number): Date {
-  const d = new Date(base);
-  const target = d.getMonth() + months;
-  const day = d.getDate();
-  d.setDate(1);
-  d.setMonth(target);
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-  d.setDate(Math.min(day, lastDay));
-  return d;
-}
 
 function statusFor(days: number | null): "NORMAL" | "SCHEDULED" | "REPLACE_DUE" | "OVERDUE" | "UNKNOWN" {
   if (days === null) return "UNKNOWN";
@@ -57,11 +47,11 @@ export const GET = defineQuery({
       select: {
         id: true,
         installedAt: true,
-        customInspectionCycle: true,
-        customMaintenanceCycle: true,
+        customInspectionCycleDays: true,
+        customMaintenanceCycleDays: true,
         model: {
           select: {
-            inspectionEveryMonths: true,
+            inspectionEveryDays: true,
             consumables: {
               select: {
                 quantity: true,
@@ -72,7 +62,7 @@ export const GET = defineQuery({
                     nameKo: true,
                     nameVi: true,
                     nameEn: true,
-                    replaceEveryMonths: true,
+                    replaceEveryDays: true,
                     retailPrice: true,
                   },
                 },
@@ -86,7 +76,7 @@ export const GET = defineQuery({
             consumableId: true,
             customName: true,
             quantity: true,
-            replaceEveryMonths: true,
+            replaceEveryDays: true,
             unitPrice: true,
             consumable: {
               select: {
@@ -95,7 +85,7 @@ export const GET = defineQuery({
                 nameKo: true,
                 nameVi: true,
                 nameEn: true,
-                replaceEveryMonths: true,
+                replaceEveryDays: true,
                 retailPrice: true,
               },
             },
@@ -106,8 +96,8 @@ export const GET = defineQuery({
     if (!equipment) throw new NotFoundError("Equipment not found");
 
     // ─── INSPECTION row ────────────────────────────────────────────────
-    const inspectionCycleDefault = equipment.model?.inspectionEveryMonths ?? null;
-    const inspectionCycleOverride = equipment.customInspectionCycle ?? null;
+    const inspectionCycleDefault = equipment.model?.inspectionEveryDays ?? null;
+    const inspectionCycleOverride = equipment.customInspectionCycleDays ?? null;
     const effectiveInspectionCycle = inspectionCycleOverride ?? inspectionCycleDefault;
     // Latest completed PERIODIC_INSPECTION visit for this equipment.
     const lastInspection = await prisma.visit.findFirst({
@@ -133,7 +123,7 @@ export const GET = defineQuery({
     const inspectionAnchor = lastInspection?.completedAt ?? equipment.installedAt;
     const inspectionNext =
       effectiveInspectionCycle && inspectionAnchor
-        ? addMonths(inspectionAnchor, effectiveInspectionCycle)
+        ? addDays(inspectionAnchor, effectiveInspectionCycle)
         : null;
     const inspectionDays = inspectionNext
       ? Math.ceil((inspectionNext.getTime() - Date.now()) / MS_PER_DAY)
@@ -205,8 +195,8 @@ export const GET = defineQuery({
     for (const c of catalogRows) {
       if (!c.consumable) continue;
       const ov = overrideByConsumable.get(c.consumable.id);
-      const defaultCycle = c.consumable.replaceEveryMonths ?? null;
-      const userCycle = ov?.replaceEveryMonths ?? null;
+      const defaultCycle = c.consumable.replaceEveryDays ?? null;
+      const userCycle = ov?.replaceEveryDays ?? null;
       const effective = userCycle ?? defaultCycle;
       filterRows.push({
         kind: "FILTER",
@@ -230,8 +220,8 @@ export const GET = defineQuery({
     }
 
     for (const m of manualRows) {
-      const defaultCycle = m.consumable?.replaceEveryMonths ?? null;
-      const userCycle = m.replaceEveryMonths ?? null;
+      const defaultCycle = m.consumable?.replaceEveryDays ?? null;
+      const userCycle = m.replaceEveryDays ?? null;
       const effective = userCycle ?? defaultCycle;
       filterRows.push({
         kind: "FILTER",
@@ -298,7 +288,7 @@ export const GET = defineQuery({
       row.previousAt = arr[1]?.createdAt ?? null;
       const anchor = row.lastAt ?? equipment.installedAt;
       if (anchor && row.effectiveCycleMonths) {
-        row.nextDueAt = addMonths(anchor, row.effectiveCycleMonths);
+        row.nextDueAt = addDays(anchor, row.effectiveCycleMonths);
         row.daysRemaining = Math.ceil(
           (row.nextDueAt.getTime() - Date.now()) / MS_PER_DAY,
         );

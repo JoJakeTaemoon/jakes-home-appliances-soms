@@ -55,9 +55,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 
     // Manual rows (consumableId null) need a non-null cycle to keep the
     // filter-history table meaningful.
-    if (before.consumableId === null && d.replaceEveryMonths === null) {
+    if (before.consumableId === null && d.replaceEveryDays === null) {
       throw new ValidationError(
-        "Manual filters require a replaceEveryMonths value",
+        "Manual filters require a replaceEveryDays value",
       );
     }
 
@@ -69,10 +69,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
             ? d.customName
             : undefined,
         quantity: d.quantity ?? undefined,
-        replaceEveryMonths:
-          d.replaceEveryMonths === undefined
+        replaceEveryDays:
+          d.replaceEveryDays === undefined
             ? undefined
-            : d.replaceEveryMonths,
+            : d.replaceEveryDays,
         unitPrice: d.unitPrice ?? undefined,
         notes: d.notes ?? undefined,
       },

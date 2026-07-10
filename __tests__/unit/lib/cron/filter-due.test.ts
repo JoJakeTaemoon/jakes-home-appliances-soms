@@ -38,8 +38,8 @@ function equipmentRow(opts: {
     nameKo?: string;
     nameVi?: string;
     nameEn?: string;
-    replaceEveryMonths: number | null;
-    cleanEveryMonths: number | null;
+    replaceEveryDays: number | null;
+    cleanEveryDays: number | null;
     isActive?: boolean;
   }[];
   contactLanguage?: "ko" | "vi" | "en";
@@ -58,8 +58,8 @@ function equipmentRow(opts: {
           nameKo: c.nameKo ?? "필터",
           nameVi: c.nameVi ?? "Lõi lọc",
           nameEn: c.nameEn ?? "Filter",
-          replaceEveryMonths: c.replaceEveryMonths,
-          cleanEveryMonths: c.cleanEveryMonths,
+          replaceEveryDays: c.replaceEveryDays,
+          cleanEveryDays: c.cleanEveryDays,
           isActive: c.isActive ?? true,
         },
       })),
@@ -83,13 +83,13 @@ function equipmentRow(opts: {
 
 describe("runFilterDueReminder", () => {
   it("queues a REPLACE reminder when within 14 days", async () => {
-    // installed 2025-06-25 + 12mo = 2026-06-25 → 10 days from 2026-06-15.
+    // installed 2025-06-25 + 360d (day-denominated cycle, ~12mo) = 2026-06-20 → 5 days from 2026-06-15.
     const installedAt = new Date("2025-06-25T00:00:00Z");
     mockedPrisma.equipment.findMany.mockResolvedValueOnce([
       equipmentRow({
         installedAt,
         consumables: [
-          { id: "post", sku: "FLT-POST-001", replaceEveryMonths: 12, cleanEveryMonths: null },
+          { id: "post", sku: "FLT-POST-001", replaceEveryDays: 360, cleanEveryDays: null },
         ],
       }),
     ] as never);
@@ -109,7 +109,7 @@ describe("runFilterDueReminder", () => {
         installedAt,
         contactLanguage: "ko",
         consumables: [
-          { id: "post", sku: "FLT-POST-001", replaceEveryMonths: 12, cleanEveryMonths: null },
+          { id: "post", sku: "FLT-POST-001", replaceEveryDays: 360, cleanEveryDays: null },
         ],
       }),
     ] as never);
@@ -119,14 +119,14 @@ describe("runFilterDueReminder", () => {
   });
 
   it("emits BOTH a CLEAN and a REPLACE reminder when a dual-cycle consumable hits both windows", async () => {
-    // RO membrane: clean every 6mo + replace every 24mo.
-    // Last CLEAN 2025-12-20 + 6mo = 2026-06-20 → 5d
-    // Last REPLACE 2024-06-25 + 24mo = 2026-06-25 → 10d
+    // RO membrane: clean every 180d (~6mo) + replace every 720d (~24mo) — day-denominated cycles.
+    // Last CLEAN 2025-12-20 + 180d = 2026-06-18 → 3d
+    // Last REPLACE 2024-06-25 + 720d = 2026-06-15 → 0d
     mockedPrisma.equipment.findMany.mockResolvedValueOnce([
       equipmentRow({
         installedAt: new Date("2024-06-25"),
         consumables: [
-          { id: "ro", sku: "FLT-RO-001", replaceEveryMonths: 24, cleanEveryMonths: 6 },
+          { id: "ro", sku: "FLT-RO-001", replaceEveryDays: 720, cleanEveryDays: 180 },
         ],
       }),
     ] as never);
@@ -156,7 +156,7 @@ describe("runFilterDueReminder", () => {
       equipmentRow({
         installedAt,
         consumables: [
-          { id: "post", sku: "FLT-POST-001", replaceEveryMonths: 12, cleanEveryMonths: null },
+          { id: "post", sku: "FLT-POST-001", replaceEveryDays: 360, cleanEveryDays: null },
         ],
       }),
     ] as never);

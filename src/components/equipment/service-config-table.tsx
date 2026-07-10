@@ -47,7 +47,7 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     try {
       if (row.kind === "INSPECTION") {
         await api.patch(`/api/equipment/${equipmentId}`, {
-          customInspectionCycle: value,
+          customInspectionCycleDays: value,
         });
       } else if (row.overrideId) {
         if (value === null) {
@@ -55,14 +55,14 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
         } else {
           await api.patch(
             `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
-            { replaceEveryMonths: value },
+            { replaceEveryDays: value },
           );
         }
       } else {
         // CATALOG row without an override yet — create one.
         await api.post(`/api/equipment/${equipmentId}/consumables`, {
           consumableId: row.consumableId,
-          replaceEveryMonths: value,
+          replaceEveryDays: value,
           quantity: row.quantity,
         });
       }
@@ -193,7 +193,7 @@ function UserCycleInput({
 
   function commit() {
     const n = local.trim() === "" ? null : Number(local);
-    if (n !== null && (Number.isNaN(n) || n <= 0 || n > 120)) {
+    if (n !== null && (Number.isNaN(n) || n <= 0 || n > 3600)) {
       setLocal(value === null ? "" : String(value));
       return;
     }
@@ -204,7 +204,7 @@ function UserCycleInput({
     <input
       type="number"
       min={1}
-      max={120}
+      max={3600}
       value={local}
       disabled={busy}
       onChange={(e) => setLocal(e.target.value)}

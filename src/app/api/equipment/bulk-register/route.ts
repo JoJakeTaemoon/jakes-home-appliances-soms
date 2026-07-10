@@ -6,7 +6,7 @@
  *
  * Body (validated by bulkRegisterEquipmentSchema):
  *   customerId, siteId?, modelId, serviceType, managementType, deposit,
- *   monthlyFee, customInspectionCycle?, defaultInstalledAt,
+ *   monthlyFee, customInspectionCycleDays?, defaultInstalledAt,
  *   installedByTechnicianId?, installNotes?,
  *   rows: [{ serialNumber?, assetCode?, installedAt, notes? }],
  *   serviceConfig: { inspectionCycleMonths?, filterOverrides[] }
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
             lifecycleStage,
             deposit: data.deposit ?? null,
             monthlyFee: data.monthlyFee ?? null,
-            customInspectionCycle:
-              data.customInspectionCycle ??
+            customInspectionCycleDays:
+              data.customInspectionCycleDays ??
               data.serviceConfig?.inspectionCycleMonths ??
               null,
             registeredById: auth.userId,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             data: {
               equipmentId: equipment.id,
               consumableId: f.consumableId,
-              replaceEveryMonths: f.replaceEveryMonths,
+              replaceEveryDays: f.replaceEveryDays,
               quantity: f.quantity,
             },
           });

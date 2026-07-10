@@ -25,7 +25,7 @@ export const createEquipmentModelSchema = z.object({
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
   // PDF A.2 — periodic inspection cycle in months (1 for water purifiers).
-  inspectionEveryMonths: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  inspectionEveryDays: z.coerce.number().int().min(1).max(18000).nullable().optional(),
   // Warranty period in months for SALE customers — drives the charge-policy
   // default rule. 12 is the legal/business default for purchased equipment.
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
@@ -56,7 +56,7 @@ export const updateEquipmentModelSchema = z.object({
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
-  inspectionEveryMonths: z.coerce.number().int().min(1).max(600).nullable().optional(),
+  inspectionEveryDays: z.coerce.number().int().min(1).max(18000).nullable().optional(),
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),
   isActive: z.boolean().optional(),

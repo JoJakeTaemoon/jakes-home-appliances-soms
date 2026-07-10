@@ -34,11 +34,11 @@ function csvRow(cells: ReadonlyArray<string | number | null | undefined>): strin
 /** Resolve the "Clean Every" cell value for a consumable. */
 function cleanCycleCell(c: {
   cleanOnEveryVisit: boolean;
-  cleanEveryMonths: number | null;
+  cleanEveryDays: number | null;
 }): string {
   if (c.cleanOnEveryVisit) return "every visit";
-  if (c.cleanEveryMonths === null) return "";
-  return String(c.cleanEveryMonths);
+  if (c.cleanEveryDays === null) return "";
+  return String(c.cleanEveryDays);
 }
 
 type ModelWithParts = Awaited<ReturnType<typeof loadModelsWithParts>>[number];
@@ -57,8 +57,8 @@ async function loadModelsWithParts() {
               nameEn: true,
               nameKo: true,
               nameVi: true,
-              replaceEveryMonths: true,
-              cleanEveryMonths: true,
+              replaceEveryDays: true,
+              cleanEveryDays: true,
               cleanOnEveryVisit: true,
             },
           },
@@ -118,7 +118,7 @@ function rowsForModel(model: ModelWithParts): string[] {
         c.nameKo,
         c.nameVi,
         link.quantity,
-        c.replaceEveryMonths,
+        c.replaceEveryDays,
         cleanCycleCell(c),
         "",
       ]),

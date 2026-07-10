@@ -71,7 +71,7 @@ export const POST = defineMutation({
         retailPrice: body.retailPrice ?? null,
         monthlyRentalPrice: body.monthlyRentalPrice ?? null,
         monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
-        inspectionEveryMonths: body.inspectionEveryMonths ?? null,
+        inspectionEveryDays: body.inspectionEveryDays ?? null,
         warrantyMonths: body.warrantyMonths ?? null,
         filterPolicy: body.filterPolicy ?? undefined,
         isActive: body.isActive,
