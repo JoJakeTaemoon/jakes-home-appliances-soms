@@ -287,24 +287,102 @@ describe("cycle due-date is day-based", () => {
 
 # Subsequent Phases (착수 직전 bite-sized 확장)
 
-## Phase 1 — API
+# Phase 1 — API (branch `feat/bulk-register-phase1`)
 
-**Task 1.1** `GET /api/equipment-models/[id]/consumables`
-- Files: Create `src/app/api/equipment-models/[id]/consumables/route.ts`; Test `__tests__/integration/...`
-- Produces: `{ success, data: Array<{ consumableId, category, name:{ko,vi,en}, replaceEveryDays, defaultQuantity }> }` (ConsumableOnModel+Consumable join)
-- Test: 모델 id로 소모품 목록·기본수량·일주기 반환
+**산출물:** 새 위저드(Phase 2)가 호출할 API 완비 — 모델 소모품 조회, 판매방식별 계약 필드·수동 계약번호·salePrice/installFee·SALE+유지보수 2계약·serviceConfig 처리, register 라인별 확장, 계약서 PDF 업로드 override. UI 없이 통합테스트로 검증.
 
-**Task 1.2** `bulkRegisterEquipmentSchema` 확장 (`src/lib/validators/equipment.ts`)
-- 추가: `contractNumber?`, per-type 계약필드(rental: deposit/monthlyRent/termMonths; sale: salePrice/installFee/hasContract/managementType; maint: monthlyMaintenanceFee), `serviceConfig:{ inspectionCycleDays?, filters:[{consumableId?,customName?,quantity,useCycleDays}] }`
-- Test: 각 방식별 유효/무효 케이스
+**재사용 지점 (조사 확정):**
+- 계약번호: `allocateContractCode(input): string` (`src/lib/contracts/code.ts:99`, 순수·P2002는 호출자 처리). 계약 생성은 inline `tx.contract.create`(register/route.ts:193 패턴) 유지 — `ContractWorkflow.create`는 자체 장비생성이라 부적합.
+- MANAGER+ 게이트: `ContractWorkflow.access.canRegeneratePdf(role)` (isManagerPlus).
+- 업로드: multipart 패턴 `tax-invoices/route.ts:114-143`; 디스크쓰기 미러 `src/lib/tax-invoices/operations.ts:88-102`(storageKey=`path.relative(cwd, fullPath)`).
+- 계약 PDF: `renderPdf({kind:"CONTRACT",...})`, `GET contracts/[id]/pdf`는 `getLatestPdf`→렌더. `Contract.pdfStorageKey`/`pdfUploadedAt`는 **Phase 0에서 이미 존재**.
+- 모델 소모품 쿼리: `service-config/route.ts:52-71` 미러. `ConsumableOnModel.quantity`(기본수량), `Consumable`엔 `nameKo/Vi/En·replaceEveryDays·cleanEveryDays·cleanOnEveryVisit·retailPrice`. **Consumable에 category 없음** → "구분"은 Phase 2 UI에서 고정 라벨로 처리(API는 미반환).
+- 통합테스트 하네스: `__tests__/integration/contracts/contract-flow.test.ts`의 `beforeAll` 시드 + `buildReq`/`readJson` 복제(real dev DB, node project).
 
-**Task 1.3** `POST /api/equipment/bulk-register` 확장 (`route.ts`)
-- 장비별 `installFee`/`salePrice`/`customInspectionCycleDays`, `EquipmentConsumable`(replaceEveryDays=useCycleDays) 생성, 수동 `contractNumber`(중복검사), SALE+유지보수 시 계약 2건, totalContractValue=보증금 제외 규칙
-- Test: 렌탈/판매(계약유무·self/유지보수)/유지보수 시나리오별 생성 결과
+---
 
-**Task 1.4** `register` 라우트 신필드 반영 + `pickContractType` 확장(라인별 계약)
+### Task 1.1: `GET /api/equipment-models/[id]/consumables`
 
-**Task 1.5** `POST /api/contracts/[id]/pdf/upload`(multipart, MANAGER+) + `GET /api/contracts/[id]/pdf` override 서빙 (TaxInvoice 패턴 복제)
+**Files:** Create `src/app/api/equipment-models/[id]/consumables/route.ts`; Test `__tests__/integration/equipment/model-consumables.test.ts`
+
+**Interfaces — Produces:** `{ success:true, data: Array<{ consumableId:string, sku:string, name:{ko,vi,en}, replaceEveryDays:number|null, cleanEveryDays:number|null, cleanOnEveryVisit:boolean, defaultQuantity:number, retailPrice:string|number }> }`. 미존재 모델 → 404.
+
+- [ ] **Step 1: 통합테스트(RED)** — contract-flow 하네스 복제. 시드: 모델 M + Consumable C(replaceEveryDays=180) + ConsumableOnModel(M,C,quantity=2). STAFF 토큰으로 `GET /api/equipment-models/{M}/consumables` → 200, `data[0]` = `{consumableId:C, replaceEveryDays:180, defaultQuantity:2}`. 없는 id → 404.
+- [ ] **Step 2: 실패 확인** — Run: `npx vitest run __tests__/integration/equipment/model-consumables.test.ts`
+- [ ] **Step 3: 구현** — `requireAuth`+`canManageEquipment`. `prisma.consumableOnModel.findMany({ where:{modelId}, select:{ quantity, consumable:{ select:{ id, sku, nameKo, nameVi, nameEn, replaceEveryDays, cleanEveryDays, cleanOnEveryVisit, retailPrice } } } })`. 모델 존재 확인(없으면 NotFoundError). map → produces 형태(`defaultQuantity`=row.quantity).
+- [ ] **Step 4: 통과** — 위 vitest → PASS
+- [ ] **Step 5: 커밋**
+
+---
+
+### Task 1.2: validator 확장 (`src/lib/validators/equipment.ts`)
+
+**Files:** Modify `src/lib/validators/equipment.ts`; Test `__tests__/unit/lib/validators/equipment.test.ts`
+
+**Interfaces — Produces (schema 필드):**
+- 공용 `serviceConfigSchema`: `{ inspectionCycleDays?: int 1..3600, filters: Array<{ consumableId?:string, customName?:string, quantity:int 1..99, useCycleDays:int 1..3600 }> }` — filter는 `consumableId` XOR `customName`(superRefine); `customName`이면 `useCycleDays` 필수. (기존 `serviceConfig.inspectionCycleMonths`(validator ~201)를 `inspectionCycleDays`로 rename.)
+- `bulkRegisterEquipmentSchema`에 추가: `contractNumber?: string(trim,1..60)`, `salePrice?`, `installFee?`, `monthlyRent?`, `monthlyMaintenanceFee?` (money: `z.coerce.number().min(0)`), `hasContract?: boolean`(SALE), `serviceConfig?: serviceConfigSchema`. (기존 `deposit`/`monthlyFee`/`contractTermMonths`/`createContract` 유지.)
+- `registerLineSchema`에 추가: `salePrice?`, `installFee?`, `serviceConfig?`; 최상위에 `contractNumber?`.
+
+- [ ] **Step 1: 테스트(RED)** — 케이스: (a) filter에 consumableId+customName 동시 → invalid; (b) customName만 + useCycleDays 없음 → invalid; (c) consumableId+quantity+useCycleDays=180 → valid; (d) inspectionCycleDays=3600 valid / 3601 invalid; (e) rental payload(deposit+monthlyRent+termMonths) valid; (f) sale payload(salePrice+installFee+hasContract) valid.
+- [ ] **Step 2: 실패 확인** — Run: `npx vitest run __tests__/unit/lib/validators/equipment.test.ts`
+- [ ] **Step 3: 구현** — 위 스키마 추가/rename.
+- [ ] **Step 4: 통과 + tsc** — vitest PASS; `npx tsc --noEmit` 0 (route가 아직 신필드 안 읽어도 OK — optional).
+- [ ] **Step 5: 커밋**
+
+---
+
+### Task 1.3: `POST /api/equipment/bulk-register` 확장
+
+**Files:** Modify `src/app/api/equipment/bulk-register/route.ts`; Test `__tests__/integration/equipment/bulk-register.test.ts`
+
+**동작 규칙:**
+- Equipment.create에 `salePrice: data.salePrice ?? null`, `installFee: data.installFee ?? null` 추가. `monthlyFee`는 임대료/관리비(SALE이면 null). `customInspectionCycleDays` = `data.serviceConfig?.inspectionCycleDays ?? data.customInspectionCycleDays ?? null`.
+- serviceConfig.filters → 장비별 `tx.equipmentConsumable.create({ consumableId?|customName?, quantity, replaceEveryDays: f.useCycleDays })`.
+- **계약가 집계(보증금 제외)**: RENTAL `totalContractValue = Σ(monthlyRent × termMonths)`, deposit=Σdeposit(별도, 집계 미포함); SALE `totalContractValue = Σ(salePrice) + Σ(installFee)`; MAINTENANCE `Σ(monthlyMaintenanceFee)`. `monthlyMaintenanceFee`(계약)=Σ 월 임대료/관리비.
+- **수동 계약번호**: `data.contractNumber` 있으면 그 값으로 create; P2002 → `ValidationError("계약번호 중복")`(자동 -N 안 함). 없으면 기존 `allocateContractCode`+retry.
+- **SALE + managementType='FULL_SERVICE'(유지보수 등록)**: SALE 계약(`hasContract`일 때) + **MAINTENANCE 계약** 2건 생성(각 ContractEquipment 동일 장비들). SALE+self-managed면 계약 0~1건(hasContract).
+
+- [ ] **Step 1: 통합테스트(RED)** — 시나리오별 결과 검증: (a) RENTAL: 장비 N + 방문 N + 계약 1(deposit=Σ, totalValue=Σrent×term); (b) SALE+self-managed+hasContract=false: 계약 0, 장비 salePrice/installFee 세팅; (c) SALE+hasContract+유지보수관리: 계약 2(SALE+MAINTENANCE); (d) 수동 contractNumber 중복 → 400; (e) serviceConfig.filters → EquipmentConsumable(replaceEveryDays=useCycleDays) 생성.
+- [ ] **Step 2: 실패 확인** — vitest
+- [ ] **Step 3: 구현** — 위 규칙대로 route 확장(집계·2계약·수동번호·serviceConfig·salePrice/installFee).
+- [ ] **Step 4: 통과 + tsc** — vitest PASS; tsc 0
+- [ ] **Step 5: 커밋**
+
+---
+
+### Task 1.4: `register` 라우트 라인별 확장
+
+**Files:** Modify `src/app/api/equipment/register/route.ts` + `registerLineSchema`(1.2 완료분); Test `__tests__/integration/equipment/register.test.ts`
+
+**동작:** 라인별 `salePrice`/`installFee`를 Equipment에 저장(SALE 가격 = salePrice, `line.monthlyFee` 재활용 폐기). serviceConfig 라인별 EquipmentConsumable. 최상위 수동 `contractNumber`(있으면 사용·중복 400). `pickContractType`+집계는 보증금 제외 규칙 반영. (라인들이 한 고객·한 트랜잭션·계약 1건 — 기존 구조 유지, 신필드만.)
+
+- [ ] **Step 1: 통합테스트(RED)** — 2라인(렌탈+판매) → 장비 각 수량, 계약 1(type=RENTAL via pickContractType), 판매라인 salePrice/installFee 세팅, 렌탈라인 deposit/monthlyFee.
+- [ ] **Step 2: 실패 확인** — vitest
+- [ ] **Step 3: 구현**
+- [ ] **Step 4: 통과 + tsc**
+- [ ] **Step 5: 커밋**
+
+---
+
+### Task 1.5: 계약서 PDF 업로드 override
+
+**Files:** Create `src/app/api/contracts/[id]/pdf/upload/route.ts`; Modify `src/app/api/contracts/[id]/pdf/route.ts`; (선택) `src/lib/contracts/pdf-upload.ts`(storeContractPdf 헬퍼); Test `__tests__/integration/contracts/pdf-upload.test.ts`
+
+**동작:**
+- `POST .../pdf/upload` (multipart, `canRegeneratePdf`=MANAGER+): file(Blob, application/pdf, ≤10MB) → `uploads/contracts/{contractId}/{ts}-signed.pdf` 기록(미러 operations.ts:88-102), `contract.update({ pdfStorageKey, pdfUploadedAt: <고정 시각 인자 or now via route> })`. (주의: 워크플로우 스크립트가 아닌 실제 라우트이므로 `new Date()` 사용 가능.)
+- `GET .../pdf`: 상단에서 contract 로드 → `pdfStorageKey` 있으면 절대경로 resolve 후 그 파일 스트리밍(렌더 스킵); 없으면 기존 `getLatestPdf`/`renderPdf` 경로.
+
+- [ ] **Step 1: 통합테스트(RED)** — MANAGER 토큰으로 PDF 업로드 → 200 + `pdfStorageKey` set. 이후 `GET /pdf` → 업로드본 바이트 반환(Content-Type application/pdf). STAFF 업로드 → 403. 업로드 없는 계약 `GET /pdf` → 렌더 경로(200).
+- [ ] **Step 2: 실패 확인** — vitest
+- [ ] **Step 3: 구현** — 업로드 라우트 + GET override.
+- [ ] **Step 4: 통과 + tsc**
+- [ ] **Step 5: 커밋**
+
+---
+
+### Task 1.6: Phase 1 검증 게이트
+- [ ] `npx tsc --noEmit` 0 · `npm test` 통과 · `npm run db:reset:dev` 정상
 
 ## Phase 2a — 공용 컴포넌트 + bulk 위저드
 

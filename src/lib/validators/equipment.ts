@@ -179,6 +179,39 @@ const bulkRegisterRowSchema = z.object({
   notes: optStr(500),
 });
 
+/** Shared money coercion for the 4-step wizard's optional price fields. */
+const money = () => z.coerce.number().min(0).optional();
+
+const serviceConfigFilterSchema = z
+  .object({
+    consumableId: z.string().trim().min(1).optional(),
+    customName: z.string().trim().min(1).max(200).optional(),
+    quantity: z.coerce.number().int().min(1).max(99),
+    useCycleDays: z.coerce.number().int().min(1).max(3600),
+  })
+  .superRefine((v, ctx) => {
+    // Exactly one of (catalog consumableId) / (customName) — never both,
+    // never neither.
+    if (!!v.consumableId === !!v.customName) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["consumableId"],
+        message: "Exactly one of consumableId or customName is required",
+      });
+    }
+  });
+
+/**
+ * Shared per-equipment service config for the 4-step register wizard:
+ * inspection cycle (days) + N filter/consumable lines. Each line is either
+ * a catalog consumable (consumableId) or a free-text custom part
+ * (customName); useCycleDays is always required.
+ */
+export const serviceConfigSchema = z.object({
+  inspectionCycleDays: z.coerce.number().int().min(1).max(3600).optional(),
+  filters: z.array(serviceConfigFilterSchema).default([]),
+});
+
 export const bulkRegisterEquipmentSchema = z.object({
   // Step 1 — common info applied to every row.
   customerId: z.string().trim().min(1),
@@ -194,22 +227,15 @@ export const bulkRegisterEquipmentSchema = z.object({
   installNotes: optStr(2000),
   // Step 2 — per-row data (length matches quantity).
   rows: z.array(bulkRegisterRowSchema).min(1).max(500),
-  // Service config user-cycle overrides applied to every row's
-  // EquipmentConsumable overrides (empty = use catalog defaults).
-  serviceConfig: z
-    .object({
-      inspectionCycleMonths: z.coerce.number().int().min(1).max(120).optional(),
-      filterOverrides: z
-        .array(
-          z.object({
-            consumableId: z.string().trim().min(1),
-            replaceEveryDays: z.coerce.number().int().min(1).max(3600),
-            quantity: z.coerce.number().int().min(1).max(20).default(1),
-          }),
-        )
-        .default([]),
-    })
-    .default({ filterOverrides: [] }),
+  // 4-step wizard additions (2026-07): contract linkage + price fields +
+  // per-equipment service config (inspection cycle + filter lines).
+  contractNumber: optStr(60),
+  salePrice: money(),
+  installFee: money(),
+  monthlyRent: money(),
+  monthlyMaintenanceFee: money(),
+  hasContract: z.coerce.boolean().optional(),
+  serviceConfig: serviceConfigSchema.optional(),
   // Optional: also issue a Contract that bundles every equipment row.
   // The API mints a fresh contractNumber, sets type/state/period from
   // serviceType + termMonths, and creates one ContractEquipment row per
@@ -230,6 +256,16 @@ export const bulkRegisterEquipmentSchema = z.object({
       code: "custom",
       path: ["contractTermMonths"],
       message: "contractTermMonths is required for RENTAL/MAINTENANCE contracts",
+    });
+  }
+  // SALE requires an explicit salePrice (0 is a valid free-unit price —
+  // only null/undefined is rejected, so old callers still posting
+  // monthlyFee for SALE fail loudly instead of silently losing the price.
+  if (v.serviceType === "SALE" && v.salePrice === undefined) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["salePrice"],
+      message: "salePrice is required for SALE service type",
     });
   }
 });
@@ -254,6 +290,9 @@ const registerLineSchema = z
     quantity: z.coerce.number().int().min(1).max(500),
     deposit: z.coerce.number().nonnegative().optional(),
     monthlyFee: z.coerce.number().nonnegative().optional(),
+    salePrice: money(),
+    installFee: money(),
+    serviceConfig: serviceConfigSchema.optional(),
     /** Optional serial prefix; auto-generates `{prefix}{seq:04d}` when set. */
     serialPrefix: optStr(60),
     /** Optional per-line install date — falls back to defaultInstalledAt. */
@@ -268,6 +307,16 @@ const registerLineSchema = z
         message: "Deposit is required for RENTAL line",
       });
     }
+    // SALE requires an explicit salePrice (0 = valid free unit; only
+    // null/undefined is rejected) — old UIs still posting monthlyFee for
+    // SALE must fail loudly instead of silently losing the price.
+    if (v.serviceType === "SALE" && v.salePrice === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["salePrice"],
+        message: "salePrice is required for SALE line",
+      });
+    }
   });
 
 export const registerEquipmentSchema = z.object({
@@ -275,6 +324,7 @@ export const registerEquipmentSchema = z.object({
   // override.
   customerId: z.string().trim().min(1),
   siteId: optStr(60),
+  contractNumber: optStr(60),
   defaultInstalledAt: z.coerce.date(),
   installedByTechnicianId: optStr(60),
   installNotes: optStr(2000),

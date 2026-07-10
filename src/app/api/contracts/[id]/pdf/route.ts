@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs";
+import path from "node:path";
 import { requireAuth } from "@/lib/auth/guards";
 import { ContractWorkflow } from "@/lib/contracts/workflow";
 import { toErrorResponse } from "@/lib/api/response";
@@ -48,6 +49,33 @@ export async function GET(request: NextRequest, ctx: Ctx) {
     // Office roles (STAFF+) — canEmailContract is also our generic office gate.
     if (!ContractWorkflow.access.canEmail(auth.role)) throw new ForbiddenError("Cannot download contract PDF");
     const { id } = await ctx.params;
+
+    // Manual upload override (Task 1.5) — a signed/scanned PDF wins over the
+    // auto-rendered one whenever one has been uploaded.
+    const contract = await prisma.contract.findUnique({
+      where: { id },
+      select: { pdfStorageKey: true },
+    });
+    if (!contract) throw new NotFoundError("Contract not found");
+    if (contract.pdfStorageKey) {
+      const absolutePath = path.isAbsolute(contract.pdfStorageKey)
+        ? contract.pdfStorageKey
+        : path.join(process.cwd(), contract.pdfStorageKey);
+      if (!fs.existsSync(absolutePath)) {
+        throw new NotFoundError("Uploaded PDF missing on disk");
+      }
+      const buf = await fs.promises.readFile(absolutePath);
+      const body = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+      return new NextResponse(body, {
+        status: 200,
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `inline; filename="${path.basename(absolutePath)}"`,
+          "content-length": String(buf.byteLength),
+          "cache-control": "private, no-store",
+        },
+      });
+    }
 
     let existing = await getLatestPdf("CONTRACT", id);
     let absentOnDisk = !existing || !fs.existsSync(existing.absolutePath);

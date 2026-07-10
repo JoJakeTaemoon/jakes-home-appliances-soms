@@ -18,6 +18,7 @@ import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipment } from "@/lib/customers/access";
 import {
+  ConflictError,
   ForbiddenError,
   NotFoundError,
   ValidationError,
@@ -26,6 +27,15 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { registerEquipmentSchema } from "@/lib/validators/equipment";
 import { logAudit } from "@/lib/audit";
 import { allocateContractCode } from "@/lib/contracts/code";
+
+function isUniqueViolation(err: unknown): boolean {
+  return (
+    !!err &&
+    typeof err === "object" &&
+    "code" in err &&
+    (err as { code: string }).code === "P2002"
+  );
+}
 
 function pickContractType(
   lines: Array<{ serviceType: "RENTAL" | "MAINTENANCE" | "SALE" }>,
@@ -123,12 +133,31 @@ export async function POST(request: NextRequest) {
               managementType: line.managementType,
               lifecycleStage,
               deposit: line.deposit ?? null,
-              monthlyFee: line.monthlyFee ?? null,
+              // monthlyFee is rent/maintenance only — SALE lines carry their
+              // price in salePrice/installFee instead (no more overloading).
+              monthlyFee: line.serviceType === "SALE" ? null : line.monthlyFee ?? null,
+              salePrice: line.salePrice ?? null,
+              installFee: line.installFee ?? null,
+              customInspectionCycleDays: line.serviceConfig?.inspectionCycleDays ?? null,
               registeredById: auth.userId,
               notes: line.notes ?? data.installNotes ?? null,
             },
           });
           equipmentIds.push(equipment.id);
+
+          // Filter overrides — one EquipmentConsumable row per
+          // serviceConfig.filters entry (consumableId XOR customName).
+          for (const f of line.serviceConfig?.filters ?? []) {
+            await tx.equipmentConsumable.create({
+              data: {
+                equipmentId: equipment.id,
+                consumableId: f.consumableId ?? null,
+                customName: f.customName ?? null,
+                quantity: f.quantity,
+                replaceEveryDays: f.useCycleDays,
+              },
+            });
+          }
 
           const visit = await tx.visit.create({
             data: {
@@ -145,7 +174,7 @@ export async function POST(request: NextRequest) {
           visitIds.push(visit.id);
 
           if (line.serviceType === "SALE") {
-            totalSaleValue += Number(line.monthlyFee ?? 0);
+            totalSaleValue += Number(line.salePrice ?? 0) + Number(line.installFee ?? 0);
           } else {
             totalDeposit += Number(line.deposit ?? 0);
             totalMonthlyFee += Number(line.monthlyFee ?? 0);
@@ -170,15 +199,70 @@ export async function POST(request: NextRequest) {
               ),
             )
           : null;
+        // Deposit is collected/tracked separately (contract.deposit below) —
+        // excluded from totalContractValue.
         let totalContractValue: number | null = null;
         if (type === "SALE") {
-          totalContractValue = totalSaleValue + totalDeposit + totalMonthlyFee;
+          totalContractValue = totalSaleValue;
         } else if (term) {
-          totalContractValue = totalDeposit + totalMonthlyFee * term;
+          totalContractValue = totalMonthlyFee * term;
         }
 
-        let attempt = 0;
-        while (attempt < 5) {
+        const buildContractData = (candidateNumber: string) => ({
+          contractNumber: candidateNumber,
+          customerId: data.customerId,
+          type,
+          state: "ACTIVE" as const,
+          startDate: earliestInstall,
+          endDate,
+          termMonths: term,
+          monthlyMaintenanceFee: type === "SALE" ? null : totalMonthlyFee,
+          totalContractValue,
+          deposit: type === "RENTAL" ? totalDeposit : null,
+          endOfTermAction: type === "RENTAL" ? ("TRANSFER_OWNERSHIP" as const) : null,
+          signedByCustomerAt: earliestInstall,
+          signedByCompanyAt: earliestInstall,
+          activatedAt: earliestInstall,
+          equipment: {
+            create: equipmentIds.map((eqId) => ({
+              equipmentId: eqId,
+              quantity: 1,
+            })),
+          },
+        });
+
+        if (data.contractNumber) {
+          // Manual contract number — pre-check to avoid the collision
+          // aborting this transaction (Postgres can't recover from a
+          // failed INSERT mid-transaction, so we can't catch-and-retry).
+          // Duplicate found by the pre-check → 400; a genuine race between
+          // the pre-check and our own INSERT → 409 (caller should retry).
+          const existing = await tx.contract.findUnique({
+            where: { contractNumber: data.contractNumber },
+            select: { id: true },
+          });
+          if (existing) {
+            throw new ValidationError("Contract number already exists");
+          }
+          try {
+            const contract = await tx.contract.create({
+              data: buildContractData(data.contractNumber),
+            });
+            contractId = contract.id;
+            contractNumber = contract.contractNumber;
+          } catch (err) {
+            if (!isUniqueViolation(err)) throw err;
+            throw new ConflictError(
+              "Contract number allocation raced with a concurrent request — please retry",
+            );
+          }
+        } else {
+          // Auto-allocate — pre-check each `-N` candidate with a SELECT
+          // before INSERTing (read-your-own-writes covers siblings created
+          // earlier in this same transaction). Postgres aborts the whole
+          // interactive transaction on a failed INSERT, so a catch-and-
+          // retry-INSERT loop can't recover — see bulk-register/route.ts's
+          // createContractRow for the identical pattern.
           const code = allocateContractCode({
             customer: {
               type: customer.type,
@@ -188,42 +272,37 @@ export async function POST(request: NextRequest) {
             type,
             signedAt: earliestInstall,
           });
-          const candidate = attempt === 0 ? code : `${code}-${attempt + 1}`;
-          try {
-            const contract = await tx.contract.create({
-              data: {
-                contractNumber: candidate,
-                customerId: data.customerId,
-                type,
-                state: "ACTIVE",
-                startDate: earliestInstall,
-                endDate,
-                termMonths: term,
-                monthlyMaintenanceFee: type === "SALE" ? null : totalMonthlyFee,
-                totalContractValue,
-                deposit: type === "RENTAL" ? totalDeposit : null,
-                endOfTermAction:
-                  type === "RENTAL" ? "TRANSFER_OWNERSHIP" : null,
-                signedByCustomerAt: earliestInstall,
-                signedByCompanyAt: earliestInstall,
-                activatedAt: earliestInstall,
-                equipment: {
-                  create: equipmentIds.map((eqId) => ({
-                    equipmentId: eqId,
-                    quantity: 1,
-                  })),
-                },
-              },
+          let attempt = 0;
+          while (attempt < 5) {
+            const candidate = attempt === 0 ? code : `${code}-${attempt + 1}`;
+            const existing = await tx.contract.findUnique({
+              where: { contractNumber: candidate },
+              select: { id: true },
             });
-            contractId = contract.id;
-            contractNumber = contract.contractNumber;
-            break;
-          } catch (err) {
-            const isP2002 =
-              err && typeof err === "object" && "code" in err &&
-              (err as { code: string }).code === "P2002";
-            if (!isP2002) throw err;
+            if (!existing) {
+              try {
+                const contract = await tx.contract.create({
+                  data: buildContractData(candidate),
+                });
+                contractId = contract.id;
+                contractNumber = contract.contractNumber;
+                break;
+              } catch (err) {
+                if (!isUniqueViolation(err)) throw err;
+                // A concurrent request won the race between our pre-check
+                // SELECT and this INSERT — surface a clean 409 instead of
+                // retrying (Postgres can't retry mid-aborted-transaction).
+                throw new ConflictError(
+                  "Contract number allocation raced with a concurrent request — please retry",
+                );
+              }
+            }
             attempt += 1;
+          }
+          if (!contractId) {
+            throw new Error(
+              "Failed to allocate a unique contract number after 5 attempts",
+            );
           }
         }
       }

@@ -4,6 +4,9 @@ import {
   moveSiteSchema,
   replaceEquipmentSchema,
   filterPolicySchema,
+  serviceConfigSchema,
+  bulkRegisterEquipmentSchema,
+  registerEquipmentSchema,
 } from "@/lib/validators/equipment";
 import {
   createEquipmentModelSchema,
@@ -87,6 +90,201 @@ describe("createEquipmentModelSchema", () => {
         category: "WATER_PURIFIER",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("serviceConfigSchema", () => {
+  it("rejects a filter with both consumableId and customName", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [
+        { consumableId: "c1", customName: "Generic sediment", quantity: 1, useCycleDays: 90 },
+      ],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects a customName filter missing useCycleDays", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ customName: "Generic sediment", quantity: 1 }],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("accepts a valid consumableId filter", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ consumableId: "c1", quantity: 2, useCycleDays: 180 }],
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("accepts a valid customName filter with useCycleDays", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ customName: "Generic sediment", quantity: 1, useCycleDays: 90 }],
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects a filter with neither consumableId nor customName", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ quantity: 1, useCycleDays: 90 }],
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("accepts inspectionCycleDays at the max bound (3600)", () => {
+    const res = serviceConfigSchema.safeParse({ inspectionCycleDays: 3600, filters: [] });
+    expect(res.success).toBe(true);
+  });
+
+  it("rejects inspectionCycleDays over the max bound (3601)", () => {
+    const res = serviceConfigSchema.safeParse({ inspectionCycleDays: 3601, filters: [] });
+    expect(res.success).toBe(false);
+  });
+});
+
+describe("bulkRegisterEquipmentSchema — 4-step wizard fields", () => {
+  const base = {
+    customerId: "c1",
+    modelId: "m1",
+    defaultInstalledAt: "2026-07-10",
+    rows: [{ installedAt: "2026-07-10" }],
+  };
+
+  it("accepts a rental payload (deposit + monthlyRent + contractTermMonths)", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "RENTAL",
+      deposit: 500000,
+      monthlyRent: 150000,
+      contractTermMonths: 36,
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.deposit).toBe(500000);
+    expect(res.data?.monthlyRent).toBe(150000);
+    expect(res.data?.contractTermMonths).toBe(36);
+  });
+
+  it("accepts a sale payload (salePrice + installFee + hasContract)", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: 3000000,
+      installFee: 100000,
+      hasContract: true,
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.salePrice).toBe(3000000);
+    expect(res.data?.installFee).toBe(100000);
+    expect(res.data?.hasContract).toBe(true);
+  });
+
+  it("accepts contractNumber + serviceConfig on the wizard payload", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: 3000000,
+      contractNumber: "HD-20260710/SA-KH0001",
+      serviceConfig: {
+        inspectionCycleDays: 180,
+        filters: [{ consumableId: "c1", quantity: 1, useCycleDays: 90 }],
+      },
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.contractNumber).toBe("HD-20260710/SA-KH0001");
+    expect(res.data?.serviceConfig?.inspectionCycleDays).toBe(180);
+    expect(res.data?.serviceConfig?.filters).toHaveLength(1);
+    expect(res.data?.serviceConfig?.filters[0]).toMatchObject({
+      consumableId: "c1",
+      quantity: 1,
+      useCycleDays: 90,
+    });
+  });
+
+  it("rejects a negative salePrice", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: -1,
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("rejects a SALE payload with no salePrice (silent price loss guard)", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      monthlyFee: 200000, // old-UI shape — must not be treated as the price
+    });
+    expect(res.success).toBe(false);
+    expect(
+      res.success ? [] : res.error.issues.some((i) => i.path.includes("salePrice")),
+    ).toBe(true);
+  });
+
+  it("accepts a SALE payload with salePrice=0 (free unit is valid)", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: 0,
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.salePrice).toBe(0);
+  });
+});
+
+describe("registerEquipmentSchema — per-line SALE requires salePrice", () => {
+  const baseLine = {
+    customerId: "c1",
+    defaultInstalledAt: "2026-07-10",
+  };
+
+  it("rejects a SALE line with no salePrice (silent price loss guard)", () => {
+    const res = registerEquipmentSchema.safeParse({
+      ...baseLine,
+      lines: [
+        {
+          modelId: "m1",
+          serviceType: "SALE",
+          quantity: 1,
+          monthlyFee: 200000, // old-UI shape — must not be treated as the price
+        },
+      ],
+    });
+    expect(res.success).toBe(false);
+    expect(
+      res.success ? [] : res.error.issues.some((i) => i.path.includes("salePrice")),
+    ).toBe(true);
+  });
+
+  it("accepts a SALE line with salePrice=0 (free unit is valid)", () => {
+    const res = registerEquipmentSchema.safeParse({
+      ...baseLine,
+      lines: [
+        {
+          modelId: "m1",
+          serviceType: "SALE",
+          quantity: 1,
+          salePrice: 0,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.lines[0].salePrice).toBe(0);
+  });
+
+  it("accepts a SALE line with a positive salePrice", () => {
+    const res = registerEquipmentSchema.safeParse({
+      ...baseLine,
+      lines: [
+        {
+          modelId: "m1",
+          serviceType: "SALE",
+          quantity: 1,
+          salePrice: 3000000,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
   });
 });
 
