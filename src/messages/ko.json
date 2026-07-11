@@ -1040,7 +1040,9 @@
       "renew": "갱신",
       "regeneratePdf": "PDF 재생성",
       "downloadPdf": "PDF 다운로드",
-      "emailPdf": "고객에게 이메일"
+      "emailPdf": "고객에게 이메일",
+      "uploadPdf": "계약서 업로드",
+      "reuploadPdf": "계약서 재업로드"
     },
     "wizard": {
       "step1": "1. 고객",
@@ -1103,7 +1105,18 @@
     "amended": "수정이 반영되었습니다",
     "renewed": "갱신 초안이 생성되었습니다",
     "pdfRegenerated": "PDF가 재생성되었습니다",
-    "emailQueued": "이메일이 발송 대기열에 추가되었습니다."
+    "emailQueued": "이메일이 발송 대기열에 추가되었습니다.",
+    "uploadedBadge": "업로드됨",
+    "uploadPdfModal": {
+      "title": "계약서 업로드",
+      "hint": "서명된 PDF 파일 (application/pdf, 10MB 이하)을 업로드하면 자동 생성 PDF 대신 서빙됩니다.",
+      "pickFile": "파일 선택",
+      "submit": "업로드",
+      "uploading": "업로드 중…",
+      "success": "계약서가 업로드되었습니다.",
+      "errorNotPdf": "PDF 파일만 업로드할 수 있습니다.",
+      "errorTooLarge": "파일 크기는 10MB를 초과할 수 없습니다."
+    }
   },
   "portal": {
     "logout": "로그아웃",

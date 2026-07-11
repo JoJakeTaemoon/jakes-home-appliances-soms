@@ -1040,7 +1040,9 @@
       "renew": "Renew",
       "regeneratePdf": "Regenerate PDF",
       "downloadPdf": "Download PDF",
-      "emailPdf": "Email to customer"
+      "emailPdf": "Email to customer",
+      "uploadPdf": "Upload contract PDF",
+      "reuploadPdf": "Re-upload contract PDF"
     },
     "wizard": {
       "step1": "1. Customer",
@@ -1103,7 +1105,18 @@
     "amended": "Amendment applied",
     "renewed": "Renewal draft created",
     "pdfRegenerated": "Contract PDF re-rendered",
-    "emailQueued": "Email queued for delivery."
+    "emailQueued": "Email queued for delivery.",
+    "uploadedBadge": "Uploaded",
+    "uploadPdfModal": {
+      "title": "Upload contract PDF",
+      "hint": "Upload a signed PDF (application/pdf, up to 10MB) to serve instead of the auto-rendered contract PDF.",
+      "pickFile": "Choose file",
+      "submit": "Upload",
+      "uploading": "Uploading…",
+      "success": "Contract PDF uploaded.",
+      "errorNotPdf": "Only PDF files can be uploaded.",
+      "errorTooLarge": "File size must not exceed 10MB."
+    }
   },
   "portal": {
     "logout": "Log out",

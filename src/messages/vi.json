@@ -1040,7 +1040,9 @@
       "renew": "Gia hạn",
       "regeneratePdf": "Tạo lại PDF",
       "downloadPdf": "Tải PDF",
-      "emailPdf": "Gửi email cho KH"
+      "emailPdf": "Gửi email cho KH",
+      "uploadPdf": "Tải lên hợp đồng PDF",
+      "reuploadPdf": "Tải lên lại hợp đồng PDF"
     },
     "wizard": {
       "step1": "1. Khách hàng",
@@ -1103,7 +1105,18 @@
     "amended": "Đã áp dụng sửa đổi",
     "renewed": "Đã tạo bản gia hạn nháp",
     "pdfRegenerated": "Đã tạo lại PDF hợp đồng",
-    "emailQueued": "Email đã được xếp hàng gửi."
+    "emailQueued": "Email đã được xếp hàng gửi.",
+    "uploadedBadge": "Đã tải lên",
+    "uploadPdfModal": {
+      "title": "Tải lên hợp đồng PDF",
+      "hint": "Tải lên PDF đã ký (application/pdf, tối đa 10MB) để phục vụ thay cho PDF tự động tạo.",
+      "pickFile": "Chọn tệp",
+      "submit": "Tải lên",
+      "uploading": "Đang tải lên…",
+      "success": "Đã tải lên hợp đồng PDF.",
+      "errorNotPdf": "Chỉ có thể tải lên tệp PDF.",
+      "errorTooLarge": "Kích thước tệp không được vượt quá 10MB."
+    }
   },
   "portal": {
     "logout": "Đăng xuất",

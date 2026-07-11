@@ -87,6 +87,8 @@ interface ContractDetail {
   }>;
   documents: Array<{ id: string; locale: string; filename: string; generatedAt: string; sizeBytes: number | null }>;
   recentAudit: Array<{ id: string; action: string; at: string; actorUser: { username: string; role: string } | null }>;
+  /** Set once a manual PDF override has been uploaded (Task 3.1). */
+  pdfUploadedAt: string | null;
 }
 
 export default function ContractDetailPage() {
@@ -161,6 +163,7 @@ export default function ContractDetailPage() {
           hasContractPartyEmail={hasContractPartyEmail}
           role={role}
           onChanged={reload}
+          pdfUploadedAt={data.pdfUploadedAt}
         />
       </header>
 

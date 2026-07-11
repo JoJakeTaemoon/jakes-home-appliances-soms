@@ -457,10 +457,21 @@ describe("cycle due-date is day-based", () => {
 - [ ] **E2E**: 로그인 → `/o/ko/equipment/register` → 고객 선택 → 라인1(모델A, 렌탈, 수량1) + 라인 추가 라인2(모델B, 판매, salePrice) → 계약정보 입력 → 서비스구성 → 제출 → 장비2·계약1 생성 확인.
 - [ ] 게이트: `tsc` 0 · `npm test` 통과 · `npm run build` 성공 · E2E 통과.
 
-## Phase 3 — 계약서 업로드
+# Phase 3 — 계약서 수동 업로드 UI (branch `feat/bulk-register-phase3`)
 
-**Task 3.1** `contract-actions.tsx` 업로드 버튼 + 위저드 확인부 파일첨부(제출 후 계약에 업로드)
-- Test: 업로드 후 `GET /pdf`가 업로드본 반환, 없으면 자동렌더
+**산출물:** 계약 상세에서 서명 계약서 PDF를 업로드해 자동생성본을 대체하는 UI. **API·GET override는 Phase 1(Task 1.5)에서 완비** — UI만 추가. (스펙 "자동생성 계약서를 수동 업로드로 덮어쓰기" 충족.)
+
+### Task 3.1: 계약 상세 업로드 버튼 + 모달
+**Files:** Modify `src/components/contracts/contract-actions.tsx` (220줄, `regeneratePdf`/`emailContract` 패턴 존재); (필요시) 계약 상세 페이지에 `pdfUploadedAt` 상태 표시; Test `__tests__/components/contracts/contract-upload.test.tsx`.
+- **MANAGER+**(`isManagerPlus`/기존 role 게이트)에게만 "계약서 업로드" 버튼 노출 → `Modal`에 파일 input(application/pdf, ≤10MB) → `POST /api/contracts/[id]/pdf/upload`(multipart: `formData.append("file", file)`, `api`가 Authorization 헤더 포함하도록 — multipart는 `useApi`가 지원 안 하면 `fetch` + `useAuth()` accessToken 직접). 성공 시 `onChanged?()` 호출 + 안내.
+- 업로드본이 있으면(`pdfUploadedAt`) 버튼 라벨을 "계약서 재업로드"로, 상태 배지(업로드됨) 표시(계약 데이터에 `pdfUploadedAt`이 없으면 이 부분은 생략하고 note).
+- i18n ko/vi/en 라벨 추가.
+- [ ] 컴포넌트 테스트(mocked): MANAGER role → 버튼 표시, STAFF → 미표시; 파일 선택 + 업로드 → POST 호출(+성공 콜백); 비PDF/과대 파일 클라이언트 검증(선택). RED→구현→통과→커밋.
+
+### Task 3.2: Phase 3 게이트
+- [ ] `tsc` 0 · `npm test` 통과 · `npm run build` 성공. (업로드→GET override 서빙은 Phase 1 통합테스트에서 이미 커버; UI는 컴포넌트 테스트로 충분.)
+
+---
 
 ---
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Modal } from "@/components/ui/modal";
@@ -18,6 +19,8 @@ import {
 } from "@/lib/contracts/access";
 import type { ContractState } from "@/lib/contracts/state";
 
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
 interface Props {
   id: string;
   state: string;
@@ -26,13 +29,17 @@ interface Props {
   hasContractPartyEmail: boolean;
   role: string;
   onChanged: () => void | Promise<void>;
+  /** When set, an override PDF has already been uploaded — swaps the
+   *  button label to "re-upload" and shows an "uploaded" badge. */
+  pdfUploadedAt?: string | null;
 }
 
-export function ContractActions({ id, state, contractNumber, hasContractPartyEmail, role, onChanged }: Props) {
+export function ContractActions({ id, state, contractNumber, hasContractPartyEmail, role, onChanged, pdfUploadedAt }: Props) {
   const t = useTranslations("contracts");
   const tc = useTranslations("common");
   const router = useRouter();
   const api = useApi();
+  const { accessToken } = useAuth();
 
   const [busy, setBusy] = useState(false);
   const [showTerminate, setShowTerminate] = useState(false);
@@ -41,6 +48,12 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
   const [showSend, setShowSend] = useState(false);
   const [showComplete, setShowComplete] = useState(false);
   const [reason, setReason] = useState("");
+
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   async function transition(to: ContractState, withReason?: string) {
     setBusy(true);
@@ -82,6 +95,55 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
       if (err instanceof ApiClientError) alert(err.message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  function openUpload() {
+    setUploadFile(null);
+    setUploadError(null);
+    setShowUpload(true);
+  }
+
+  async function submitUpload() {
+    if (!uploadFile) return;
+    if (uploadFile.type !== "application/pdf") {
+      setUploadError(t("uploadPdfModal.errorNotPdf"));
+      return;
+    }
+    if (uploadFile.size > MAX_PDF_BYTES) {
+      setUploadError(t("uploadPdfModal.errorTooLarge"));
+      return;
+    }
+    setUploadError(null);
+    setUploadBusy(true);
+    try {
+      const form = new FormData();
+      form.append("file", uploadFile);
+      const headers: Record<string, string> = {};
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      const res = await fetch(`/api/contracts/${id}/pdf/upload`, {
+        method: "POST",
+        body: form,
+        credentials: "include",
+        headers,
+      });
+      let json: { success?: boolean; error?: { message?: string } } | null = null;
+      try {
+        json = await res.json();
+      } catch {
+        /* non-JSON response — fall through */
+      }
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.error?.message ?? `Upload failed (HTTP ${res.status})`);
+      }
+      setShowUpload(false);
+      setUploadFile(null);
+      await onChanged();
+      alert(t("uploadPdfModal.success"));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploadBusy(false);
     }
   }
 
@@ -147,6 +209,18 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
           <Button variant="outline" size="sm" onClick={regeneratePdf} isLoading={busy}>
             {t("actions.regeneratePdf")}
           </Button>
+        )}
+        {canRegenerateContractPdf(role) && (
+          <>
+            <Button variant="outline" size="sm" onClick={openUpload}>
+              {t(pdfUploadedAt ? "actions.reuploadPdf" : "actions.uploadPdf")}
+            </Button>
+            {pdfUploadedAt && (
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+                {t("uploadedBadge")}
+              </span>
+            )}
+          </>
         )}
         <Link href={`/api/contracts/${id}/pdf` as never} target="_blank">
           <Button variant="ghost" size="sm">{t("actions.downloadPdf")}</Button>
@@ -214,6 +288,42 @@ export function ContractActions({ id, state, contractNumber, hasContractPartyEma
         <FormField label={t("amendmentReason")} required>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} />
         </FormField>
+      </Modal>
+      <Modal
+        open={showUpload}
+        onClose={() => setShowUpload(false)}
+        title={t("uploadPdfModal.title")}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowUpload(false)} disabled={uploadBusy}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={submitUpload} isLoading={uploadBusy} disabled={!uploadFile}>
+              {t("uploadPdfModal.submit")}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-2">
+          <label htmlFor="contract-pdf-upload-input" className="text-sm font-medium text-[#111111]">
+            {t("uploadPdfModal.pickFile")}
+          </label>
+          <input
+            id="contract-pdf-upload-input"
+            ref={uploadInputRef}
+            type="file"
+            accept="application/pdf"
+            aria-label={t("uploadPdfModal.pickFile")}
+            onChange={(e) => {
+              setUploadError(null);
+              setUploadFile(e.target.files?.[0] ?? null);
+            }}
+          />
+          <p className="text-xs text-[#737373]">{t("uploadPdfModal.hint")}</p>
+          {uploadError && (
+            <p className="text-sm text-red-600">{uploadError}</p>
+          )}
+        </div>
       </Modal>
     </>
   );
