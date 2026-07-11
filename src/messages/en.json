@@ -512,65 +512,18 @@
     },
     "register": {
       "title": "Register / install equipment",
-      "subtitle": "Register multiple models for one customer, each with its own deposit + monthly fee.",
-      "submit": "Submit",
-      "sections": {
-        "customer": "Customer",
-        "location": "Location",
-        "lines": "Model lines",
-        "summary": "Totals & contract"
+      "subtitle": "Register multiple model lines for one customer, bundled into a single contract.",
+      "lineLabel": "Line {n}",
+      "actions": {
+        "addLine": "+ Add line",
+        "removeLine": "Remove line"
       },
       "fields": {
-        "customer": "Customer",
-        "customerPlaceholder": "Search customer (code / name / shortcode)",
-        "customerType": "Type",
-        "contact": "Contact",
-        "site": "Site",
-        "sitePlaceholder": "Select site",
-        "siteNotApplicable": "Customer has no sites (using customer address)",
-        "pickCustomerFirst": "Pick a customer first",
-        "installedAt": "Default install date",
-        "technician": "Technician",
-        "brand": "Brand",
-        "brandPlaceholder": "Brand (all)",
-        "category": "Category",
-        "categoryPlaceholder": "Category (all)",
-        "modelPlaceholder": "Select model",
+        "serialPrefix": "Serial prefix",
         "serialPrefixPlaceholder": "e.g. AQS-2406"
       },
-      "columns": {
-        "model": "Model",
-        "serviceType": "Service",
-        "managementType": "Management",
-        "quantity": "Qty",
-        "deposit": "Deposit (per unit)",
-        "monthlyFee": "Monthly (per unit)",
-        "serialPrefix": "Serial prefix",
-        "installedAt": "Install date"
-      },
-      "serviceTypes": {
-        "RENTAL": "Rental",
-        "MAINTENANCE": "Maintenance",
-        "SALE": "Sale"
-      },
-      "managementTypes": {
-        "FULL_SERVICE": "Full service",
-        "SELF_MANAGED": "Self managed",
-        "OTHER": "Other"
-      },
-      "actions": {
-        "addLine": "+ Add model"
-      },
-      "totals": {
-        "equipmentCount": "Total units",
-        "totalDeposit": "Total deposit",
-        "totalMonthly": "Total monthly",
-        "totalSale": "Total sale value"
-      },
-      "contract": {
-        "toggle": "Issue a contract for these units too",
-        "toggleHint": "When checked, bundle every line into a single contract minted in the same transaction.",
-        "termMonths": "Term (months)"
+      "contractInfo": {
+        "title": "Contract info"
       }
     },
     "serviceMethod": {

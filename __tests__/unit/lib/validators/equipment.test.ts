@@ -310,6 +310,40 @@ describe("registerEquipmentSchema — per-line SALE requires salePrice", () => {
     });
     expect(res.success).toBe(true);
   });
+
+  it("accepts an optional top-level contractDate (YYYY-MM-DD) and coerces it to a Date", () => {
+    const res = registerEquipmentSchema.safeParse({
+      ...baseLine,
+      contractDate: "2026-07-01",
+      lines: [
+        {
+          modelId: "m1",
+          serviceType: "SALE",
+          quantity: 1,
+          salePrice: 0,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.contractDate).toBeInstanceOf(Date);
+    expect(res.data?.contractDate?.toISOString().slice(0, 10)).toBe("2026-07-01");
+  });
+
+  it("omits contractDate when absent (falls back to earliestInstall server-side)", () => {
+    const res = registerEquipmentSchema.safeParse({
+      ...baseLine,
+      lines: [
+        {
+          modelId: "m1",
+          serviceType: "SALE",
+          quantity: 1,
+          salePrice: 0,
+        },
+      ],
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.contractDate).toBeUndefined();
+  });
 });
 
 describe("updateEquipmentModelSchema (red-team — mass-assignment via defaults)", () => {

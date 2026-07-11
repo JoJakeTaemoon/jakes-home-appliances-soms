@@ -512,65 +512,18 @@
     },
     "register": {
       "title": "Đăng ký / Lắp đặt thiết bị",
-      "subtitle": "Đăng ký nhiều mẫu thiết bị cho một khách hàng, mỗi mẫu một mức giá riêng.",
-      "submit": "Đăng ký",
-      "sections": {
-        "customer": "Khách hàng",
-        "location": "Địa điểm",
-        "lines": "Dòng thiết bị theo mẫu",
-        "summary": "Tổng & HĐ"
+      "subtitle": "Đăng ký nhiều dòng mẫu thiết bị cho một khách hàng, gộp vào một hợp đồng.",
+      "lineLabel": "Dòng {n}",
+      "actions": {
+        "addLine": "+ Thêm dòng",
+        "removeLine": "Xóa dòng"
       },
       "fields": {
-        "customer": "Khách hàng",
-        "customerPlaceholder": "Tìm khách (mã / tên / mã viết tắt)",
-        "customerType": "Loại KH",
-        "contact": "Liên hệ",
-        "site": "Cơ sở",
-        "sitePlaceholder": "Chọn cơ sở",
-        "siteNotApplicable": "Khách chưa có cơ sở (dùng địa chỉ KH)",
-        "pickCustomerFirst": "Chọn khách hàng trước",
-        "installedAt": "Ngày lắp mặc định",
-        "technician": "Kỹ thuật viên",
-        "brand": "Thương hiệu",
-        "brandPlaceholder": "Thương hiệu (tất cả)",
-        "category": "Nhóm SP",
-        "categoryPlaceholder": "Nhóm SP (tất cả)",
-        "modelPlaceholder": "Chọn mẫu",
+        "serialPrefix": "Tiền tố sê-ri",
         "serialPrefixPlaceholder": "VD: AQS-2406"
       },
-      "columns": {
-        "model": "Mẫu",
-        "serviceType": "Loại DV",
-        "managementType": "Loại QL",
-        "quantity": "SL",
-        "deposit": "Cọc (1 cái)",
-        "monthlyFee": "Phí/tháng (1 cái)",
-        "serialPrefix": "Tiền tố sê-ri",
-        "installedAt": "Ngày lắp"
-      },
-      "serviceTypes": {
-        "RENTAL": "Thuê",
-        "MAINTENANCE": "Bảo trì",
-        "SALE": "Bán"
-      },
-      "managementTypes": {
-        "FULL_SERVICE": "Toàn phần",
-        "SELF_MANAGED": "KH tự quản",
-        "OTHER": "Khác"
-      },
-      "actions": {
-        "addLine": "+ Thêm mẫu"
-      },
-      "totals": {
-        "equipmentCount": "Tổng thiết bị",
-        "totalDeposit": "Tổng đặt cọc",
-        "totalMonthly": "Tổng phí/tháng",
-        "totalSale": "Tổng giá bán"
-      },
-      "contract": {
-        "toggle": "Tạo HĐ cùng các thiết bị này",
-        "toggleHint": "Khi bật, gói mọi dòng vào một HĐ trong cùng giao dịch.",
-        "termMonths": "Kỳ hạn (tháng)"
+      "contractInfo": {
+        "title": "Thông tin hợp đồng"
       }
     },
     "serviceMethod": {

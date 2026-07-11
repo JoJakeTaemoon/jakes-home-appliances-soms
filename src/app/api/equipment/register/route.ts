@@ -192,10 +192,14 @@ export async function POST(request: NextRequest) {
       if (data.createContract && equipmentIds.length > 0) {
         const type = pickContractType(data.lines, data.contractServiceType);
         const term = data.contractTermMonths ?? null;
+        // Manual 계약일 (contractDate) wins when the wizard set one;
+        // otherwise fall back to the earliest line's installedAt — mirrors
+        // bulk-register/route.ts's contractStartDate (Task 2a.6).
+        const contractStartDate = data.contractDate ?? earliestInstall;
         const endDate = term
           ? new Date(
-              new Date(earliestInstall).setMonth(
-                earliestInstall.getMonth() + term,
+              new Date(contractStartDate).setMonth(
+                contractStartDate.getMonth() + term,
               ),
             )
           : null;
@@ -213,16 +217,16 @@ export async function POST(request: NextRequest) {
           customerId: data.customerId,
           type,
           state: "ACTIVE" as const,
-          startDate: earliestInstall,
+          startDate: contractStartDate,
           endDate,
           termMonths: term,
           monthlyMaintenanceFee: type === "SALE" ? null : totalMonthlyFee,
           totalContractValue,
           deposit: type === "RENTAL" ? totalDeposit : null,
           endOfTermAction: type === "RENTAL" ? ("TRANSFER_OWNERSHIP" as const) : null,
-          signedByCustomerAt: earliestInstall,
-          signedByCompanyAt: earliestInstall,
-          activatedAt: earliestInstall,
+          signedByCustomerAt: contractStartDate,
+          signedByCompanyAt: contractStartDate,
+          activatedAt: contractStartDate,
           equipment: {
             create: equipmentIds.map((eqId) => ({
               equipmentId: eqId,
@@ -270,7 +274,7 @@ export async function POST(request: NextRequest) {
               shortcode: customer.shortcode,
             },
             type,
-            signedAt: earliestInstall,
+            signedAt: contractStartDate,
           });
           let attempt = 0;
           while (attempt < 5) {

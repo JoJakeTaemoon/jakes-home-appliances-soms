@@ -228,12 +228,17 @@ function BulkRegisterInner() {
         hasContract: method === "SALE" ? !!serviceMethod.hasContract : undefined,
         serviceConfig: {
           inspectionCycleDays: serviceConfig.inspectionCycleDays ?? undefined,
-          filters: serviceConfig.filters.map((f) => ({
-            consumableId: f.consumableId,
-            customName: f.customName,
-            quantity: f.quantity,
-            useCycleDays: f.useCycleDays,
-          })),
+          // Drop incomplete custom rows (addFilter() seeds customName:"" —
+          // the server rejects a filter with neither a consumableId nor a
+          // non-empty customName) rather than sending a row that 400s.
+          filters: serviceConfig.filters
+            .filter((f) => !!f.consumableId || !!f.customName?.trim())
+            .map((f) => ({
+              consumableId: f.consumableId,
+              customName: f.customName,
+              quantity: f.quantity,
+              useCycleDays: f.useCycleDays,
+            })),
         },
       });
       if (res.data?.contractId) {

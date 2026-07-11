@@ -151,6 +151,55 @@ describe("ServiceMethodSection", () => {
     );
   });
 
+  it("hides contractNumber/contractDate/termMonths (but keeps pricing) when hideContractFields=true, across all methods", () => {
+    const { rerender } = render(
+      <ServiceMethodSection
+        value={{ method: "RENTAL", deposit: 0, monthlyRent: 0, termMonths: 36 }}
+        onChange={vi.fn()}
+        hideContractFields
+      />,
+    );
+    expect(screen.queryByLabelText("contractNumber")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("contractDate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("termMonths")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("deposit")).toBeInTheDocument();
+    expect(screen.getByLabelText("monthlyRent")).toBeInTheDocument();
+
+    rerender(
+      <ServiceMethodSection
+        value={{
+          method: "SALE",
+          hasContract: true,
+          contractNumber: "HD-1",
+          salePrice: 0,
+          installFee: 0,
+          managementType: "FULL_SERVICE",
+          monthlyMaintenanceFee: 0,
+        }}
+        onChange={vi.fn()}
+        hideContractFields
+      />,
+    );
+    expect(screen.queryByLabelText("contractNumber")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("contractDate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("maintenanceContractDate")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("salePrice")).toBeInTheDocument();
+    expect(screen.getByLabelText("installFee")).toBeInTheDocument();
+    expect(screen.getByLabelText("monthlyMaintenanceFee")).toBeInTheDocument();
+
+    rerender(
+      <ServiceMethodSection
+        value={{ method: "MAINTENANCE", monthlyMaintenanceFee: 0, termMonths: 36 }}
+        onChange={vi.fn()}
+        hideContractFields
+      />,
+    );
+    expect(screen.queryByLabelText("contractNumber")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("contractDate")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("termMonths")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("monthlyMaintenanceFee")).toBeInTheDocument();
+  });
+
   it("calls onChange with the updated value when the contract number changes", () => {
     const onChange = vi.fn();
     renderSection({ method: "MAINTENANCE", monthlyMaintenanceFee: 0 }, onChange);

@@ -337,6 +337,14 @@ export const registerEquipmentSchema = z.object({
   customerId: z.string().trim().min(1),
   siteId: optStr(60),
   contractNumber: optStr(60),
+  /**
+   * Manual "계약일" (contract date) — Task 2b.1, mirrors
+   * bulkRegisterEquipmentSchema.contractDate (Task 2a.6). When set, used
+   * for the bundled contract's startDate/signedByCustomerAt/
+   * signedByCompanyAt/activatedAt instead of the earliest line's
+   * installedAt. Falls back to earliestInstall when absent.
+   */
+  contractDate: z.coerce.date().optional(),
   defaultInstalledAt: z.coerce.date(),
   installedByTechnicianId: optStr(60),
   installNotes: optStr(2000),

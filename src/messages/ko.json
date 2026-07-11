@@ -512,65 +512,18 @@
     },
     "register": {
       "title": "장비 등록 / 설치",
-      "subtitle": "한 고객에게 여러 모델의 장비를 모델별로 다른 보증금/월 요금으로 한 번에 등록할 수 있습니다.",
-      "submit": "등록",
-      "sections": {
-        "customer": "고객 정보",
-        "location": "설치 장소 정보",
-        "lines": "모델별 장비 라인",
-        "summary": "합계 및 계약"
+      "subtitle": "한 고객에게 여러 모델 라인을 등록하고 하나의 계약으로 묶습니다.",
+      "lineLabel": "라인 {n}",
+      "actions": {
+        "addLine": "+ 라인 추가",
+        "removeLine": "라인 삭제"
       },
       "fields": {
-        "customer": "고객명",
-        "customerPlaceholder": "고객 검색 (코드 / 이름 / 약어)",
-        "customerType": "고객 유형",
-        "contact": "담당자",
-        "site": "설치 장소",
-        "sitePlaceholder": "사업장 선택",
-        "siteNotApplicable": "이 고객은 사업장이 등록되어 있지 않습니다 (고객 주소 사용)",
-        "pickCustomerFirst": "먼저 고객을 선택하세요",
-        "installedAt": "기본 설치일",
-        "technician": "담당 기술자",
-        "brand": "브랜드",
-        "brandPlaceholder": "브랜드 (전체)",
-        "category": "제품군",
-        "categoryPlaceholder": "제품군 (전체)",
-        "modelPlaceholder": "모델 선택",
+        "serialPrefix": "시리얼 prefix",
         "serialPrefixPlaceholder": "예: AQS-2406"
       },
-      "columns": {
-        "model": "모델",
-        "serviceType": "서비스 유형",
-        "managementType": "관리 유형",
-        "quantity": "수량",
-        "deposit": "보증금 (1대당)",
-        "monthlyFee": "월 요금 (1대당)",
-        "serialPrefix": "시리얼 prefix",
-        "installedAt": "설치일 (선택)"
-      },
-      "serviceTypes": {
-        "RENTAL": "렌탈",
-        "MAINTENANCE": "유지보수",
-        "SALE": "판매"
-      },
-      "managementTypes": {
-        "FULL_SERVICE": "전체 서비스",
-        "SELF_MANAGED": "고객 자가 관리",
-        "OTHER": "기타"
-      },
-      "actions": {
-        "addLine": "+ 모델 추가"
-      },
-      "totals": {
-        "equipmentCount": "총 장비 수",
-        "totalDeposit": "보증금 합계",
-        "totalMonthly": "월 요금 합계",
-        "totalSale": "판매가 합계"
-      },
-      "contract": {
-        "toggle": "이 장비들로 계약도 함께 생성",
-        "toggleHint": "체크하면 모든 라인을 하나의 계약에 묶어 같은 트랜잭션에서 생성합니다.",
-        "termMonths": "계약 기간 (개월)"
+      "contractInfo": {
+        "title": "계약 정보"
       }
     },
     "serviceMethod": {

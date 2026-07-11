@@ -427,10 +427,35 @@ describe("cycle due-date is day-based", () => {
 ### Task 2a.7: Phase 2a 게이트
 - [ ] `npx tsc --noEmit` 0 · `npm test`(단위/컴포넌트) 통과 · Playwright E2E 통과 · `npm run build` 성공
 
-## Phase 2b — register 위저드 (멀티라인)
+# Phase 2b — register 위저드 (멀티라인) (branch `feat/bulk-register-phase2b`)
 
-**Task 2b.1** `register/page.tsx` 4스텝화: 스텝2 모델 라인 배열, 스텝3·4 라인별(아코디언). Phase 2a 컴포넌트 재사용, `ServiceMethodSection`/`ServiceConfigEditor`를 라인별 반복
-- Test(Playwright): 2개 모델 라인(렌탈+판매) 등록 → 라인별 계약·서비스구성 생성
+**산출물:** `register` 페이지를 4스텝 위저드로 재구성 — 여러 모델 라인, 라인별 판매방식·서비스구성. Phase 2a 컴포넌트 재사용. E2E.
+
+**설계 결정 (register 라우트 구조 반영):** register 라우트(Task 1.4)는 라인들을 **단일 계약**으로 번들(`pickContractType`, top-level `contractNumber`/`contractTermMonths`). 따라서:
+- **계약 정보(번호·계약일·기간)는 상단 1회** 입력(번들 계약용).
+- **판매방식·가격·관리방식·서비스구성은 라인별**.
+- `ServiceMethodSection`에 `hideContractFields?: boolean` prop 추가 → 라인별 사용 시 계약번호/계약일/기간 숨김(방식+가격+관리방식만). bulk은 기존대로 전체 표시.
+
+### Task 2b.1: `ServiceMethodSection.hideContractFields` + register 라우트 `contractDate`
+**Files:** Modify `src/components/equipment/service-method-section.tsx`, `src/app/api/equipment/register/route.ts`, `src/lib/validators/equipment.ts`; Tests: component + validator unit.
+- `ServiceMethodSection` prop `hideContractFields?: boolean`(기본 false) → true면 contractNumber/contractDate/termMonths 미표시(방식·deposit/rent·salePrice/installFee·managementType·monthlyMaintenanceFee만). 기존 사용처(bulk)는 무영향.
+- register: `registerEquipmentSchema`에 top-level `contractDate?`(YYYY-MM-DD) 추가; 라우트가 번들 계약의 startDate/signedAt/activatedAt에 사용(폴백 earliestInstall). (bulk의 2a.6과 동형.)
+- [ ] 컴포넌트 테스트(hideContractFields=true → 계약필드 숨김) + validator 테스트(contractDate 수용) → 커밋.
+
+### Task 2b.2: register 4스텝 위저드
+**Files:** Modify `src/app/o/[locale]/(dashboard)/equipment/register/page.tsx`; i18n ko/vi/en.
+- 4스텝 `Stepper`(고객→장비→판매방식→서비스구성).
+- **스텝1**: `CustomerSearchSelect`.
+- **스텝2**: **모델 라인 배열**(각 라인: `ModelPicker` + 수량 + 관리번호 방식 자동/직접 + (사이트 고객)설치위치) + "+ 라인 추가"/삭제. 설치일·담당기사 배치 공통.
+- **스텝3**: 상단 **계약 정보 1회**(계약번호 Input·계약일 DatePicker 기본오늘·계약기간 NumberInput 기본36) + 라인별 `ServiceMethodSection hideContractFields` 아코디언(라인 제목=모델명).
+- **스텝4**: 라인별 `ServiceConfigEditor`(각 라인 modelId·installDate). 모델 변경 시 해당 라인 filters 초기화.
+- 제출: `POST /api/equipment/register` payload `{ customerId, siteId?, defaultInstalledAt, installedByTechnicianId, installNotes, contractNumber, contractDate, contractTermMonths(계약정보 term), createContract(라인 중 계약필요 방식 있으면 true), contractServiceType?(선택), lines: [{ modelId, serviceType, managementType, quantity, deposit?, monthlyFee?(rent/maint), salePrice?, installFee?, serialPrefix?/assetMode, installedAt?, serviceConfig{inspectionCycleDays,filters[]} }] }`. 라인별 serviceConfig.filters → `{consumableId?/customName?/quantity/useCycleDays}`.
+- [ ] tsc 0 · build 성공 · 컴포넌트/단위 테스트 통과 → 커밋.
+
+### Task 2b.3: register E2E + 게이트
+**Files:** `e2e/register.spec.ts` (Playwright).
+- [ ] **E2E**: 로그인 → `/o/ko/equipment/register` → 고객 선택 → 라인1(모델A, 렌탈, 수량1) + 라인 추가 라인2(모델B, 판매, salePrice) → 계약정보 입력 → 서비스구성 → 제출 → 장비2·계약1 생성 확인.
+- [ ] 게이트: `tsc` 0 · `npm test` 통과 · `npm run build` 성공 · E2E 통과.
 
 ## Phase 3 — 계약서 업로드
 

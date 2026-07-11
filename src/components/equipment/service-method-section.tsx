@@ -29,6 +29,13 @@ export type ServiceMethodValue = {
 interface Props {
   value: ServiceMethodValue;
   onChange: (v: ServiceMethodValue) => void;
+  /**
+   * Hides contractNumber/contractDate/termMonths across all method
+   * branches — used by the multi-line register wizard, where those
+   * fields are collected once at the contract level instead of per line.
+   * Default false (bulk-register wizard — unchanged).
+   */
+  hideContractFields?: boolean;
 }
 
 function todayYmd(): string {
@@ -42,7 +49,11 @@ const SECTION_CLASS =
   "flex flex-col gap-3 rounded-2xl border-4 border-[var(--brand-blue-100)] bg-white p-4";
 const GRID_CLASS = "grid grid-cols-1 gap-3 sm:grid-cols-2";
 
-export function ServiceMethodSection({ value, onChange }: Readonly<Props>) {
+export function ServiceMethodSection({
+  value,
+  onChange,
+  hideContractFields = false,
+}: Readonly<Props>) {
   const t = useTranslations("equipment.serviceMethod");
 
   function patch(p: Partial<ServiceMethodValue>) {
@@ -105,28 +116,32 @@ export function ServiceMethodSection({ value, onChange }: Readonly<Props>) {
       {value.method === "RENTAL" && (
         <div className={SECTION_CLASS}>
           <div className={GRID_CLASS}>
-            <FormField label={t("contractNumber")}>
-              <Input
-                aria-label={t("contractNumber")}
-                value={value.contractNumber ?? ""}
-                onChange={(e) => patch({ contractNumber: e.target.value })}
-              />
-            </FormField>
-            <FormField label={t("contractDate")}>
-              <DatePicker
-                ariaLabel={t("contractDate")}
-                value={value.contractDate || todayYmd()}
-                onChange={(v) => patch({ contractDate: v })}
-              />
-            </FormField>
-            <FormField label={t("termMonths")}>
-              <NumberInput
-                ariaLabel={t("termMonths")}
-                value={value.termMonths ?? 36}
-                onChange={(v) => patch({ termMonths: v })}
-                min={1}
-              />
-            </FormField>
+            {!hideContractFields && (
+              <>
+                <FormField label={t("contractNumber")}>
+                  <Input
+                    aria-label={t("contractNumber")}
+                    value={value.contractNumber ?? ""}
+                    onChange={(e) => patch({ contractNumber: e.target.value })}
+                  />
+                </FormField>
+                <FormField label={t("contractDate")}>
+                  <DatePicker
+                    ariaLabel={t("contractDate")}
+                    value={value.contractDate || todayYmd()}
+                    onChange={(v) => patch({ contractDate: v })}
+                  />
+                </FormField>
+                <FormField label={t("termMonths")}>
+                  <NumberInput
+                    ariaLabel={t("termMonths")}
+                    value={value.termMonths ?? 36}
+                    onChange={(v) => patch({ termMonths: v })}
+                    min={1}
+                  />
+                </FormField>
+              </>
+            )}
             <FormField label={t("deposit")}>
               <NumberInput
                 ariaLabel={t("deposit")}
@@ -178,7 +193,7 @@ export function ServiceMethodSection({ value, onChange }: Readonly<Props>) {
             </div>
           </FormField>
 
-          {value.hasContract === true && (
+          {value.hasContract === true && !hideContractFields && (
             <div className={GRID_CLASS}>
               <FormField label={t("contractNumber")}>
                 <Input
@@ -258,13 +273,15 @@ export function ServiceMethodSection({ value, onChange }: Readonly<Props>) {
                 {t("maintenanceSection")}
               </p>
               <div className={GRID_CLASS}>
-                <FormField label={t("maintenanceContractDate")}>
-                  <DatePicker
-                    ariaLabel={t("maintenanceContractDate")}
-                    value={value.contractDate || todayYmd()}
-                    onChange={(v) => patch({ contractDate: v })}
-                  />
-                </FormField>
+                {!hideContractFields && (
+                  <FormField label={t("maintenanceContractDate")}>
+                    <DatePicker
+                      ariaLabel={t("maintenanceContractDate")}
+                      value={value.contractDate || todayYmd()}
+                      onChange={(v) => patch({ contractDate: v })}
+                    />
+                  </FormField>
+                )}
                 <FormField label={t("monthlyMaintenanceFee")}>
                   <NumberInput
                     ariaLabel={t("monthlyMaintenanceFee")}
@@ -282,28 +299,32 @@ export function ServiceMethodSection({ value, onChange }: Readonly<Props>) {
       {value.method === "MAINTENANCE" && (
         <div className={SECTION_CLASS}>
           <div className={GRID_CLASS}>
-            <FormField label={t("contractNumber")}>
-              <Input
-                aria-label={t("contractNumber")}
-                value={value.contractNumber ?? ""}
-                onChange={(e) => patch({ contractNumber: e.target.value })}
-              />
-            </FormField>
-            <FormField label={t("contractDate")}>
-              <DatePicker
-                ariaLabel={t("contractDate")}
-                value={value.contractDate || todayYmd()}
-                onChange={(v) => patch({ contractDate: v })}
-              />
-            </FormField>
-            <FormField label={t("termMonths")}>
-              <NumberInput
-                ariaLabel={t("termMonths")}
-                value={value.termMonths ?? 36}
-                onChange={(v) => patch({ termMonths: v })}
-                min={1}
-              />
-            </FormField>
+            {!hideContractFields && (
+              <>
+                <FormField label={t("contractNumber")}>
+                  <Input
+                    aria-label={t("contractNumber")}
+                    value={value.contractNumber ?? ""}
+                    onChange={(e) => patch({ contractNumber: e.target.value })}
+                  />
+                </FormField>
+                <FormField label={t("contractDate")}>
+                  <DatePicker
+                    ariaLabel={t("contractDate")}
+                    value={value.contractDate || todayYmd()}
+                    onChange={(v) => patch({ contractDate: v })}
+                  />
+                </FormField>
+                <FormField label={t("termMonths")}>
+                  <NumberInput
+                    ariaLabel={t("termMonths")}
+                    value={value.termMonths ?? 36}
+                    onChange={(v) => patch({ termMonths: v })}
+                    min={1}
+                  />
+                </FormField>
+              </>
+            )}
             <FormField label={t("monthlyMaintenanceFee")}>
               <NumberInput
                 ariaLabel={t("monthlyMaintenanceFee")}

@@ -1,5 +1,24 @@
 "use client";
 
+/**
+ * 4-step multi-line equipment registration wizard (Task 2b.2) — 고객 → 장비
+ * → 판매방식 → 서비스구성. Replaces the earlier single-screen multi-line
+ * table form.
+ *
+ * Structural difference from the sibling `bulk-register` wizard: `register`
+ * bundles multiple model LINES into ONE contract (see
+ * `pickContractType`/`registerEquipmentSchema` in
+ * `src/app/api/equipment/register/route.ts`). So:
+ *   - Step 1 (customer) and the batch-common part of Step 2 (install date /
+ *     technician / site / notes) are collected once, same as bulk-register.
+ *   - Step 2's equipment picker is instead an ARRAY of lines (model +
+ *     quantity + asset-code mode), each addable/removable.
+ *   - Step 3 collects the bundled contract's number/date/term ONCE at the
+ *     top, then a per-line `ServiceMethodSection hideContractFields`
+ *     accordion (method + pricing + management type only).
+ *   - Step 4 is a per-line `ServiceConfigEditor` accordion.
+ */
+
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -8,40 +27,41 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
+import { NumberInput } from "@/components/ui/number-input";
+import { FormField } from "@/components/ui/form-field";
+import { Stepper, type StepperStep } from "@/components/ui/stepper";
+import { CustomerSearchSelect } from "@/components/equipment/customer-search-select";
+import { ModelPicker } from "@/components/equipment/model-picker";
+import {
+  ServiceMethodSection,
+  type ServiceMethodValue,
+} from "@/components/equipment/service-method-section";
+import {
+  ServiceConfigEditor,
+  type ServiceConfigValue,
+} from "@/components/equipment/service-config-editor";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
+import { pickModelName } from "@/lib/products/name";
 
-type ServiceType = "RENTAL" | "MAINTENANCE" | "SALE";
-type ManagementType = "FULL_SERVICE" | "SELF_MANAGED" | "OTHER";
+type WizardStep = "customer" | "equipment" | "method" | "service";
+const STEPS: WizardStep[] = ["customer", "equipment", "method", "service"];
+type AssetCodeMode = "auto" | "manual";
 
-interface CustomerListRow {
+interface CustomerSite {
   id: string;
-  code: string;
   name: string;
-  type: "B2C" | "B2B";
-  shortcode: string | null;
+  addressWardName: string | null;
 }
 
-interface CustomerDetail {
+interface CustomerLite {
   id: string;
-  code: string;
-  name: string;
-  type: "B2C" | "B2B";
-  addressStreet: string | null;
-  addressProvinceName: string | null;
-  address: string | null;
-  district: string | null;
-  city: string | null;
-  contacts: Array<{
-    id: string;
-    role: "CONTRACT_PARTY" | "OPS_CONTACT";
-    isPrimary: boolean;
-    name: string;
-    title: string | null;
-    phone1: string;
-    email: string | null;
-  }>;
-  sites: Array<{ id: string; name: string }>;
+  sites: CustomerSite[];
+}
+
+interface TechnicianLite {
+  id: string;
+  username: string;
 }
 
 interface ModelLite {
@@ -50,43 +70,56 @@ interface ModelLite {
   nameKo: string | null;
   nameVi: string | null;
   nameEn: string | null;
-  brand: { id: string; name: string } | null;
-  productCategory: { id: string; nameKo: string; nameVi: string; nameEn: string } | null;
 }
-
-interface BrandLite { id: string; name: string }
-interface CategoryLite { id: string; nameKo: string; nameVi: string; nameEn: string }
-interface TechLite { id: string; username: string }
 
 interface LineState {
   id: string;
+  brandFilter: string | null;
+  categoryFilter: string | null;
   modelId: string | null;
-  serviceType: ServiceType;
-  managementType: ManagementType;
   quantity: number;
-  deposit: number | null;
-  monthlyFee: number | null;
+  assetCodeMode: AssetCodeMode;
   serialPrefix: string;
-  installedAt: string; // optional override
+  serviceMethod: ServiceMethodValue;
+  serviceConfig: ServiceConfigValue;
+}
+
+function todayYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function newLine(): LineState {
   return {
     id: `l-${Math.random().toString(36).slice(2, 9)}`,
+    brandFilter: null,
+    categoryFilter: null,
     modelId: null,
-    serviceType: "RENTAL",
-    managementType: "FULL_SERVICE",
     quantity: 1,
-    deposit: null,
-    monthlyFee: null,
+    assetCodeMode: "auto",
     serialPrefix: "",
-    installedAt: "",
+    serviceMethod: { method: "RENTAL", contractDate: todayYmd(), deposit: 0, monthlyRent: 0 },
+    serviceConfig: { inspectionCycleDays: null, filters: [] },
   };
+}
+
+// ponytail: mirrors bulk-register/page.tsx's identical predicate — a
+// 4-line pure fn isn't worth extracting into a shared lib for two callers.
+function deriveCreateContract(v: ServiceMethodValue): boolean {
+  if (v.method !== "SALE") return true; // RENTAL / MAINTENANCE always
+  return !!v.hasContract || v.managementType === "FULL_SERVICE";
+}
+
+/** monthlyFee is rent/maintenance only — SALE carries its price in salePrice/installFee instead. */
+function pickMonthlyFee(v: ServiceMethodValue): number | undefined {
+  if (v.method === "RENTAL") return v.monthlyRent ?? undefined;
+  if (v.method === "MAINTENANCE") return v.monthlyMaintenanceFee ?? undefined;
+  return undefined;
 }
 
 export default function RegisterEquipmentPage() {
   return (
-    <Suspense fallback={<div className="text-sm text-[#737373]">Loading…</div>}>
+    <Suspense fallback={null}>
       <RegisterEquipmentInner />
     </Suspense>
   );
@@ -94,101 +127,55 @@ export default function RegisterEquipmentPage() {
 
 function RegisterEquipmentInner() {
   const t = useTranslations("equipment.register");
+  const tb = useTranslations("equipment.bulkRegister");
+  const tm = useTranslations("equipment.serviceMethod");
   const tc = useTranslations("common");
-  const locale = useLocale();
+  const locale = useLocale() as "ko" | "vi" | "en";
   const router = useRouter();
   const sp = useSearchParams();
   const api = useApi();
 
+  const [step, setStep] = useState<WizardStep>("customer");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ─── Step 1: customer ───────────────────────────────────────────────
   const initialCustomerId = sp.get("customerId");
   const [customerId, setCustomerId] = useState<string | null>(initialCustomerId);
   const [siteId, setSiteId] = useState<string | null>(null);
-  const [defaultInstalledAt, setDefaultInstalledAt] = useState(
-    new Date().toISOString().slice(0, 10),
+
+  const customerQuery = useApiQuery<CustomerLite>(
+    customerId ? `/api/customers/${customerId}` : null,
   );
+  const customer = customerQuery.data ?? null;
+  const siteOptions = (customer?.sites ?? []).map((s) => ({
+    value: s.id,
+    label: [s.name, s.addressWardName].filter(Boolean).join(" · "),
+  }));
+  const noSitesForCustomer = !!customer && customer.sites.length === 0;
+
+  // ─── Step 2: lines + batch-common install info ───────────────────────
+  const [defaultInstalledAt, setDefaultInstalledAt] = useState(todayYmd());
   const [installedByTechnicianId, setInstalledByTechnicianId] = useState<string | null>(null);
   const [installNotes, setInstallNotes] = useState("");
   const [lines, setLines] = useState<LineState[]>([newLine()]);
 
-  const [brandFilter, setBrandFilter] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [createContract, setCreateContract] = useState(false);
-  const [contractTermMonths, setContractTermMonths] = useState(36);
+  const techsQuery = useApiQuery<TechnicianLite[]>("/api/users?role=TECHNICIAN&pageSize=100");
+  const techs = techsQuery.data ?? [];
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const customersListQuery = useApiPageQuery<CustomerListRow[]>(
-    "/api/customers?status=ACTIVE&pageSize=500",
+  // Unfiltered model catalog — used only to resolve Step 3/4 accordion
+  // titles (each line's own ModelPicker keeps its own brand/category-
+  // filtered query independently).
+  const allModelsQuery = useApiPageQuery<ModelLite[]>(
+    "/api/equipment-models?isActive=true&pageSize=200",
   );
-  const customersList = customersListQuery.data?.data ?? [];
-
-  const customerQuery = useApiQuery<CustomerDetail>(
-    customerId ? `/api/customers/${customerId}` : null,
-  );
-  const customer = customerQuery.data ?? null;
-
-  const modelsUrl = useMemo(() => {
-    const qs = new URLSearchParams();
-    qs.set("isActive", "true");
-    qs.set("pageSize", "200");
-    if (brandFilter) qs.set("brandId", brandFilter);
-    if (categoryFilter) qs.set("categoryId", categoryFilter);
-    return `/api/equipment-models?${qs.toString()}`;
-  }, [brandFilter, categoryFilter]);
-  const modelsQuery = useApiPageQuery<ModelLite[]>(modelsUrl);
-  const models = modelsQuery.data?.data ?? [];
-
-  const brandsQuery = useApiPageQuery<BrandLite[]>(
-    "/api/admin/products/brands?pageSize=200",
-  );
-  const brands = brandsQuery.data?.data ?? [];
-
-  const categoriesQuery = useApiPageQuery<CategoryLite[]>(
-    "/api/admin/products/categories?pageSize=200",
-  );
-  const categories = categoriesQuery.data?.data ?? [];
-
-  const techsQuery = useApiPageQuery<TechLite[]>(
-    "/api/users?role=TECHNICIAN&pageSize=100",
-  );
-  const techs = techsQuery.data?.data ?? [];
-
-  // ─── Derived ────────────────────────────────────────────────────────
-  const customerAddress = customer
-    ? [
-        customer.addressStreet ?? customer.address,
-        customer.district,
-        customer.addressProvinceName ?? customer.city,
-      ].filter(Boolean).join(", ")
-    : "";
-  const primaryContact =
-    customer?.contacts.find((c) => c.role === "OPS_CONTACT" && c.isPrimary) ??
-    customer?.contacts.find((c) => c.role === "CONTRACT_PARTY") ??
-    customer?.contacts[0] ?? null;
-  const noSitesForCustomer = !!customer && customer.sites.length === 0;
-
-  const totals = useMemo(() => {
-    let count = 0;
-    let totalDeposit = 0;
-    let totalMonthlyFee = 0;
-    let totalSale = 0;
-    for (const l of lines) {
-      count += l.quantity;
-      if (l.serviceType === "SALE") {
-        totalSale += (l.monthlyFee ?? 0) * l.quantity;
-      } else {
-        totalDeposit += (l.deposit ?? 0) * l.quantity;
-        totalMonthlyFee += (l.monthlyFee ?? 0) * l.quantity;
-      }
+  const modelNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of allModelsQuery.data?.data ?? []) {
+      map.set(m.id, pickModelName(m, locale));
     }
-    return { count, totalDeposit, totalMonthlyFee, totalSale };
-  }, [lines]);
-
-  const canSubmit =
-    !!customerId &&
-    lines.length > 0 &&
-    lines.every((l) => l.modelId && l.quantity > 0);
+    return map;
+  }, [allModelsQuery.data, locale]);
 
   function updateLine(id: string, patch: Partial<LineState>) {
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
@@ -200,35 +187,72 @@ function RegisterEquipmentInner() {
     setLines((prev) => [...prev, newLine()]);
   }
 
+  // ─── Step 3: bundled contract info (once) ────────────────────────────
+  const [contractNumber, setContractNumber] = useState("");
+  const [contractDate, setContractDate] = useState(todayYmd());
+  const [contractTermMonths, setContractTermMonths] = useState(36);
+
+  // ─── Validation gates ────────────────────────────────────────────────
+  const completedLines = lines.filter((l): l is LineState & { modelId: string } => !!l.modelId);
+  const canGoEquipment = !!customerId;
+  const canGoMethod = completedLines.length > 0;
+
+  const stepperSteps: StepperStep[] = STEPS.map((s) => ({ key: s, label: tb(`steps.${s}`) }));
+
+  // ─── Submit ──────────────────────────────────────────────────────────
   async function handleSubmit() {
-    if (!customerId) return;
+    if (!customerId || completedLines.length === 0) return;
     setSubmitting(true);
     setError(null);
     try {
+      const createContract = completedLines.some((l) => deriveCreateContract(l.serviceMethod));
+      const hasNonSaleLine = completedLines.some((l) => l.serviceMethod.method !== "SALE");
+
       const res = await api.post<{
         equipmentIds: string[];
+        visitIds: string[];
         contractId: string | null;
+        contractNumber: string | null;
       }>("/api/equipment/register", {
         customerId,
         siteId,
         defaultInstalledAt,
         installedByTechnicianId,
-        installNotes,
-        lines: lines.map((l) => ({
-          modelId: l.modelId,
-          serviceType: l.serviceType,
-          managementType: l.managementType,
-          quantity: l.quantity,
-          deposit: l.deposit ?? undefined,
-          monthlyFee: l.monthlyFee ?? undefined,
-          serialPrefix: l.serialPrefix || undefined,
-          installedAt: l.installedAt || undefined,
-        })),
+        installNotes: installNotes || undefined,
+        contractNumber: contractNumber || undefined,
+        contractDate: contractDate || undefined,
         createContract,
-        contractTermMonths:
-          createContract && lines.some((l) => l.serviceType !== "SALE")
-            ? contractTermMonths
-            : undefined,
+        contractTermMonths: createContract && hasNonSaleLine ? contractTermMonths : undefined,
+        lines: completedLines.map((l) => {
+          const method = l.serviceMethod.method;
+          const managementType =
+            method === "SALE" ? (l.serviceMethod.managementType ?? "SELF_MANAGED") : "FULL_SERVICE";
+          return {
+            modelId: l.modelId,
+            serviceType: method,
+            managementType,
+            quantity: l.quantity,
+            deposit: l.serviceMethod.deposit ?? undefined,
+            monthlyFee: pickMonthlyFee(l.serviceMethod),
+            salePrice: l.serviceMethod.salePrice ?? undefined,
+            installFee: l.serviceMethod.installFee ?? undefined,
+            serialPrefix: l.assetCodeMode === "manual" ? (l.serialPrefix || undefined) : undefined,
+            serviceConfig: {
+              inspectionCycleDays: l.serviceConfig.inspectionCycleDays ?? undefined,
+              // Drop incomplete custom rows (addFilter() seeds customName:"" —
+              // the server rejects a filter with neither a consumableId nor a
+              // non-empty customName) rather than sending a row that 400s.
+              filters: l.serviceConfig.filters
+                .filter((f) => !!f.consumableId || !!f.customName?.trim())
+                .map((f) => ({
+                  consumableId: f.consumableId,
+                  customName: f.customName,
+                  quantity: f.quantity,
+                  useCycleDays: f.useCycleDays,
+                })),
+            },
+          };
+        }),
       });
       if (res.data?.contractId) {
         router.push(`/o/contracts/${res.data.contractId}`);
@@ -241,6 +265,9 @@ function RegisterEquipmentInner() {
     }
   }
 
+  const nextDisabled =
+    (step === "customer" && !canGoEquipment) || (step === "equipment" && !canGoMethod);
+
   return (
     <div className="flex w-full flex-col gap-4">
       <header className="flex items-center justify-between">
@@ -248,363 +275,391 @@ function RegisterEquipmentInner() {
           <h1 className="text-2xl font-semibold text-[#002A4D]">{t("title")}</h1>
           <p className="text-sm text-gray-500">{t("subtitle")}</p>
         </div>
-        <Button onClick={handleSubmit} disabled={!canSubmit || submitting}>
-          {submitting ? tc("saving") : t("submit")}
-        </Button>
+        <div className="flex gap-2">
+          {step !== "customer" && (
+            <Button
+              variant="secondary"
+              onClick={() => setStep(STEPS[Math.max(0, STEPS.indexOf(step) - 1)])}
+            >
+              {tb("prevStep")}
+            </Button>
+          )}
+          {step !== "service" ? (
+            <Button
+              onClick={() => {
+                if (nextDisabled) return;
+                setStep(STEPS[STEPS.indexOf(step) + 1]);
+              }}
+              disabled={nextDisabled}
+            >
+              {tb("nextStep")}
+            </Button>
+          ) : (
+            <Button onClick={handleSubmit} disabled={submitting || completedLines.length === 0}>
+              {submitting ? tc("saving") : tb("submitFinal")}
+            </Button>
+          )}
+        </div>
       </header>
 
-      {/* Common info */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Section title={t("sections.customer")}>
-          <Field label={t("fields.customer")}>
-            <Combobox
-              value={customerId}
-              onChange={(v) => {
-                setCustomerId(v as string | null);
-                setSiteId(null);
-              }}
-              options={customersList.map((c) => ({
-                value: c.id,
-                label: `${c.name} (${c.code})`,
-              }))}
-              placeholder={customersListQuery.isLoading ? tc("loading") : t("fields.customerPlaceholder")}
-              searchable
-            />
-          </Field>
-          <Field label={t("fields.customerType")}>
-            <ReadOnlyValue value={customer ? customer.type : "—"} />
-          </Field>
-          <Field label={t("fields.contact")}>
-            <ReadOnlyValue
-              value={
-                primaryContact
-                  ? `${primaryContact.name}${primaryContact.phone1 ? ` · ${primaryContact.phone1}` : ""}`
-                  : "—"
-              }
-            />
-          </Field>
-          <Field label={tc("address")}>
-            <ReadOnlyValue value={customerAddress || "—"} />
-          </Field>
-        </Section>
+      <Stepper steps={stepperSteps} current={step} />
 
-        <Section title={t("sections.location")}>
-          <Field label={t("fields.site")}>
-            {noSitesForCustomer ? (
-              <ReadOnlyValue value={t("fields.siteNotApplicable")} />
-            ) : (
-              <Combobox
-                value={siteId}
-                onChange={(v) => setSiteId(v as string | null)}
-                options={(customer?.sites ?? []).map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                }))}
-                placeholder={customer ? t("fields.sitePlaceholder") : t("fields.pickCustomerFirst")}
-                searchable
-                disabled={!customer}
-              />
-            )}
-          </Field>
-          <Field label={t("fields.installedAt")}>
-            <DatePicker
-              value={defaultInstalledAt}
-              onChange={setDefaultInstalledAt}
-            />
-          </Field>
-          <Field label={t("fields.technician")}>
-            <Combobox
-              value={installedByTechnicianId}
-              onChange={(v) => setInstalledByTechnicianId(v as string | null)}
-              options={techs.map((u) => ({ value: u.id, label: u.username }))}
-              placeholder="—"
-              searchable
-            />
-          </Field>
-          <Field label={tc("notes")}>
-            <Textarea
-              value={installNotes}
-              onChange={(e) => setInstallNotes(e.target.value)}
-              rows={2}
-            />
-          </Field>
-        </Section>
-      </div>
+      {step === "customer" && (
+        <CustomerSearchSelect
+          value={customerId}
+          onChange={(id) => {
+            setCustomerId(id);
+            setSiteId(null);
+          }}
+          locale={locale}
+        />
+      )}
 
-      {/* Model lines */}
-      <Section title={t("sections.lines")}>
-        {/* Brand + category filters apply to every line's model dropdown. */}
-        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Field label={t("fields.brand")}>
-            <Combobox
-              value={brandFilter}
-              onChange={(v) => setBrandFilter(v as string | null)}
-              options={brands.map((b) => ({ value: b.id, label: b.name }))}
-              placeholder={t("fields.brandPlaceholder")}
-              searchable
-            />
-          </Field>
-          <Field label={t("fields.category")}>
-            <Combobox
-              value={categoryFilter}
-              onChange={(v) => setCategoryFilter(v as string | null)}
-              options={categories.map((c) => ({
-                value: c.id,
-                label: c.nameKo ?? c.nameEn ?? c.nameVi ?? c.id,
-              }))}
-              placeholder={t("fields.categoryPlaceholder")}
-              searchable
-            />
-          </Field>
-          <div className="flex items-end">
-            <Button variant="secondary" onClick={addLine}>
-              {t("actions.addLine")}
-            </Button>
-          </div>
-        </div>
+      {step === "equipment" && (
+        <EquipmentStep
+          t={t}
+          tb={tb}
+          locale={locale}
+          lines={lines}
+          updateLine={updateLine}
+          removeLine={removeLine}
+          addLine={addLine}
+          defaultInstalledAt={defaultInstalledAt}
+          setDefaultInstalledAt={setDefaultInstalledAt}
+          installedByTechnicianId={installedByTechnicianId}
+          setInstalledByTechnicianId={setInstalledByTechnicianId}
+          techs={techs}
+          siteId={siteId}
+          setSiteId={setSiteId}
+          siteOptions={siteOptions}
+          noSitesForCustomer={noSitesForCustomer}
+          installNotes={installNotes}
+          setInstallNotes={setInstallNotes}
+        />
+      )}
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-max text-sm">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-              <tr>
-                <th className="px-2 py-2 text-left">{t("columns.model")}</th>
-                <th className="px-2 py-2 text-left">{t("columns.serviceType")}</th>
-                <th className="px-2 py-2 text-left">{t("columns.managementType")}</th>
-                <th className="px-2 py-2 text-right">{t("columns.quantity")}</th>
-                <th className="px-2 py-2 text-right">{t("columns.deposit")}</th>
-                <th className="px-2 py-2 text-right">{t("columns.monthlyFee")}</th>
-                <th className="px-2 py-2 text-left">{t("columns.serialPrefix")}</th>
-                <th className="px-2 py-2 text-left">{t("columns.installedAt")}</th>
-                <th className="px-2 py-2 text-right" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {lines.map((l) => (
-                <tr key={l.id} className="align-top">
-                  <td className="px-2 py-2 min-w-[18rem]">
-                    <Combobox
-                      value={l.modelId}
-                      onChange={(v) => updateLine(l.id, { modelId: v as string | null })}
-                      options={models.map((m) => {
-                        const name = pickModelName(m, locale);
-                        const brand = m.brand?.name;
-                        const cat = pickCategoryName(m.productCategory, locale);
-                        const suffix = [brand, cat].filter(Boolean).join(" · ");
-                        return {
-                          value: m.id,
-                          label: suffix ? `${name} (${suffix})` : name,
-                        };
-                      })}
-                      placeholder={t("fields.modelPlaceholder")}
-                      searchable
-                    />
-                  </td>
-                  <td className="px-2 py-2">
-                    <Combobox
-                      value={l.serviceType}
-                      onChange={(v) => updateLine(l.id, { serviceType: (v ?? "RENTAL") as ServiceType })}
-                      options={(["RENTAL", "MAINTENANCE", "SALE"] as const).map((v) => ({
-                        value: v,
-                        label: t(`serviceTypes.${v}`),
-                      }))}
-                      searchable={false}
-                    />
-                  </td>
-                  <td className="px-2 py-2">
-                    <Combobox
-                      value={l.managementType}
-                      onChange={(v) => updateLine(l.id, { managementType: (v ?? "FULL_SERVICE") as ManagementType })}
-                      options={(["FULL_SERVICE", "SELF_MANAGED", "OTHER"] as const).map((v) => ({
-                        value: v,
-                        label: t(`managementTypes.${v}`),
-                      }))}
-                      searchable={false}
-                    />
-                  </td>
-                  <td className="px-2 py-2 w-20 text-right">
-                    <Input
-                      type="number"
-                      min={1}
-                      value={String(l.quantity)}
-                      onChange={(e) =>
-                        updateLine(l.id, {
-                          quantity: Math.max(1, Number(e.target.value) || 1),
-                        })
-                      }
-                    />
-                  </td>
-                  <td className="px-2 py-2 w-32 text-right">
-                    <MoneyInput
-                      value={l.deposit}
-                      onChange={(v) => updateLine(l.id, { deposit: v })}
-                    />
-                  </td>
-                  <td className="px-2 py-2 w-32 text-right">
-                    <MoneyInput
-                      value={l.monthlyFee}
-                      onChange={(v) => updateLine(l.id, { monthlyFee: v })}
-                    />
-                  </td>
-                  <td className="px-2 py-2 w-32">
-                    <Input
-                      value={l.serialPrefix}
-                      onChange={(e) => updateLine(l.id, { serialPrefix: e.target.value })}
-                      placeholder={t("fields.serialPrefixPlaceholder")}
-                    />
-                  </td>
-                  <td className="px-2 py-2 w-40">
-                    <DatePicker
-                      value={l.installedAt}
-                      onChange={(v) => updateLine(l.id, { installedAt: v })}
-                    />
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => removeLine(l.id)}
-                      disabled={lines.length === 1}
-                      className="text-xs text-red-600 disabled:text-gray-300"
-                    >
-                      ✕
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
+      {step === "method" && (
+        <MethodStep
+          t={t}
+          tm={tm}
+          contractNumber={contractNumber}
+          setContractNumber={setContractNumber}
+          contractDate={contractDate}
+          setContractDate={setContractDate}
+          contractTermMonths={contractTermMonths}
+          setContractTermMonths={setContractTermMonths}
+          completedLines={completedLines}
+          updateLine={updateLine}
+          modelNameById={modelNameById}
+        />
+      )}
 
-      {/* Totals + contract */}
-      <Section title={t("sections.summary")}>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Stat label={t("totals.equipmentCount")} value={String(totals.count)} />
-          <Stat label={t("totals.totalDeposit")} value={formatMoney(totals.totalDeposit)} />
-          <Stat label={t("totals.totalMonthly")} value={formatMoney(totals.totalMonthlyFee)} />
-          <Stat label={t("totals.totalSale")} value={formatMoney(totals.totalSale)} />
-        </div>
-
-        <label className="mt-4 flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={createContract}
-            onChange={(e) => setCreateContract(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-2 border-gray-300"
-          />
-          <div className="flex-1">
-            <div className="font-medium text-gray-900">{t("contract.toggle")}</div>
-            <p className="mt-0.5 text-xs text-gray-500">{t("contract.toggleHint")}</p>
-          </div>
-        </label>
-        {createContract && lines.some((l) => l.serviceType !== "SALE") && (
-          <div className="mt-2">
-            <Field label={t("contract.termMonths")}>
-              <Input
-                type="number"
-                min={1}
-                max={120}
-                value={String(contractTermMonths)}
-                onChange={(e) =>
-                  setContractTermMonths(
-                    Math.max(1, Math.min(120, Number(e.target.value) || 1)),
-                  )
-                }
-              />
-            </Field>
-          </div>
-        )}
-      </Section>
+      {step === "service" && (
+        <ServiceStep
+          t={t}
+          completedLines={completedLines}
+          updateLine={updateLine}
+          modelNameById={modelNameById}
+          installDate={defaultInstalledAt}
+        />
+      )}
 
       {error && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
     </div>
   );
 }
 
-// ─── helpers ────────────────────────────────────────────────────────
+// ───────────────────────── Step 2 ─────────────────────────
 
-function pickModelName(m: ModelLite, locale: string): string {
-  if (locale === "ko") return m.nameKo ?? m.nameEn ?? m.nameVi ?? m.modelCode ?? m.id;
-  if (locale === "en") return m.nameEn ?? m.nameKo ?? m.nameVi ?? m.modelCode ?? m.id;
-  return m.nameVi ?? m.nameEn ?? m.nameKo ?? m.modelCode ?? m.id;
+interface EquipmentStepProps {
+  t: (k: string, values?: Record<string, string | number | Date>) => string;
+  tb: (k: string) => string;
+  locale: "ko" | "vi" | "en";
+  lines: LineState[];
+  updateLine: (id: string, patch: Partial<LineState>) => void;
+  removeLine: (id: string) => void;
+  addLine: () => void;
+  defaultInstalledAt: string;
+  setDefaultInstalledAt: (v: string) => void;
+  installedByTechnicianId: string | null;
+  setInstalledByTechnicianId: (v: string | null) => void;
+  techs: TechnicianLite[];
+  siteId: string | null;
+  setSiteId: (v: string | null) => void;
+  siteOptions: { value: string; label: string }[];
+  noSitesForCustomer: boolean;
+  installNotes: string;
+  setInstallNotes: (v: string) => void;
 }
 
-function pickCategoryName(
-  c: ModelLite["productCategory"],
-  locale: string,
-): string | null {
-  if (!c) return null;
-  if (locale === "ko") return c.nameKo;
-  if (locale === "en") return c.nameEn;
-  return c.nameVi;
-}
-
-function formatMoney(v: number): string {
-  return new Intl.NumberFormat("vi-VN").format(Math.round(v)) + " ₫";
-}
-
-function Section({
-  title,
-  children,
-}: Readonly<{ title: string; children: React.ReactNode }>) {
+function EquipmentStep(props: Readonly<EquipmentStepProps>) {
+  const { t, tb } = props;
   return (
-    <section className="rounded-lg border-2 border-gray-200 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-gray-700">{title}</h3>
-      {children}
-    </section>
-  );
-}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 gap-4 rounded-lg border-2 border-gray-200 bg-white p-4 sm:grid-cols-2">
+        <FormField label={tb("fields.installedAt")}>
+          <DatePicker
+            ariaLabel={tb("fields.installedAt")}
+            value={props.defaultInstalledAt}
+            onChange={props.setDefaultInstalledAt}
+          />
+        </FormField>
+        <FormField label={tb("fields.technician")}>
+          <Combobox
+            ariaLabel={tb("fields.technician")}
+            value={props.installedByTechnicianId}
+            onChange={props.setInstalledByTechnicianId}
+            options={props.techs.map((u) => ({ value: u.id, label: u.username }))}
+            placeholder="—"
+            searchable
+          />
+        </FormField>
+        {!props.noSitesForCustomer && props.siteOptions.length > 0 && (
+          <FormField label={tb("fields.site")}>
+            <Combobox
+              ariaLabel={tb("fields.site")}
+              value={props.siteId}
+              onChange={props.setSiteId}
+              options={props.siteOptions}
+              placeholder={tb("fields.sitePlaceholder")}
+              searchable
+            />
+          </FormField>
+        )}
+        <FormField label={tb("fields.installNotes")} className="sm:col-span-2">
+          <Textarea
+            aria-label={tb("fields.installNotes")}
+            value={props.installNotes}
+            onChange={(e) => props.setInstallNotes(e.target.value)}
+            rows={2}
+          />
+        </FormField>
+      </div>
 
-function Field({
-  label,
-  children,
-}: Readonly<{ label: string; children: React.ReactNode }>) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs text-gray-500">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function ReadOnlyValue({ value }: Readonly<{ value: string }>) {
-  return (
-    <div className="flex min-h-[2.25rem] items-center rounded-md border-2 border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-      {value}
+      <div className="flex flex-col gap-3">
+        {props.lines.map((line, i) => (
+          <div key={line.id} className="rounded-lg border-2 border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-700">
+                {t("lineLabel", { n: i + 1 })}
+              </span>
+              <button
+                type="button"
+                onClick={() => props.removeLine(line.id)}
+                disabled={props.lines.length === 1}
+                className="text-xs text-red-600 disabled:text-gray-300"
+              >
+                {t("actions.removeLine")}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <ModelPicker
+                  brandFilter={line.brandFilter}
+                  categoryFilter={line.categoryFilter}
+                  modelId={line.modelId}
+                  onBrand={(v) =>
+                    props.updateLine(line.id, {
+                      brandFilter: v,
+                      modelId: null,
+                      serviceConfig: { ...line.serviceConfig, filters: [] },
+                    })
+                  }
+                  onCategory={(v) =>
+                    props.updateLine(line.id, {
+                      categoryFilter: v,
+                      modelId: null,
+                      serviceConfig: { ...line.serviceConfig, filters: [] },
+                    })
+                  }
+                  onModel={(v) =>
+                    props.updateLine(line.id, {
+                      modelId: v,
+                      serviceConfig: { ...line.serviceConfig, filters: [] },
+                    })
+                  }
+                  locale={props.locale}
+                />
+              </div>
+              <FormField label={tb("fields.quantity")}>
+                <NumberInput
+                  ariaLabel={tb("fields.quantity")}
+                  value={line.quantity}
+                  onChange={(v) => props.updateLine(line.id, { quantity: v })}
+                  min={1}
+                  max={500}
+                />
+              </FormField>
+              <FormField label={tb("fields.assetCodeMode")}>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["auto", "manual"] as const).map((m) => (
+                    <label
+                      key={m}
+                      className={`flex cursor-pointer items-center gap-1 rounded-md border-2 px-2 py-2 text-xs ${
+                        line.assetCodeMode === m
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`assetCodeMode-${line.id}`}
+                        checked={line.assetCodeMode === m}
+                        onChange={() => props.updateLine(line.id, { assetCodeMode: m })}
+                      />
+                      {tb(`assetCodeModes.${m}`)}
+                    </label>
+                  ))}
+                </div>
+              </FormField>
+              {line.assetCodeMode === "manual" && (
+                <FormField label={t("fields.serialPrefix")}>
+                  <Input
+                    aria-label={t("fields.serialPrefix")}
+                    value={line.serialPrefix}
+                    onChange={(e) => props.updateLine(line.id, { serialPrefix: e.target.value })}
+                    placeholder={t("fields.serialPrefixPlaceholder")}
+                  />
+                </FormField>
+              )}
+            </div>
+          </div>
+        ))}
+        <Button type="button" variant="secondary" onClick={props.addLine} className="self-start">
+          {t("actions.addLine")}
+        </Button>
+      </div>
     </div>
   );
 }
 
-function MoneyInput({
-  value,
-  onChange,
-}: Readonly<{ value: number | null; onChange: (v: number | null) => void }>) {
-  const [local, setLocal] = useState(value === null ? "" : String(value));
+// ───────────────────────── Step 3 ─────────────────────────
+
+interface MethodStepProps {
+  t: (k: string, values?: Record<string, string | number | Date>) => string;
+  tm: (k: string) => string;
+  contractNumber: string;
+  setContractNumber: (v: string) => void;
+  contractDate: string;
+  setContractDate: (v: string) => void;
+  contractTermMonths: number;
+  setContractTermMonths: (v: number) => void;
+  completedLines: (LineState & { modelId: string })[];
+  updateLine: (id: string, patch: Partial<LineState>) => void;
+  modelNameById: Map<string, string>;
+}
+
+function MethodStep(props: Readonly<MethodStepProps>) {
+  const { t, tm } = props;
   return (
-    <input
-      type="number"
-      value={local}
-      min={0}
-      onChange={(e) => {
-        setLocal(e.target.value);
-        const n = e.target.value.trim() === "" ? null : Number(e.target.value);
-        onChange(n);
-      }}
-      className="w-full rounded-md border-2 border-gray-200 px-2 py-1.5 text-right text-sm"
-    />
+    <div className="flex flex-col gap-4">
+      <div className="rounded-2xl border-4 border-[var(--brand-blue-100)] bg-white p-4">
+        <h3 className="mb-3 text-sm font-semibold text-[#002A4D]">{t("contractInfo.title")}</h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <FormField label={tm("contractNumber")}>
+            <Input
+              aria-label={tm("contractNumber")}
+              value={props.contractNumber}
+              onChange={(e) => props.setContractNumber(e.target.value)}
+            />
+          </FormField>
+          <FormField label={tm("contractDate")}>
+            <DatePicker
+              ariaLabel={tm("contractDate")}
+              value={props.contractDate}
+              onChange={props.setContractDate}
+            />
+          </FormField>
+          <FormField label={tm("termMonths")}>
+            <NumberInput
+              ariaLabel={tm("termMonths")}
+              value={props.contractTermMonths}
+              onChange={props.setContractTermMonths}
+              min={1}
+              max={120}
+            />
+          </FormField>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {props.completedLines.map((line, i) => (
+          <LineAccordion
+            key={line.id}
+            title={props.modelNameById.get(line.modelId) ?? t("lineLabel", { n: i + 1 })}
+            defaultOpen={i === 0}
+          >
+            <ServiceMethodSection
+              value={line.serviceMethod}
+              onChange={(v) => props.updateLine(line.id, { serviceMethod: v })}
+              hideContractFields
+            />
+          </LineAccordion>
+        ))}
+      </div>
+    </div>
   );
 }
 
-function Stat({ label, value }: Readonly<{ label: string; value: string }>) {
+// ───────────────────────── Step 4 ─────────────────────────
+
+interface ServiceStepProps {
+  t: (k: string, values?: Record<string, string | number | Date>) => string;
+  completedLines: (LineState & { modelId: string })[];
+  updateLine: (id: string, patch: Partial<LineState>) => void;
+  modelNameById: Map<string, string>;
+  installDate: string;
+}
+
+function ServiceStep(props: Readonly<ServiceStepProps>) {
+  const { t } = props;
   return (
-    <div className="rounded-md border border-gray-200 bg-white p-3">
-      <div className="text-[10px] uppercase tracking-wider text-gray-400">
-        {label}
-      </div>
-      <div className="mt-0.5 text-lg font-semibold text-gray-900">{value}</div>
+    <div className="flex flex-col gap-3">
+      {props.completedLines.map((line, i) => {
+        const inspectionDisabled =
+          line.serviceMethod.method === "SALE" &&
+          (line.serviceMethod.managementType ?? "SELF_MANAGED") === "SELF_MANAGED";
+        return (
+          <LineAccordion
+            key={line.id}
+            title={props.modelNameById.get(line.modelId) ?? t("lineLabel", { n: i + 1 })}
+            defaultOpen={i === 0}
+          >
+            <ServiceConfigEditor
+              modelId={line.modelId}
+              installDate={props.installDate}
+              inspectionDisabled={inspectionDisabled}
+              value={line.serviceConfig}
+              onChange={(v) => props.updateLine(line.id, { serviceConfig: v })}
+            />
+          </LineAccordion>
+        );
+      })}
+    </div>
+  );
+}
+
+// ───────────────────────── shared ─────────────────────────
+
+function LineAccordion({
+  title,
+  defaultOpen,
+  children,
+}: Readonly<{ title: string; defaultOpen?: boolean; children: React.ReactNode }>) {
+  const [open, setOpen] = useState(defaultOpen ?? true);
+  return (
+    <div className="rounded-2xl border-4 border-[var(--brand-blue-100)] bg-white">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-[#002A4D]"
+      >
+        <span>{title}</span>
+        <span className="text-xs text-gray-400">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && <div className="border-t-2 border-[var(--brand-blue-100)] p-4">{children}</div>}
     </div>
   );
 }
