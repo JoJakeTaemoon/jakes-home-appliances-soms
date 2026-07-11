@@ -384,15 +384,48 @@ describe("cycle due-date is day-based", () => {
 ### Task 1.6: Phase 1 검증 게이트
 - [ ] `npx tsc --noEmit` 0 · `npm test` 통과 · `npm run db:reset:dev` 정상
 
-## Phase 2a — 공용 컴포넌트 + bulk 위저드
+# Phase 2a — 공용 컴포넌트 + bulk 위저드 (branch `feat/bulk-register-phase2a`)
 
-**Task 2a.1** `src/components/ui/stepper.tsx` 추출(현 인라인 Stepper)
-**Task 2a.2** `src/components/equipment/customer-search-select.tsx` (검색기준+결과테이블+상세패널, 서버 `q` 검색) + `NewCustomerModal`
-**Task 2a.3** `src/components/equipment/model-picker.tsx` (브랜드/제품군 필터+모델)
-**Task 2a.4** `src/components/equipment/service-method-section.tsx` (렌탈/판매/유지보수 + 방식별 필드, NumberInput money)
-**Task 2a.5** `src/components/equipment/service-config-editor.tsx` (정기점검 일 + 필터테이블: 구분/제품명/교체주기(기준)/사용주기(편집)/수량/최근교체일/다음예정일 — `nextDueDate` 사용, 모델 소모품 로드)
-**Task 2a.6** `bulk-register/page.tsx` 재구성: 4스텝(고객→장비→판매방식→서비스구성), 공용 컴포넌트 조립, 관리번호 자동/직접, 설치일 공통, 기사 배정, excel/paste 제거
-- Test(Playwright): 고객검색→모델→수량→관리번호자동→렌탈 계약필드→필터 사용주기 편집→제출→장비/방문/계약 생성 확인
+**산출물:** 두 위저드가 공유할 컴포넌트 5종 + `bulk-register` 4스텝 재구성 + E2E. 디자인: brand-blue `var(--brand-blue-500)`(#0071BD), 웜 오프화이트, 4px 보더(`rounded`)·모달 8px(`rounded-lg`), primary CTA `hover:scale-[1.02]`, `tabular-nums`, 모바일 44px 터치. 기존 컴포넌트 재사용: `Modal`(open/onClose/title/footer), `Combobox`(searchable, 발음구별부호 무시), `NumberInput`(`variant="money"`, step 1000₫), `DatePicker`, `Button`, `Input`/`Textarea`. 첨부 "고객검색.png"·"필터구성.png" 레이아웃 참조.
+
+### Task 2a.1: `Stepper` 공용화
+**Files:** Create `src/components/ui/stepper.tsx`; Test `__tests__/components/ui/stepper.test.tsx`. (현 인라인 `bulk-register/page.tsx:381-409` 대체.)
+- Props: `{ steps: Array<{ key:string, label:string }>, current: string }`. 활성/완료/미래 상태 스타일(활성 brand-blue, 완료 체크, 미래 회색), 구분자 `›`.
+- [ ] RTL 테스트(RED): steps 4개 렌더, current 강조 확인 → 구현 → 통과 → 커밋.
+
+### Task 2a.2: `CustomerSearchSelect` + `NewCustomerModal`
+**Files:** Create `src/components/equipment/customer-search-select.tsx`, `src/components/equipment/new-customer-modal.tsx`; Test `__tests__/components/equipment/customer-search-select.test.tsx`.
+- **CustomerSearchSelect** props: `{ value:string|null, onChange:(customerId:string|null)=>void }`. 레이아웃(고객검색.png): 좌 = 검색기준 `Combobox`(고객명/고객번호/담당자/연락처) + 검색어 `Input` + 검색 `Button` → `GET /api/customers?q=<query>&status=ACTIVE&pageSize=50` → 결과 테이블(라디오 선택, 열: 고객번호·고객명·담당자(primary OPS/CP)·연락처·주소). 우 = 선택 고객 상세(`GET /api/customers/[id]`: 담당자·주소·연락처·이메일·고객구분·보유장비수·계약수·다음점검예정·메모). 하단 "+ 신규 고객 등록" → NewCustomerModal.
+- **NewCustomerModal** props: `{ open, onClose, onCreated:(customer:{id})=>void }`. 컴팩트 폼(type B2C/B2B 라디오·name·phone·language·주소 `VnAddressPicker`) → `POST /api/customers`(기존 `createCustomerSchema` 최소 필드) → 성공 시 `onCreated` + 자동 선택. (전체 폼은 `/o/customers/new`에 있음 — 모달은 필수 필드만.)
+- [ ] RTL 테스트(mocked fetch): 검색 → 결과 렌더 → 라디오 선택 시 onChange; 신규 모달 제출 → onCreated. RED→구현→통과→커밋.
+
+### Task 2a.3: `ModelPicker`
+**Files:** Create `src/components/equipment/model-picker.tsx`; Test `__tests__/components/equipment/model-picker.test.tsx`.
+- Props: `{ brandFilter, categoryFilter, modelId, onBrand, onCategory, onModel }`. 브랜드/제품군 `Combobox` → `GET /api/equipment-models?isActive=true&brandId=&categoryId=&pageSize=200`; 모델 `Combobox`(라벨 = 모델명 + 브랜드·제품군). 현 `bulk-register/page.tsx:553-596` 로직 이관.
+- [ ] RTL 테스트 → 커밋.
+
+### Task 2a.4: `ServiceMethodSection`
+**Files:** Create `src/components/equipment/service-method-section.tsx`; Test `__tests__/components/equipment/service-method-section.test.tsx`.
+- Props: `{ value: ServiceMethodValue, onChange }`. `ServiceMethodValue = { method:"RENTAL"|"SALE"|"MAINTENANCE", contractNumber?, contractDate?, termMonths?, deposit?, monthlyRent?, hasContract?, salePrice?, installFee?, managementType?, monthlyMaintenanceFee? }`.
+- 라디오 method → 방식별 섹션: **RENTAL** 계약번호(Input)·계약일(DatePicker, 기본 오늘)·계약기간월(NumberInput, 기본 36)·보증금·월임대료(money); **SALE** 계약여부 있음/없음 라디오(기본 없음)→있음시 계약번호·계약일 / 판매단가(money, 기본 0)·설치비(money, 기본 0)·관리방식 self-managed/유지보수 라디오(기본 self)→유지보수시 유지보수 하위섹션(계약번호·계약일·월관리비); **MAINTENANCE** 계약번호·계약일·월관리비(money).
+- money 입력은 전부 `NumberInput variant="money"`.
+- [ ] RTL 테스트: method 전환 시 해당 필드만 표시; SALE 관리방식=유지보수 시 하위섹션 노출 → 커밋.
+
+### Task 2a.5: `ServiceConfigEditor`
+**Files:** Create `src/components/equipment/service-config-editor.tsx`; Test `__tests__/components/equipment/service-config-editor.test.tsx`.
+- Props: `{ modelId:string|null, installDate:string, inspectionDisabled:boolean, value: ServiceConfigValue, onChange }`. `ServiceConfigValue = { inspectionCycleDays:number|null, filters: Array<{ consumableId?:string, customName?:string, name:string, baseCycleDays:number|null, useCycleDays:number, quantity:number }> }`.
+- 모델 선택 시 `GET /api/equipment-models/[id]/consumables` → filters 초기화(useCycleDays=replaceEveryDays, quantity=defaultQuantity, name=nameKo/Vi/En). 정기점검주기(NumberInput 일, 기본 30, `inspectionDisabled`면 비활성). 필터 테이블(필터구성.png): 구분(고정 라벨 "필터"), 제품명, 교체주기(baseCycleDays, read-only), 사용주기(NumberInput 일, 편집), 수량(NumberInput), 최근교체일(=installDate, read-only), 다음예정일(=`addDays(installDate, useCycleDays)` from `@/lib/equipment/cycle`), 관리(삭제). "+ 필터 추가"(customName 직접입력 행).
+- [ ] RTL 테스트: 모델 소모품 로드(mocked) → 행 렌더, 사용주기 변경 시 다음예정일 재계산, 행 추가/삭제 → 커밋.
+
+### Task 2a.6: `bulk-register` 4스텝 재구성 + E2E
+**Files:** Modify `src/app/o/[locale]/(dashboard)/equipment/bulk-register/page.tsx`; Test `tests/e2e/bulk-register.spec.ts` (Playwright).
+- 4스텝 `Stepper`(고객→장비→판매방식→서비스구성). 스텝1 `CustomerSearchSelect`; 스텝2 `ModelPicker` + 수량(NumberInput) + 설치일(DatePicker 공통) + 담당기사(Combobox `/api/users?role=TECHNICIAN`) + 관리번호 방식 자동/직접(자동시 미리보기) + (사이트 고객)설치위치 Combobox + 설치메모(Textarea); 스텝3 `ServiceMethodSection`; 스텝4 `ServiceConfigEditor`(inspectionDisabled = method SALE && managementType self-managed).
+- 제출: 확장된 `POST /api/equipment/bulk-register`(salePrice/installFee/monthlyRent/monthlyMaintenanceFee/hasContract/contractNumber/serviceConfig{inspectionCycleDays,filters:[{consumableId?,customName?,quantity,useCycleDays}]}) 조립. 기존 excel/paste·per-row date 제거. 완료 후 계약 상세 or 고객 장비탭 이동.
+- i18n: 신규 문자열 ko/vi/en.
+- [ ] **E2E(Playwright)**: dev 서버 + DB 대상. 고객검색·선택 → 모델 → 수량2 → 관리번호 자동 → 렌탈 계약필드 입력 → 필터 사용주기 편집 → 제출 → 장비2·방문2·계약1 생성 확인(DB 또는 후속 화면). 커밋.
+
+### Task 2a.7: Phase 2a 게이트
+- [ ] `npx tsc --noEmit` 0 · `npm test`(단위/컴포넌트) 통과 · Playwright E2E 통과 · `npm run build` 성공
 
 ## Phase 2b — register 위저드 (멀티라인)
 

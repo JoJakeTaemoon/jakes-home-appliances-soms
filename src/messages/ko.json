@@ -573,6 +573,50 @@
         "termMonths": "계약 기간 (개월)"
       }
     },
+    "serviceMethod": {
+      "method": "제공 방식",
+      "methodValues": {
+        "RENTAL": "렌탈",
+        "SALE": "판매",
+        "MAINTENANCE": "유지보수"
+      },
+      "contractNumber": "계약번호",
+      "contractDate": "계약일",
+      "termMonths": "계약기간 (개월)",
+      "deposit": "보증금",
+      "monthlyRent": "월 임대료",
+      "hasContract": "계약서 작성 여부",
+      "hasContractValues": {
+        "true": "있음",
+        "false": "없음"
+      },
+      "salePrice": "판매단가",
+      "installFee": "설치비",
+      "managementType": "관리 방식",
+      "managementTypeValues": {
+        "SELF_MANAGED": "고객 자가 관리",
+        "FULL_SERVICE": "유지보수 (전체 서비스)"
+      },
+      "maintenanceSection": "유지보수 계약",
+      "maintenanceContractDate": "유지보수 계약일",
+      "monthlyMaintenanceFee": "월 관리비"
+    },
+    "serviceConfigEditor": {
+      "inspectionCycle": "정기점검 주기",
+      "inspectionDisabledHint": "고객 자가 관리 항목은 정기점검을 진행하지 않습니다.",
+      "filterKind": "구분",
+      "filterKindLabel": "필터",
+      "productName": "제품명",
+      "baseCycle": "교체주기",
+      "daysUnit": "일",
+      "useCycle": "사용주기",
+      "quantity": "수량",
+      "lastReplacedAt": "최근교체일",
+      "nextDueAt": "다음예정일",
+      "actions": "관리",
+      "removeFilter": "삭제",
+      "addFilter": "+ 필터 추가"
+    },
     "bulkRegister": {
       "title": "대량 장비 등록 / 설치",
       "subtitle": "동일한 정보로 여러 장비를 한 번에 등록하고 설치할 수 있습니다.",
@@ -582,10 +626,16 @@
       "applyPaste": "적용",
       "vatExclusive": "* 금액은 VAT 제외 금액입니다.",
       "steps": {
-        "info": "정보 입력",
-        "list": "장비 목록 확인",
-        "confirm": "최종 확인"
+        "customer": "고객 선택",
+        "equipment": "장비 정보",
+        "method": "판매방식",
+        "service": "서비스구성"
       },
+      "assetCodeModes": {
+        "auto": "자동 생성",
+        "manual": "직접 입력"
+      },
+      "assetCodePreview": "생성될 관리번호 미리보기",
       "sections": {
         "customer": "고객 정보",
         "location": "설치 장소 정보",
@@ -620,7 +670,9 @@
         "quantity": "설치할 장비 수량",
         "serialMode": "시리얼 번호 입력 방식",
         "serialNumber": "시리얼 번호",
-        "assetCode": "자산 코드"
+        "assetCode": "자산 코드",
+        "assetCodeMode": "관리번호 입력 방식",
+        "installNotes": "설치 메모"
       },
       "serviceTypes": {
         "RENTAL": "렌탈",
@@ -815,7 +867,41 @@
     "saved": "장비가 저장되었습니다",
     "replaced": "장비가 교체되었습니다",
     "moved": "장비가 이동되었습니다",
-    "statusChanged": "상태가 변경되었습니다"
+    "statusChanged": "상태가 변경되었습니다",
+    "customerSearch": {
+      "criteria": {
+        "name": "고객명",
+        "code": "고객번호",
+        "contact": "담당자",
+        "phone": "연락처",
+        "namePlaceholder": "고객명으로 검색",
+        "codePlaceholder": "고객번호로 검색",
+        "contactPlaceholder": "담당자명으로 검색",
+        "phonePlaceholder": "연락처로 검색"
+      },
+      "searchInput": "검색어",
+      "columns": {
+        "code": "고객번호",
+        "name": "고객명",
+        "contact": "담당자",
+        "phone": "연락처",
+        "address": "주소",
+        "type": "고객구분"
+      },
+      "addNew": "신규 고객 등록",
+      "detailTitle": "선택 고객 상세",
+      "noSelection": "선택된 고객이 없습니다.",
+      "equipmentCount": "보유 장비 수",
+      "contractCount": "계약 수"
+    },
+    "newCustomerModal": {
+      "title": "신규 고객 등록",
+      "legalName": "법인명",
+      "shortcode": "약어 코드",
+      "shortcodeHint": "계약 번호에 사용됩니다 (예: SHV)",
+      "taxCode": "사업자등록번호",
+      "contractPartyName": "계약 주체 이름"
+    }
   },
   "equipmentModels": {
     "title": "장비 모델",
@@ -1485,7 +1571,7 @@
     "panelDescription": "요청 내용",
     "panelAttachments": "첨부 파일",
     "panelActivity": "활동",
-    "labelType": "유형",
+    "labelType": "요청 유형",
     "labelState": "상태",
     "labelCustomer": "고객",
     "labelEquipment": "장비",
@@ -1522,7 +1608,6 @@
     "approvePriceFreeButton": "무상",
     "preferredVisitAt": "방문 희망 시간",
     "preferredVisitAtNone": "미지정",
-    "labelType": "요청 유형",
     "rejectTitle": "서비스 요청 반려",
     "rejectReason": "사유 (내부)",
     "rejectCustomerMessage": "고객 안내 메시지",

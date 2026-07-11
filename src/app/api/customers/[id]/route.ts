@@ -74,6 +74,9 @@ export const GET = defineQuery({
         salesRep: {
           select: { id: true, username: true, title: true, avatarUrl: true },
         },
+        // contracts/equipment above are capped (take: 10 / status filter) for
+        // display — _count gives the true totals for the summary counters.
+        _count: { select: { contracts: true, equipment: true } },
       },
     });
     if (!customer) throw new NotFoundError("Customer not found");

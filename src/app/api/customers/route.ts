@@ -112,8 +112,12 @@ export const GET = defineQuery({
         skip,
         take: pageSize,
         include: {
+          // Prefer the primary OPS contact; fall back to CONTRACT_PARTY when a
+          // customer has zero OPS contacts (the default for every customer
+          // created via NewCustomerModal, which sends opsContacts: []).
           contacts: {
-            where: { isPrimary: true },
+            where: { OR: [{ isPrimary: true }, { role: "CONTRACT_PARTY" }] },
+            orderBy: { isPrimary: "desc" },
             take: 1,
             select: { id: true, name: true, title: true, phone1: true, email: true },
           },

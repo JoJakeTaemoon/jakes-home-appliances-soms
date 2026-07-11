@@ -230,6 +230,30 @@ describe("bulkRegisterEquipmentSchema — 4-step wizard fields", () => {
     expect(res.success).toBe(true);
     expect(res.data?.salePrice).toBe(0);
   });
+
+  it("accepts an optional contractDate (YYYY-MM-DD) and coerces it to a Date", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "RENTAL",
+      deposit: 500000,
+      monthlyRent: 150000,
+      contractTermMonths: 36,
+      contractDate: "2026-07-01",
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.contractDate).toBeInstanceOf(Date);
+    expect(res.data?.contractDate?.toISOString().slice(0, 10)).toBe("2026-07-01");
+  });
+
+  it("omits contractDate when absent (falls back to earliestInstall server-side)", () => {
+    const res = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: 0,
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.contractDate).toBeUndefined();
+  });
 });
 
 describe("registerEquipmentSchema — per-line SALE requires salePrice", () => {

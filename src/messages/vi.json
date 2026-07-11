@@ -548,9 +548,19 @@
         "serialPrefix": "Tiền tố sê-ri",
         "installedAt": "Ngày lắp"
       },
-      "serviceTypes": { "RENTAL": "Thuê", "MAINTENANCE": "Bảo trì", "SALE": "Bán" },
-      "managementTypes": { "FULL_SERVICE": "Toàn phần", "SELF_MANAGED": "KH tự quản", "OTHER": "Khác" },
-      "actions": { "addLine": "+ Thêm mẫu" },
+      "serviceTypes": {
+        "RENTAL": "Thuê",
+        "MAINTENANCE": "Bảo trì",
+        "SALE": "Bán"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "Toàn phần",
+        "SELF_MANAGED": "KH tự quản",
+        "OTHER": "Khác"
+      },
+      "actions": {
+        "addLine": "+ Thêm mẫu"
+      },
       "totals": {
         "equipmentCount": "Tổng thiết bị",
         "totalDeposit": "Tổng đặt cọc",
@@ -563,6 +573,50 @@
         "termMonths": "Kỳ hạn (tháng)"
       }
     },
+    "serviceMethod": {
+      "method": "Phương thức cung cấp",
+      "methodValues": {
+        "RENTAL": "Thuê",
+        "SALE": "Bán",
+        "MAINTENANCE": "Bảo trì"
+      },
+      "contractNumber": "Số hợp đồng",
+      "contractDate": "Ngày hợp đồng",
+      "termMonths": "Thời hạn hợp đồng (tháng)",
+      "deposit": "Tiền đặt cọc",
+      "monthlyRent": "Tiền thuê hàng tháng",
+      "hasContract": "Có lập hợp đồng",
+      "hasContractValues": {
+        "true": "Có",
+        "false": "Không"
+      },
+      "salePrice": "Giá bán",
+      "installFee": "Phí lắp đặt",
+      "managementType": "Phương thức quản lý",
+      "managementTypeValues": {
+        "SELF_MANAGED": "Khách hàng tự quản lý",
+        "FULL_SERVICE": "Bảo trì trọn gói"
+      },
+      "maintenanceSection": "Hợp đồng bảo trì",
+      "maintenanceContractDate": "Ngày hợp đồng bảo trì",
+      "monthlyMaintenanceFee": "Phí bảo trì hàng tháng"
+    },
+    "serviceConfigEditor": {
+      "inspectionCycle": "Chu kỳ bảo trì định kỳ",
+      "inspectionDisabledHint": "Thiết bị khách hàng tự quản lý không có bảo trì định kỳ.",
+      "filterKind": "Loại",
+      "filterKindLabel": "Lõi lọc",
+      "productName": "Tên sản phẩm",
+      "baseCycle": "Chu kỳ thay mặc định",
+      "daysUnit": " ngày",
+      "useCycle": "Chu kỳ sử dụng",
+      "quantity": "Số lượng",
+      "lastReplacedAt": "Ngày thay gần nhất",
+      "nextDueAt": "Ngày dự kiến tiếp theo",
+      "actions": "Thao tác",
+      "removeFilter": "Xóa",
+      "addFilter": "+ Thêm lõi lọc"
+    },
     "bulkRegister": {
       "title": "Đăng ký / lắp đặt thiết bị hàng loạt",
       "subtitle": "Đăng ký nhiều thiết bị cùng cấu hình trong một lần.",
@@ -571,7 +625,17 @@
       "submitFinal": "Hoàn tất",
       "applyPaste": "Áp dụng",
       "vatExclusive": "* Giá đã loại VAT.",
-      "steps": { "info": "Nhập thông tin", "list": "Danh sách", "confirm": "Xác nhận" },
+      "steps": {
+        "customer": "Chọn khách hàng",
+        "equipment": "Thông tin thiết bị",
+        "method": "Phương thức dịch vụ",
+        "service": "Cấu hình dịch vụ"
+      },
+      "assetCodeModes": {
+        "auto": "Tự động tạo",
+        "manual": "Nhập tay"
+      },
+      "assetCodePreview": "Xem trước mã tài sản sẽ tạo",
       "sections": {
         "customer": "Khách hàng",
         "location": "Địa điểm",
@@ -606,7 +670,9 @@
         "quantity": "Số lượng",
         "serialMode": "Cách nhập sê-ri",
         "serialNumber": "Sê-ri",
-        "assetCode": "Mã tài sản"
+        "assetCode": "Mã tài sản",
+        "assetCodeMode": "Cách nhập mã tài sản",
+        "installNotes": "Ghi chú lắp đặt"
       },
       "serviceTypes": {
         "RENTAL": "Thuê",
@@ -649,7 +715,10 @@
     "installationHistory": {
       "title": "Lịch sử lắp đặt",
       "subtitle": "Tra cứu các đợt đăng ký hàng loạt + lượt thăm lắp đặt.",
-      "viewMode": { "batch": "Theo đợt", "visit": "Theo lượt thăm" },
+      "viewMode": {
+        "batch": "Theo đợt",
+        "visit": "Theo lượt thăm"
+      },
       "columns": {
         "batch": {
           "registeredAt": "Ngày đăng ký",
@@ -798,7 +867,41 @@
     "saved": "Đã lưu thiết bị",
     "replaced": "Đã thay thế thiết bị",
     "moved": "Đã chuyển thiết bị",
-    "statusChanged": "Đã cập nhật trạng thái"
+    "statusChanged": "Đã cập nhật trạng thái",
+    "customerSearch": {
+      "criteria": {
+        "name": "Tên khách hàng",
+        "code": "Mã khách hàng",
+        "contact": "Người phụ trách",
+        "phone": "Liên hệ",
+        "namePlaceholder": "Tìm theo tên khách hàng",
+        "codePlaceholder": "Tìm theo mã khách hàng",
+        "contactPlaceholder": "Tìm theo tên người phụ trách",
+        "phonePlaceholder": "Tìm theo số điện thoại"
+      },
+      "searchInput": "Từ khóa tìm kiếm",
+      "columns": {
+        "code": "Mã KH",
+        "name": "Tên khách hàng",
+        "contact": "Người phụ trách",
+        "phone": "Liên hệ",
+        "address": "Địa chỉ",
+        "type": "Loại khách hàng"
+      },
+      "addNew": "Đăng ký khách hàng mới",
+      "detailTitle": "Chi tiết khách hàng đã chọn",
+      "noSelection": "Chưa chọn khách hàng.",
+      "equipmentCount": "Số thiết bị",
+      "contractCount": "Số hợp đồng"
+    },
+    "newCustomerModal": {
+      "title": "Đăng ký khách hàng mới",
+      "legalName": "Tên pháp nhân",
+      "shortcode": "Mã viết tắt",
+      "shortcodeHint": "Dùng trong số hợp đồng (VD: SHV)",
+      "taxCode": "Mã số thuế",
+      "contractPartyName": "Tên bên ký hợp đồng"
+    }
   },
   "equipmentModels": {
     "title": "Mẫu thiết bị",
@@ -1468,7 +1571,7 @@
     "panelDescription": "Nội dung",
     "panelAttachments": "Tệp đính kèm",
     "panelActivity": "Hoạt động",
-    "labelType": "Loại",
+    "labelType": "Loại yêu cầu",
     "labelState": "Trạng thái",
     "labelCustomer": "Khách hàng",
     "labelEquipment": "Thiết bị",
@@ -1505,7 +1608,6 @@
     "approvePriceFreeButton": "Miễn phí",
     "preferredVisitAt": "Thời gian khách mong muốn",
     "preferredVisitAtNone": "Chưa chọn",
-    "labelType": "Loại yêu cầu",
     "rejectTitle": "Từ chối yêu cầu dịch vụ",
     "rejectReason": "Lý do (nội bộ)",
     "rejectCustomerMessage": "Tin nhắn cho khách",

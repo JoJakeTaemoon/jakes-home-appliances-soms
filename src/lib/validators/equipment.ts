@@ -2,6 +2,11 @@ import { z } from "zod";
 
 function optStr(max: number) {
   return z.preprocess((v) => {
+    // `null` is what every `useState<string | null>(null)` field in the
+    // wizard forms serializes to over JSON when "not set" — treat it the
+    // same as undefined/"" rather than letting it fall through to
+    // `z.string().optional()` (which rejects null) as a 400.
+    if (v === null || v === undefined) return undefined;
     if (typeof v !== "string") return v;
     const t = v.trim();
     return t === "" ? undefined : t;
@@ -230,6 +235,13 @@ export const bulkRegisterEquipmentSchema = z.object({
   // 4-step wizard additions (2026-07): contract linkage + price fields +
   // per-equipment service config (inspection cycle + filter lines).
   contractNumber: optStr(60),
+  /**
+   * Manual "계약일" (contract date) — Task 2a.6. When set, used for every
+   * created contract's startDate/signedByCustomerAt/signedByCompanyAt/
+   * activatedAt instead of the earliest row's installedAt. Falls back to
+   * earliestInstall when absent (pre-2a.6 behavior).
+   */
+  contractDate: z.coerce.date().optional(),
   salePrice: money(),
   installFee: money(),
   monthlyRent: money(),

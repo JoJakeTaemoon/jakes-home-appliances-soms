@@ -548,9 +548,19 @@
         "serialPrefix": "Serial prefix",
         "installedAt": "Install date"
       },
-      "serviceTypes": { "RENTAL": "Rental", "MAINTENANCE": "Maintenance", "SALE": "Sale" },
-      "managementTypes": { "FULL_SERVICE": "Full service", "SELF_MANAGED": "Self managed", "OTHER": "Other" },
-      "actions": { "addLine": "+ Add model" },
+      "serviceTypes": {
+        "RENTAL": "Rental",
+        "MAINTENANCE": "Maintenance",
+        "SALE": "Sale"
+      },
+      "managementTypes": {
+        "FULL_SERVICE": "Full service",
+        "SELF_MANAGED": "Self managed",
+        "OTHER": "Other"
+      },
+      "actions": {
+        "addLine": "+ Add model"
+      },
       "totals": {
         "equipmentCount": "Total units",
         "totalDeposit": "Total deposit",
@@ -563,6 +573,50 @@
         "termMonths": "Term (months)"
       }
     },
+    "serviceMethod": {
+      "method": "Service method",
+      "methodValues": {
+        "RENTAL": "Rental",
+        "SALE": "Sale",
+        "MAINTENANCE": "Maintenance"
+      },
+      "contractNumber": "Contract number",
+      "contractDate": "Contract date",
+      "termMonths": "Contract term (months)",
+      "deposit": "Deposit",
+      "monthlyRent": "Monthly rent",
+      "hasContract": "Has contract",
+      "hasContractValues": {
+        "true": "Yes",
+        "false": "No"
+      },
+      "salePrice": "Sale price",
+      "installFee": "Installation fee",
+      "managementType": "Management type",
+      "managementTypeValues": {
+        "SELF_MANAGED": "Self-managed",
+        "FULL_SERVICE": "Full service (maintenance)"
+      },
+      "maintenanceSection": "Maintenance contract",
+      "maintenanceContractDate": "Maintenance contract date",
+      "monthlyMaintenanceFee": "Monthly maintenance fee"
+    },
+    "serviceConfigEditor": {
+      "inspectionCycle": "Inspection cycle",
+      "inspectionDisabledHint": "Self-managed equipment does not receive periodic inspections.",
+      "filterKind": "Type",
+      "filterKindLabel": "Filter",
+      "productName": "Product name",
+      "baseCycle": "Default cycle",
+      "daysUnit": " days",
+      "useCycle": "Use cycle",
+      "quantity": "Quantity",
+      "lastReplacedAt": "Last replaced",
+      "nextDueAt": "Next due",
+      "actions": "Actions",
+      "removeFilter": "Remove",
+      "addFilter": "+ Add filter"
+    },
     "bulkRegister": {
       "title": "Bulk register / install equipment",
       "subtitle": "Register many units with identical configuration at once.",
@@ -571,7 +625,17 @@
       "submitFinal": "Submit",
       "applyPaste": "Apply",
       "vatExclusive": "* Prices exclude VAT.",
-      "steps": { "info": "Info", "list": "Units", "confirm": "Confirm" },
+      "steps": {
+        "customer": "Customer",
+        "equipment": "Equipment",
+        "method": "Service method",
+        "service": "Service config"
+      },
+      "assetCodeModes": {
+        "auto": "Auto-generate",
+        "manual": "Manual"
+      },
+      "assetCodePreview": "Preview of generated asset codes",
       "sections": {
         "customer": "Customer",
         "location": "Location",
@@ -606,7 +670,9 @@
         "quantity": "Quantity",
         "serialMode": "Serial entry mode",
         "serialNumber": "Serial",
-        "assetCode": "Asset code"
+        "assetCode": "Asset code",
+        "assetCodeMode": "Asset code entry",
+        "installNotes": "Install notes"
       },
       "serviceTypes": {
         "RENTAL": "Rental",
@@ -649,7 +715,10 @@
     "installationHistory": {
       "title": "Installation history",
       "subtitle": "Bulk-register batches and INSTALLATION visit log.",
-      "viewMode": { "batch": "Batches", "visit": "Visits" },
+      "viewMode": {
+        "batch": "Batches",
+        "visit": "Visits"
+      },
       "columns": {
         "batch": {
           "registeredAt": "Registered at",
@@ -798,7 +867,41 @@
     "saved": "Equipment saved",
     "replaced": "Equipment replaced",
     "moved": "Equipment moved",
-    "statusChanged": "Status updated"
+    "statusChanged": "Status updated",
+    "customerSearch": {
+      "criteria": {
+        "name": "Customer name",
+        "code": "Customer code",
+        "contact": "Contact",
+        "phone": "Phone",
+        "namePlaceholder": "Search by customer name",
+        "codePlaceholder": "Search by customer code",
+        "contactPlaceholder": "Search by contact name",
+        "phonePlaceholder": "Search by phone number"
+      },
+      "searchInput": "Search query",
+      "columns": {
+        "code": "Code",
+        "name": "Customer name",
+        "contact": "Contact",
+        "phone": "Phone",
+        "address": "Address",
+        "type": "Type"
+      },
+      "addNew": "Register new customer",
+      "detailTitle": "Selected customer detail",
+      "noSelection": "No customer selected.",
+      "equipmentCount": "Equipment count",
+      "contractCount": "Contract count"
+    },
+    "newCustomerModal": {
+      "title": "Register new customer",
+      "legalName": "Legal name",
+      "shortcode": "Shortcode",
+      "shortcodeHint": "Used in contract numbers (e.g. SHV)",
+      "taxCode": "Tax code",
+      "contractPartyName": "Contract party name"
+    }
   },
   "equipmentModels": {
     "title": "Equipment models",
@@ -1468,7 +1571,7 @@
     "panelDescription": "Description",
     "panelAttachments": "Attachments",
     "panelActivity": "Activity",
-    "labelType": "Type",
+    "labelType": "Request type",
     "labelState": "Status",
     "labelCustomer": "Customer",
     "labelEquipment": "Equipment",
@@ -1505,7 +1608,6 @@
     "approvePriceFreeButton": "Free",
     "preferredVisitAt": "Preferred visit time",
     "preferredVisitAtNone": "Not specified",
-    "labelType": "Request type",
     "rejectTitle": "Reject service request",
     "rejectReason": "Reason (internal)",
     "rejectCustomerMessage": "Message to customer",

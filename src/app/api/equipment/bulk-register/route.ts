@@ -12,7 +12,8 @@
  *   rows: [{ serialNumber?, assetCode?, installedAt, notes? }],
  *   serviceConfig: { inspectionCycleDays?, filters: [{ consumableId? |
  *     customName?, quantity, useCycleDays }] },
- *   contractNumber?, salePrice?, installFee?, monthlyRent?,
+ *   contractNumber?, contractDate? (YYYY-MM-DD; defaults to the earliest
+ *   row's installedAt when absent), salePrice?, installFee?, monthlyRent?,
  *   monthlyMaintenanceFee?, hasContract? (SALE only),
  *   createContract, contractTermMonths?
  *
@@ -84,15 +85,18 @@ async function createContractRow(
     customerId: string;
     customer: { type: "B2C" | "B2B"; code: string; shortcode: string | null };
     equipmentIds: string[];
-    earliestInstall: Date;
+    /** Manual 계약일 when the wizard set one; otherwise the earliest row's
+     *  installedAt (pre-2a.6 fallback behavior) — see contractStartDate in
+     *  the POST handler. */
+    contractStartDate: Date;
     plan: ContractRowPlan;
   },
 ) {
-  const { customerId, customer, equipmentIds, earliestInstall, plan } = opts;
+  const { customerId, customer, equipmentIds, contractStartDate, plan } = opts;
   const endDate = plan.termMonths
     ? new Date(
-        new Date(earliestInstall).setMonth(
-          earliestInstall.getMonth() + plan.termMonths,
+        new Date(contractStartDate).setMonth(
+          contractStartDate.getMonth() + plan.termMonths,
         ),
       )
     : null;
@@ -102,16 +106,16 @@ async function createContractRow(
     customerId,
     type: plan.type,
     state: "ACTIVE" as const,
-    startDate: earliestInstall,
+    startDate: contractStartDate,
     endDate,
     termMonths: plan.termMonths,
     monthlyMaintenanceFee: plan.monthlyMaintenanceFee,
     totalContractValue: plan.totalContractValue,
     deposit: plan.deposit,
     endOfTermAction: plan.type === "RENTAL" ? ("TRANSFER_OWNERSHIP" as const) : null,
-    signedByCustomerAt: earliestInstall,
-    signedByCompanyAt: earliestInstall,
-    activatedAt: earliestInstall,
+    signedByCustomerAt: contractStartDate,
+    signedByCompanyAt: contractStartDate,
+    activatedAt: contractStartDate,
     equipment: {
       create: equipmentIds.map((eqId) => ({
         equipmentId: eqId,
@@ -142,7 +146,7 @@ async function createContractRow(
   const code = allocateContractCode({
     customer,
     type: plan.type,
-    signedAt: earliestInstall,
+    signedAt: contractStartDate,
   });
   let attempt = 0;
   while (attempt < 5) {
@@ -361,6 +365,9 @@ export async function POST(request: NextRequest) {
       if (data.createContract && equipmentIds.length > 0) {
         const installDates = data.rows.map((r) => r.installedAt.getTime());
         const earliestInstall = new Date(Math.min(...installDates));
+        // Manual 계약일 (contractDate) wins when the wizard set one;
+        // otherwise fall back to the earliest row's installedAt.
+        const contractStartDate = data.contractDate ?? earliestInstall;
         const plans = planContractRows(data, equipmentIds.length);
         for (const plan of plans) {
           const contract = await createContractRow(tx, {
@@ -371,7 +378,7 @@ export async function POST(request: NextRequest) {
               shortcode: customer.shortcode,
             },
             equipmentIds,
-            earliestInstall,
+            contractStartDate,
             plan,
           });
           contracts.push(contract);
