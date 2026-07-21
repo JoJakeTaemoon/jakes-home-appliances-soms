@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ModelPicker } from "@/components/equipment/model-picker";
@@ -78,6 +79,13 @@ describe("ModelPicker", () => {
     );
   });
 
+  it("narrows the category list to the selected brand", () => {
+    renderPicker({ brandFilter: "brand-1" });
+    expect(mockUseApiPageQuery).toHaveBeenCalledWith(
+      expect.stringMatching(/products\/categories\?.*brandId=brand-1/),
+    );
+  });
+
   it("renders model options with name + brand · category context", async () => {
     renderPicker();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
@@ -91,7 +99,11 @@ describe("ModelPicker", () => {
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
     const option = await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)");
     fireEvent.click(option);
-    expect(onModel).toHaveBeenCalledWith("model-1");
+    // Model select back-fills brand + category via the meta argument.
+    expect(onModel).toHaveBeenCalledWith("model-1", {
+      brandId: "brand-1",
+      categoryId: "cat-1",
+    });
   });
 
   it("calls onBrand when a brand is selected", async () => {
@@ -118,5 +130,48 @@ describe("ModelPicker", () => {
     expect(
       await screen.findByText("AQ-500 Purifier (Seoul Aqua · Water purifier)"),
     ).toBeInTheDocument();
+  });
+
+  // Guards the exact wiring both wizards use (register per-line + bulk-register):
+  // selecting a model back-fills brand + category from the emitted meta.
+  it("back-fills brand + category when a model is picked (page wiring)", async () => {
+    function Harness() {
+      const [brandFilter, setBrand] = useState<string | null>(null);
+      const [categoryFilter, setCategory] = useState<string | null>(null);
+      const [modelId, setModel] = useState<string | null>(null);
+      return (
+        <>
+          <div data-testid="state">{`${brandFilter}|${categoryFilter}|${modelId}`}</div>
+          <ModelPicker
+            brandFilter={brandFilter}
+            categoryFilter={categoryFilter}
+            modelId={modelId}
+            onBrand={(v) => {
+              setBrand(v);
+              setCategory(null);
+              setModel(null);
+            }}
+            onCategory={(v) => {
+              setCategory(v);
+              setModel(null);
+            }}
+            onModel={(v, meta) => {
+              setModel(v);
+              if (v) {
+                setBrand(meta?.brandId ?? null);
+                setCategory(meta?.categoryId ?? null);
+              }
+            }}
+          />
+        </>
+      );
+    }
+    render(<Harness />);
+    expect(screen.getByTestId("state")).toHaveTextContent("null|null|null");
+    fireEvent.click(screen.getByText("fields.modelPlaceholder"));
+    fireEvent.click(
+      await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)"),
+    );
+    expect(screen.getByTestId("state")).toHaveTextContent("brand-1|cat-1|model-1");
   });
 });

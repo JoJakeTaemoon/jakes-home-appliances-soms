@@ -47,7 +47,15 @@ interface Props {
   modelId: string | null;
   onBrand: (v: string | null) => void;
   onCategory: (v: string | null) => void;
-  onModel: (v: string | null) => void;
+  /**
+   * `meta` carries the picked model's brand/category ids so callers can
+   * back-fill the brand + category selects (선택한 모델의 브랜드·제품군 자동
+   * 입력). Null on clear, or when the model has no brand/category.
+   */
+  onModel: (
+    v: string | null,
+    meta?: { brandId: string | null; categoryId: string | null },
+  ) => void;
   locale?: "vi" | "ko" | "en";
 }
 
@@ -67,9 +75,16 @@ export function ModelPicker({
   );
   const brands = brandsQuery.data?.data ?? [];
 
-  const categoriesQuery = useApiPageQuery<CategoryLite[]>(
-    "/api/admin/products/categories?pageSize=200",
-  );
+  // Categories narrow to the selected brand (브랜드 선택 시 그 브랜드가 보유한
+  // 제품군만) — Brand↔Category link exists only through EquipmentModel, so the
+  // API resolves it via `models.some.brandId`.
+  const categoriesUrl = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set("pageSize", "200");
+    if (brandFilter) qs.set("brandId", brandFilter);
+    return `/api/admin/products/categories?${qs.toString()}`;
+  }, [brandFilter]);
+  const categoriesQuery = useApiPageQuery<CategoryLite[]>(categoriesUrl);
   const categories = categoriesQuery.data?.data ?? [];
 
   // Brand + category filters are pushed to the server so the catalog
@@ -113,7 +128,15 @@ export function ModelPicker({
       <FormField label={t("fields.model")}>
         <Combobox
           value={modelId}
-          onChange={onModel}
+          onChange={(v) => {
+            // Emit the picked model's brand/category so the caller can
+            // auto-fill those selects. On clear (v === null) send nulls.
+            const picked = v ? models.find((m) => m.id === v) : null;
+            onModel(v, {
+              brandId: picked?.brand?.id ?? null,
+              categoryId: picked?.productCategory?.id ?? null,
+            });
+          }}
           options={models.map((m) => {
             const name = pickModelName(m, locale);
             // Add brand + category context so search hits "Seoul Aqua

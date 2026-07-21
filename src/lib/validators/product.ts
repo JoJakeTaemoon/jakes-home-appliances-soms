@@ -47,6 +47,10 @@ export const updateProductCategorySchema = z.object({
 export const productCategoryListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   isActive: z.coerce.boolean().optional(),
+  // Narrow to categories that have at least one model of this brand.
+  // Brand↔Category have no direct relation — they're linked only through
+  // EquipmentModel — so this filters via `models.some.brandId`.
+  brandId: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });

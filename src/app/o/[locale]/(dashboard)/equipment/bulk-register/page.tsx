@@ -315,6 +315,9 @@ function BulkRegisterInner() {
           brandFilter={brandFilter}
           setBrandFilter={(v) => {
             setBrandFilter(v);
+            // Brand change narrows the category list — drop a now
+            // possibly-invalid category so the user re-picks.
+            setCategoryFilter(null);
             setModelId(null);
           }}
           categoryFilter={categoryFilter}
@@ -323,8 +326,13 @@ function BulkRegisterInner() {
             setModelId(null);
           }}
           modelId={modelId}
-          onModel={(v) => {
+          onModel={(v, meta) => {
             setModelId(v);
+            // Selecting a model back-fills its brand + category.
+            if (v) {
+              setBrandFilter(meta?.brandId ?? null);
+              setCategoryFilter(meta?.categoryId ?? null);
+            }
             // Clear filters so ServiceConfigEditor re-seeds from the new
             // model's consumable catalog instead of showing stale rows.
             setServiceConfig((sc) => ({ ...sc, filters: [] }));
@@ -398,7 +406,10 @@ interface EquipmentStepProps {
   categoryFilter: string | null;
   setCategoryFilter: (v: string | null) => void;
   modelId: string | null;
-  onModel: (v: string | null) => void;
+  onModel: (
+    v: string | null,
+    meta?: { brandId: string | null; categoryId: string | null },
+  ) => void;
   quantity: number;
   setQuantity: (n: number) => void;
   defaultInstalledAt: string;

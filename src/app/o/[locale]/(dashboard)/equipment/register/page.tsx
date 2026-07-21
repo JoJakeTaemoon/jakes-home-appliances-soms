@@ -463,6 +463,9 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
                   onBrand={(v) =>
                     props.updateLine(line.id, {
                       brandFilter: v,
+                      // Brand change narrows the category list — drop a now
+                      // possibly-invalid category so the user re-picks.
+                      categoryFilter: null,
                       modelId: null,
                       serviceConfig: { ...line.serviceConfig, filters: [] },
                     })
@@ -474,9 +477,16 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
                       serviceConfig: { ...line.serviceConfig, filters: [] },
                     })
                   }
-                  onModel={(v) =>
+                  onModel={(v, meta) =>
                     props.updateLine(line.id, {
                       modelId: v,
+                      // Selecting a model back-fills its brand + category.
+                      ...(v
+                        ? {
+                            brandFilter: meta?.brandId ?? null,
+                            categoryFilter: meta?.categoryId ?? null,
+                          }
+                        : {}),
                       serviceConfig: { ...line.serviceConfig, filters: [] },
                     })
                   }

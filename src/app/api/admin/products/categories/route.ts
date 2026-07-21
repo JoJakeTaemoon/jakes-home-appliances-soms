@@ -18,9 +18,14 @@ export const GET = defineQuery({
   query: productCategoryListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, isActive, page, pageSize } = query;
+    const { q, isActive, brandId, page, pageSize } = query;
     const where: Prisma.ProductCategoryWhereInput = {};
     if (typeof isActive === "boolean") where.isActive = isActive;
+    // Only categories that have an *active* model under this brand. Brand and
+    // Category are independent taxonomies joined solely through EquipmentModel;
+    // matching the model picker's `isActive=true` filter avoids offering a
+    // category whose only models are inactive (→ empty model list downstream).
+    if (brandId) where.models = { some: { brandId, isActive: true } };
     if (q) {
       where.OR = [
         { code: { contains: q, mode: "insensitive" } },

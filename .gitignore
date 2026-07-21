@@ -80,3 +80,4 @@ next-env.d.ts
 # Local PDF / scratch output (e.g. scripts/render-sample-contract.ts)
 /tmp
 user_list.txt
+change_log.pdf
