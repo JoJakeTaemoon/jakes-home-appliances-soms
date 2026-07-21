@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { useApiPageQuery } from "@/lib/api/hooks";
-import { pickModelName } from "@/lib/products/name";
+import { pickCategoryName, pickModelName } from "@/lib/products/name";
 
 interface ModelLite {
   id: string;
@@ -103,7 +103,7 @@ export function ModelPicker({
             onChange={onCategory}
             options={categories.map((c) => ({
               value: c.id,
-              label: c.nameKo ?? c.nameEn ?? c.nameVi ?? c.id,
+              label: pickCategoryName(c, locale),
             }))}
             placeholder={t("fields.categoryPlaceholder")}
             searchable
@@ -118,7 +118,7 @@ export function ModelPicker({
             const name = pickModelName(m, locale);
             // Add brand + category context so search hits "Seoul Aqua
             // AQ-500" even when the operator only remembers one token.
-            const cat = m.productCategory?.nameKo ?? m.productCategory?.nameEn ?? m.productCategory?.nameVi;
+            const cat = m.productCategory ? pickCategoryName(m.productCategory, locale) : null;
             const suffix = [m.brand?.name, cat].filter(Boolean).join(" · ");
             return {
               value: m.id,

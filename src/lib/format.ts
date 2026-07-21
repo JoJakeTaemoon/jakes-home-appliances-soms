@@ -19,10 +19,6 @@ export type AppLocale = "vi" | "ko" | "en";
 const VST_TIMEZONE = "Asia/Ho_Chi_Minh";
 const VST_OFFSET_HOURS = 7;
 
-function pad2(n: number): string {
-  return n < 10 ? `0${n}` : String(n);
-}
-
 interface VstParts {
   year: string;
   month: string;
@@ -55,7 +51,7 @@ function vstParts(d: Date): VstParts {
 }
 
 /** Format a date as a locale-appropriate calendar date (no time), VST. */
-export function formatDate(value: Date | string | null | undefined, locale: AppLocale | string = "vi"): string {
+export function formatDate(value: Date | string | null | undefined, locale: AppLocale | (string & {}) = "vi"): string {
   if (value === null || value === undefined || value === "") return "";
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return "";
@@ -68,7 +64,7 @@ export function formatDate(value: Date | string | null | undefined, locale: AppL
 /** Short locale weekday — e.g. ko "월", vi "Th 2", en "Mon". Returns "" on bad input. */
 export function formatWeekday(
   value: Date | string | null | undefined,
-  locale: AppLocale | string = "vi",
+  locale: AppLocale | (string & {}) = "vi",
 ): string {
   if (value === null || value === undefined || value === "") return "";
   const d = value instanceof Date ? value : new Date(value);
@@ -81,7 +77,7 @@ export function formatWeekday(
 }
 
 /** Format a datetime as locale-appropriate date + 24h HH:mm time in VST. */
-export function formatDateTime(value: Date | string | null | undefined, locale: AppLocale | string = "vi"): string {
+export function formatDateTime(value: Date | string | null | undefined, locale: AppLocale | (string & {}) = "vi"): string {
   if (value === null || value === undefined || value === "") return "";
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return "";
@@ -162,6 +158,23 @@ export const VST_TIME_STEP_SECONDS = 600;
 /** Same value rendered as an HTML attribute string. */
 export const VST_TIME_STEP = String(VST_TIME_STEP_SECONDS);
 
+/**
+ * Group an integer string's digits with dots (VN convention):
+ * "1500000" → "1.500.000". Shared by the display formatter and the money
+ * input so both agree.
+ */
+export function groupThousands(digits: string): string {
+  // Linear right-to-left dot insertion — avoids the lookahead regex whose
+  // backtracking is super-linear on long inputs. `digits` is digits only
+  // (callers strip the sign first).
+  let out = "";
+  for (let i = 0; i < digits.length; i += 1) {
+    if (i > 0 && (digits.length - i) % 3 === 0) out += ".";
+    out += digits[i];
+  }
+  return out;
+}
+
 /** Format a VND amount as `1.500.000 ₫`. Returns empty string for nullish. */
 export function formatVnd(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === "") return "";
@@ -170,8 +183,7 @@ export function formatVnd(value: number | string | null | undefined): string {
   const rounded = Math.round(n);
   const sign = rounded < 0 ? "-" : "";
   const abs = Math.abs(rounded).toString();
-  const withDots = abs.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  return `${sign}${withDots} ₫`;
+  return `${sign}${groupThousands(abs)} ₫`;
 }
 
 /** Parse a "1.500.000 ₫" / "1,500,000" / "1500000" string into a number. */

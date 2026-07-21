@@ -1,7 +1,7 @@
 # Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
-**Phiên bản**: 2026-07 (cập nhật lớn — thêm Đại lý, Thiết bị, Lượt thăm, Đơn hàng)
+**Phiên bản**: 2026-07-11 (Wizard đăng ký thiết bị cải tiến 5 bước + tải hợp đồng PDF lên + hệ thống địa chỉ 2 cấp)
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Kỹ thuật viên](./field.md) · [Hướng dẫn Khách hàng](./customer.md)
 
@@ -174,7 +174,7 @@ Khách hàng
 Hợp đồng
 Thiết bị
   ├─ Danh sách thiết bị
-  ├─ Đăng ký hàng loạt  ← Mới — wizard 3 bước
+  ├─ Đăng ký hàng loạt  ← Mới — wizard 5 bước
   └─ Lịch sử lắp đặt   ← Mới
 Lượt thăm
   ├─ Danh sách / Lịch
@@ -223,12 +223,17 @@ Nhấp vào dòng để chuyển đến trang chi tiết khách hàng.
 
 #### Nhập địa chỉ (dropdown theo tầng)
 
-1. Chọn Tỉnh/Thành phố
-2. Chọn Quận/Huyện
-3. Chọn Phường/Xã
-4. Nhập địa chỉ chi tiết
+Theo cải cách hành chính Việt Nam năm 2025, cấp Quận/Huyện đã bị bãi bỏ, nên hiện chỉ còn **2 cấp**.
+
+1. Chọn Tỉnh/Thành phố — trong danh sách **34 tỉnh/thành** trên cả nước
+2. Chọn Phường/Xã
+3. Nhập địa chỉ chi tiết
+
+> **Tìm kiếm không phân biệt dấu**: Ô tìm kiếm dropdown vẫn tìm ra kết quả dù bạn gõ không dấu. Ví dụ: chỉ cần gõ `Ho Chi` là tìm được `Thành phố Hồ Chí Minh`.
 
 Nếu khu vực không có trong danh sách, gõ tên và chọn tùy chọn "**Nhập thủ công**".
+
+> Hệ thống địa chỉ 2 cấp này cũng áp dụng tương tự cho địa chỉ Địa điểm (Site) B2B (§5.3).
 
 #### Thông tin tùy chọn
 
@@ -390,7 +395,8 @@ Chi tiết khách hàng → tab **Tổng quan** → dropdown "Đại lý phụ t
 - Thêm trường: `deposit` (tiền đặt cọc), `monthlyFee` (phí tháng), `serviceType` (RENTAL/MAINTENANCE/SALE), `managementType` (FULL_SERVICE/SELF_MANAGED/OTHER), `lifecycleStage` (ACTIVE/INACTIVE/RETRIEVED/TRANSFERRED)
 - Bảng điều khiển master-detail: danh sách + chi tiết cùng một màn hình
 - Bảng cấu hình dịch vụ hợp nhất: lịch kiểm tra + lịch thay lõi lọc trong một bảng
-- Wizard đăng ký hàng loạt: 3 bước để đăng ký nhiều thiết bị cùng lúc
+- Wizard đăng ký hàng loạt: **5 bước** — từ chọn khách hàng đến hình thức bán + cấu hình dịch vụ (đăng ký đơn lẻ cũng chuyển sang wizard 4 bước)
+- **Chu kỳ kiểm tra/thay lõi lọc thống nhất theo đơn vị "ngày"** — tính ngày dự kiến tiếp theo chính xác hơn
 - Lịch sử lắp đặt: chuyển đổi giữa chế độ xem theo lô và theo lượt thăm
 
 ### 7.2 Danh sách thiết bị
@@ -417,37 +423,54 @@ Chu kỳ kiểm tra và chu kỳ thay lõi lọc được hợp nhất vào mộ
 
 Phần **Lịch sử lượt thăm liên kết** cũng hiển thị trên cùng trang.
 
-### 7.4 Wizard đăng ký thiết bị hàng loạt (mới)
+### 7.4 Wizard đăng ký thiết bị hàng loạt (cải tiến — 5 bước)
 
 **Thanh bên → Thiết bị → Đăng ký hàng loạt**
 
 ![Đăng ký hàng loạt bước 1](../screenshots/vi/office/17-bulk-register-step1.png)
 
-Wizard 3 bước để đăng ký nhiều thiết bị cùng lúc.
+Wizard **5 bước** để đăng ký và lắp đặt nhiều thiết bị cùng lúc với cùng thông tin.
 
-#### Bước 1: Chọn khách hàng và hợp đồng
+#### Bước 1: Chọn khách hàng
 
-- Tìm kiếm khách hàng (theo mã hoặc tên)
-- Chọn hợp đồng liên kết (thiết bị phải gắn với hợp đồng)
-- Khách hàng B2B nhiều địa điểm: chọn thêm địa điểm
+- Tìm kiếm theo mã khách hàng, tên, người liên hệ hoặc số điện thoại, rồi chọn ngay từ kết quả.
+- Nếu không tìm thấy khách hàng cần tìm, có thể **đăng ký khách hàng mới ngay tại chỗ**.
+- Khách hàng B2B: chọn thêm **Địa điểm (Site)** cần lắp đặt.
 
-#### Bước 2: Nhập thông tin thiết bị
+#### Bước 2: Thông tin thiết bị
 
-Nhập mỗi thiết bị trên một dòng dưới dạng bảng:
-- Chọn mẫu (dropdown Brand → Model)
-- Số lượng (nhiều thiết bị cùng mẫu)
-- Số serial (tự động đánh số hoặc nhập thủ công)
-  - Nếu serial kết thúc bằng số (ví dụ: `PTS-2100-000010`) → tự động đánh tiếp theo số lượng (`...000011`, `...000012`)
-- Tiền đặt cọc, phí tháng (áp dụng mặc định từ mẫu, có thể sửa)
-- Loại dịch vụ: RENTAL / SALE / MAINTENANCE
+- Chọn mẫu theo Thương hiệu → Dòng sản phẩm.
+- Nhập số lượng, ngày lắp đặt, kỹ thuật viên phụ trách, ghi chú lắp đặt.
+- **Mã quản lý** có thể để hệ thống tự sinh (`WA` + ngày + số thứ tự) hoặc nhập thủ công.
 
-#### Bước 3: Xác nhận và đăng ký
+#### Bước 3: Hình thức bán
 
-Kiểm tra thông tin tóm tắt rồi nhấn "**Đăng ký**" để lưu hàng loạt.
+Chọn Thuê / Bán / Bảo trì — hệ thống chỉ hiển thị các trường hợp đồng phù hợp với hình thức đó.
+
+- **Thuê**: Tiền đặt cọc · phí thuê tháng · thời hạn hợp đồng → tạo 1 hợp đồng
+- **Bán (sở hữu)**: Giá bán · phí lắp đặt (phí lắp đặt cũng tính vào doanh thu). Nếu bật "Tạo hợp đồng cùng lúc" → tạo 1 hợp đồng bán; nếu hình thức quản lý là **Bảo trì trọn gói** → tạo thêm 1 hợp đồng bảo trì (tổng cộng tối đa 2 hợp đồng: bán + bảo trì trọn gói). Nếu là **Khách hàng tự quản lý**, phần cấu hình kiểm tra định kỳ/lõi lọc sẽ bị vô hiệu hóa.
+- **Bảo trì**: Phí quản lý tháng · thời hạn hợp đồng → tạo 1 hợp đồng
+- **Số hợp đồng**: Để trống sẽ tự động cấp số theo quy tắc; nhập thủ công thì dùng đúng số đó (trùng số sẽ bị từ chối khi lưu). Có thể chỉ định **ngày ký hợp đồng**.
+
+> Khi nhập số tiền, hệ thống tự động hiển thị dấu chấm (.) phân cách hàng nghìn, ví dụ `1.500.000`.
+
+#### Bước 4: Cấu hình dịch vụ
+
+Thiết lập chu kỳ kiểm tra định kỳ và danh sách **lõi lọc/vật tư tiêu hao** cần thay. Vật tư mặc định của mẫu được điền tự động; khi chỉnh **chu kỳ thay (theo ngày)** của từng mục, ngày dự kiến tiếp theo sẽ tự tính lại.
+
+#### Bước 5: Xác nhận cuối cùng (mới)
+
+Hiển thị **tóm tắt toàn bộ thông tin** đã nhập ở các bước trước trên một màn hình — khách hàng và địa điểm lắp đặt, thiết bị/số lượng/mã quản lý, hình thức bán/số tiền/**số hợp đồng sẽ được tạo**, và cấu hình dịch vụ. Kiểm tra xong, nhấn "**Hoàn tất**" để đăng ký. Nếu có sai sót, có thể quay lại bước trước để sửa ngay.
 
 > Sau khi đăng ký, dữ liệu được ghi vào Lịch sử lắp đặt và phản ánh trong tab [Thiết bị] của hợp đồng tương ứng.
 
-### 7.5 Lịch sử lắp đặt (mới)
+### 7.5 Wizard đăng ký thiết bị đơn lẻ (mới)
+
+**Thanh bên → Danh sách thiết bị → nút "+ Lắp đặt"**
+
+Dùng khi cần đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một dòng (multi-line). Cấu trúc theo cùng **4 bước** như đăng ký hàng loạt (§7.4: Chọn khách hàng → Thông tin thiết bị → Hình thức bán → Cấu hình dịch vụ), nhưng điểm khác biệt là **mỗi dòng có thể chỉ định riêng mẫu, hình thức bán và cấu hình dịch vụ**. Thông tin hợp đồng (số hợp đồng, ngày ký v.v.) chỉ nhập một lần ở cấp hợp đồng, không nhập theo từng dòng.
+
+### 7.6 Lịch sử lắp đặt (mới)
 
 **Thanh bên → Thiết bị → Lịch sử lắp đặt**
 
@@ -492,7 +515,15 @@ Bộ lọc: Loại khách · Loại hợp đồng · Trạng thái · Đại lý
 | **Thanh toán** | Tiền đặt cọc, phí thuê, phí dịch vụ, hoàn tiền |
 | **Hoạt động** | Lịch sử thay đổi trạng thái, ký kết, ghi chú |
 
-### 8.4 Tạo hợp đồng mới
+### 8.4 Tải hợp đồng PDF lên thủ công (mới)
+
+Trên màn hình chi tiết hợp đồng, người dùng có quyền **MANAGER trở lên** có thể **tải lên bản scan hợp đồng đã ký tên, đóng dấu thật** để thay thế bản PDF do hệ thống tự động tạo.
+
+- Chi tiết hợp đồng → nút "**Tải lên hợp đồng PDF**" → chọn file PDF → Lưu
+- File PDF tải lên sẽ ghi đè lên bản tự động tạo
+- Hữu ích khi hợp đồng đã được ký trên giấy trước, cần cập nhật lại vào hệ thống
+
+### 8.5 Tạo hợp đồng mới
 
 1. Danh sách hợp đồng → nút "**Hợp đồng mới**"
 2. Chọn khách hàng → Chọn loại hợp đồng
@@ -503,21 +534,21 @@ Bộ lọc: Loại khách · Loại hợp đồng · Trạng thái · Đại lý
 5. Tạo PDF → Khách ký → Nhấn "**Kích hoạt**"
 6. Sau khi kích hoạt, lượt thăm lắp đặt được tạo tự động
 
-### 8.5 Sửa đổi hợp đồng (Amend)
+### 8.6 Sửa đổi hợp đồng (Amend)
 
 Chỉ từ MANAGER trở lên.
 
 - **Sửa HĐ B2C**: Chỉnh sửa trực tiếp giá và thiết bị. Thay đổi trước/sau được ghi tự động vào nhật ký kiểm toán.
 - **Thêm Phụ lục HĐ B2B**: Chi tiết HĐ → nút "**Thêm phụ lục**" → Nhập thiết bị hoặc điều khoản mới → Số phụ lục tự động cấp (ví dụ: `HD-.../SA-SHV-A1`)
 
-### 8.6 Gia hạn hợp đồng (Renew)
+### 8.7 Gia hạn hợp đồng (Renew)
 
 Chuyển hợp đồng thuê hết hạn sang bảo trì:
 1. HĐ hết hạn → nút "**Gia hạn: Bảo trì**"
 2. Nhập phí quản lý tháng mới + ngày bắt đầu
 3. Xác nhận → HĐ thuê cũ chuyển sang `COMPLETED` + chuyển quyền sở hữu thiết bị + tự động tạo HĐ bảo trì mới
 
-### 8.7 Luồng trạng thái hợp đồng
+### 8.8 Luồng trạng thái hợp đồng
 
 ```
 DRAFT → ACTIVE → OVERDUE → ACTIVE (khi thanh toán xong)
@@ -870,9 +901,11 @@ Giá trị mặc định:
 ### Tình huống 5: Đăng ký nhiều thiết bị cùng lúc
 
 1. Thanh bên → Thiết bị → "**Đăng ký hàng loạt**"
-2. Bước 1: Chọn khách hàng, hợp đồng
-3. Bước 2: Nhập mẫu, số lượng, serial, phí vào bảng
-4. Bước 3: Xác nhận và đăng ký
+2. Bước 1: Chọn khách hàng (chưa có thì đăng ký mới ngay)
+3. Bước 2: Nhập mẫu, số lượng, ngày lắp đặt, mã quản lý
+4. Bước 3: Chọn hình thức bán (thuê/bán/bảo trì) → nhập số tiền hợp đồng
+5. Bước 4: Nhập cấu hình dịch vụ (kiểm tra định kỳ, lõi lọc...)
+6. Bước 5: Xem màn hình xác nhận cuối cùng (kể cả số hợp đồng sẽ tạo) rồi nhấn "**Hoàn tất**"
 
 ### Tình huống 6: In tất cả chứng từ của một KTV trong ngày
 
@@ -902,7 +935,7 @@ Giá trị mặc định:
 |---|---|
 | Đăng ký / Tìm khách hàng | Khách hàng |
 | Xem KPI đại lý | Đại lý |
-| Đăng ký thiết bị (đơn lẻ) | Thiết bị → Thiết bị mới |
+| Đăng ký thiết bị (đơn lẻ, nhiều dòng) | Thiết bị → Danh sách → "+ Lắp đặt" |
 | Đăng ký thiết bị (hàng loạt) | Thiết bị → Đăng ký hàng loạt |
 | Xem lịch sử lắp đặt | Thiết bị → Lịch sử lắp đặt |
 | Tạo / Sửa hợp đồng | Hợp đồng |

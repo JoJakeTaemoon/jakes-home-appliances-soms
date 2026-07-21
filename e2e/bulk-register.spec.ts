@@ -128,6 +128,13 @@ test("bulk-register wizard: customer -> model -> RENTAL -> filter edit -> submit
     await firstFilterRow.waitFor({ state: "visible", timeout: 15000 });
     await firstFilterRow.getByLabel("사용주기").fill("45");
 
+    await page.getByRole("button", { name: "다음 단계" }).click();
+
+    // ── Step 5: 최종 확인 — the review summary should surface the entries ─
+    await expect(page.getByText("입력 내용 최종 확인")).toBeVisible();
+    // Deposit total = 500,000 × 2 = 1,000,000 (dot-grouped VND).
+    await expect(page.getByText("1.000.000 ₫").first()).toBeVisible();
+
     // ── Submit ────────────────────────────────────────────────────────
     await page.getByRole("button", { name: "완료" }).click();
 

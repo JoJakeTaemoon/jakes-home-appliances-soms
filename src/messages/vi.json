@@ -582,7 +582,8 @@
         "customer": "Chọn khách hàng",
         "equipment": "Thông tin thiết bị",
         "method": "Phương thức dịch vụ",
-        "service": "Cấu hình dịch vụ"
+        "service": "Cấu hình dịch vụ",
+        "confirm": "Xác nhận"
       },
       "assetCodeModes": {
         "auto": "Tự động tạo",
@@ -663,6 +664,36 @@
         "numberPreview": "Số HĐ",
         "autoAssigned": "Tự động",
         "numberPreviewHint": "Theo mã KH + ngày lắp sớm nhất"
+      },
+      "confirm": {
+        "title": "Xác nhận thông tin",
+        "hint": "Thiết bị sẽ được đăng ký với thông tin dưới đây. Quay lại bước trước để chỉnh sửa nếu cần.",
+        "sectionCustomer": "Khách hàng · Địa điểm",
+        "sectionEquipment": "Thông tin thiết bị",
+        "sectionMethod": "Hình thức · Hợp đồng",
+        "sectionService": "Cấu hình dịch vụ",
+        "customerType": "Loại khách hàng",
+        "assetCodes": "Mã quản lý",
+        "salePrice": "Giá bán (mỗi máy)",
+        "installFee": "Phí lắp đặt (mỗi máy)",
+        "monthlyMaintenanceFee": "Phí bảo trì hàng tháng (mỗi máy)",
+        "depositTotal": "Tổng tiền cọc",
+        "monthlyTotal": "Tổng phí hàng tháng",
+        "saleTotal": "Tổng giá bán",
+        "contractNumber": "Số hợp đồng",
+        "contractDate": "Ngày hợp đồng",
+        "termMonths": "Thời hạn hợp đồng",
+        "months": "{n} tháng",
+        "days": "{n} ngày",
+        "contractCount": "Số hợp đồng sẽ tạo",
+        "management": "Loại quản lý",
+        "inspectionCycle": "Chu kỳ kiểm tra định kỳ",
+        "inspectionNone": "Không đặt",
+        "filters": "Lõi lọc / Vật tư",
+        "filtersNone": "Không có",
+        "filterLine": "SL {qty} · Chu kỳ thay {days} ngày",
+        "autoAssigned": "Tự động cấp số",
+        "none": "—"
       }
     },
     "installationHistory": {

@@ -582,7 +582,8 @@
         "customer": "고객 선택",
         "equipment": "장비 정보",
         "method": "판매방식",
-        "service": "서비스구성"
+        "service": "서비스구성",
+        "confirm": "최종 확인"
       },
       "assetCodeModes": {
         "auto": "자동 생성",
@@ -663,6 +664,36 @@
         "numberPreview": "계약 번호",
         "autoAssigned": "자동 발번",
         "numberPreviewHint": "고객 코드 + 가장 빠른 설치일 기준"
+      },
+      "confirm": {
+        "title": "입력 내용 최종 확인",
+        "hint": "아래 내용으로 장비를 등록합니다. 잘못된 내용이 있으면 이전 단계로 돌아가 수정하세요.",
+        "sectionCustomer": "고객 · 설치 장소",
+        "sectionEquipment": "장비 정보",
+        "sectionMethod": "판매방식 · 계약",
+        "sectionService": "서비스 구성",
+        "customerType": "고객 유형",
+        "assetCodes": "관리번호",
+        "salePrice": "판매가 (1대당)",
+        "installFee": "설치비 (1대당)",
+        "monthlyMaintenanceFee": "월 관리비 (1대당)",
+        "depositTotal": "보증금 합계",
+        "monthlyTotal": "월 요금 합계",
+        "saleTotal": "판매 금액 합계",
+        "contractNumber": "계약번호",
+        "contractDate": "계약일",
+        "termMonths": "계약기간",
+        "months": "{n}개월",
+        "days": "{n}일",
+        "contractCount": "생성될 계약 수",
+        "management": "관리 유형",
+        "inspectionCycle": "정기점검 주기",
+        "inspectionNone": "설정 안 함",
+        "filters": "필터 / 소모품",
+        "filtersNone": "없음",
+        "filterLine": "수량 {qty} · 교체주기 {days}일",
+        "autoAssigned": "자동 발번",
+        "none": "—"
       }
     },
     "installationHistory": {

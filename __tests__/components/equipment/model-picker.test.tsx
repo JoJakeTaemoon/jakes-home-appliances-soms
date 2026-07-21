@@ -82,14 +82,14 @@ describe("ModelPicker", () => {
     renderPicker();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
     await waitFor(() =>
-      expect(screen.getByText("Máy lọc nước AQ-500 (Seoul Aqua · 정수기)")).toBeInTheDocument(),
+      expect(screen.getByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)")).toBeInTheDocument(),
     );
   });
 
   it("calls onModel with the id when a model option is selected", async () => {
     const { onModel } = renderPicker();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
-    const option = await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · 정수기)");
+    const option = await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)");
     fireEvent.click(option);
     expect(onModel).toHaveBeenCalledWith("model-1");
   });
@@ -105,8 +105,18 @@ describe("ModelPicker", () => {
   it("calls onCategory when a category is selected", async () => {
     const { onCategory } = renderPicker();
     fireEvent.click(screen.getByText("fields.categoryPlaceholder"));
-    const option = await screen.findByText("정수기");
+    const option = await screen.findByText("Máy lọc nước");
     fireEvent.click(option);
     expect(onCategory).toHaveBeenCalledWith("cat-1");
+  });
+
+  it("localizes category + model labels to the given locale (en)", async () => {
+    renderPicker({ locale: "en" });
+    fireEvent.click(screen.getByText("fields.categoryPlaceholder"));
+    expect(await screen.findByText("Water purifier")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("fields.modelPlaceholder"));
+    expect(
+      await screen.findByText("AQ-500 Purifier (Seoul Aqua · Water purifier)"),
+    ).toBeInTheDocument();
   });
 });

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { groupThousands } from "@/lib/format";
 
 /**
  * Standard numeric input used across the app for settings, schedule windows,
@@ -80,9 +81,17 @@ export function NumberInput({
   // Money fields step by 1000 VND (smallest bill denomination) unless
   // the caller explicitly overrode step.
   const effectiveStep = step ?? (variant === "money" ? 1000 : undefined);
+  const isMoney = variant === "money";
+  // Money shows dot-grouped digits (1.500.000); default shows the raw
+  // number. `render` maps a committed number to its display string.
+  const render = useCallback(
+    (n: number): string =>
+      isMoney ? groupThousands(String(Math.trunc(Math.abs(n)))) : String(n),
+    [isMoney],
+  );
   // Keep a string copy of what the user is typing so empty / partial input
   // can survive between renders.
-  const [draft, setDraft] = useState<string>(String(value));
+  const [draft, setDraft] = useState<string>(render(value));
   const lastCommittedRef = useRef<number>(value);
 
   // If the parent changes `value` (e.g. data refetch), resync the draft —
@@ -91,10 +100,10 @@ export function NumberInput({
   // typing.
   useEffect(() => {
     if (value !== lastCommittedRef.current) {
-      setDraft(String(value));
+      setDraft(render(value));
       lastCommittedRef.current = value;
     }
-  }, [value]);
+  }, [value, render]);
 
   const clamp = (n: number): number => {
     let c = n;
@@ -103,47 +112,56 @@ export function NumberInput({
     return c;
   };
 
+  // Parse the field's raw string to a number. Money strips the dot group
+  // separators first (1.500.000 → 1500000); other variants parse directly.
+  const parse = (raw: string): number => {
+    if (isMoney) return Number.parseInt(raw.replace(/\D/g, ""), 10);
+    return allowDecimal ? Number(raw) : Number.parseInt(raw, 10);
+  };
+
   const commit = (raw: string) => {
+    const emit = (n: number) => {
+      const next = clamp(n);
+      setDraft(render(next));
+      lastCommittedRef.current = next;
+      onChange(next);
+    };
     if (raw.trim() === "") {
       // Empty input → fall back, then clamp to the input's min/max
       // (e.g. fallback=0 but min=1 commits as 1).
-      const next = clamp(fallback);
-      setDraft(String(next));
-      lastCommittedRef.current = next;
-      onChange(next);
+      emit(fallback);
       return;
     }
-    const parsed = allowDecimal ? Number(raw) : Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed)) {
-      const next = clamp(fallback);
-      setDraft(String(next));
-      lastCommittedRef.current = next;
-      onChange(next);
-      return;
-    }
-    const next = clamp(parsed);
-    setDraft(String(next));
-    lastCommittedRef.current = next;
-    onChange(next);
+    const parsed = parse(raw);
+    emit(Number.isFinite(parsed) ? parsed : fallback);
   };
 
   const inputEl = (
     <input
       id={id}
-      type="number"
-      min={min}
-      max={max}
-      step={effectiveStep}
+      // Money is a text field so the dot group separators (1.500.000) can
+      // be shown while typing — `type="number"` rejects them. inputMode
+      // keeps the numeric keypad on mobile.
+      type={isMoney ? "text" : "number"}
+      inputMode={isMoney ? "numeric" : undefined}
+      min={isMoney ? undefined : min}
+      max={isMoney ? undefined : max}
+      step={isMoney ? undefined : effectiveStep}
       disabled={disabled}
       aria-label={ariaLabel}
       value={draft}
       onChange={(e) => {
         const raw = e.target.value;
-        // Allow the field to be empty during editing.
-        setDraft(raw);
-        if (raw.trim() === "") return;
-        const parsed = allowDecimal ? Number(raw) : Number.parseInt(raw, 10);
+        if (raw.trim() === "") {
+          // Allow the field to be empty during editing.
+          setDraft(raw);
+          return;
+        }
+        const parsed = parse(raw);
         if (!Number.isFinite(parsed)) return;
+        // For money, re-group as the user types so the separators track
+        // the digits; other variants echo the raw keystrokes.
+        setDraft(isMoney ? render(parsed) : raw);
         // Live-update the parent only for valid numbers; clamping waits
         // for blur so the user can briefly overshoot while typing.
         lastCommittedRef.current = parsed;

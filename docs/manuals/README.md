@@ -2,21 +2,21 @@
 
 End-user manuals organized by **user group** and language.
 
-## Coverage (2026-06-03 — refreshed for Phase 6 visit deep-dive)
+## Coverage (2026-07-11 — refreshed for the 4-step equipment-registration redesign)
 
 | User Group | Korean (ko) | Vietnamese (vi) | English |
 |---|---|---|---|
-| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1638 lines) | ✅ [`vi/office.md`](vi/office.md) (1638 lines) | — (not in v1 scope) |
-| **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) (1003 lines) | ✅ [`vi/field.md`](vi/field.md) (1003 lines) | — |
-| **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) (1098 lines) | ✅ [`vi/customer.md`](vi/customer.md) (1098 lines) | — |
+| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1020 lines) | ✅ [`vi/office.md`](vi/office.md) (1020 lines) | — (not in v1 scope) |
+| **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) | ✅ [`vi/field.md`](vi/field.md) | — |
+| **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) | ✅ [`vi/customer.md`](vi/customer.md) | — |
 
-**Phase 6 update (2026-06-03)** — Visit-management deep dive added 6 distinct visit documents, the **"오늘의 배정"** board, the **"일괄 인쇄"** view, the **방문 지참 서류 발급 카드**, and mobile **서명 받을 서류** previews. Updated sections:
+**2026-07-11 update** — Equipment-registration redesign (step wizards) + Vietnam 2025 administrative reform. Only `office.md` (ko + vi) changed; `field.md` / `customer.md` were unaffected (visit/read workflows only). Updated sections:
 
-| Manual | New sections |
+| Manual | Updated sections |
 |---|---|
-| `office.md` | §4.4 sidebar (2 new entries), §7.2 unassigned tab, §7.8 schedule board, §7.9 document issuance, §7.10 bulk print, scenarios 15–17, Appendix A 3 new menu rows |
-| `field.md` | §4.1 sign-required badge on today card, §5.1 mobile signature-doc preview section |
-| `customer.md` | §7.4 — list of paper documents the customer will receive at each visit type |
+| `office.md` | §5.2 address entry (3-level → 2-level, no district, diacritic-insensitive search), §7.1 domain overview (5-step wizard, day-unit cycles), §7.4 bulk-register wizard rewritten (5 steps incl. **최종 확인 / final review**), §7.5 new single-register multi-line wizard, §8.4 new manual signed-contract PDF upload, scenario 5, Appendix A |
+
+See [`../../change_log.md`](../../change_log.md) for the user-facing summary of this release.
 
 Each manual covers the workflow overview (taken from [HOW_TO_USE.md](../HOW_TO_USE.md)) **plus** every screen and every common scenario for that user group.
 

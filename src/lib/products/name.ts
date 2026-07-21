@@ -38,6 +38,27 @@ export function pickModelName(
 }
 
 /**
+ * Locale-aware ProductCategory name resolver. Same fallback chain as
+ * pickModelName so category chips/filters follow the UI locale instead of
+ * always showing Korean.
+ */
+export function pickCategoryName(
+  cat:
+    | { nameKo?: string | null; nameVi?: string | null; nameEn?: string | null }
+    | null
+    | undefined,
+  locale: string | undefined,
+): string {
+  if (!cat) return "—";
+  const ko = cat.nameKo;
+  const vi = cat.nameVi;
+  const en = cat.nameEn;
+  if (locale === "ko") return ko || vi || en || "—";
+  if (locale === "en") return en || vi || ko || "—";
+  return vi || ko || en || "—";
+}
+
+/**
  * Equipment-level label resolver that handles off-catalog ("external")
  * devices. Use this anywhere a UI needs to label an Equipment row — list
  * cards, contract line items, visit cards, etc. — so external devices

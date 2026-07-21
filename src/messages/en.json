@@ -582,7 +582,8 @@
         "customer": "Customer",
         "equipment": "Equipment",
         "method": "Service method",
-        "service": "Service config"
+        "service": "Service config",
+        "confirm": "Final review"
       },
       "assetCodeModes": {
         "auto": "Auto-generate",
@@ -663,6 +664,36 @@
         "numberPreview": "Contract number",
         "autoAssigned": "Auto-assigned",
         "numberPreviewHint": "Customer code + earliest install date"
+      },
+      "confirm": {
+        "title": "Review before creating",
+        "hint": "Equipment will be registered with the details below. Go back to edit anything that's wrong.",
+        "sectionCustomer": "Customer · Site",
+        "sectionEquipment": "Equipment",
+        "sectionMethod": "Method · Contract",
+        "sectionService": "Service config",
+        "customerType": "Customer type",
+        "assetCodes": "Asset codes",
+        "salePrice": "Sale price (per unit)",
+        "installFee": "Install fee (per unit)",
+        "monthlyMaintenanceFee": "Monthly maintenance (per unit)",
+        "depositTotal": "Total deposit",
+        "monthlyTotal": "Total monthly fee",
+        "saleTotal": "Total sale amount",
+        "contractNumber": "Contract number",
+        "contractDate": "Contract date",
+        "termMonths": "Contract term",
+        "months": "{n} months",
+        "days": "{n} days",
+        "contractCount": "Contracts to create",
+        "management": "Management type",
+        "inspectionCycle": "Inspection cycle",
+        "inspectionNone": "Not set",
+        "filters": "Filters / Consumables",
+        "filtersNone": "None",
+        "filterLine": "Qty {qty} · Replace every {days} days",
+        "autoAssigned": "Auto-assigned",
+        "none": "—"
       }
     },
     "installationHistory": {

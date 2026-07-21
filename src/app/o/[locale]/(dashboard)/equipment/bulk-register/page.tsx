@@ -36,10 +36,13 @@ import {
 } from "@/components/equipment/service-config-editor";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { formatVnd, formatDate } from "@/lib/format";
+import { pickModelName } from "@/lib/products/name";
 
-type WizardStep = "customer" | "equipment" | "method" | "service";
-const STEPS: WizardStep[] = ["customer", "equipment", "method", "service"];
+type WizardStep = "customer" | "equipment" | "method" | "service" | "confirm";
+const STEPS: WizardStep[] = ["customer", "equipment", "method", "service", "confirm"];
 type AssetCodeMode = "auto" | "manual";
+type Loc = "ko" | "vi" | "en";
 
 interface CustomerSite {
   id: string;
@@ -49,6 +52,9 @@ interface CustomerSite {
 
 interface CustomerLite {
   id: string;
+  code: string;
+  name: string;
+  type: "B2C" | "B2B";
   sites: CustomerSite[];
 }
 
@@ -106,7 +112,7 @@ export default function BulkRegisterPage() {
 function BulkRegisterInner() {
   const t = useTranslations("equipment.bulkRegister");
   const tc = useTranslations("common");
-  const locale = useLocale() as "ko" | "vi" | "en";
+  const locale = useLocale() as Loc;
   const router = useRouter();
   const sp = useSearchParams();
   const api = useApi();
@@ -271,7 +277,7 @@ function BulkRegisterInner() {
               {t("prevStep")}
             </Button>
           )}
-          {step !== "service" ? (
+          {step !== "confirm" ? (
             <Button
               onClick={() => {
                 if (nextDisabled) return;
@@ -357,6 +363,24 @@ function BulkRegisterInner() {
         />
       )}
 
+      {step === "confirm" && (
+        <ConfirmStep
+          t={t}
+          locale={locale}
+          customer={customer}
+          siteId={siteId}
+          siteOptions={siteOptions}
+          modelId={modelId}
+          quantity={quantity}
+          installedAt={defaultInstalledAt}
+          technician={techs.find((u) => u.id === installedByTechnicianId) ?? null}
+          installNotes={installNotes}
+          rows={rows}
+          serviceMethod={serviceMethod}
+          serviceConfig={serviceConfig}
+        />
+      )}
+
       {error && (
         <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
       )}
@@ -368,7 +392,7 @@ function BulkRegisterInner() {
 
 interface EquipmentStepProps {
   t: (k: string) => string;
-  locale: "ko" | "vi" | "en";
+  locale: Loc;
   brandFilter: string | null;
   setBrandFilter: (v: string | null) => void;
   categoryFilter: string | null;
@@ -534,4 +558,207 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
 // a second translator prop through just for one string.
 function tcNotes(t: (k: string) => string): string {
   return t("fields.installNotes");
+}
+
+// ───────────────────────── Step 5: 최종 확인 ─────────────────────────
+
+interface ModelNameLite {
+  nameKo: string | null;
+  nameVi: string | null;
+  nameEn: string | null;
+  modelCode: string | null;
+}
+interface ConsumableNameLite {
+  consumableId: string;
+  name: { ko: string | null; vi: string | null; en: string | null };
+}
+
+/** Contracts the wizard will mint — mirrors the API's `contractsToMint`
+ *  (RENTAL/MAINTENANCE → 1; SALE → hasContract?1:0 + FULL_SERVICE?1:0). */
+function expectedContractCount(v: ServiceMethodValue): number {
+  if (v.method !== "SALE") return 1;
+  return (v.hasContract ? 1 : 0) + (v.managementType === "FULL_SERVICE" ? 1 : 0);
+}
+
+interface ConfirmStepProps {
+  t: (k: string, values?: Record<string, string | number>) => string;
+  locale: Loc;
+  customer: CustomerLite | null;
+  siteId: string | null;
+  siteOptions: { value: string; label: string }[];
+  modelId: string | null;
+  quantity: number;
+  installedAt: string;
+  technician: TechnicianLite | null;
+  installNotes: string;
+  rows: RowState[];
+  serviceMethod: ServiceMethodValue;
+  serviceConfig: ServiceConfigValue;
+}
+
+function ConfirmStep(props: Readonly<ConfirmStepProps>) {
+  const { t, locale, customer, serviceMethod: m, serviceConfig: sc, quantity: qty } = props;
+
+  const modelQuery = useApiQuery<ModelNameLite>(
+    props.modelId ? `/api/equipment-models/${props.modelId}` : null,
+  );
+  const consumablesQuery = useApiQuery<ConsumableNameLite[]>(
+    props.modelId ? `/api/equipment-models/${props.modelId}/consumables` : null,
+  );
+  const consumableName = (id?: string): string | null => {
+    if (!id) return null;
+    const c = consumablesQuery.data?.find((x) => x.consumableId === id);
+    if (!c) return null;
+    return c.name[locale] ?? c.name.vi ?? c.name.ko ?? c.name.en ?? id;
+  };
+
+  const none = t("confirm.none");
+  const siteLabel = props.siteId
+    ? (props.siteOptions.find((o) => o.value === props.siteId)?.label ?? none)
+    : none;
+  const modelName = modelQuery.data ? pickModelName(modelQuery.data, locale) : "…";
+  const validFilters = sc.filters.filter((f) => !!f.consumableId || !!f.customName?.trim());
+
+  const money = (n: number | null | undefined) =>
+    n == null ? none : formatVnd(n);
+  const total = (n: number | null | undefined) =>
+    n == null ? none : formatVnd(n * qty);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-gray-500">{t("confirm.hint")}</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Customer + site */}
+        <Section title={t("confirm.sectionCustomer")}>
+          <Row label={t("fields.customerName")} value={customer ? `${customer.name} (${customer.code})` : none} />
+          <Row label={t("confirm.customerType")} value={customer?.type ?? none} />
+          <Row label={t("fields.site")} value={siteLabel} />
+        </Section>
+
+        {/* Equipment */}
+        <Section title={t("confirm.sectionEquipment")}>
+          <Row label={t("fields.model")} value={modelName} />
+          <Row label={t("fields.quantity")} value={String(qty)} />
+          <Row label={t("fields.installedAt")} value={formatDate(props.installedAt, locale)} />
+          <Row label={t("fields.technician")} value={props.technician?.username ?? none} />
+          {props.installNotes.trim() && (
+            <Row label={t("fields.installNotes")} value={props.installNotes} />
+          )}
+          <div>
+            <p className="mb-1 text-xs text-gray-500">{t("confirm.assetCodes")}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {props.rows.map((r) => (
+                <span
+                  key={r.id}
+                  className="rounded bg-gray-50 px-2 py-1 text-xs tabular-nums text-gray-700 ring-1 ring-gray-200"
+                >
+                  {r.assetCode || none}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Section>
+
+        {/* Method + contract */}
+        <Section title={t("confirm.sectionMethod")}>
+          <Row label={t("fields.serviceType")} value={t(`serviceTypes.${m.method}`)} />
+          {m.method === "SALE" && m.managementType && (
+            <Row label={t("confirm.management")} value={t(`managementTypes.${m.managementType}`)} />
+          )}
+          {m.method === "RENTAL" && (
+            <>
+              <Row label={t("fields.deposit")} value={money(m.deposit)} />
+              <Row label={t("confirm.depositTotal")} value={total(m.deposit)} />
+              <Row label={t("fields.monthlyFee")} value={money(m.monthlyRent)} />
+              <Row label={t("confirm.monthlyTotal")} value={total(m.monthlyRent)} />
+            </>
+          )}
+          {m.method === "MAINTENANCE" && (
+            <>
+              <Row label={t("confirm.monthlyMaintenanceFee")} value={money(m.monthlyMaintenanceFee)} />
+              <Row label={t("confirm.monthlyTotal")} value={total(m.monthlyMaintenanceFee)} />
+            </>
+          )}
+          {m.method === "SALE" && (
+            <>
+              <Row label={t("confirm.salePrice")} value={money(m.salePrice)} />
+              <Row label={t("confirm.installFee")} value={money(m.installFee)} />
+              <Row
+                label={t("confirm.saleTotal")}
+                value={total((m.salePrice ?? 0) + (m.installFee ?? 0))}
+              />
+              {m.managementType === "FULL_SERVICE" && (
+                <Row label={t("confirm.monthlyMaintenanceFee")} value={money(m.monthlyMaintenanceFee)} />
+              )}
+            </>
+          )}
+          {m.method !== "SALE" && m.termMonths != null && (
+            <Row label={t("confirm.termMonths")} value={t("confirm.months", { n: m.termMonths })} />
+          )}
+          {expectedContractCount(m) > 0 && (
+            <>
+              <Row
+                label={t("confirm.contractNumber")}
+                value={m.contractNumber?.trim() ? m.contractNumber : t("confirm.autoAssigned")}
+              />
+              {m.contractDate && (
+                <Row label={t("confirm.contractDate")} value={formatDate(m.contractDate, locale)} />
+              )}
+            </>
+          )}
+          <Row label={t("confirm.contractCount")} value={String(expectedContractCount(m))} />
+        </Section>
+
+        {/* Service config */}
+        <Section title={t("confirm.sectionService")}>
+          <Row
+            label={t("confirm.inspectionCycle")}
+            value={
+              sc.inspectionCycleDays != null
+                ? t("confirm.days", { n: sc.inspectionCycleDays })
+                : t("confirm.inspectionNone")
+            }
+          />
+          <div>
+            <p className="mb-1 text-xs text-gray-500">{t("confirm.filters")}</p>
+            {validFilters.length === 0 ? (
+              <p className="text-sm text-gray-400">{t("confirm.filtersNone")}</p>
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {validFilters.map((f, i) => (
+                  <li key={f.consumableId ?? `custom-${i}`} className="text-sm text-gray-700">
+                    <span className="font-medium">
+                      {consumableName(f.consumableId) ?? f.customName ?? none}
+                    </span>
+                    <span className="text-gray-500">
+                      {" — "}
+                      {t("confirm.filterLine", { qty: f.quantity, days: f.useCycleDays })}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border-2 border-gray-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-[#002A4D]">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Row({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <div className="flex justify-between gap-3 text-sm">
+      <span className="shrink-0 text-gray-500">{label}</span>
+      <span className="text-right font-medium text-gray-800">{value}</span>
+    </div>
+  );
 }
