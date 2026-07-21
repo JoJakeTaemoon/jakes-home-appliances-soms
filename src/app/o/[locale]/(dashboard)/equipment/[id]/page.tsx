@@ -10,11 +10,13 @@ import { useApiQuery } from "@/lib/api/hooks";
 import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
+import { EquipmentEditModal } from "@/components/equipment/equipment-edit-modal";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Combobox } from "@/components/ui/combobox";
 import { Input, Textarea } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { FormField } from "@/components/ui/form-field";
 import {
   StatusBadge,
@@ -43,9 +45,21 @@ interface EquipmentDetail {
   modelId: string;
   siteId: string | null;
   serialNumber: string | null;
+  assetCode: string | null;
   status: string;
   ownership: string;
   installedAt: string | null;
+  // Editable equipment-centric fields (WS1).
+  serviceType: string | null;
+  managementType: string | null;
+  deposit: string | null;
+  monthlyFee: string | null;
+  salePrice: string | null;
+  installFee: string | null;
+  customInspectionCycleDays: number | null;
+  customMaintenanceCycleDays: number | null;
+  lastInspectionAtOverride: string | null;
+  customDescription: string | null;
   /// Effective deactivation moment (set when status DEACTIVATED). Null otherwise.
   deactivatedAt: string | null;
   /// Effective termination moment (set when status TERMINATED). Null otherwise.
@@ -85,6 +99,7 @@ export default function EquipmentDetailPage() {
   const models = modelsQuery.data ?? [];
 
   const [busy, setBusy] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [showRelocate, setShowRelocate] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(false);
@@ -137,6 +152,13 @@ export default function EquipmentDetailPage() {
             {data.site && <> · {data.site.name}</>}
           </p>
         </div>
+        {canManageEquipment(role) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Full edit is available in any status so admins can correct
+                data even on terminated/replaced units. */}
+            <Button onClick={() => setShowEdit(true)}>{t("actions.edit")}</Button>
+          </div>
+        )}
         {canManageEquipment(role) && data.status !== "REPLACED" && data.status !== "TERMINATED" && (
           <div className="flex flex-wrap items-center gap-2">
             {data.customer.type === "B2B" && (
@@ -256,6 +278,36 @@ export default function EquipmentDetailPage() {
         canManage={canManageEquipment(role)}
       />
       <EquipmentPaymentsList equipmentId={data.id} />
+
+      {/* Full edit modal (WS1) */}
+      <EquipmentEditModal
+        open={showEdit}
+        onClose={() => setShowEdit(false)}
+        equipment={{
+          id: data.id,
+          modelId: data.modelId ?? null,
+          siteId: data.siteId,
+          serialNumber: data.serialNumber,
+          assetCode: data.assetCode,
+          ownership: data.ownership,
+          installedAt: data.installedAt,
+          serviceType: data.serviceType,
+          managementType: data.managementType,
+          deposit: data.deposit,
+          monthlyFee: data.monthlyFee,
+          salePrice: data.salePrice,
+          installFee: data.installFee,
+          customInspectionCycleDays: data.customInspectionCycleDays,
+          customMaintenanceCycleDays: data.customMaintenanceCycleDays,
+          lastInspectionAtOverride: data.lastInspectionAtOverride,
+          notes: data.notes,
+          customDescription: data.customDescription,
+        }}
+        customerType={data.customer.type}
+        sites={sites}
+        locale={locale as "ko" | "vi" | "en"}
+        onSaved={load}
+      />
 
       {/* Relocate modal */}
       {showRelocate && (
@@ -810,6 +862,7 @@ interface FilterRow {
   cycleSource: "OVERRIDE" | "CATALOG" | "CUSTOM_MAINTENANCE" | "NONE";
   quantity: number;
   lastReplacedAt: string | null;
+  lastReplacedAtOverride: string | null;
   nextDueAt: string | null;
   daysRemaining: number | null;
   lastUnitPrice: string | null;
@@ -1084,6 +1137,10 @@ function FilterEditCycleModal({
   const [unitPrice, setUnitPrice] = useState<number>(
     row.unitPrice ? Number(row.unitPrice) : 0,
   );
+  // "최근 교체일" admin override (empty = revert to visit-derived date).
+  const [lastReplaced, setLastReplaced] = useState<string>(
+    row.lastReplacedAtOverride ? formatDate(row.lastReplacedAtOverride, "en") : "",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -1096,7 +1153,12 @@ function FilterEditCycleModal({
       if (row.overrideId) {
         await api.patch(
           `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
-          { replaceEveryDays: cycleMonths, quantity, unitPrice },
+          {
+            replaceEveryDays: cycleMonths,
+            quantity,
+            unitPrice,
+            lastReplacedAtOverride: lastReplaced || null,
+          },
         );
       } else if (row.consumableId) {
         await api.post(`/api/equipment/${equipmentId}/consumables`, {
@@ -1104,6 +1166,7 @@ function FilterEditCycleModal({
           replaceEveryDays: cycleMonths,
           quantity,
           unitPrice,
+          lastReplacedAtOverride: lastReplaced || null,
         });
       }
       onDone();
@@ -1179,6 +1242,16 @@ function FilterEditCycleModal({
             value={unitPrice}
             onChange={(e) => setUnitPrice(Number(e.target.value))}
             min={0}
+          />
+        </FormField>
+        <FormField
+          label={t("filterHistory.lastReplacedOverride")}
+          hint={t("filterHistory.lastReplacedHint")}
+        >
+          <DatePicker
+            ariaLabel={t("filterHistory.lastReplacedOverride")}
+            value={lastReplaced}
+            onChange={setLastReplaced}
           />
         </FormField>
         {err && (

@@ -5,6 +5,7 @@ import {
   type ConsumableMeta,
   type ConsumableLogRow,
 } from "@/lib/visits/suggest";
+import { addDays } from "@/lib/contracts/pause-period";
 
 // replaceEveryDays/cleanEveryDays are DAY counts (post ×30 migration — see
 // Task 0.6a). RO: clean every 180 days (~6mo), replace every 720 days (~24mo).
@@ -37,6 +38,45 @@ describe("daysBetween", () => {
   });
   it("returns negative for past", () => {
     expect(daysBetween(new Date("2026-05-30"), new Date("2026-05-20"))).toBe(-10);
+  });
+});
+
+describe("computeRecommendations — lastReplacedOverride (WS1)", () => {
+  it("uses the admin override as the REPLACE baseline, ahead of logs + install date", () => {
+    // Log would put next-due far in the past (out of window → not shown).
+    // The override re-anchors it to within the window so it surfaces.
+    const meta: ConsumableMeta = {
+      ...SEDIMENT, // replaceEveryDays: 90
+      lastReplacedOverride: new Date("2026-05-01"),
+    };
+    const out = computeRecommendations({
+      consumables: [meta],
+      logs: [{ consumableId: "sed", action: "REPLACE", createdAt: new Date("2026-01-01") }],
+      installedAt: new Date("2025-01-01"),
+      visitDate: new Date("2026-07-20"),
+      windowDays: 30,
+    });
+    const rep = out.find((r) => r.action === "REPLACE" && r.consumableId === "sed");
+    expect(rep).toBeTruthy();
+    expect(rep!.lastDoneAt).toEqual(new Date("2026-05-01"));
+    expect(rep!.nextDueAt).toEqual(addDays(new Date("2026-05-01"), 90));
+  });
+
+  it("does not apply the override to CLEAN actions", () => {
+    const meta: ConsumableMeta = {
+      ...RO, // cleanEveryDays: 180
+      lastReplacedOverride: new Date("2026-06-10"),
+    };
+    const out = computeRecommendations({
+      consumables: [meta],
+      logs: [{ consumableId: "ro", action: "CLEAN", createdAt: new Date("2026-01-10") }],
+      installedAt: new Date("2025-01-01"),
+      visitDate: new Date("2026-07-15"),
+      windowDays: 30,
+    });
+    const clean = out.find((r) => r.action === "CLEAN" && r.consumableId === "ro");
+    // CLEAN baseline stays the log date (2026-01-10), not the REPLACE override.
+    expect(clean?.lastDoneAt).toEqual(new Date("2026-01-10"));
   });
 });
 

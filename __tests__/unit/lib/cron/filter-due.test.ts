@@ -42,12 +42,19 @@ function equipmentRow(opts: {
     cleanEveryDays: number | null;
     isActive?: boolean;
   }[];
+  /** Per-equipment EquipmentConsumable overrides (cycle + last-replaced date). */
+  overrides?: {
+    consumableId: string | null;
+    replaceEveryDays: number | null;
+    lastReplacedAtOverride: Date | null;
+  }[];
   contactLanguage?: "ko" | "vi" | "en";
 }) {
   return {
     id: "eq1",
     siteId: null,
     installedAt: opts.installedAt,
+    consumables: opts.overrides ?? [],
     model: {
       name: "PTS-2100",
       modelCode: "PTS-2100",
@@ -100,6 +107,27 @@ describe("runFilterDueReminder", () => {
     const call = mockedSend.mock.calls[0][0];
     expect(call.templateCode).toBe("EMAIL_FILTER_DUE_D14");
     expect(call.vars?.action_label).toBe("thay lõi lọc"); // contact language vi
+  });
+
+  it("honors the last-replaced override — a backfilled recent date suppresses the reminder (WS1)", async () => {
+    // Same install date that queued above, but an admin override pins the last
+    // replacement to 2026-06-01 → next-due 2027-05-27, far outside the window.
+    const installedAt = new Date("2025-06-25T00:00:00Z");
+    mockedPrisma.equipment.findMany.mockResolvedValueOnce([
+      equipmentRow({
+        installedAt,
+        consumables: [
+          { id: "post", sku: "FLT-POST-001", replaceEveryDays: 360, cleanEveryDays: null },
+        ],
+        overrides: [
+          { consumableId: "post", replaceEveryDays: null, lastReplacedAtOverride: new Date("2026-06-01T00:00:00Z") },
+        ],
+      }),
+    ] as never);
+
+    const r = await runFilterDueReminder({ now });
+    expect(r.notificationsQueued).toBe(0);
+    expect(mockedSend).not.toHaveBeenCalled();
   });
 
   it("uses Korean action_label when the contact prefers ko", async () => {

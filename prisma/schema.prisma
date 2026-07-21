@@ -682,6 +682,11 @@ model Equipment {
   /// Per-unit inspection cycle override (days). Falls back to
   /// model.inspectionEveryDays when null.
   customInspectionCycleDays Int?
+  /// Admin override for "최근 점검일" (last inspection date). Normally the
+  /// last inspection is derived from the latest completed PERIODIC_INSPECTION
+  /// visit; this lets MANAGER+ correct an input error or seed pre-system
+  /// history without a fake visit. When set it becomes the next-due anchor.
+  lastInspectionAtOverride  DateTime?
   /// Optional per-unit image (Vercel Blob). Falls back to model.imageUrl.
   imageUrl                  String?
   /// Office user who registered this unit (the staff member who ran the
@@ -853,6 +858,11 @@ model EquipmentConsumable {
   /// consumable's `replaceEveryDays`. For manual filters with
   /// customName, this is the authoritative cycle.
   replaceEveryDays Int?
+  /// Admin override for this filter's "최근 교체일" (last replacement date).
+  /// Normally derived from the latest REPLACE VisitConsumableLog; this lets
+  /// MANAGER+ correct an error or seed pre-system history. When set it
+  /// becomes the next-due anchor for this filter.
+  lastReplacedAtOverride DateTime?
   unitPrice        Decimal?    @db.Decimal(14, 2)
   notes            String?
   createdAt        DateTime    @default(now())

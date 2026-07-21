@@ -748,7 +748,9 @@
         "CATALOG": "Catalog",
         "CUSTOM_MAINTENANCE": "External device cycle",
         "NONE": "Not set"
-      }
+      },
+      "lastReplacedOverride": "Last replaced (manual)",
+      "lastReplacedHint": "Leave empty to auto-calc from visit history."
     },
     "paymentsList": {
       "title": "Cash collection log",
@@ -814,7 +816,8 @@
       "replace": "Replace unit",
       "relocate": "Move to other site",
       "reactivate": "Reactivate",
-      "logRetrieval": "Log retrieval date"
+      "logRetrieval": "Log retrieval date",
+      "edit": "Edit"
     },
     "confirm": {
       "deactivate": "Deactivate this unit? It will be skipped by periodic-inspection scheduling but its history is preserved.",
@@ -885,6 +888,44 @@
       "shortcodeHint": "Used in contract numbers (e.g. SHV)",
       "taxCode": "Tax code",
       "contractPartyName": "Contract party name"
+    },
+    "edit": {
+      "title": "Edit equipment",
+      "cancel": "Cancel",
+      "save": "Save",
+      "site": "Install site",
+      "sitePlaceholder": "Select site",
+      "installedAt": "Install date",
+      "serialNumber": "Serial number",
+      "assetCode": "Asset code",
+      "ownership": {
+        "label": "Ownership",
+        "COMPANY": "Company",
+        "CUSTOMER": "Customer"
+      },
+      "serviceType": {
+        "label": "Service type",
+        "RENTAL": "Rental",
+        "SALE": "Sale (owned)",
+        "MAINTENANCE": "Maintenance"
+      },
+      "managementType": {
+        "label": "Management type",
+        "FULL_SERVICE": "Full service",
+        "SELF_MANAGED": "Self-managed",
+        "OTHER": "Other"
+      },
+      "deposit": "Deposit",
+      "monthlyFee": "Monthly fee",
+      "salePrice": "Sale price",
+      "installFee": "Install fee",
+      "inspectionCycleDays": "Inspection cycle (days)",
+      "maintenanceCycleDays": "Default filter cycle (days)",
+      "lastInspectionOverride": "Last inspection (manual)",
+      "lastInspectionHint": "Leave empty to auto-calc from visit history.",
+      "customDescription": "Equipment description (off-catalog)",
+      "notes": "Notes",
+      "statusNote": "Change equipment status (active/deactivated/terminated) via the dedicated buttons above."
     }
   },
   "equipmentModels": {

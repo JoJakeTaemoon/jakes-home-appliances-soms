@@ -748,7 +748,9 @@
         "CATALOG": "Catalog",
         "CUSTOM_MAINTENANCE": "Chu kỳ thiết bị bên ngoài",
         "NONE": "Chưa thiết lập"
-      }
+      },
+      "lastReplacedOverride": "Ngày thay gần nhất (thủ công)",
+      "lastReplacedHint": "Để trống sẽ tự tính theo lịch sử lượt thăm."
     },
     "paymentsList": {
       "title": "Lịch sử thu tiền",
@@ -814,7 +816,8 @@
       "replace": "Thay thế",
       "relocate": "Chuyển cơ sở",
       "reactivate": "Kích hoạt lại",
-      "logRetrieval": "Ghi nhận ngày thu hồi"
+      "logRetrieval": "Ghi nhận ngày thu hồi",
+      "edit": "Sửa"
     },
     "confirm": {
       "deactivate": "Vô hiệu hóa thiết bị này? Sẽ không còn lên lịch bảo trì định kỳ nhưng lịch sử vẫn được giữ.",
@@ -885,6 +888,44 @@
       "shortcodeHint": "Dùng trong số hợp đồng (VD: SHV)",
       "taxCode": "Mã số thuế",
       "contractPartyName": "Tên bên ký hợp đồng"
+    },
+    "edit": {
+      "title": "Sửa thông tin thiết bị",
+      "cancel": "Hủy",
+      "save": "Lưu",
+      "site": "Địa điểm lắp đặt",
+      "sitePlaceholder": "Chọn cơ sở",
+      "installedAt": "Ngày lắp đặt",
+      "serialNumber": "Số sê-ri",
+      "assetCode": "Mã quản lý (tài sản)",
+      "ownership": {
+        "label": "Sở hữu",
+        "COMPANY": "Công ty",
+        "CUSTOMER": "Khách hàng"
+      },
+      "serviceType": {
+        "label": "Loại dịch vụ",
+        "RENTAL": "Thuê",
+        "SALE": "Bán (sở hữu)",
+        "MAINTENANCE": "Bảo trì"
+      },
+      "managementType": {
+        "label": "Loại quản lý",
+        "FULL_SERVICE": "Dịch vụ trọn gói",
+        "SELF_MANAGED": "Khách tự quản lý",
+        "OTHER": "Khác"
+      },
+      "deposit": "Tiền cọc",
+      "monthlyFee": "Phí hàng tháng",
+      "salePrice": "Giá bán",
+      "installFee": "Phí lắp đặt",
+      "inspectionCycleDays": "Chu kỳ kiểm tra (ngày)",
+      "maintenanceCycleDays": "Chu kỳ lõi lọc mặc định (ngày)",
+      "lastInspectionOverride": "Ngày kiểm tra gần nhất (thủ công)",
+      "lastInspectionHint": "Để trống sẽ tự tính theo lịch sử lượt thăm.",
+      "customDescription": "Mô tả thiết bị (ngoài danh mục)",
+      "notes": "Ghi chú",
+      "statusNote": "Đổi trạng thái thiết bị (hoạt động/ngừng/chấm dứt) bằng các nút riêng ở phía trên."
     }
   },
   "equipmentModels": {

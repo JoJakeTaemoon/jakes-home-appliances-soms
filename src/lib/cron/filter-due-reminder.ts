@@ -93,6 +93,12 @@ interface EquipmentRow {
   id: string;
   siteId: string | null;
   installedAt: Date | null;
+  // Per-equipment overrides (cycle + last-replaced date) keyed by consumableId.
+  consumables: {
+    consumableId: string | null;
+    replaceEveryDays: number | null;
+    lastReplacedAtOverride: Date | null;
+  }[];
   model: {
     nameKo: string | null;
     nameVi: string | null;
@@ -150,12 +156,22 @@ async function processOne(
     const key = `${log.consumableId}:${log.action}`;
     if (!lastByKey.has(key)) lastByKey.set(key, log.createdAt);
   }
+  const overrideByConsumable = new Map(
+    eq.consumables.filter((o) => o.consumableId).map((o) => [o.consumableId as string, o]),
+  );
 
   for (const c of activeConsumables) {
+    const ov = overrideByConsumable.get(c.id);
     for (const action of ["REPLACE", "CLEAN"] as CycleAction[]) {
-      const cycle = action === "REPLACE" ? c.replaceEveryDays : c.cleanEveryDays;
+      // Per-equipment overrides apply to REPLACE only (cycle + last date);
+      // CLEAN keeps the catalog cycle and visit-derived baseline.
+      const cycle =
+        action === "REPLACE"
+          ? (ov?.replaceEveryDays ?? c.replaceEveryDays)
+          : c.cleanEveryDays;
       if (cycle == null) continue;
-      const baseline = lastByKey.get(`${c.id}:${action}`) ?? eq.installedAt;
+      const overrideBaseline = action === "REPLACE" ? (ov?.lastReplacedAtOverride ?? null) : null;
+      const baseline = overrideBaseline ?? lastByKey.get(`${c.id}:${action}`) ?? eq.installedAt;
       if (!baseline) continue;
       const nextDue = addDays(baseline, cycle);
       const daysUntilDue = Math.floor(
@@ -234,6 +250,13 @@ export async function runFilterDueReminder(
       id: true,
       siteId: true,
       installedAt: true,
+      consumables: {
+        select: {
+          consumableId: true,
+          replaceEveryDays: true,
+          lastReplacedAtOverride: true,
+        },
+      },
       model: {
         select: {
           nameKo: true,

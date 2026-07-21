@@ -143,6 +143,9 @@ export const GET = defineQuery({
       cycleSource: "OVERRIDE" | "CATALOG" | "CUSTOM_MAINTENANCE" | "NONE";
       quantity: number;
       lastReplacedAt: string | null;
+      /// Admin override for last-replaced date (null = using visit-derived).
+      /// Distinct from `lastReplacedAt`, which is the effective (override ?? derived).
+      lastReplacedAtOverride: string | null;
       nextDueAt: string | null;
       daysRemaining: number | null;
       lastUnitPrice: string | null;
@@ -181,11 +184,14 @@ export const GET = defineQuery({
             : "NONE";
 
       const history = c ? historyFor(c.id) : [];
-      const lastReplacedAt = history[0]?.replacedAt ?? null;
+      const derivedLast = history[0]?.replacedAt ?? null;
+      // Admin override for "최근 교체일" wins over the visit-derived date and
+      // becomes the next-due anchor.
+      const overrideDate = ov.lastReplacedAtOverride ?? null;
+      const lastReplacedAt = overrideDate ? overrideDate.toISOString() : derivedLast;
       const lastUnitPrice = history[0]?.cost ?? null;
-      const baseline = lastReplacedAt
-        ? new Date(lastReplacedAt)
-        : equipment.installedAt;
+      const baseline =
+        overrideDate ?? (derivedLast ? new Date(derivedLast) : equipment.installedAt);
       const nextDueAt = cycle && baseline ? addDays(baseline, cycle) : null;
       const daysRemaining = nextDueAt
         ? Math.floor((nextDueAt.getTime() - now.getTime()) / MS_PER_DAY)
@@ -205,6 +211,7 @@ export const GET = defineQuery({
         cycleSource,
         quantity: ov.quantity,
         lastReplacedAt,
+        lastReplacedAtOverride: overrideDate?.toISOString() ?? null,
         nextDueAt: nextDueAt?.toISOString() ?? null,
         daysRemaining,
         lastUnitPrice,
@@ -251,6 +258,8 @@ export const GET = defineQuery({
         cycleSource,
         quantity: entry.quantity,
         lastReplacedAt,
+        // Catalog rows have no EquipmentConsumable, hence no override.
+        lastReplacedAtOverride: null,
         nextDueAt: nextDueAt?.toISOString() ?? null,
         daysRemaining,
         lastUnitPrice,

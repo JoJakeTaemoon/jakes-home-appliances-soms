@@ -748,7 +748,9 @@
         "CATALOG": "카탈로그",
         "CUSTOM_MAINTENANCE": "외부 기기 주기",
         "NONE": "주기 미설정"
-      }
+      },
+      "lastReplacedOverride": "최근 교체일(수동)",
+      "lastReplacedHint": "비우면 방문 기록 기준으로 자동 계산됩니다."
     },
     "paymentsList": {
       "title": "수금 내역",
@@ -814,7 +816,8 @@
       "replace": "교체",
       "relocate": "사업장 이동",
       "reactivate": "재활성화",
-      "logRetrieval": "회수 일자 기록"
+      "logRetrieval": "회수 일자 기록",
+      "edit": "수정"
     },
     "confirm": {
       "deactivate": "이 장비를 비활성화하시겠습니까? 정기 점검 일정에서 제외되지만 이력은 보존됩니다.",
@@ -885,6 +888,44 @@
       "shortcodeHint": "계약 번호에 사용됩니다 (예: SHV)",
       "taxCode": "사업자등록번호",
       "contractPartyName": "계약 주체 이름"
+    },
+    "edit": {
+      "title": "장비 정보 수정",
+      "cancel": "취소",
+      "save": "저장",
+      "site": "설치 장소",
+      "sitePlaceholder": "사업장 선택",
+      "installedAt": "설치일",
+      "serialNumber": "시리얼 번호",
+      "assetCode": "관리번호(자산코드)",
+      "ownership": {
+        "label": "소유",
+        "COMPANY": "회사",
+        "CUSTOMER": "고객"
+      },
+      "serviceType": {
+        "label": "서비스 유형",
+        "RENTAL": "렌탈",
+        "SALE": "판매(소유)",
+        "MAINTENANCE": "유지보수"
+      },
+      "managementType": {
+        "label": "관리 유형",
+        "FULL_SERVICE": "전체 서비스",
+        "SELF_MANAGED": "고객 자가 관리",
+        "OTHER": "기타"
+      },
+      "deposit": "보증금",
+      "monthlyFee": "월 요금",
+      "salePrice": "판매가",
+      "installFee": "설치비",
+      "inspectionCycleDays": "정기점검 주기(일)",
+      "maintenanceCycleDays": "필터 기본 주기(일)",
+      "lastInspectionOverride": "최근 점검일(수동)",
+      "lastInspectionHint": "비우면 방문 기록 기준으로 자동 계산됩니다.",
+      "customDescription": "장비 설명(비표준)",
+      "notes": "메모",
+      "statusNote": "장비 상태(활성/비활성/해지) 변경은 상단의 전용 버튼을 사용하세요."
     }
   },
   "equipmentModels": {

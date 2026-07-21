@@ -73,6 +73,8 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           d.replaceEveryDays === undefined
             ? undefined
             : d.replaceEveryDays,
+        // undefined → unchanged, null → clear, date → pin the next-due anchor.
+        lastReplacedAtOverride: d.lastReplacedAtOverride,
         unitPrice: d.unitPrice ?? undefined,
         notes: d.notes ?? undefined,
       },

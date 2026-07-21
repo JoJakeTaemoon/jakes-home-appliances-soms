@@ -62,6 +62,13 @@ export interface ConsumableMeta {
   cleanEveryDays: number | null;
   /** PDF A.4 — pre-filters cleaned on every periodic-inspection visit. */
   cleanOnEveryVisit?: boolean;
+  /**
+   * Admin "최근 교체일" override for this equipment (EquipmentConsumable).
+   * When set it is the REPLACE baseline, ahead of the visit-log-derived date —
+   * so correcting the last date on the detail page also fixes the tech-app
+   * prefill and the customer filter-due reminder. REPLACE only.
+   */
+  lastReplacedOverride?: Date | null;
 }
 
 export interface ComputeArgs {
@@ -117,7 +124,11 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
 
   function evaluate(c: ConsumableMeta, action: SuggestAction, cycleDays: number): void {
     const lastDoneAt = lastByKey.get(`${c.id}:${action}`) ?? null;
-    const baseline = lastDoneAt ?? installedAt;
+    // The last-replaced override applies to REPLACE only and wins over the
+    // visit-derived date; CLEAN has no admin override.
+    const overrideBaseline = action === "REPLACE" ? (c.lastReplacedOverride ?? null) : null;
+    const effectiveLast = overrideBaseline ?? lastDoneAt;
+    const baseline = effectiveLast ?? installedAt;
     if (!baseline) return;
     const nextDueAt = addDays(baseline, cycleDays);
     const daysUntilDue = daysBetween(visitDate, nextDueAt);
@@ -129,7 +140,7 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
       nameVi: c.nameVi,
       nameEn: c.nameEn,
       action,
-      lastDoneAt,
+      lastDoneAt: effectiveLast,
       nextDueAt,
       daysUntilDue,
       cycleMonths: cycleDays,
@@ -168,6 +179,15 @@ export async function suggestConsumablesForVisit(
     select: {
       id: true,
       installedAt: true,
+      // Per-equipment overrides (cycle + last-replaced date) keyed by
+      // consumableId — applied on top of the catalog defaults below.
+      consumables: {
+        select: {
+          consumableId: true,
+          replaceEveryDays: true,
+          lastReplacedAtOverride: true,
+        },
+      },
       model: {
         select: {
           consumables: {
@@ -196,19 +216,30 @@ export async function suggestConsumablesForVisit(
   // External (off-catalog) equipment has no consumables list — return empty.
   if (!equipment.model) return [];
 
+  const overrideByConsumable = new Map(
+    equipment.consumables
+      .filter((o) => o.consumableId)
+      .map((o) => [o.consumableId as string, o]),
+  );
+
   const consumables: ConsumableMeta[] = equipment.model.consumables
     .map((c) => c.consumable)
     .filter((c) => c.isActive)
-    .map((c) => ({
-      id: c.id,
-      sku: c.sku,
-      nameKo: c.nameKo,
-      nameVi: c.nameVi,
-      nameEn: c.nameEn,
-      replaceEveryDays: c.replaceEveryDays,
-      cleanEveryDays: c.cleanEveryDays,
-      cleanOnEveryVisit: c.cleanOnEveryVisit,
-    }));
+    .map((c) => {
+      const ov = overrideByConsumable.get(c.id);
+      return {
+        id: c.id,
+        sku: c.sku,
+        nameKo: c.nameKo,
+        nameVi: c.nameVi,
+        nameEn: c.nameEn,
+        // Per-equipment cycle override wins over the catalog cycle (REPLACE).
+        replaceEveryDays: ov?.replaceEveryDays ?? c.replaceEveryDays,
+        cleanEveryDays: c.cleanEveryDays,
+        cleanOnEveryVisit: c.cleanOnEveryVisit,
+        lastReplacedOverride: ov?.lastReplacedAtOverride ?? null,
+      };
+    });
 
   if (consumables.length === 0) return [];
 

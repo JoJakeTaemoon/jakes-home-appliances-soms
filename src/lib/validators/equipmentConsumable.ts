@@ -39,6 +39,7 @@ export const createEquipmentConsumableSchema = z
     customName: optStr(200),
     quantity: z.coerce.number().int().min(1).max(50).default(1),
     replaceEveryDays: z.coerce.number().int().min(1).max(3600).optional(),
+    lastReplacedAtOverride: z.coerce.date().nullable().optional(),
     unitPrice: moneyOptional,
     notes: optStr(2000),
   })
@@ -75,6 +76,9 @@ export const updateEquipmentConsumableSchema = z.object({
   customName: optStr(200).nullable(),
   quantity: z.coerce.number().int().min(1).max(50).optional(),
   replaceEveryDays: z.coerce.number().int().min(1).max(3600).nullable().optional(),
+  /// Admin override for this filter's last replacement date — null reverts to
+  /// the visit-derived date, a date pins the next-due anchor.
+  lastReplacedAtOverride: z.coerce.date().nullable().optional(),
   unitPrice: moneyOptional,
   notes: optStr(2000),
 });

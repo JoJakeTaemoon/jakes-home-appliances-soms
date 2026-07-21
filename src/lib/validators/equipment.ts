@@ -13,6 +13,22 @@ function optStr(max: number) {
   }, z.string().max(max).optional());
 }
 
+/**
+ * Like optStr but an empty string / null CLEARS the column (→ null) instead of
+ * being a silent no-op. Use for edit-form fields the user must be able to
+ * blank out (serial, asset code, description, notes). `undefined` (field
+ * absent from the PATCH) still means "leave unchanged".
+ */
+function nullableStr(max: number) {
+  return z.preprocess((v) => {
+    if (v === undefined) return undefined;
+    if (v === null) return null;
+    if (typeof v !== "string") return v;
+    const t = v.trim();
+    return t === "" ? null : t;
+  }, z.string().max(max).nullable().optional());
+}
+
 const filterPolicyEntry = z.object({
   type: z.string().trim().min(1).max(60),
   replaceEveryDays: z.number().int().positive().max(36500),
@@ -146,13 +162,14 @@ export function generateSerialSequence(
 }
 
 export const updateEquipmentSchema = z.object({
-  serialNumber: optStr(60),
-  assetCode: optStr(60),
+  // nullableStr → the edit form can blank these out (empty string clears to null).
+  serialNumber: nullableStr(60),
+  assetCode: nullableStr(60),
   ownership: z.enum(["COMPANY", "CUSTOMER"]).optional(),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
   filterPolicyOverride: filterPolicySchema.nullable().optional(),
-  customDescription: optStr(500),
+  customDescription: nullableStr(500),
   customMaintenanceCycleDays: z.coerce
     .number()
     .int()
@@ -161,14 +178,23 @@ export const updateEquipmentSchema = z.object({
     .nullable()
     .optional(),
   // Equipment-centric fields.
+  // modelId/siteId: null clears (off-catalog device / no site). optStr keeps
+  // "" → undefined so an untouched field isn't wiped; explicit null clears.
+  modelId: z.string().trim().min(1).nullable().optional(),
+  siteId: z.string().trim().min(1).nullable().optional(),
   deposit: z.coerce.number().nonnegative().nullable().optional(),
   monthlyFee: z.coerce.number().nonnegative().nullable().optional(),
+  salePrice: z.coerce.number().nonnegative().nullable().optional(),
+  installFee: z.coerce.number().nonnegative().nullable().optional(),
   serviceType: equipmentServiceTypeEnum.nullable().optional(),
   managementType: managementTypeEnum.nullable().optional(),
   lifecycleStage: lifecycleStageEnum.optional(),
   customInspectionCycleDays: z.coerce.number().int().min(1).max(3600).nullable().optional(),
+  /// Admin override for last inspection date — null clears it (revert to
+  /// visit-derived), a date pins the next-due anchor.
+  lastInspectionAtOverride: z.coerce.date().nullable().optional(),
   imageUrl: optStr(500),
-  notes: optStr(2000),
+  notes: nullableStr(2000),
 });
 
 // ──────────────────────────────────────────────────────────────────────
