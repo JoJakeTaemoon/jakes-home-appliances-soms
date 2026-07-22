@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useBreadcrumbOverrides } from "@/lib/nav/breadcrumb-context";
+import { useNavigationHistory } from "@/lib/nav/navigation-history";
 import {
   computeOfficeCrumbs,
   type Crumb,
@@ -23,6 +24,7 @@ export function OfficeBreadcrumb() {
   const router = useRouter();
   const t = useTranslations("nav");
   const overrides = useBreadcrumbOverrides();
+  const { canGoBack } = useNavigationHistory();
   const crumbs = computeOfficeCrumbs(pathname);
 
   if (!crumbs || crumbs.length <= 1) return null;
@@ -36,20 +38,13 @@ export function OfficeBreadcrumb() {
   // "뒤로" prefers real in-app history — arriving at a visit detail from
   // the schedule board should hop back to the board, not to /visits which
   // the route-map hard-codes as this detail's parent. Fall back to
-  // parent.href only when the user landed via external referrer / direct
-  // link. Same heuristic as `components/ui/back-button.tsx`.
+  // parent.href only when the user landed via cold load / direct link
+  // (no in-app history). Same signal as `components/ui/back-button.tsx`.
   function goBack() {
     if (!parent) return;
-    if (typeof window !== "undefined" && document.referrer) {
-      try {
-        const ref = new URL(document.referrer);
-        if (ref.origin === window.location.origin) {
-          router.back();
-          return;
-        }
-      } catch {
-        // Malformed referrer — fall through to the parent-route fallback.
-      }
+    if (canGoBack) {
+      router.back();
+      return;
     }
     router.push(parent.href as "/o");
   }

@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { OfficeBreadcrumb } from "@/components/nav/office-breadcrumb";
 import { BreadcrumbProvider } from "@/lib/nav/breadcrumb-context";
+import { NavigationHistoryProvider } from "@/lib/nav/navigation-history";
 
 export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
@@ -30,6 +31,7 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
 
   return (
     <BreadcrumbProvider>
+    <NavigationHistoryProvider>
     <div className="flex min-h-screen bg-white">
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
@@ -55,6 +57,7 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
         </main>
       </div>
     </div>
+    </NavigationHistoryProvider>
     </BreadcrumbProvider>
   );
 }

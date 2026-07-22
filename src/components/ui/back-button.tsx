@@ -4,19 +4,14 @@
  * BackButton — "go back" navigation that prefers in-app history when
  * one exists, otherwise falls back to a parent route.
  *
- * Heuristic for "in-app history":
- *   - `document.referrer` is set AND its origin matches the current
- *     origin → the user navigated into this page from somewhere inside
- *     our app, so `router.back()` will land them on a meaningful page.
- *   - Otherwise (direct link / new tab / external referrer) → push the
- *     `fallback` route so we never strand the user on the previous
- *     external tab.
- *
- * The check runs at click time (not on render) so the value is read
- * after hydration without an SSR/CSR mismatch.
+ * "In-app history" is tracked by NavigationHistoryProvider (counts soft
+ * navigations since mount) rather than `document.referrer`, which is empty
+ * after client-side navigation and made this fall back to the parent route
+ * even when the user had a real previous screen to return to.
  */
 
 import { useRouter } from "@/i18n/navigation";
+import { useNavigationHistory } from "@/lib/nav/navigation-history";
 import { Button } from "@/components/ui/button";
 import type { ComponentProps } from "react";
 
@@ -42,18 +37,15 @@ export function BackButton({
   disabled,
 }: Readonly<BackButtonProps>) {
   const router = useRouter();
+  const { canGoBack } = useNavigationHistory();
 
   function goBack() {
-    if (typeof window !== "undefined" && document.referrer) {
-      try {
-        const ref = new URL(document.referrer);
-        if (ref.origin === window.location.origin) {
-          router.back();
-          return;
-        }
-      } catch {
-        // Malformed referrer — fall through.
-      }
+    // Real in-app history → step back to the previous screen; otherwise
+    // (cold load / direct link) go to the fallback so we never strand the
+    // user on an external tab.
+    if (canGoBack) {
+      router.back();
+      return;
     }
     router.push(fallback);
   }
