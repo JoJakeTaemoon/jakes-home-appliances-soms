@@ -11,6 +11,12 @@ import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
 import { useAuth } from "@/providers/auth-provider";
 import { canManageEquipment } from "@/lib/customers/access";
 import { EquipmentEditModal } from "@/components/equipment/equipment-edit-modal";
+import { ServiceConfigTable } from "@/components/equipment/service-config-table";
+import {
+  PurchaseHistoryWidget,
+  RecentWorkWidget,
+  NextScheduleWidget,
+} from "@/components/equipment/equipment-widgets";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -60,6 +66,9 @@ interface EquipmentDetail {
   customMaintenanceCycleDays: number | null;
   lastInspectionAtOverride: string | null;
   customDescription: string | null;
+  imageUrl: string | null;
+  registeredBy: { id: string; username: string } | null;
+  installedByTechnician: { id: string; username: string } | null;
   /// Effective deactivation moment (set when status DEACTIVATED). Null otherwise.
   deactivatedAt: string | null;
   /// Effective termination moment (set when status TERMINATED). Null otherwise.
@@ -270,6 +279,47 @@ export default function EquipmentDetailPage() {
             <Row label="Maintenance" value={formatVnd(data.model.monthlyMaintenancePrice)} />
           </div>
         </div>
+        {/* Read-only service / pricing / people — the fields the retired
+            inline panel showed, so they stay visible without opening [수정]. */}
+        <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:col-span-2">
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
+            {t("detail.title")}
+          </h3>
+          {data.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- user-uploaded Blob URL, not a bundled asset
+            <img
+              src={data.imageUrl}
+              alt={pickModelName(data.model, locale)}
+              className="mb-1 h-32 w-full max-w-xs rounded-md border border-[#e5e5e5] object-contain"
+            />
+          )}
+          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+            <Row label={t("detail.assetCode")} value={data.assetCode ?? "—"} mono />
+            <Row label={t("detail.serviceType")} value={data.serviceType ?? "—"} />
+            <Row label={t("detail.managementType")} value={data.managementType ?? "—"} />
+            <Row label={t("detail.deposit")} value={data.deposit ? formatVnd(data.deposit) : "—"} />
+            <Row label={t("detail.monthlyFee")} value={data.monthlyFee ? formatVnd(data.monthlyFee) : "—"} />
+            <Row label={t("edit.salePrice")} value={data.salePrice ? formatVnd(data.salePrice) : "—"} />
+            <Row label={t("edit.installFee")} value={data.installFee ? formatVnd(data.installFee) : "—"} />
+            <Row label={t("detail.technician")} value={data.installedByTechnician?.username ?? "—"} />
+            <Row label={t("detail.registeredBy")} value={data.registeredBy?.username ?? "—"} />
+          </div>
+        </div>
+      </div>
+
+      {/* Service-config overview (inspection + filters, next-due) and the
+          per-equipment widgets — absorbed from the retired inline panel so
+          this dedicated page is the single equipment view (WS4). */}
+      <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
+          {t("serviceConfig.title")}
+        </h3>
+        <ServiceConfigTable equipmentId={data.id} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <PurchaseHistoryWidget equipmentId={data.id} />
+        <RecentWorkWidget equipmentId={data.id} />
+        <NextScheduleWidget equipmentId={data.id} />
       </div>
 
       <EquipmentContractsList equipmentId={data.id} />

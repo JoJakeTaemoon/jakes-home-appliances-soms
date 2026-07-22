@@ -21,7 +21,6 @@ import {
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Avatar } from "@/components/ui/avatar";
 import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-modal";
-import { EquipmentDetailContent } from "@/components/equipment/equipment-detail-content";
 import { OrderHistoryTab } from "@/components/customer/order-history-tab";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -183,7 +182,6 @@ export default function CustomerDetailPage() {
   const [showChangeSalesRep, setShowChangeSalesRep] = useState(false);
   const [showNewOrder, setShowNewOrder] = useState(false);
   const [siteFilter, setSiteFilter] = useState<string | null>(null);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
 
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
@@ -524,12 +522,17 @@ export default function CustomerDetailPage() {
                     {filteredEquipment.map((e) => (
                       <tr
                         key={e.id}
-                        onClick={() =>
-                          setSelectedEquipmentId(
-                            selectedEquipmentId === e.id ? null : e.id,
-                          )
-                        }
-                        className={`cursor-pointer border-b border-[#f5f5f5] last:border-b-0 hover:bg-[#fafafa] ${selectedEquipmentId === e.id ? "bg-blue-50" : ""}`}
+                        onClick={() => router.push(`/o/equipment/${e.id}`)}
+                        onKeyDown={(ev) => {
+                          if (ev.key === "Enter" || ev.key === " ") {
+                            ev.preventDefault();
+                            router.push(`/o/equipment/${e.id}`);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="link"
+                        aria-label={pickModelName(e.model, locale)}
+                        className="cursor-pointer border-b border-[#f5f5f5] last:border-b-0 hover:bg-[#fafafa] focus:bg-[#f0f7ff] focus:outline-none"
                       >
                         <td className="px-3 py-2">
                           <div className="flex flex-col">
@@ -556,31 +559,6 @@ export default function CustomerDetailPage() {
                 </table>
               </div>
             )}
-
-            {selectedEquipmentId ? (
-              <div className="mt-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-[#002A4D]">
-                    {tEq("detailPanelTitle")}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <Link href={`/o/equipment/${selectedEquipmentId}`}>
-                      <Button variant="ghost">{tEq("openFullPage")}</Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSelectedEquipmentId(null)}
-                    >
-                      {tc("close")}
-                    </Button>
-                  </div>
-                </div>
-                <EquipmentDetailContent
-                  equipmentId={selectedEquipmentId}
-                  embedded
-                />
-              </div>
-            ) : null}
           </div>
         </TabPanel>
 
