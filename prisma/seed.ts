@@ -1605,6 +1605,8 @@ async function main() {
     lifecycleStage?: "INSTALLED" | "IN_RENTAL" | "IN_MAINTENANCE" | "RETRIEVED" | "REPLACED";
     deposit?: string;
     monthlyFee?: string;
+    salePrice?: string;
+    installFee?: string;
     registeredById?: string;
   }) {
     const existing = await prisma.equipment.findFirst({
@@ -1625,6 +1627,9 @@ async function main() {
         lifecycleStage: data.lifecycleStage ?? "IN_MAINTENANCE",
         deposit: data.deposit,
         monthlyFee: data.monthlyFee ?? "500000",
+        // SALE units carry sale price + install fee instead of deposit/rent.
+        salePrice: data.salePrice,
+        installFee: data.installFee,
         registeredById: data.registeredById ?? staff.id,
       },
     });
@@ -1680,8 +1685,23 @@ async function main() {
     deposit: "1000000",
     monthlyFee: "200000",
   });
+  // A SALE (outright purchase) unit so the sale price + install fee fields
+  // (editable via [수정], shown read-only on the detail page) have demo data.
+  await ensureEquipment({
+    serialNumber: "PTS-4000T-000020",
+    customerId: b2b.id,
+    siteId: hcmcSite.id,
+    modelId: purifier.id,
+    installedAt: new Date("2025-10-01"),
+    ownership: "CUSTOMER",
+    serviceType: "SALE",
+    managementType: "FULL_SERVICE",
+    lifecycleStage: "INSTALLED",
+    salePrice: "16500000",
+    installFee: "300000",
+  });
 
-  console.log(`  ✓ B2B customer ${b2b.code} (with 2 sites, 4 equipment)`);
+  console.log(`  ✓ B2B customer ${b2b.code} (with 2 sites, 5 equipment)`);
 
   // ─── B2C customer #2 (post-rental, equipment owned by customer) ─────
   const b2c2 = await prisma.customer.upsert({
