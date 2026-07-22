@@ -1,7 +1,7 @@
 # Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
-**Phiên bản**: 2026-07-11 (Wizard đăng ký thiết bị cải tiến 5 bước + tải hợp đồng PDF lên + hệ thống địa chỉ 2 cấp)
+**Phiên bản**: 2026-07-22 (Sửa toàn bộ thông tin thiết bị + Hợp nhất trang chi tiết thiết bị + Liên kết chọn Thương hiệu · Nhóm sản phẩm · Mẫu + Cải tiến nút Quay lại)
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Kỹ thuật viên](./field.md) · [Hướng dẫn Khách hàng](./customer.md)
 
@@ -191,6 +191,14 @@ Quản lý hệ thống  (ADMIN)
 
 Nhấn nút ngôn ngữ ở góc trên bên phải để chuyển ngay giữa Tiếng Việt (VI) · Tiếng Hàn (KO) · Tiếng Anh (EN). Màn hình hiện tại không thay đổi, chỉ văn bản thay đổi.
 
+### 4.6 Hành vi nút Quay lại (cải tiến)
+
+Nút "**Quay lại**" cạnh breadcrumb ở đầu trang giờ đây quay về **màn hình bạn vừa xem trước đó**. Trước kia nút này luôn đưa về màn hình danh sách của menu tương ứng (ví dụ: danh sách khách hàng), nhưng giờ nó lùi lại đúng theo đường bạn đã đi qua.
+
+Ví dụ: Danh sách khách hàng → Chi tiết khách hàng → (nhấp vào thiết bị) Chi tiết thiết bị — nhấn "Quay lại" sẽ về Chi tiết khách hàng, nhấn "Quay lại" lần nữa sẽ về Danh sách khách hàng.
+
+> Chỉ khi không có màn hình trước đó (mở từ tab mới, hoặc truy cập trực tiếp bằng link) thì nút mới đưa về màn hình danh sách của menu tương ứng.
+
 ---
 
 ## Chương 5. Quản lý Khách hàng
@@ -272,7 +280,7 @@ Sau khi lưu, vào Chi tiết khách hàng → tab "**Địa điểm lắp đặ
 | Tab | Nội dung |
 |---|---|
 | **Tổng quan** | Tên, điện thoại, địa chỉ, ghi chú, đại lý phụ trách (có thể chỉnh sửa) |
-| **Thiết bị** | Bảng điều khiển master-detail + bảng cấu hình dịch vụ hợp nhất |
+| **Thiết bị** | Danh sách thiết bị — nhấp vào để chuyển đến trang chi tiết thiết bị chuyên dụng (§5.5) |
 | **Hợp đồng** | Tất cả hợp đồng: đang hoạt động, nháp, hoàn thành, đã hủy |
 | **Lịch sử bảo trì** | Toàn bộ lượt thăm của khách hàng này |
 | **Thanh toán** | Lịch sử thanh toán (đã lập, hoàn thành, quá hạn, miễn) |
@@ -281,13 +289,13 @@ Sau khi lưu, vào Chi tiết khách hàng → tab "**Địa điểm lắp đặ
 | **Địa điểm lắp đặt** | Danh sách Site B2B (ẩn với B2C) |
 | **Ghi chú** | Ghi chú nội bộ (khách hàng không thấy) |
 
-### 5.5 Tab Thiết bị — Bảng điều khiển Master-Detail
+### 5.5 Tab Thiết bị
 
 ![Tab thiết bị](../screenshots/vi/office/06-customer-equipment-tab.png)
 
-Nhấp vào một thiết bị trong danh sách bên trái để xem chi tiết bên phải.
+Nhấp vào một thiết bị trong danh sách sẽ chuyển đến **trang chi tiết thiết bị chuyên dụng** (§7.3). Nhấp vào thiết bị từ thẻ thiết bị ở tab **Tổng quan** cũng luôn chuyển đến cùng một trang này — trước đây màn hình hiển thị khác nhau tùy nơi bạn nhấp vào, còn bây giờ dù vào từ đâu bạn cũng thấy cùng một màn hình.
 
-**Bảng cấu hình dịch vụ hợp nhất** — chu kỳ kiểm tra và chu kỳ thay lõi lọc hiển thị trong một bảng:
+**Bảng cấu hình dịch vụ hợp nhất** trên trang chi tiết thiết bị — chu kỳ kiểm tra và chu kỳ thay lõi lọc hiển thị trong một bảng:
 
 | Cột | Mô tả |
 |---|---|
@@ -393,7 +401,9 @@ Chi tiết khách hàng → tab **Tổng quan** → dropdown "Đại lý phụ t
 ### 7.1 Thay đổi chính
 
 - Thêm trường: `deposit` (tiền đặt cọc), `monthlyFee` (phí tháng), `serviceType` (RENTAL/MAINTENANCE/SALE), `managementType` (FULL_SERVICE/SELF_MANAGED/OTHER), `lifecycleStage` (ACTIVE/INACTIVE/RETRIEVED/TRANSFERRED)
-- Bảng điều khiển master-detail: danh sách + chi tiết cùng một màn hình
+- **Hợp nhất thành 1 trang chi tiết thiết bị chuyên dụng** (mới): dù nhấp vào thiết bị từ tab Tổng quan của khách hàng · tab Thiết bị · danh sách thiết bị, đều chuyển đến cùng một màn hình (§7.3)
+- **Sửa toàn bộ thông tin thiết bị** (mới, §7.4): MANAGER trở lên có thể sửa mọi trường bằng nút "Sửa" trên trang chi tiết thiết bị. Hỗ trợ chỉnh tay (override) ngày kiểm tra gần nhất và ngày thay lõi lọc gần nhất
+- **Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu** (mới): chọn bất kỳ trường nào trước, các trường còn lại tự động thu hẹp theo — áp dụng đồng nhất ở wizard đăng ký và màn hình sửa (§7.5)
 - Bảng cấu hình dịch vụ hợp nhất: lịch kiểm tra + lịch thay lõi lọc trong một bảng
 - Wizard đăng ký hàng loạt: **5 bước** — từ chọn khách hàng đến hình thức bán + cấu hình dịch vụ (đăng ký đơn lẻ cũng chuyển sang wizard 4 bước)
 - **Chu kỳ kiểm tra/thay lõi lọc thống nhất theo đơn vị "ngày"** — tính ngày dự kiến tiếp theo chính xác hơn
@@ -407,9 +417,13 @@ Chi tiết khách hàng → tab **Tổng quan** → dropdown "Đại lý phụ t
 
 Bộ lọc: Loại khách (B2C/B2B) · Loại dịch vụ (thuê/bảo trì/bán) · Trạng thái vòng đời · KTV
 
+Nhấp vào một dòng sẽ chuyển đến **cùng một trang chi tiết thiết bị chuyên dụng** như khi vào từ tab Thiết bị của khách hàng (§7.3).
+
 ### 7.3 Chi tiết thiết bị — Bảng cấu hình dịch vụ hợp nhất
 
 ![Chi tiết thiết bị](../screenshots/vi/office/16-equipment-detail.png)
+
+**Luôn cùng một màn hình dù vào từ đâu** (mới): dù nhấp vào thiết bị từ thẻ thiết bị ở tab **Tổng quan** của khách hàng, từ tab **Thiết bị** (§5.5), hay từ dòng trong **danh sách thiết bị** (§7.2) — tất cả đều chuyển đến **cùng một trang chi tiết thiết bị chuyên dụng**. Trước đây màn hình hiển thị khác nhau tùy nơi bạn nhấp vào, còn bây giờ vào từ đâu cũng thấy cùng một màn hình.
 
 Nhấp vào một thiết bị để xem:
 
@@ -418,12 +432,43 @@ Nhấp vào một thiết bị để xem:
 - Ngày lắp đặt, tiền đặt cọc, phí tháng, loại dịch vụ
 - Trạng thái vòng đời hiện tại (ACTIVE/INACTIVE v.v.)
 
+**Thông tin chi tiết (chỉ xem)**: Mã quản lý (tài sản) · Loại dịch vụ · Loại quản lý · Tiền đặt cọc · Phí tháng · Giá bán · Phí lắp đặt · Kỹ thuật viên phụ trách · Người đăng ký — cùng hiển thị ở đây. Muốn thay đổi các giá trị này, dùng §7.4 "Sửa thông tin thiết bị".
+
 **Bảng cấu hình dịch vụ hợp nhất**:
 Chu kỳ kiểm tra và chu kỳ thay lõi lọc được hợp nhất vào một bảng — xem ngày lượt thăm trước, ngày dự kiến tiếp theo và chu kỳ thay.
 
-Phần **Lịch sử lượt thăm liên kết** cũng hiển thị trên cùng trang.
+Trên cùng trang này còn có các widget **Lịch sử mua hàng · Công việc gần nhất · Lịch tiếp theo**, **danh sách hợp đồng liên kết**, **lịch sử thanh toán**, **lịch sử thay lõi lọc**, và **lịch sử lượt thăm liên kết**.
 
-### 7.4 Wizard đăng ký thiết bị hàng loạt (cải tiến — 5 bước)
+### 7.4 Sửa thông tin thiết bị (mới)
+
+Người dùng có quyền **MANAGER trở lên** có thể sửa gần như mọi trường của thiết bị bằng nút "**Sửa**" ở góc trên bên phải trang chi tiết thiết bị. Có thể dùng **bất kể** trạng thái hiện tại của thiết bị (hoạt động/ngừng/chấm dứt) — vì màn hình này dùng để sửa lỗi nhập liệu.
+
+#### Các trường có thể sửa
+
+| Nhóm | Trường |
+|---|---|
+| Mẫu thiết bị | Đổi mẫu bằng lựa chọn liên kết Thương hiệu·Nhóm sản phẩm (xem §7.5 "Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu") |
+| Thông tin lắp đặt | Địa điểm lắp đặt (cơ sở) · Ngày lắp đặt · Số sê-ri · Mã quản lý (tài sản) |
+| Cấu hình dịch vụ | Loại dịch vụ (thuê/bán/bảo trì) · Loại quản lý |
+| Số tiền | Tiền đặt cọc · Phí hàng tháng · Giá bán · Phí lắp đặt |
+| Chu kỳ | Chu kỳ kiểm tra định kỳ (ngày) · Chu kỳ lõi lọc mặc định (ngày) |
+| Chỉnh tay lịch sử | Ngày kiểm tra gần nhất (thủ công) |
+| Khác | Ghi chú · Mô tả thiết bị (dành cho thiết bị ngoài danh mục) |
+
+#### Chỉnh tay (override) Ngày kiểm tra gần nhất / Ngày thay lõi lọc gần nhất
+
+Hai giá trị này vốn được **tự động tính từ lịch sử lượt thăm**, nhưng nếu quản trị viên tự nhập giá trị, giá trị đó sẽ được **ưu tiên áp dụng** và **ngày kiểm tra/thay lõi tiếp theo sẽ tự động tính lại**.
+
+- **Ngày kiểm tra gần nhất**: nhập ngày vào trường "Ngày kiểm tra gần nhất (thủ công)" trong modal "Sửa". Để trống sẽ quay lại tính tự động theo lịch sử lượt thăm.
+- **Ngày thay lõi lọc gần nhất theo từng lõi**: ở bảng "Lịch sử thay lõi lọc" phía dưới trang chi tiết thiết bị, nhấn "**Sửa chu kỳ**" trên dòng lõi lọc cần chỉnh rồi nhập ngày vào trường "Ngày thay gần nhất (thủ công)" trong modal mở ra.
+
+> Giá trị chỉnh tay này cũng được áp dụng cho **gợi ý vật tư tiêu hao trên app kỹ thuật viên** và **tin nhắc thay lõi lọc gửi cho khách hàng**. Dùng khi cần sửa giá trị nhập sai, hoặc nhập bổ sung lịch sử từ trước khi có hệ thống.
+
+Khi để trống một trường trong màn hình sửa, giá trị chỉnh tay đó bị xóa; đặt chu kỳ về **0** sẽ quay lại giá trị mặc định của danh mục.
+
+> **Lưu ý**: Các chuyển đổi trạng thái quan trọng (vô hiệu hóa · kết thúc · thu hồi) không thực hiện ở màn hình sửa này mà dùng các nút riêng ở phía trên. Việc tách riêng này nhằm bảo vệ tính nhất quán của sổ cái tạm ngừng hợp đồng.
+
+### 7.5 Wizard đăng ký thiết bị hàng loạt (cải tiến — 5 bước)
 
 **Thanh bên → Thiết bị → Đăng ký hàng loạt**
 
@@ -439,7 +484,11 @@ Wizard **5 bước** để đăng ký và lắp đặt nhiều thiết bị cùn
 
 #### Bước 2: Thông tin thiết bị
 
-- Chọn mẫu theo Thương hiệu → Dòng sản phẩm.
+- **Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu** (mới): chọn bất kỳ trường nào trước, các trường còn lại sẽ tự động thu hẹp theo.
+  - **Chọn Mẫu trước** → Thương hiệu · Nhóm sản phẩm tự động điền theo.
+  - **Chọn Thương hiệu** → chỉ hiện các Nhóm sản phẩm mà thương hiệu đó có.
+  - **Chọn Nhóm sản phẩm** → chỉ hiện các Mẫu thuộc đúng Thương hiệu + Nhóm sản phẩm đó.
+  - Giúp giảm sai sót nhập liệu và chọn nhanh hơn. Cách liên kết này cũng áp dụng đồng nhất ở màn hình §7.4 "Sửa thông tin thiết bị" và wizard đăng ký đơn lẻ ở §7.6.
 - Nhập số lượng, ngày lắp đặt, kỹ thuật viên phụ trách, ghi chú lắp đặt.
 - **Mã quản lý** có thể để hệ thống tự sinh (`WA` + ngày + số thứ tự) hoặc nhập thủ công.
 
@@ -464,13 +513,13 @@ Hiển thị **tóm tắt toàn bộ thông tin** đã nhập ở các bước t
 
 > Sau khi đăng ký, dữ liệu được ghi vào Lịch sử lắp đặt và phản ánh trong tab [Thiết bị] của hợp đồng tương ứng.
 
-### 7.5 Wizard đăng ký thiết bị đơn lẻ (mới)
+### 7.6 Wizard đăng ký thiết bị đơn lẻ (mới)
 
 **Thanh bên → Danh sách thiết bị → nút "+ Lắp đặt"**
 
-Dùng khi cần đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một dòng (multi-line). Cấu trúc theo cùng **4 bước** như đăng ký hàng loạt (§7.4: Chọn khách hàng → Thông tin thiết bị → Hình thức bán → Cấu hình dịch vụ), nhưng điểm khác biệt là **mỗi dòng có thể chỉ định riêng mẫu, hình thức bán và cấu hình dịch vụ**. Thông tin hợp đồng (số hợp đồng, ngày ký v.v.) chỉ nhập một lần ở cấp hợp đồng, không nhập theo từng dòng.
+Dùng khi cần đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một dòng (multi-line). Cấu trúc theo cùng **4 bước** như đăng ký hàng loạt (§7.5: Chọn khách hàng → Thông tin thiết bị → Hình thức bán → Cấu hình dịch vụ), nhưng điểm khác biệt là **mỗi dòng có thể chỉ định riêng mẫu, hình thức bán và cấu hình dịch vụ**. Bước Thông tin thiết bị áp dụng cùng cách **Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu** ở §7.5 cho từng dòng. Thông tin hợp đồng (số hợp đồng, ngày ký v.v.) chỉ nhập một lần ở cấp hợp đồng, không nhập theo từng dòng.
 
-### 7.6 Lịch sử lắp đặt (mới)
+### 7.7 Lịch sử lắp đặt (mới)
 
 **Thanh bên → Thiết bị → Lịch sử lắp đặt**
 
