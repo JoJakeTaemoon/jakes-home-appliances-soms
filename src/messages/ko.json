@@ -1565,7 +1565,16 @@
         "PERIODIC_CHECK_B2C": "정기 점검표 (B2C)",
         "PERIODIC_CHECK_B2B": "정기 점검 확인서 (B2B)",
         "WORK_CONFIRMATION": "작업 확인서"
-      }
+      },
+      "editBeforeIssue": "편집·미리보기",
+      "close": "닫기",
+      "notesLabel": "문서 메모",
+      "notesPlaceholder": "이 문서에 인쇄할 메모를 입력하세요",
+      "notesHint": "비워두면 방문 소견(findings)이 그대로 사용됩니다. 이 편집 내용은 발급되는 PDF에만 반영됩니다.",
+      "refreshPreview": "미리보기 새로고침",
+      "issueEdited": "편집 내용으로 발급",
+      "previewTitle": "문서 미리보기",
+      "previewFailed": "미리보기 생성 실패"
     }
   },
   "serviceRequests": {

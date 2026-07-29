@@ -8,6 +8,7 @@ import {
   cancelVisitSchema,
   addNotesSchema,
   recommendQuerySchema,
+  issueDocumentSchema,
 } from "@/lib/validators/visit";
 
 describe("createVisitSchema", () => {
@@ -101,6 +102,28 @@ describe("addNotesSchema", () => {
   it("accepts empty body (caller validates note OR photos)", () => {
     const parsed = addNotesSchema.parse({});
     expect(parsed.photos).toEqual([]);
+  });
+});
+
+describe("issueDocumentSchema — edit-before-print notes (요청 #4)", () => {
+  it("keeps an empty-string notes as a deliberate clear (not coerced to undefined)", () => {
+    const parsed = issueDocumentSchema.parse({ kind: "DELIVERY_RECEIPT", notes: "" });
+    // "" must survive so the renderer clears the block; undefined would instead
+    // fall back to visit.findings.
+    expect(parsed.notes).toBe("");
+  });
+  it("omitting notes leaves it undefined (keep visit.findings)", () => {
+    const parsed = issueDocumentSchema.parse({ kind: "DELIVERY_RECEIPT" });
+    expect(parsed.notes).toBeUndefined();
+  });
+  it("passes through edited notes text", () => {
+    const parsed = issueDocumentSchema.parse({ kind: "PERIODIC_CHECK_B2B", notes: "Đã vệ sinh lõi" });
+    expect(parsed.notes).toBe("Đã vệ sinh lõi");
+  });
+  it("rejects notes longer than 4000 chars", () => {
+    expect(() =>
+      issueDocumentSchema.parse({ kind: "DELIVERY_RECEIPT", notes: "x".repeat(4001) }),
+    ).toThrow();
   });
 });
 

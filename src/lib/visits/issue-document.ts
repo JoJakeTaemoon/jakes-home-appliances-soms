@@ -23,6 +23,9 @@ export interface IssueVisitDocumentInput {
   visitId: string;
   kind: PdfKind;
   langPair?: PdfLangPair;
+  /** Office "edit before print" (요청 #4) — overrides the visit-document
+   *  notes block for this issuance. Not persisted; the archived PDF holds it. */
+  notes?: string;
   /** Actor id — used for the audit row + generatedById on the doc. */
   actorId: string;
   request?: NextRequest | null;
@@ -41,6 +44,7 @@ export async function issueVisitDocument({
   visitId,
   kind,
   langPair,
+  notes,
   actorId,
   request,
 }: IssueVisitDocumentInput): Promise<IssueVisitDocumentResult> {
@@ -78,6 +82,7 @@ export async function issueVisitDocument({
     kind,
     refId: visitId,
     langPair,
+    notes,
     generatedById: actorId,
   });
 

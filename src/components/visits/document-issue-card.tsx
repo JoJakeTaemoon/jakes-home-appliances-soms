@@ -19,10 +19,12 @@
  *   GET  /api/visits/[id]/documents/[docId]/download
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
 import { useApi } from "@/lib/api/client";
+import { useAuth } from "@/providers/auth-provider";
 import { canIssueVisitDocument } from "@/lib/visits/document-policy";
 import {
   suggestVisitDocumentKindList,
@@ -52,6 +54,8 @@ interface Props {
   /** Latest active contract type for the customer, if available. */
   contractType: "RENTAL" | "SALE" | "MAINTENANCE" | null;
   documents: IssuedDocument[];
+  /** Visit findings — prefills the editable notes block (요청 #4). */
+  findings?: string | null;
   onIssued: () => void | Promise<void>;
 }
 
@@ -71,14 +75,70 @@ export function DocumentIssueCard({
   customerType,
   contractType,
   documents,
+  findings,
   onIssued,
 }: Readonly<Props>) {
   const t = useTranslations("visits.documents");
   const api = useApi();
+  const { accessToken } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [pickKind, setPickKind] = useState<VisitDocumentKind>("WORK_CONFIRMATION");
   const [showPicker, setShowPicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "편집 후 발급" (요청 #4) — which kind's editor is open, its draft notes, and
+  // the object-URL of the last rendered live preview.
+  const [editKind, setEditKind] = useState<VisitDocumentKind | null>(null);
+  const [draftNotes, setDraftNotes] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
+
+  // Revoke the previous object URL whenever it changes / on unmount so blob
+  // memory isn't leaked as the operator re-previews.
+  function setPreview(url: string | null) {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = url;
+    setPreviewUrl(url);
+  }
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
+
+  function openEditor(kind: VisitDocumentKind) {
+    setEditKind(kind);
+    setDraftNotes(findings ?? "");
+    setPreview(null);
+    setError(null);
+  }
+  function closeEditor() {
+    setEditKind(null);
+    setPreview(null);
+  }
+
+  async function refreshPreview() {
+    if (!editKind) return;
+    setPreviewBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/visits/${visitId}/preview/${editKind}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ notes: draftNotes }),
+      });
+      if (!res.ok) throw new Error(`${t("previewFailed")} (${res.status})`);
+      const blob = await res.blob();
+      setPreview(URL.createObjectURL(blob));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
 
   const policy = canIssueVisitDocument({
     state: state as Parameters<typeof canIssueVisitDocument>[0]["state"],
@@ -105,11 +165,15 @@ export function DocumentIssueCard({
     [documents],
   );
 
-  const handleIssue = async (kind: VisitDocumentKind) => {
+  const handleIssue = async (kind: VisitDocumentKind, notes?: string) => {
     setBusy(kind);
     setError(null);
     try {
-      await api.post(`/api/visits/${visitId}/issue-document`, { kind });
+      await api.post(
+        `/api/visits/${visitId}/issue-document`,
+        notes !== undefined ? { kind, notes } : { kind },
+      );
+      if (editKind === kind) closeEditor();
       await onIssued();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -156,8 +220,19 @@ export function DocumentIssueCard({
                     </p>
                   </div>
                   <Button
-                    onClick={() => handleIssue(kind)}
+                    variant="outline"
+                    onClick={() => (editKind === kind ? closeEditor() : openEditor(kind))}
                     disabled={busy !== null}
+                    size="sm"
+                  >
+                    {t("editBeforeIssue")}
+                  </Button>
+                  <Button
+                    onClick={() => handleIssue(kind)}
+                    // Disabled while THIS kind's editor is open so the plain
+                    // one-click issue can't fire with the un-edited findings
+                    // while a visible draft sits in the panel below.
+                    disabled={busy !== null || editKind === kind}
                     size="sm"
                   >
                     {label}
@@ -166,6 +241,59 @@ export function DocumentIssueCard({
               );
             })}
           </div>
+
+          {editKind && (
+            <div className="mt-3 rounded-lg border border-[var(--brand-blue-200)] bg-white p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-[#002A4D]">
+                  {kindLabel(editKind)} — {t("editBeforeIssue")}
+                </p>
+                <Button variant="ghost" size="sm" onClick={closeEditor} disabled={busy !== null}>
+                  {t("close")}
+                </Button>
+              </div>
+              <label
+                htmlFor="doc-notes-editor"
+                className="mt-2 block text-xs font-medium text-[#525252]"
+              >
+                {t("notesLabel")}
+              </label>
+              <Textarea
+                id="doc-notes-editor"
+                value={draftNotes}
+                onChange={(e) => setDraftNotes(e.target.value)}
+                rows={4}
+                maxLength={4000}
+                placeholder={t("notesPlaceholder")}
+              />
+              <p className="mt-1 text-xs text-[#737373]">{t("notesHint")}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={refreshPreview}
+                  isLoading={previewBusy}
+                  disabled={busy !== null}
+                >
+                  {t("refreshPreview")}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleIssue(editKind, draftNotes)}
+                  disabled={busy !== null}
+                >
+                  {busy === editKind ? "…" : t("issueEdited")}
+                </Button>
+              </div>
+              {previewUrl && (
+                <iframe
+                  src={previewUrl}
+                  title={t("previewTitle")}
+                  className="mt-3 h-[520px] w-full rounded border border-[#e5e5e5]"
+                />
+              )}
+            </div>
+          )}
 
           <div className="mt-3 flex items-center justify-between gap-2">
             <p className="text-xs uppercase tracking-wide text-[#737373]">

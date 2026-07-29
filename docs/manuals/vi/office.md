@@ -659,6 +659,16 @@ Tùy theo loại lượt thăm và loại bổ sung, **nhiều chứng từ đư
 
 Mỗi chứng từ có nút **Phát hành** riêng. Chứng từ đã phát hành hiển thị nút **Phát hành lại**.
 
+#### Sửa & xem trước trước khi in (mới, yêu cầu #4)
+
+Bên cạnh nút **Phát hành**, mỗi chứng từ có nút **"Sửa & xem trước"**. Nhấn vào sẽ mở bảng chỉnh sửa:
+
+- Mở ô **Ghi chú tài liệu** (điền sẵn nội dung ghi nhận của lượt thăm `findings`). Bạn có thể sửa nội dung sẽ in trên chứng từ này.
+- Nhấn **"Làm mới xem trước"** để hiển thị **bản PDF thực tế ngay bên dưới** với nội dung đã sửa — kiểm tra hình thức cuối cùng trước khi in.
+- Sau khi kiểm tra, nhấn **"Phát hành với nội dung đã sửa"** để phát hành PDF theo bản đã chỉnh.
+
+> Nội dung sửa chỉ áp dụng cho **PDF được phát hành** (không thay đổi ghi nhận gốc của lượt thăm). Để trống ô ghi chú thì phát hành không có ghi chú. Trong lúc bảng chỉnh sửa đang mở, nút **Phát hành** thường của chứng từ đó bị vô hiệu hóa để tránh phát hành nhầm nội dung chưa sửa.
+
 ### 9.4 Bảng đề xuất chứng từ tự động
 
 | Loại lượt thăm | Loại khách | Loại HĐ | Chứng từ đề xuất |

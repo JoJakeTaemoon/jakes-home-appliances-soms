@@ -295,6 +295,7 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
           customerType={data.customer.type}
           contractType={data.latestContractType}
           documents={data.documents}
+          findings={data.findings}
           onIssued={() => reload()}
         />
       )}

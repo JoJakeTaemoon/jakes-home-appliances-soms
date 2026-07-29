@@ -763,8 +763,16 @@ export async function buildPreviewElement(
   visitId: string,
   kind: PreviewKind,
   langPair: PdfLangPair,
+  /**
+   * Office "edit before print" (요청 #4): when provided, replaces the single
+   * free-text notes block every visit document renders from `visit.findings`.
+   * An empty string is a deliberate clear; `undefined` keeps the saved
+   * findings. Never persisted here — the archived PDF captures the final text.
+   */
+  notesOverride?: string,
 ): Promise<React.ReactElement> {
   const v = await fetchVisit(visitId);
+  if (notesOverride !== undefined) v.findings = notesOverride;
   switch (kind) {
     case "DELIVERY_RECEIPT": {
       const payload = await buildDeliveryReceipt(v, langPair);

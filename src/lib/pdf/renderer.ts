@@ -105,6 +105,12 @@ export interface RenderRequest {
   langPair?: PdfLangPair;
   /** Tag the Document row with the staff user who triggered the render. */
   generatedById?: string | null;
+  /**
+   * Office "edit before print" (요청 #4) — overrides the visit-document notes
+   * block for this render only (visit-doc + WORK_CONFIRMATION kinds). Ignored
+   * for contract / receipt / tax-invoice kinds. Not persisted.
+   */
+  notes?: string;
 }
 
 export interface RenderResult {
@@ -214,6 +220,7 @@ async function loadVisitDocument(
   kind: VisitDocKind,
   visitId: string,
   langPair: PdfLangPair,
+  notesOverride?: string,
 ): Promise<{
   element: React.ReactElement;
   templateCode: string;
@@ -224,7 +231,7 @@ async function loadVisitDocument(
     select: { customerId: true },
   });
   if (!visit) throw new NotFoundError("Visit not found");
-  const element = await buildPreviewElement(visitId, kind, langPair);
+  const element = await buildPreviewElement(visitId, kind, langPair, notesOverride);
   return { element, templateCode: kind, customerId: visit.customerId };
 }
 
@@ -600,6 +607,7 @@ interface LoadedWorkConfirmation {
 async function loadWorkConfirmation(
   visitId: string,
   langPair: PdfLangPair,
+  notesOverride?: string,
 ): Promise<LoadedWorkConfirmation> {
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
@@ -705,7 +713,7 @@ async function loadWorkConfirmation(
     technicianName: lead?.username ?? "—",
     collaboratorNames,
     equipment: equipmentInfo,
-    findings: visit.findings ?? "",
+    findings: notesOverride ?? visit.findings ?? "",
     partsReplaced,
     photos,
     signaturePhoto,
@@ -900,7 +908,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
     }
 
     case "WORK_CONFIRMATION": {
-      const loaded = await loadWorkConfirmation(req.refId, langPair);
+      const loaded = await loadWorkConfirmation(req.refId, langPair, req.notes);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind("WORK_CONFIRMATION", {
@@ -937,7 +945,7 @@ export async function renderPdf(req: RenderRequest): Promise<RenderResult> {
       if (!isVisitDocKind(req.kind)) {
         throw new Error("unreachable");
       }
-      const loaded = await loadVisitDocument(req.kind, req.refId, langPair);
+      const loaded = await loadVisitDocument(req.kind, req.refId, langPair, req.notes);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const buffer = await renderToBuffer(loaded.element as any);
       const { dir, filename } = pathForKind(req.kind, { refId: req.refId });

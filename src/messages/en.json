@@ -1565,7 +1565,16 @@
         "PERIODIC_CHECK_B2C": "Periodic check (B2C)",
         "PERIODIC_CHECK_B2B": "Periodic check (B2B)",
         "WORK_CONFIRMATION": "Work confirmation"
-      }
+      },
+      "editBeforeIssue": "Edit & preview",
+      "close": "Close",
+      "notesLabel": "Document notes",
+      "notesPlaceholder": "Notes to print on this document",
+      "notesHint": "Leave blank to use the visit findings. This edit applies only to the issued PDF.",
+      "refreshPreview": "Refresh preview",
+      "issueEdited": "Issue with edits",
+      "previewTitle": "Document preview",
+      "previewFailed": "Preview failed"
     }
   },
   "serviceRequests": {

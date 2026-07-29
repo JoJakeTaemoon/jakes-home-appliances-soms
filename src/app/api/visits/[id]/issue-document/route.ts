@@ -40,12 +40,13 @@ export async function POST(request: NextRequest, ctx: Ctx) {
         })),
       );
     }
-    const { kind, langPair } = parsed.data;
+    const { kind, langPair, notes } = parsed.data;
 
     const result = await issueVisitDocument({
       visitId: id,
       kind: kind as PdfKind,
       langPair,
+      notes,
       actorId: auth.userId,
       request,
     });

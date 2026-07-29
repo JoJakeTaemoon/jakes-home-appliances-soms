@@ -1565,7 +1565,16 @@
         "PERIODIC_CHECK_B2C": "Phiếu bảo trì định kỳ (B2C)",
         "PERIODIC_CHECK_B2B": "Phiếu xác nhận bảo trì (B2B)",
         "WORK_CONFIRMATION": "Phiếu xác nhận công việc"
-      }
+      },
+      "editBeforeIssue": "Sửa & xem trước",
+      "close": "Đóng",
+      "notesLabel": "Ghi chú tài liệu",
+      "notesPlaceholder": "Nhập ghi chú sẽ in trên tài liệu này",
+      "notesHint": "Để trống thì dùng nội dung ghi nhận của lượt thăm (findings). Nội dung sửa chỉ áp dụng cho PDF được phát hành.",
+      "refreshPreview": "Làm mới xem trước",
+      "issueEdited": "Phát hành với nội dung đã sửa",
+      "previewTitle": "Xem trước tài liệu",
+      "previewFailed": "Không tạo được bản xem trước"
     }
   },
   "serviceRequests": {

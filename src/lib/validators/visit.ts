@@ -260,6 +260,10 @@ export const issueDocumentSchema = z.object({
     "WORK_CONFIRMATION",
   ]),
   langPair: z.enum(["vi-ko", "vi-en"]).optional(),
+  /** Office "edit before print" (요청 #4) — replaces the document's notes block
+   *  for this issuance. Empty string is a deliberate clear (kept, NOT coerced to
+   *  undefined); omitted keeps `visit.findings`. */
+  notes: z.string().max(4000).optional(),
 });
 
 export type IssueDocumentInput = z.infer<typeof issueDocumentSchema>;
