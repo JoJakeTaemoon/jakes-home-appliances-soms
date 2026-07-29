@@ -192,7 +192,9 @@ export const GET = defineQuery({
       const lastUnitPrice = history[0]?.cost ?? null;
       const baseline =
         overrideDate ?? (derivedLast ? new Date(derivedLast) : equipment.installedAt);
-      const nextDueAt = cycle && baseline ? addDays(baseline, cycle) : null;
+      // Admin override for "다음 교체 예정일" wins over anchor+cycle.
+      const nextDueAt =
+        (ov.nextReplaceAtOverride ?? null) ?? (cycle && baseline ? addDays(baseline, cycle) : null);
       const daysRemaining = nextDueAt
         ? Math.floor((nextDueAt.getTime() - now.getTime()) / MS_PER_DAY)
         : null;

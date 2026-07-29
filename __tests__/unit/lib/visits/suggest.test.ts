@@ -62,6 +62,24 @@ describe("computeRecommendations — lastReplacedOverride (WS1)", () => {
     expect(rep!.nextDueAt).toEqual(addDays(new Date("2026-05-01"), 90));
   });
 
+  it("uses the next-due override as the REPLACE due date (wins over baseline+cycle)", () => {
+    const meta: ConsumableMeta = {
+      ...SEDIMENT, // replaceEveryDays: 90
+      lastReplacedOverride: new Date("2026-05-01"),
+      nextReplacedOverride: new Date("2026-07-25"), // not 2026-05-01+90
+    };
+    const out = computeRecommendations({
+      consumables: [meta],
+      logs: [],
+      installedAt: new Date("2025-01-01"),
+      visitDate: new Date("2026-07-20"),
+      windowDays: 30,
+    });
+    const rep = out.find((r) => r.action === "REPLACE" && r.consumableId === "sed");
+    expect(rep).toBeTruthy();
+    expect(rep!.nextDueAt).toEqual(new Date("2026-07-25"));
+  });
+
   it("does not apply the override to CLEAN actions", () => {
     const meta: ConsumableMeta = {
       ...RO, // cleanEveryDays: 180

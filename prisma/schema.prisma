@@ -687,6 +687,10 @@ model Equipment {
   /// visit; this lets MANAGER+ correct an input error or seed pre-system
   /// history without a fake visit. When set it becomes the next-due anchor.
   lastInspectionAtOverride  DateTime?
+  /// Admin override for "다음 예정 점검일". Normally derived (anchor + cycle);
+  /// when set it takes precedence and drives the D-day directly, so staff can
+  /// pin a specific next inspection date. Inline-editable in the service table.
+  nextInspectionAtOverride  DateTime?
   /// Optional per-unit image (Vercel Blob). Falls back to model.imageUrl.
   imageUrl                  String?
   /// Office user who registered this unit (the staff member who ran the
@@ -843,30 +847,34 @@ model OrderItem {
 //   - Cycle: EquipmentConsumable.replaceEveryDays > Consumable.replaceEveryDays
 // ─────────────────────────────────────────────────────────────────────────
 model EquipmentConsumable {
-  id               String      @id @default(cuid())
-  equipmentId      String
-  equipment        Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  id                     String      @id @default(cuid())
+  equipmentId            String
+  equipment              Equipment   @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   /// Catalog filter (preferred). Mutually exclusive with `customName`.
-  consumableId     String?
-  consumable       Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
+  consumableId           String?
+  consumable             Consumable? @relation(fields: [consumableId], references: [id], onDelete: SetNull)
   /// Off-catalog filter description (e.g. "타사 RO 멤브레인 호환"). Used
   /// when consumableId is null. Required in that case (enforced in the
   /// validator).
-  customName       String?
-  quantity         Int         @default(1)
+  customName             String?
+  quantity               Int         @default(1)
   /// Override cycle in days. When null, falls back to the catalog
   /// consumable's `replaceEveryDays`. For manual filters with
   /// customName, this is the authoritative cycle.
-  replaceEveryDays Int?
+  replaceEveryDays       Int?
   /// Admin override for this filter's "최근 교체일" (last replacement date).
   /// Normally derived from the latest REPLACE VisitConsumableLog; this lets
   /// MANAGER+ correct an error or seed pre-system history. When set it
   /// becomes the next-due anchor for this filter.
   lastReplacedAtOverride DateTime?
-  unitPrice        Decimal?    @db.Decimal(14, 2)
-  notes            String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  /// Admin override for this filter's "다음 교체 예정일". Normally derived
+  /// (anchor + cycle); when set it takes precedence and drives the D-day
+  /// directly. Inline-editable in the service-config table.
+  nextReplaceAtOverride  DateTime?
+  unitPrice              Decimal?    @db.Decimal(14, 2)
+  notes                  String?
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 
   @@index([equipmentId])
   @@index([consumableId])

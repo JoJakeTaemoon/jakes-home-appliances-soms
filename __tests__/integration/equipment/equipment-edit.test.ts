@@ -21,17 +21,20 @@ import { addDays } from "@/lib/contracts/pause-period";
 
 import { PATCH as equipmentPatch } from "@/app/api/equipment/[id]/route";
 import { GET as serviceConfigGet } from "@/app/api/equipment/[id]/service-config/route";
+import { POST as consumablesPost } from "@/app/api/equipment/[id]/consumables/route";
 
 const ADMIN_USERNAME = "test_ws1_admin";
 const ADMIN_PHONE = "9322240001";
 const MODEL_CODE_A = "TEST-WS1-MODEL-A";
 const MODEL_CODE_B = "TEST-WS1-MODEL-B";
+const CONSUMABLE_SKU = "TEST-WS1-FILTER";
 const C1_NAME = "WS1 Cust One";
 const C2_NAME = "WS1 Cust Two";
 
 let token = "";
 let equipmentId = "";
 let modelBId = "";
+let consumableId = "";
 let site1Id = "";
 let site2Id = "";
 let c1Id = "";
@@ -58,6 +61,8 @@ async function cleanup() {
   await prisma.equipment.deleteMany({ where: { customer: { name: { in: [C1_NAME, C2_NAME] } } } });
   await prisma.site.deleteMany({ where: { customer: { name: { in: [C1_NAME, C2_NAME] } } } });
   await prisma.customer.deleteMany({ where: { name: { in: [C1_NAME, C2_NAME] } } });
+  await prisma.consumableOnModel.deleteMany({ where: { consumable: { sku: CONSUMABLE_SKU } } });
+  await prisma.consumable.deleteMany({ where: { sku: CONSUMABLE_SKU } });
   await prisma.equipmentModel.deleteMany({ where: { modelCode: { in: [MODEL_CODE_A, MODEL_CODE_B] } } });
   const user = await prisma.user.findUnique({ where: { phone: ADMIN_PHONE }, select: { id: true } });
   if (user) {
@@ -85,6 +90,13 @@ beforeAll(async () => {
     data: { modelCode: MODEL_CODE_B, nameKo: "B", nameVi: "B", nameEn: "B", category: "WATER_PURIFIER" },
   });
   modelBId = modelB.id;
+
+  // A catalog filter on modelA (180-day cycle) so the equipment has a FILTER row.
+  const consumable = await prisma.consumable.create({
+    data: { sku: CONSUMABLE_SKU, nameKo: "F", nameVi: "F", nameEn: "F", replaceEveryDays: 180, retailPrice: 50_000 },
+  });
+  consumableId = consumable.id;
+  await prisma.consumableOnModel.create({ data: { modelId: modelA.id, consumableId: consumable.id, quantity: 1 } });
 
   const c1 = await prisma.customer.create({ data: { code: "TESTWS1C1", type: "B2B", name: C1_NAME } });
   const c2 = await prisma.customer.create({ data: { code: "TESTWS1C2", type: "B2B", name: C2_NAME } });
@@ -152,6 +164,53 @@ describe("PATCH /api/equipment/[id] — full edit", () => {
     expect(inspection.lastAt).toBe("2026-06-01T00:00:00.000Z");
     const expected = addDays(new Date("2026-06-01T00:00:00.000Z"), 30).toISOString();
     expect(inspection.nextDueAt).toBe(expected);
+  });
+
+  it("pins the inspection next-due date from nextInspectionAtOverride (wins over cycle)", async () => {
+    // A next-due override must beat the anchor+cycle calculation entirely.
+    await equipmentPatch(
+      patchReq(equipmentId, {
+        customInspectionCycleDays: 30,
+        lastInspectionAtOverride: "2026-06-01T00:00:00.000Z",
+        nextInspectionAtOverride: "2026-12-25T00:00:00.000Z",
+      }),
+      { params: Promise.resolve({ id: equipmentId }) },
+    );
+    const res = await serviceConfigGet(getReq(equipmentId), { params: Promise.resolve({ id: equipmentId }) });
+    const { body } = await readJson(res);
+    const rows = (body.data as { rows: Array<{ kind: string; nextDueAt: string | null }> }).rows;
+    const inspection = rows.find((r) => r.kind === "INSPECTION")!;
+    expect(inspection.nextDueAt).toBe("2026-12-25T00:00:00.000Z");
+  });
+
+  it("clears the next-due override when set to null (reverts to anchor+cycle)", async () => {
+    await equipmentPatch(
+      patchReq(equipmentId, { nextInspectionAtOverride: null }),
+      { params: Promise.resolve({ id: equipmentId }) },
+    );
+    const res = await serviceConfigGet(getReq(equipmentId), { params: Promise.resolve({ id: equipmentId }) });
+    const { body } = await readJson(res);
+    const rows = (body.data as { rows: Array<{ kind: string; nextDueAt: string | null }> }).rows;
+    const inspection = rows.find((r) => r.kind === "INSPECTION")!;
+    // Back to last(2026-06-01) + cycle(30) since the override is gone.
+    expect(inspection.nextDueAt).toBe(addDays(new Date("2026-06-01T00:00:00.000Z"), 30).toISOString());
+  });
+
+  it("pins a filter's next-due date from nextReplaceAtOverride (catalog → override row)", async () => {
+    // Editing a catalog filter's next-due creates an EquipmentConsumable override.
+    const postReq = new NextRequest(`http://localhost/api/equipment/${equipmentId}/consumables`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ consumableId, quantity: 1, nextReplaceAtOverride: "2027-03-15T00:00:00.000Z" }),
+    });
+    const postRes = await consumablesPost(postReq, { params: Promise.resolve({ id: equipmentId }) });
+    expect(postRes.status).toBe(201);
+
+    const res = await serviceConfigGet(getReq(equipmentId), { params: Promise.resolve({ id: equipmentId }) });
+    const { body } = await readJson(res);
+    const rows = (body.data as { rows: Array<{ kind: string; consumableId: string | null; nextDueAt: string | null }> }).rows;
+    const filter = rows.find((r) => r.kind === "FILTER" && r.consumableId === consumableId)!;
+    expect(filter.nextDueAt).toBe("2027-03-15T00:00:00.000Z");
   });
 
   it("rejects a site that belongs to another customer", async () => {

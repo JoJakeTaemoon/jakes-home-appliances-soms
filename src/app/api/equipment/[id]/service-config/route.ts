@@ -50,6 +50,7 @@ export const GET = defineQuery({
         customInspectionCycleDays: true,
         customMaintenanceCycleDays: true,
         lastInspectionAtOverride: true,
+        nextInspectionAtOverride: true,
         model: {
           select: {
             inspectionEveryDays: true,
@@ -79,6 +80,7 @@ export const GET = defineQuery({
             quantity: true,
             replaceEveryDays: true,
             lastReplacedAtOverride: true,
+            nextReplaceAtOverride: true,
             unitPrice: true,
             consumable: {
               select: {
@@ -130,10 +132,12 @@ export const GET = defineQuery({
       ? (lastInspection?.completedAt ?? null)
       : (prevInspection?.completedAt ?? null);
     const inspectionAnchor = inspectionLastAt ?? equipment.installedAt;
+    // Admin override for "다음 예정 점검일" wins over the anchor+cycle calc.
     const inspectionNext =
-      effectiveInspectionCycle && inspectionAnchor
+      (equipment.nextInspectionAtOverride ?? null) ??
+      (effectiveInspectionCycle && inspectionAnchor
         ? addDays(inspectionAnchor, effectiveInspectionCycle)
-        : null;
+        : null);
     const inspectionDays = inspectionNext
       ? Math.ceil((inspectionNext.getTime() - Date.now()) / MS_PER_DAY)
       : null;
@@ -169,6 +173,7 @@ export const GET = defineQuery({
       effectiveCycleMonths: number | null;
       quantity: number;
       lastReplacedAtOverride: Date | null;
+      nextReplaceAtOverride: Date | null;
       previousAt: Date | null;
       lastAt: Date | null;
       nextDueAt: Date | null;
@@ -221,6 +226,7 @@ export const GET = defineQuery({
         effectiveCycleMonths: effective,
         quantity: ov?.quantity ?? c.quantity,
         lastReplacedAtOverride: ov?.lastReplacedAtOverride ?? null,
+        nextReplaceAtOverride: ov?.nextReplaceAtOverride ?? null,
         previousAt: null,
         lastAt: null,
         nextDueAt: null,
@@ -249,6 +255,7 @@ export const GET = defineQuery({
         effectiveCycleMonths: effective,
         quantity: m.quantity,
         lastReplacedAtOverride: m.lastReplacedAtOverride ?? null,
+        nextReplaceAtOverride: m.nextReplaceAtOverride ?? null,
         previousAt: null,
         lastAt: null,
         nextDueAt: null,
@@ -305,8 +312,11 @@ export const GET = defineQuery({
       // catalog rows. Manual filters (no consumableId, no log) had no due date
       // before an override existed, so keep that unless an override pins one.
       const anchor = row.lastAt ?? (row.consumableId ? equipment.installedAt : null);
-      if (anchor && row.effectiveCycleMonths) {
-        row.nextDueAt = addDays(anchor, row.effectiveCycleMonths);
+      const computedNext =
+        anchor && row.effectiveCycleMonths ? addDays(anchor, row.effectiveCycleMonths) : null;
+      // Admin override for "다음 교체 예정일" wins over anchor+cycle.
+      row.nextDueAt = row.nextReplaceAtOverride ?? computedNext;
+      if (row.nextDueAt) {
         row.daysRemaining = Math.ceil(
           (row.nextDueAt.getTime() - Date.now()) / MS_PER_DAY,
         );

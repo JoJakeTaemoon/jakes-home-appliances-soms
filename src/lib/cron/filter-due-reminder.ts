@@ -93,11 +93,12 @@ interface EquipmentRow {
   id: string;
   siteId: string | null;
   installedAt: Date | null;
-  // Per-equipment overrides (cycle + last-replaced date) keyed by consumableId.
+  // Per-equipment overrides (cycle + last/next dates) keyed by consumableId.
   consumables: {
     consumableId: string | null;
     replaceEveryDays: number | null;
     lastReplacedAtOverride: Date | null;
+    nextReplaceAtOverride: Date | null;
   }[];
   model: {
     nameKo: string | null;
@@ -173,7 +174,10 @@ async function processOne(
       const overrideBaseline = action === "REPLACE" ? (ov?.lastReplacedAtOverride ?? null) : null;
       const baseline = overrideBaseline ?? lastByKey.get(`${c.id}:${action}`) ?? eq.installedAt;
       if (!baseline) continue;
-      const nextDue = addDays(baseline, cycle);
+      // Admin "다음 교체 예정일" override wins over anchor+cycle (REPLACE only),
+      // so the customer reminder matches what staff pinned in the service table.
+      const nextDueOverride = action === "REPLACE" ? (ov?.nextReplaceAtOverride ?? null) : null;
+      const nextDue = nextDueOverride ?? addDays(baseline, cycle);
       const daysUntilDue = Math.floor(
         (nextDue.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
       );
@@ -255,6 +259,7 @@ export async function runFilterDueReminder(
           consumableId: true,
           replaceEveryDays: true,
           lastReplacedAtOverride: true,
+          nextReplaceAtOverride: true,
         },
       },
       model: {

@@ -50,20 +50,61 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
           customInspectionCycleDays: value,
         });
       } else if (row.overrideId) {
-        if (value === null) {
+        if (value === null && row.sourceKind === "MANUAL") {
+          // A manual filter IS the override row — clearing its cycle removes it
+          // (manual filters can't have a null cycle).
           await api.del(`/api/equipment/${equipmentId}/consumables/${row.overrideId}`);
         } else {
+          // Catalog override: null reverts the cycle to the catalog default but
+          // KEEPS the row (so its last/next date overrides survive) — deleting
+          // the row would silently wipe those dates.
           await api.patch(
             `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
             { replaceEveryDays: value },
           );
         }
-      } else {
+      } else if (value !== null) {
         // CATALOG row without an override yet — create one.
         await api.post(`/api/equipment/${equipmentId}/consumables`, {
           consumableId: row.consumableId,
           replaceEveryDays: value,
           quantity: row.quantity,
+        });
+      } else {
+        return; // catalog row, nothing to clear
+      }
+      await q.refetch();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : String(err));
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  // Inline edit of 최근수행일(last) / 다음예정일(next) — same INSPECTION vs
+  // FILTER(override/catalog) branching as updateUserCycle. `value` is a
+  // YYYY-MM-DD string or null (clear the override). Refetch recomputes D-day.
+  async function updateDate(row: Row, field: "last" | "next", value: string | null) {
+    // Catalog filter with nothing to clear → no-op.
+    if (row.kind === "FILTER" && !row.overrideId && value === null) return;
+    setBusyKey(row.key);
+    setError(null);
+    const isLast = field === "last";
+    try {
+      if (row.kind === "INSPECTION") {
+        await api.patch(`/api/equipment/${equipmentId}`, {
+          [isLast ? "lastInspectionAtOverride" : "nextInspectionAtOverride"]: value,
+        });
+      } else if (row.overrideId) {
+        await api.patch(
+          `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
+          { [isLast ? "lastReplacedAtOverride" : "nextReplaceAtOverride"]: value },
+        );
+      } else {
+        await api.post(`/api/equipment/${equipmentId}/consumables`, {
+          consumableId: row.consumableId,
+          quantity: row.quantity,
+          [isLast ? "lastReplacedAtOverride" : "nextReplaceAtOverride"]: value,
         });
       }
       await q.refetch();
@@ -116,8 +157,22 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
                 </td>
                 <td className="py-2">{r.quantity}</td>
                 <td className="py-2 text-gray-500">{formatDate(r.previousAt, locale)}</td>
-                <td className="py-2 text-gray-500">{formatDate(r.lastAt, locale)}</td>
-                <td className="py-2 text-gray-900">{formatDate(r.nextDueAt, locale)}</td>
+                <td className="py-2">
+                  <DateCell
+                    value={r.lastAt}
+                    busy={busyKey === r.key}
+                    label={`${pickName(r.name)} ${t("lastAt")}`}
+                    onChange={(v) => updateDate(r, "last", v)}
+                  />
+                </td>
+                <td className="py-2">
+                  <DateCell
+                    value={r.nextDueAt}
+                    busy={busyKey === r.key}
+                    label={`${pickName(r.name)} ${t("nextDueAt")}`}
+                    onChange={(v) => updateDate(r, "next", v)}
+                  />
+                </td>
                 <td className="py-2 text-gray-700">
                   {r.daysRemaining !== null ? `${r.daysRemaining} ${tc("daysRemaining")}` : "—"}
                 </td>
@@ -215,6 +270,38 @@ function UserCycleInput({
         }
       }}
       className="w-16 rounded border border-gray-300 px-1.5 py-0.5 text-xs"
+    />
+  );
+}
+
+/** ISO → YYYY-MM-DD by slicing the date part directly — no Date/timezone
+ *  round-trip, so overrides stored as UTC midnight edit back to the same day
+ *  regardless of the viewer's local offset. */
+function toYmd(iso: string | null): string {
+  return iso ? iso.slice(0, 10) : "";
+}
+
+/** Inline date editor for 최근수행일 / 다음예정일. Empty = clear the override.
+ *  Fully controlled by `value` so a refetch reflects the recomputed dates. */
+function DateCell({
+  value,
+  busy,
+  label,
+  onChange,
+}: Readonly<{
+  value: string | null;
+  busy: boolean;
+  label: string;
+  onChange: (v: string | null) => void;
+}>) {
+  return (
+    <input
+      type="date"
+      aria-label={label}
+      value={toYmd(value)}
+      disabled={busy}
+      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
+      className="w-32 rounded border border-gray-300 px-1.5 py-0.5 text-xs disabled:opacity-50"
     />
   );
 }

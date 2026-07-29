@@ -69,6 +69,9 @@ export interface ConsumableMeta {
    * prefill and the customer filter-due reminder. REPLACE only.
    */
   lastReplacedOverride?: Date | null;
+  /** Admin "다음 교체 예정일" override — when set it is the REPLACE next-due
+   *  directly (wins over baseline+cycle). REPLACE only. */
+  nextReplacedOverride?: Date | null;
 }
 
 export interface ComputeArgs {
@@ -130,7 +133,9 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
     const effectiveLast = overrideBaseline ?? lastDoneAt;
     const baseline = effectiveLast ?? installedAt;
     if (!baseline) return;
-    const nextDueAt = addDays(baseline, cycleDays);
+    // The next-due override (REPLACE only) wins over baseline+cycle.
+    const nextOverride = action === "REPLACE" ? (c.nextReplacedOverride ?? null) : null;
+    const nextDueAt = nextOverride ?? addDays(baseline, cycleDays);
     const daysUntilDue = daysBetween(visitDate, nextDueAt);
     if (daysUntilDue < -windowDays || daysUntilDue > windowDays) return;
     out.push({
@@ -186,6 +191,7 @@ export async function suggestConsumablesForVisit(
           consumableId: true,
           replaceEveryDays: true,
           lastReplacedAtOverride: true,
+          nextReplaceAtOverride: true,
         },
       },
       model: {
@@ -238,6 +244,7 @@ export async function suggestConsumablesForVisit(
         cleanEveryDays: c.cleanEveryDays,
         cleanOnEveryVisit: c.cleanOnEveryVisit,
         lastReplacedOverride: ov?.lastReplacedAtOverride ?? null,
+        nextReplacedOverride: ov?.nextReplaceAtOverride ?? null,
       };
     });
 

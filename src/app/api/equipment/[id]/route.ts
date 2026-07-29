@@ -123,6 +123,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         lifecycleStage: data.lifecycleStage,
         customInspectionCycleDays: data.customInspectionCycleDays,
         lastInspectionAtOverride: data.lastInspectionAtOverride,
+        nextInspectionAtOverride: data.nextInspectionAtOverride,
         imageUrl: data.imageUrl,
       },
     });

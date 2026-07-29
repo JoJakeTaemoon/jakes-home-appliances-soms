@@ -193,6 +193,9 @@ export const updateEquipmentSchema = z.object({
   /// Admin override for last inspection date — null clears it (revert to
   /// visit-derived), a date pins the next-due anchor.
   lastInspectionAtOverride: z.coerce.date().nullable().optional(),
+  /// Admin override for next inspection due date — null clears (revert to
+  /// anchor+cycle), a date pins the next-due directly.
+  nextInspectionAtOverride: z.coerce.date().nullable().optional(),
   imageUrl: optStr(500),
   notes: nullableStr(2000),
 });
