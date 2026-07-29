@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { pickModelName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
@@ -160,6 +160,15 @@ interface AuditRow {
 }
 
 export default function CustomerDetailPage() {
+  // useSearchParams (tab sync) requires a Suspense boundary above it.
+  return (
+    <Suspense fallback={null}>
+      <CustomerDetailInner />
+    </Suspense>
+  );
+}
+
+function CustomerDetailInner() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   const t = useTranslations("customers");
@@ -168,10 +177,20 @@ export default function CustomerDetailPage() {
   const tEq = useTranslations("equipment");
   const tOrders = useTranslations("orders");
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const api = useApi();
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
+
+  // Active tab lives in the URL (?tab=…) so it survives navigating out to a
+  // detail page and back. Without this, `router.back()` from equipment detail
+  // returns to /o/customers/[id] and the tab resets to "overview".
+  const activeTab = searchParams.get("tab") ?? "overview";
+  const setActiveTab = (v: string) => {
+    router.replace((v === "overview" ? pathname : `${pathname}?tab=${v}`) as "/o");
+  };
 
   const [busy, setBusy] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(false);
@@ -374,7 +393,7 @@ export default function CustomerDetailPage() {
         />
       </section>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <Tab value="overview">{t("tabs.overview")}</Tab>
           <Tab value="equipment">{t("tabs.equipment")}</Tab>
