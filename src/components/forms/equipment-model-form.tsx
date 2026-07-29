@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
@@ -9,9 +9,21 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 
-interface FilterRow {
-  type: string;
-  replaceEveryDays: number;
+/** One row in the model's filter config (요청 A) — which filter, how many, and
+ *  an optional per-model cycle override (empty = use the filter's own cycle).
+ *  `uid` is a stable React key so add/remove/reorder don't reuse a sibling's
+ *  Combobox internal state. */
+interface ModelFilterRow {
+  uid: string;
+  consumableId: string;
+  quantity: string;
+  cycleOverride: string; // empty → inherit the filter's replaceEveryDays
+}
+
+let rowCounter = 0;
+function newRowUid() {
+  rowCounter += 1;
+  return `f${rowCounter}`;
 }
 
 type CategoryValue = "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
@@ -28,7 +40,6 @@ interface ModelInput {
   monthlyMaintenancePrice: string;
   inspectionEveryDays: string;
   warrantyMonths: string;
-  filters: FilterRow[];
   isActive: boolean;
 }
 
@@ -44,6 +55,15 @@ interface BrandOpt {
   name: string;
 }
 
+interface ConsumableOpt {
+  id: string;
+  sku: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+  replaceEveryDays: number | null;
+}
+
 const EMPTY: ModelInput = {
   nameKo: "",
   nameVi: "",
@@ -56,7 +76,6 @@ const EMPTY: ModelInput = {
   monthlyMaintenancePrice: "",
   inspectionEveryDays: "",
   warrantyMonths: "12",
-  filters: [],
   isActive: true,
 };
 
@@ -70,35 +89,93 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
     else router.push("/admin/products");
   };
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
+  const [filters, setFilters] = useState<ModelFilterRow[]>([]);
+  // Edit mode loads the existing filter config asynchronously. Until it
+  // resolves we must NOT submit `compatibleConsumables` — an empty list would
+  // wipe the model's existing filters. Create mode is ready immediately.
+  const [filtersReady, setFiltersReady] = useState(mode !== "edit");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
+  const [consumables, setConsumables] = useState<ConsumableOpt[]>([]);
 
+  // Load brands + the filter catalog (for the filter picker).
   useEffect(() => {
     void (async () => {
       try {
-        const res = await api.get<BrandOpt[]>(
-          "/api/admin/products/brands?pageSize=100&isActive=true",
-        );
-        setBrands(res.data ?? []);
-      } catch (err) {
-        // STAFF without catalog access gets 403 — that's expected, fall
-        // through silently. Anything else (network, 5xx, schema drift) is
-        // a real failure we want visible in the console.
-        if (err instanceof ApiClientError && err.status === 403) return;
-        console.warn("[equipment-model-form] failed to load brands", err);
+        const [b, c] = await Promise.all([
+          api.get<BrandOpt[]>("/api/admin/products/brands?pageSize=100&isActive=true"),
+          api.get<ConsumableOpt[]>("/api/admin/products/consumables?pageSize=500&isActive=true"),
+        ]);
+        setBrands(b.data ?? []);
+        setConsumables(c.data ?? []);
+      } catch (e) {
+        if (e instanceof ApiClientError && e.status === 403) return;
+        console.warn("[equipment-model-form] catalog load failed", e);
       }
     })();
   }, [api]);
 
+  // Edit mode: prefill the filter config from the model's ConsumableOnModel rows.
+  useEffect(() => {
+    if (mode !== "edit" || !initial?.id) return;
+    void (async () => {
+      try {
+        const res = await api.get<{
+          consumables?: Array<{
+            consumableId: string;
+            quantity: number;
+            replaceEveryDaysOverride: number | null;
+          }>;
+        }>(`/api/equipment-models/${initial.id}`);
+        setFilters(
+          (res.data?.consumables ?? []).map((r) => ({
+            uid: newRowUid(),
+            consumableId: r.consumableId,
+            quantity: String(r.quantity),
+            cycleOverride: r.replaceEveryDaysOverride == null ? "" : String(r.replaceEveryDaysOverride),
+          })),
+        );
+        setFiltersReady(true);
+      } catch (e) {
+        // Surface the failure and leave `filtersReady` false so Save stays
+        // disabled — never submit an empty filter list that would silently
+        // wipe the model's existing config.
+        setErr(e instanceof Error ? e.message : String(e));
+      }
+    })();
+  }, [api, mode, initial?.id]);
+
   function setField<K extends keyof ModelInput>(key: K, value: ModelInput[K]) {
     setData((d) => ({ ...d, [key]: value }));
+  }
+
+  function consumableLabel(c: ConsumableOpt): string {
+    const name = c.nameKo || c.nameVi || c.nameEn || c.sku;
+    return `${name} (${c.sku})`;
+  }
+  const consumableById = useMemo(() => new Map(consumables.map((c) => [c.id, c])), [consumables]);
+  const consumableOptions = useMemo(
+    () => consumables.map((c) => ({ value: c.id, label: consumableLabel(c) })),
+    [consumables],
+  );
+
+  function updateFilter(idx: number, patch: Partial<ModelFilterRow>) {
+    setFilters((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   }
 
   async function submit() {
     setBusy(true);
     setErr(null);
     try {
+      const compatibleConsumables = filters
+        .filter((f) => f.consumableId)
+        .map((f, i) => ({
+          consumableId: f.consumableId,
+          quantity: f.quantity ? Number(f.quantity) : 1,
+          sortOrder: i,
+          replaceEveryDaysOverride: f.cycleOverride ? Number(f.cycleOverride) : null,
+        }));
       const payload = {
         nameKo: data.nameKo || undefined,
         nameVi: data.nameVi || undefined,
@@ -111,7 +188,9 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         monthlyMaintenancePrice: data.monthlyMaintenancePrice ? Number(data.monthlyMaintenancePrice) : null,
         inspectionEveryDays: data.inspectionEveryDays ? Number(data.inspectionEveryDays) : null,
         warrantyMonths: data.warrantyMonths ? Number(data.warrantyMonths) : null,
-        filterPolicy: data.filters.length > 0 ? { filters: data.filters } : null,
+        // Omit when the edit-mode prefill hasn't resolved — sending [] here
+        // would wipe the model's existing filters (PATCH replaces wholesale).
+        ...(filtersReady ? { compatibleConsumables } : {}),
         isActive: data.isActive,
       };
       if (mode === "create") {
@@ -143,7 +222,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         <FormField label={t("brand")}>
           <Combobox
             value={data.brandId ?? ""}
-            onChange={(v) => setField("brandId", v ? v : null)}
+            onChange={(v) => setField("brandId", v || null)}
             options={brands.map((b) => ({ value: b.id, label: b.name }))}
             searchable
             allowClear
@@ -229,52 +308,82 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         </FormField>
       </div>
 
+      {/* Filter config — pick which filters this model uses (요청 A). Selecting a
+          filter auto-fills its cycle; the cycle can be overridden per model. */}
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[#111111]">{t("filterPolicy")}</h2>
+          <h2 className="text-sm font-semibold text-[#111111]">{t("filterConfig")}</h2>
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setField("filters", [...data.filters, { type: "", replaceEveryDays: 180 }])}
+            disabled={!filtersReady}
+            onClick={() =>
+              setFilters([...filters, { uid: newRowUid(), consumableId: "", quantity: "1", cycleOverride: "" }])
+            }
           >
             {t("addFilter")}
           </Button>
         </div>
-        {data.filters.length === 0 ? (
+        {!filtersReady && !err && (
+          <p className="text-xs text-[#737373]">{tc("loading")}</p>
+        )}
+        {(filtersReady || err) && filters.length === 0 && (
           <p className="text-xs text-[#737373]">—</p>
-        ) : (
+        )}
+        {(filtersReady || err) && filters.length > 0 && (
           <div className="flex flex-col gap-2">
-            {data.filters.map((f, idx) => (
-              <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_160px_auto]">
-                <Input
-                  value={f.type}
-                  onChange={(e) => {
-                    const next = [...data.filters];
-                    next[idx] = { ...f, type: e.target.value };
-                    setField("filters", next);
-                  }}
-                  placeholder={t("filterType")}
-                />
-                <Input
-                  value={String(f.replaceEveryDays)}
-                  onChange={(e) => {
-                    const v = Number.parseInt(e.target.value, 10);
-                    const next = [...data.filters];
-                    next[idx] = { ...f, replaceEveryDays: Number.isFinite(v) ? v : 0 };
-                    setField("filters", next);
-                  }}
-                  inputMode="numeric"
-                  placeholder={t("replaceEveryDays")}
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setField("filters", data.filters.filter((_, i) => i !== idx))}
-                >
-                  {tc("remove")}
-                </Button>
-              </div>
-            ))}
+            <div className="grid grid-cols-[24px_1fr_110px_90px_auto] items-center gap-2 text-[10px] uppercase tracking-wider text-[#a3a3a3]">
+              <span>#</span>
+              <span>{t("filterConfigCol.filter")}</span>
+              <span>{t("filterConfigCol.cycleDays")}</span>
+              <span>{t("filterConfigCol.quantity")}</span>
+              <span />
+            </div>
+            {filters.map((f, idx) => {
+              const picked = f.consumableId ? consumableById.get(f.consumableId) : null;
+              const defaultCycle = picked?.replaceEveryDays ?? null;
+              // Hide filters already chosen in other rows so the same filter
+              // can't be added twice (the server rejects dupes, but with a
+              // generic error — exclude them up front instead).
+              const rowOptions = consumableOptions.filter(
+                (o) => o.value === f.consumableId || !filters.some((g) => g !== f && g.consumableId === o.value),
+              );
+              return (
+                <div key={f.uid} className="grid grid-cols-[24px_1fr_110px_90px_auto] items-center gap-2">
+                  <span className="text-xs text-[#737373]">{idx + 1}</span>
+                  <Combobox
+                    value={f.consumableId || null}
+                    onChange={(v) => updateFilter(idx, { consumableId: v ?? "" })}
+                    options={rowOptions}
+                    placeholder={t("filterConfigCol.filter")}
+                    searchable
+                    ariaLabel={`${t("filterConfigCol.filter")} ${idx + 1}`}
+                  />
+                  <Input
+                    value={f.cycleOverride}
+                    onChange={(e) => updateFilter(idx, { cycleOverride: e.target.value })}
+                    inputMode="numeric"
+                    placeholder={defaultCycle != null ? String(defaultCycle) : "—"}
+                    aria-label={`${t("filterConfigCol.cycleDays")} ${idx + 1}`}
+                  />
+                  <Input
+                    value={f.quantity}
+                    onChange={(e) => updateFilter(idx, { quantity: e.target.value })}
+                    inputMode="numeric"
+                    placeholder="1"
+                    aria-label={`${t("filterConfigCol.quantity")} ${idx + 1}`}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilters(filters.filter((_, i) => i !== idx))}
+                  >
+                    {tc("remove")}
+                  </Button>
+                </div>
+              );
+            })}
+            <p className="text-xs text-[#737373]">{t("filterConfigHint")}</p>
           </div>
         )}
       </div>
@@ -287,7 +396,11 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         <Button variant="ghost" onClick={() => finish()} disabled={busy}>
           {tc("cancel")}
         </Button>
-        <Button onClick={submit} isLoading={busy} disabled={!data.nameKo && !data.nameVi && !data.nameEn}>
+        <Button
+          onClick={submit}
+          isLoading={busy}
+          disabled={(!data.nameKo && !data.nameVi && !data.nameEn) || !filtersReady}
+        >
           {tc("save")}
         </Button>
       </div>

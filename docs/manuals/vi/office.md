@@ -910,6 +910,23 @@ Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự đ�
 
 Đăng ký sản phẩm theo cấu trúc Brand → Model. Đăng ký chu kỳ thay lõi lọc tương thích cho từng model — cron kiểm tra định kỳ sẽ dựa vào đây để tự tính ngày thay tiếp theo.
 
+#### Cấu hình lõi lọc ngay trên màn hình Model (cải tiến)
+
+Trước đây, sau khi tạo model mới phải **vào màn hình quản lý lõi lọc (vật tư) rồi thêm model đó vào từng lõi một**. Nay làm ngược lại: **chọn trực tiếp các lõi lọc thuộc model ngay trên màn hình tạo/sửa Model**.
+
+- Ở bảng **"Cấu hình lõi lọc"** cuối form Model, nhấn **"+ Thêm lõi lọc"** → chọn lõi bằng ô tìm kiếm.
+- Khi chọn một lõi, **chu kỳ thay mặc định (ngày)** của lõi đó hiện lên dạng gợi ý. Muốn dùng chu kỳ khác chỉ cho riêng model này, nhập vào ô **Chu kỳ thay (ngày)** (ghi đè theo model); để trống thì dùng chu kỳ mặc định của lõi.
+- Chỉ định cả **số lượng** và **thứ tự dòng** (trên → dưới). Mỗi lõi chỉ thêm được một lần (lõi đã chọn sẽ bị loại khỏi danh sách).
+- Khi sửa model đã có, cấu hình lõi hiện tại được **điền sẵn tự động**. Nút Lưu tạm khóa trong lúc tải cấu hình, tránh việc lưu sớm làm mất cấu hình đang có.
+
+Thứ tự ưu tiên chu kỳ: **theo thiết bị > ghi đè theo model > mặc định của lõi**.
+
+#### Master lõi lọc (vật tư) — chỉ quản lý thông tin của chính nó
+
+Màn hình quản lý lõi lọc nay chỉ chứa **thông tin của bản thân lõi**: SKU · tên (KO/VI/EN) · chu kỳ thay · giá bán · ghi chú. Việc lõi thuộc model nào được quản lý ở màn hình Model bên trên.
+
+- **Đơn vị chu kỳ thay (ngày/tháng)**: chọn **Ngày** hoặc **Tháng** ở ô kế bên ô nhập chu kỳ. Hệ thống luôn lưu theo ngày (1 tháng = 30 ngày); khi đổi đơn vị, giá trị được tự quy đổi để giữ nguyên độ dài thực tế (ví dụ 180 ngày ⇄ 6 tháng).
+
 ### 15.3 Trọng số Bộ lập lịch
 
 Điều chỉnh trọng số thuật toán phân công lượt thăm tự động.

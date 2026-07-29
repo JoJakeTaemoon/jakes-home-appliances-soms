@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { pickModelName } from "@/lib/products/name";
+import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
 
 type ApiClient = ReturnType<typeof useApi>;
 type Translate = ReturnType<typeof useTranslations>;
@@ -74,6 +75,8 @@ interface ConsumableRow {
   nameVi: string;
   nameEn: string;
   replaceEveryDays: number | null;
+  /** Input/display unit for replaceEveryDays; storage stays days. */
+  replaceCycleUnit: "DAY" | "MONTH";
   cleanEveryDays: number | null;
   cleanOnEveryVisit: boolean;
   retailPrice: string;
@@ -1119,6 +1122,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     nameVi: "",
     nameEn: "",
     replaceEveryDays: "" as string,
+    replaceCycleUnit: "DAY" as "DAY" | "MONTH",
     cleanEveryDays: "" as string,
     cleanOnEveryVisit: false,
     retailPrice: 0,
@@ -1148,7 +1152,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         nameKo: form.nameKo,
         nameVi: form.nameVi,
         nameEn: form.nameEn,
-        replaceEveryDays: form.replaceEveryDays === "" ? null : Number(form.replaceEveryDays),
+        replaceEveryDays: cycleToStored(form.replaceEveryDays, form.replaceCycleUnit),
+        replaceCycleUnit: form.replaceCycleUnit,
         cleanEveryDays: form.cleanEveryDays === "" ? null : Number(form.cleanEveryDays),
         cleanOnEveryVisit: form.cleanOnEveryVisit,
         retailPrice: form.retailPrice,
@@ -1161,6 +1166,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         nameVi: "",
         nameEn: "",
         replaceEveryDays: "",
+        replaceCycleUnit: "DAY",
         cleanEveryDays: "",
         cleanOnEveryVisit: false,
         retailPrice: 0,
@@ -1292,7 +1298,32 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
             </FormField>
             <FormField label={t("colReplaceCycle")}>
-              <Input type="number" value={form.replaceEveryDays} onChange={(e) => setForm({ ...form, replaceEveryDays: e.target.value })} />
+              <div className="flex gap-2">
+                <Input type="number" value={form.replaceEveryDays} onChange={(e) => setForm({ ...form, replaceEveryDays: e.target.value })} />
+                <div className="w-28 shrink-0">
+                  <Combobox
+                    value={form.replaceCycleUnit}
+                    onChange={(v) => {
+                      const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
+                      // Reconvert the typed value so it keeps meaning the same
+                      // real length across a unit switch (180d ⇄ 6mo) rather
+                      // than being reinterpreted (180 → 5400d) at submit.
+                      setForm((f) => ({
+                        ...f,
+                        replaceEveryDays: cycleToDisplay(cycleToStored(f.replaceEveryDays, f.replaceCycleUnit), nextUnit),
+                        replaceCycleUnit: nextUnit,
+                      }));
+                    }}
+                    options={[
+                      { value: "DAY", label: t("cycleUnitDay") },
+                      { value: "MONTH", label: t("cycleUnitMonth") },
+                    ]}
+                    searchable={false}
+                    allowClear={false}
+                    ariaLabel={t("colReplaceCycleUnit")}
+                  />
+                </div>
+              </div>
             </FormField>
             <FormField label={t("colCleanCycle")}>
               <Input type="number" value={form.cleanEveryDays} onChange={(e) => setForm({ ...form, cleanEveryDays: e.target.value })} />
@@ -1434,7 +1465,8 @@ function ConsumableEditModal({
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
-  const [replaceEveryDays, setReplaceEveryMonths] = useState(row.replaceEveryDays?.toString() ?? "");
+  const [replaceCycleUnit, setReplaceCycleUnit] = useState<"DAY" | "MONTH">(row.replaceCycleUnit);
+  const [replaceEveryDays, setReplaceEveryMonths] = useState(cycleToDisplay(row.replaceEveryDays, row.replaceCycleUnit));
   const [cleanEveryDays, setCleanEveryMonths] = useState(row.cleanEveryDays?.toString() ?? "");
   const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row.cleanOnEveryVisit);
   const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
@@ -1467,7 +1499,8 @@ function ConsumableEditModal({
     try {
       await api.patch(`/api/admin/products/consumables/${row.id}`, {
         nameKo, nameVi, nameEn,
-        replaceEveryDays: replaceEveryDays === "" ? null : Number(replaceEveryDays),
+        replaceEveryDays: cycleToStored(replaceEveryDays, replaceCycleUnit),
+        replaceCycleUnit,
         cleanEveryDays: cleanEveryDays === "" ? null : Number(cleanEveryDays),
         cleanOnEveryVisit,
         retailPrice,
@@ -1501,7 +1534,31 @@ function ConsumableEditModal({
           <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
           <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
           <FormField label={t("colReplaceCycle")}>
-            <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
+            <div className="flex gap-2">
+              <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
+              <div className="w-28 shrink-0">
+                <Combobox
+                  value={replaceCycleUnit}
+                  onChange={(v) => {
+                    const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
+                    // Re-express the already-shown cycle in the new unit so the
+                    // number keeps meaning the same real length (180d ⇄ 6mo),
+                    // instead of being silently reinterpreted (180 → 5400d).
+                    setReplaceEveryMonths(
+                      cycleToDisplay(cycleToStored(replaceEveryDays, replaceCycleUnit), nextUnit),
+                    );
+                    setReplaceCycleUnit(nextUnit);
+                  }}
+                  options={[
+                    { value: "DAY", label: t("cycleUnitDay") },
+                    { value: "MONTH", label: t("cycleUnitMonth") },
+                  ]}
+                  searchable={false}
+                  allowClear={false}
+                  ariaLabel={t("colReplaceCycleUnit")}
+                />
+              </div>
+            </div>
           </FormField>
           <FormField label={t("colCleanCycle")}>
             <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryMonths(e.target.value)} />

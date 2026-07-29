@@ -957,7 +957,14 @@
       "OTHER": "Other"
     },
     "saved": "Model saved",
-    "noModels": "No equipment models yet"
+    "noModels": "No equipment models yet",
+    "filterConfig": "Filter configuration",
+    "filterConfigCol": {
+      "filter": "Filter",
+      "cycleDays": "Cycle (days)",
+      "quantity": "Qty"
+    },
+    "filterConfigHint": "Leave the cycle blank to use the filter's own default cycle. Rows display top to bottom."
   },
   "contracts": {
     "title": "Contracts",
@@ -2205,7 +2212,7 @@
       "colName": "Name",
       "colSortOrder": "Sort order",
       "colCategory": "Category",
-      "colReplaceCycle": "Replace cycle (d)",
+      "colReplaceCycle": "Replace cycle",
       "colCleanCycle": "Clean cycle (d)",
       "colCleanOnVisit": "Clean every visit",
       "colQuantity": "Qty",
@@ -2271,7 +2278,10 @@
       "createSuccess": "Added.",
       "errorGeneric": "Save failed.",
       "chargeHint": "When no row matches, the default rule applies — Rental is always free, Sale is free within warranty (else billed), Maintenance is free for consumables and minor accessories (else billed).",
-      "notAllowed": "This page is restricted to Admin or Manager."
+      "notAllowed": "This page is restricted to Admin or Manager.",
+      "colReplaceCycleUnit": "Unit",
+      "cycleUnitDay": "Days",
+      "cycleUnitMonth": "Months"
     },
     "notificationTemplates": {
       "title": "Notification templates",

@@ -957,7 +957,14 @@
       "OTHER": "Khác"
     },
     "saved": "Đã lưu mẫu",
-    "noModels": "Chưa có mẫu thiết bị"
+    "noModels": "Chưa có mẫu thiết bị",
+    "filterConfig": "Cấu hình lõi lọc",
+    "filterConfigCol": {
+      "filter": "Lõi lọc",
+      "cycleDays": "Chu kỳ thay (ngày)",
+      "quantity": "Số lượng"
+    },
+    "filterConfigHint": "Để trống chu kỳ thay để dùng chu kỳ mặc định của lõi lọc. Thứ tự hiển thị từ trên xuống."
   },
   "contracts": {
     "title": "Hợp đồng",
@@ -2205,7 +2212,7 @@
       "colName": "Tên",
       "colSortOrder": "Thứ tự",
       "colCategory": "Loại sản phẩm",
-      "colReplaceCycle": "Chu kỳ thay (ngày)",
+      "colReplaceCycle": "Chu kỳ thay",
       "colCleanCycle": "Chu kỳ vệ sinh (ngày)",
       "colCleanOnVisit": "Vệ sinh mỗi lần thăm",
       "colQuantity": "Số lượng",
@@ -2271,7 +2278,10 @@
       "createSuccess": "Đã thêm.",
       "errorGeneric": "Lưu không thành công.",
       "chargeHint": "Quy tắc mặc định — Cho thuê đều miễn phí, Bán: trong bảo hành miễn phí, ngoài bảo hành tính phí, Bảo trì: chỉ vật tư và phụ kiện nhỏ miễn phí. Bảng này chỉ liệt kê các ngoại lệ khác mặc định.",
-      "notAllowed": "Chỉ Quản trị viên hoặc Quản lý mới truy cập được trang này."
+      "notAllowed": "Chỉ Quản trị viên hoặc Quản lý mới truy cập được trang này.",
+      "colReplaceCycleUnit": "Đơn vị",
+      "cycleUnitDay": "Ngày",
+      "cycleUnitMonth": "Tháng"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",
