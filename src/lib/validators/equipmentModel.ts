@@ -9,6 +9,31 @@ function optStr(max: number) {
   }, z.string().max(max).optional());
 }
 
+/** One filter in a model's filter config (요청 A): which Consumable, how many,
+ *  its order, and an optional per-model replace-cycle override (days). */
+const modelFilterSchema = z.object({
+  consumableId: z.string().trim().min(1),
+  quantity: z.coerce.number().int().min(1).max(20).default(1),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  replaceEveryDaysOverride: z.coerce.number().int().min(1).max(18000).nullable().optional(),
+});
+
+/** The filter list, rejecting a duplicate consumableId — `createMany` +
+ *  skipDuplicates would otherwise silently drop the repeat, losing data. */
+const modelFiltersArray = z.array(modelFilterSchema).superRefine((arr, ctx) => {
+  const seen = new Set<string>();
+  arr.forEach((f, i) => {
+    if (seen.has(f.consumableId)) {
+      ctx.addIssue({
+        code: "custom",
+        path: [i, "consumableId"],
+        message: "Duplicate filter — each consumable may appear once",
+      });
+    }
+    seen.add(f.consumableId);
+  });
+});
+
 export const createEquipmentModelSchema = z.object({
   // Customer-facing product names per locale. At least one of the three must
   // be supplied — caller-side validation is enforced by `.superRefine` below.
@@ -30,6 +55,8 @@ export const createEquipmentModelSchema = z.object({
   // default rule. 12 is the legal/business default for purchased equipment.
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),
+  /// The model's filter config — replaces the picking-from-the-filter-side flow.
+  compatibleConsumables: modelFiltersArray.default([]),
   isActive: z.boolean().default(true),
 }).superRefine((v, ctx) => {
   if (!v.nameKo && !v.nameVi && !v.nameEn) {
@@ -59,6 +86,9 @@ export const updateEquipmentModelSchema = z.object({
   inspectionEveryDays: z.coerce.number().int().min(1).max(18000).nullable().optional(),
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),
+  /// When present, the model's filter config is replaced wholesale with this
+  /// list (deleteMany + createMany). Omit to leave the existing config alone.
+  compatibleConsumables: modelFiltersArray.optional(),
   isActive: z.boolean().optional(),
 });
 

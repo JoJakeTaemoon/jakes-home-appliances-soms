@@ -198,6 +198,7 @@ export async function suggestConsumablesForVisit(
         select: {
           consumables: {
             select: {
+              replaceEveryDaysOverride: true,
               consumable: {
                 select: {
                   id: true,
@@ -229,9 +230,9 @@ export async function suggestConsumablesForVisit(
   );
 
   const consumables: ConsumableMeta[] = equipment.model.consumables
-    .map((c) => c.consumable)
-    .filter((c) => c.isActive)
-    .map((c) => {
+    .filter((entry) => entry.consumable.isActive)
+    .map((entry) => {
+      const c = entry.consumable;
       const ov = overrideByConsumable.get(c.id);
       return {
         id: c.id,
@@ -239,8 +240,9 @@ export async function suggestConsumablesForVisit(
         nameKo: c.nameKo,
         nameVi: c.nameVi,
         nameEn: c.nameEn,
-        // Per-equipment cycle override wins over the catalog cycle (REPLACE).
-        replaceEveryDays: ov?.replaceEveryDays ?? c.replaceEveryDays,
+        // Cycle precedence: per-equipment > per-model > filter default (REPLACE).
+        replaceEveryDays:
+          ov?.replaceEveryDays ?? entry.replaceEveryDaysOverride ?? c.replaceEveryDays,
         cleanEveryDays: c.cleanEveryDays,
         cleanOnEveryVisit: c.cleanOnEveryVisit,
         lastReplacedOverride: ov?.lastReplacedAtOverride ?? null,

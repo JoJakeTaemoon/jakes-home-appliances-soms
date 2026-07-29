@@ -477,23 +477,34 @@ model EquipmentModel {
 // (e.g. RO membrane: clean every 6 months, replace every 24 months).
 // At least one of replaceEveryDays/cleanEveryDays must be non-null —
 // enforced in Zod (see src/lib/validators/product.ts).
+/// How a filter's replace cycle was entered in the Filter Master — days or
+/// months. The canonical stored value stays `replaceEveryDays` (days;
+/// months × 30) so all day-based next-due math is unaffected; this only
+/// drives the input/display unit.
+enum ConsumableCycleUnit {
+  DAY
+  MONTH
+}
+
 model Consumable {
-  id                String   @id @default(cuid())
-  sku               String   @unique
+  id                String              @id @default(cuid())
+  sku               String              @unique
   nameKo            String
   nameVi            String
   nameEn            String
   replaceEveryDays  Int?
+  /// Input/display unit for replaceEveryDays (canonical storage stays days).
+  replaceCycleUnit  ConsumableCycleUnit @default(DAY)
   cleanEveryDays    Int?
   // PDF A.4: pre-filters are cleaned on every periodic-inspection visit
   // (no fixed month-based cycle). When true, recommender prefills CLEAN
   // on every PERIODIC_INSPECTION visit regardless of cycle math.
-  cleanOnEveryVisit Boolean  @default(false)
-  retailPrice       Decimal  @db.Decimal(14, 2)
+  cleanOnEveryVisit Boolean             @default(false)
+  retailPrice       Decimal             @db.Decimal(14, 2)
   notes             String?
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   compatibleModels ConsumableOnModel[]
   visitLogs        VisitConsumableLog[]
@@ -529,12 +540,18 @@ model Accessory {
 }
 
 model ConsumableOnModel {
-  consumableId String
-  modelId      String
+  consumableId             String
+  modelId                  String
   // PDF A.1 — most models hold 1 of each filter, oversize units carry 2.
-  quantity     Int            @default(1)
-  consumable   Consumable     @relation(fields: [consumableId], references: [id], onDelete: Cascade)
-  model        EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  quantity                 Int            @default(1)
+  /// User-chosen filter order within a model's filter config (요청 A.4).
+  sortOrder                Int            @default(0)
+  /// Per-model replace-cycle override (days). When null the filter's own
+  /// `Consumable.replaceEveryDays` applies. Precedence for a unit:
+  /// EquipmentConsumable.replaceEveryDays > this > Consumable.replaceEveryDays.
+  replaceEveryDaysOverride Int?
+  consumable               Consumable     @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  model                    EquipmentModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   @@id([consumableId, modelId])
   @@index([modelId])

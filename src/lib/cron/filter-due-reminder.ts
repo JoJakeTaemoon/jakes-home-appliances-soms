@@ -106,6 +106,7 @@ interface EquipmentRow {
     nameEn: string | null;
     modelCode: string | null;
     consumables: {
+      replaceEveryDaysOverride: number | null;
       consumable: {
         id: string;
         sku: string;
@@ -160,15 +161,19 @@ async function processOne(
   const overrideByConsumable = new Map(
     eq.consumables.filter((o) => o.consumableId).map((o) => [o.consumableId as string, o]),
   );
+  // Per-model cycle override keyed by consumableId.
+  const modelCycleByConsumable = new Map(
+    eq.model.consumables.map((m) => [m.consumable.id, m.replaceEveryDaysOverride]),
+  );
 
   for (const c of activeConsumables) {
     const ov = overrideByConsumable.get(c.id);
     for (const action of ["REPLACE", "CLEAN"] as CycleAction[]) {
-      // Per-equipment overrides apply to REPLACE only (cycle + last date);
+      // Cycle precedence (REPLACE): per-equipment > per-model > filter default.
       // CLEAN keeps the catalog cycle and visit-derived baseline.
       const cycle =
         action === "REPLACE"
-          ? (ov?.replaceEveryDays ?? c.replaceEveryDays)
+          ? (ov?.replaceEveryDays ?? modelCycleByConsumable.get(c.id) ?? c.replaceEveryDays)
           : c.cleanEveryDays;
       if (cycle == null) continue;
       const overrideBaseline = action === "REPLACE" ? (ov?.lastReplacedAtOverride ?? null) : null;
@@ -270,6 +275,7 @@ export async function runFilterDueReminder(
           modelCode: true,
           consumables: {
             select: {
+              replaceEveryDaysOverride: true,
               consumable: {
                 select: {
                   id: true,

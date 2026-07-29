@@ -55,8 +55,10 @@ export const GET = defineQuery({
           select: {
             inspectionEveryDays: true,
             consumables: {
+              orderBy: { sortOrder: "asc" },
               select: {
                 quantity: true,
+                replaceEveryDaysOverride: true,
                 consumable: {
                   select: {
                     id: true,
@@ -210,7 +212,8 @@ export const GET = defineQuery({
     for (const c of catalogRows) {
       if (!c.consumable) continue;
       const ov = overrideByConsumable.get(c.consumable.id);
-      const defaultCycle = c.consumable.replaceEveryDays ?? null;
+      // Catalog default = per-model cycle override ?? the filter's own cycle.
+      const defaultCycle = c.replaceEveryDaysOverride ?? c.consumable.replaceEveryDays ?? null;
       const userCycle = ov?.replaceEveryDays ?? null;
       const effective = userCycle ?? defaultCycle;
       filterRows.push({

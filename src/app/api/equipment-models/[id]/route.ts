@@ -30,7 +30,21 @@ export const GET = defineQuery({
   handler: async ({ params }) => {
     const model = await prisma.equipmentModel.findUnique({
       where: { id: params.id },
-      include: { _count: { select: { equipment: true } } },
+      include: {
+        _count: { select: { equipment: true } },
+        // The model's filter config for edit prefill (ordered).
+        consumables: {
+          orderBy: { sortOrder: "asc" },
+          include: {
+            consumable: {
+              select: {
+                id: true, sku: true, nameKo: true, nameVi: true, nameEn: true,
+                replaceEveryDays: true, replaceCycleUnit: true, retailPrice: true,
+              },
+            },
+          },
+        },
+      },
     });
     if (!model) throw new NotFoundError("Model not found");
     return model;
@@ -63,30 +77,50 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     // treats `undefined` as "don't touch" and `null` as "set to NULL", which
     // matches what nullable+optional schema fields advertise. Coalescing
     // would silently drop `{brandId: null}` clears from the client.
-    const updated = await prisma.equipmentModel.update({
-      where: { id },
-      data: {
-        nameKo: data.nameKo,
-        nameVi: data.nameVi,
-        nameEn: data.nameEn,
-        brandId: data.brandId,
-        category: data.category,
-        categoryId: data.categoryId,
-        description: data.description,
-        retailPrice: data.retailPrice,
-        monthlyRentalPrice: data.monthlyRentalPrice,
-        monthlyMaintenancePrice: data.monthlyMaintenancePrice,
-        inspectionEveryDays: data.inspectionEveryDays,
-        warrantyMonths: data.warrantyMonths,
-        // Prisma JSON columns don't accept literal null; use Prisma.DbNull.
-        filterPolicy:
-          data.filterPolicy === undefined
-            ? undefined
-            : data.filterPolicy === null
-              ? Prisma.DbNull
-              : data.filterPolicy,
-        isActive: data.isActive,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.equipmentModel.update({
+        where: { id },
+        data: {
+          nameKo: data.nameKo,
+          nameVi: data.nameVi,
+          nameEn: data.nameEn,
+          brandId: data.brandId,
+          category: data.category,
+          categoryId: data.categoryId,
+          description: data.description,
+          retailPrice: data.retailPrice,
+          monthlyRentalPrice: data.monthlyRentalPrice,
+          monthlyMaintenancePrice: data.monthlyMaintenancePrice,
+          inspectionEveryDays: data.inspectionEveryDays,
+          warrantyMonths: data.warrantyMonths,
+          // Prisma JSON columns don't accept literal null; use Prisma.DbNull.
+          filterPolicy:
+            data.filterPolicy === undefined
+              ? undefined
+              : data.filterPolicy === null
+                ? Prisma.DbNull
+                : data.filterPolicy,
+          isActive: data.isActive,
+        },
+      });
+      // When the filter config is supplied, replace it wholesale (wipe +
+      // recreate) — same pattern as the consumable-side compatibility write.
+      if (data.compatibleConsumables) {
+        await tx.consumableOnModel.deleteMany({ where: { modelId: id } });
+        if (data.compatibleConsumables.length > 0) {
+          await tx.consumableOnModel.createMany({
+            data: data.compatibleConsumables.map((f) => ({
+              modelId: id,
+              consumableId: f.consumableId,
+              quantity: f.quantity,
+              sortOrder: f.sortOrder,
+              replaceEveryDaysOverride: f.replaceEveryDaysOverride ?? null,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+      return row;
     });
     await logAudit({
       actorType: "USER",

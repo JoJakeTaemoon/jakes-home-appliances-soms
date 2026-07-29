@@ -96,6 +96,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           nameVi: data.nameVi,
           nameEn: data.nameEn,
           replaceEveryDays: replaceMerged,
+          replaceCycleUnit: data.replaceCycleUnit,
           cleanEveryDays: cleanMerged,
           cleanOnEveryVisit: data.cleanOnEveryVisit,
           retailPrice: data.retailPrice,

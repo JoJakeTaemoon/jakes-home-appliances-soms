@@ -78,6 +78,7 @@ export const POST = defineMutation({
           nameVi: body.nameVi,
           nameEn: body.nameEn,
           replaceEveryDays: body.replaceEveryDays ?? null,
+          replaceCycleUnit: body.replaceCycleUnit,
           cleanEveryDays: body.cleanEveryDays ?? null,
           cleanOnEveryVisit: body.cleanOnEveryVisit,
           retailPrice: body.retailPrice,

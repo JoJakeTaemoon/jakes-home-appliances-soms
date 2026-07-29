@@ -80,6 +80,9 @@ const consumableCoreShape = {
   nameVi: z.string().trim().min(1).max(180),
   nameEn: z.string().trim().min(1).max(180),
   replaceEveryDays: dayCycle,
+  /// Input/display unit for replaceEveryDays. Canonical storage stays days
+  /// (the caller converts MONTH → days ×30 before submitting).
+  replaceCycleUnit: z.enum(["DAY", "MONTH"]).default("DAY"),
   cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().default(false),
   retailPrice: z.coerce.number().nonnegative().max(99999999999.99),
@@ -116,6 +119,7 @@ export const updateConsumableSchema = z.object({
   nameVi: consumableCoreShape.nameVi.optional(),
   nameEn: consumableCoreShape.nameEn.optional(),
   replaceEveryDays: dayCycle,
+  replaceCycleUnit: z.enum(["DAY", "MONTH"]).optional(),
   cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().optional(),
   retailPrice: consumableCoreShape.retailPrice.optional(),

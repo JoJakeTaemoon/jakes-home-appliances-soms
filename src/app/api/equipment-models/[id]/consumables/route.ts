@@ -32,8 +32,10 @@ export const GET = defineQuery({
 
     const rows = await prisma.consumableOnModel.findMany({
       where: { modelId: params.id },
+      orderBy: { sortOrder: "asc" },
       select: {
         quantity: true,
+        replaceEveryDaysOverride: true,
         consumable: {
           select: {
             id: true,
@@ -54,7 +56,8 @@ export const GET = defineQuery({
       consumableId: r.consumable.id,
       sku: r.consumable.sku,
       name: { ko: r.consumable.nameKo, vi: r.consumable.nameVi, en: r.consumable.nameEn },
-      replaceEveryDays: r.consumable.replaceEveryDays,
+      // Per-model cycle override wins over the filter's own default.
+      replaceEveryDays: r.replaceEveryDaysOverride ?? r.consumable.replaceEveryDays,
       cleanEveryDays: r.consumable.cleanEveryDays,
       cleanOnEveryVisit: r.consumable.cleanOnEveryVisit,
       defaultQuantity: r.quantity,

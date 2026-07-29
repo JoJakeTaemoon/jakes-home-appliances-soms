@@ -54,8 +54,10 @@ export const GET = defineQuery({
         model: {
           select: {
             consumables: {
+              orderBy: { sortOrder: "asc" },
               select: {
                 quantity: true,
+                replaceEveryDaysOverride: true,
                 consumable: {
                   select: {
                     id: true,
@@ -228,12 +230,15 @@ export const GET = defineQuery({
     for (const entry of standard) {
       const c = entry.consumable;
       if (seenConsumableIds.has(c.id)) continue;
-      const cycle = c.replaceEveryDays ?? fallbackCycle ?? null;
-      const cycleSource: FilterRow["cycleSource"] = c.replaceEveryDays
-        ? "CATALOG"
-        : fallbackCycle
-          ? "CUSTOM_MAINTENANCE"
-          : "NONE";
+      // Per-model cycle override wins over the filter's own default. The model
+      // override IS the model's catalog cycle, so it still reads as CATALOG.
+      const cycle = entry.replaceEveryDaysOverride ?? c.replaceEveryDays ?? fallbackCycle ?? null;
+      const cycleSource: FilterRow["cycleSource"] =
+        (entry.replaceEveryDaysOverride ?? c.replaceEveryDays) != null
+          ? "CATALOG"
+          : fallbackCycle
+            ? "CUSTOM_MAINTENANCE"
+            : "NONE";
 
       const history = historyFor(c.id);
       const lastReplacedAt = history[0]?.replacedAt ?? null;

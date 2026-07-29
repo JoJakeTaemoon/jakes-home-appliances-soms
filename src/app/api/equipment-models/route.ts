@@ -59,23 +59,39 @@ export const POST = defineMutation({
   body: createEquipmentModelSchema,
   successStatus: 201,
   handler: async ({ body }) => {
-    return prisma.equipmentModel.create({
-      data: {
-        nameKo: body.nameKo ?? null,
-        nameVi: body.nameVi ?? null,
-        nameEn: body.nameEn ?? null,
-        brandId: body.brandId ?? null,
-        category: body.category ?? null,
-        categoryId: body.categoryId ?? null,
-        description: body.description ?? null,
-        retailPrice: body.retailPrice ?? null,
-        monthlyRentalPrice: body.monthlyRentalPrice ?? null,
-        monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
-        inspectionEveryDays: body.inspectionEveryDays ?? null,
-        warrantyMonths: body.warrantyMonths ?? null,
-        filterPolicy: body.filterPolicy ?? undefined,
-        isActive: body.isActive,
-      },
+    const filters = body.compatibleConsumables ?? [];
+    return prisma.$transaction(async (tx) => {
+      const model = await tx.equipmentModel.create({
+        data: {
+          nameKo: body.nameKo ?? null,
+          nameVi: body.nameVi ?? null,
+          nameEn: body.nameEn ?? null,
+          brandId: body.brandId ?? null,
+          category: body.category ?? null,
+          categoryId: body.categoryId ?? null,
+          description: body.description ?? null,
+          retailPrice: body.retailPrice ?? null,
+          monthlyRentalPrice: body.monthlyRentalPrice ?? null,
+          monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
+          inspectionEveryDays: body.inspectionEveryDays ?? null,
+          warrantyMonths: body.warrantyMonths ?? null,
+          filterPolicy: body.filterPolicy ?? undefined,
+          isActive: body.isActive,
+        },
+      });
+      if (filters.length > 0) {
+        await tx.consumableOnModel.createMany({
+          data: filters.map((f) => ({
+            modelId: model.id,
+            consumableId: f.consumableId,
+            quantity: f.quantity,
+            sortOrder: f.sortOrder,
+            replaceEveryDaysOverride: f.replaceEveryDaysOverride ?? null,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      return model;
     });
   },
   audit: {
