@@ -1893,7 +1893,13 @@
       "partial": "Apply partial payment",
       "downloadReceipt": "Download receipt",
       "regenerate": "Regenerate PDF",
-      "bankTransfer": "Record bank transfer"
+      "bankTransfer": "Record bank transfer",
+      "receiptNotes": "Receipt notes",
+      "receiptNotesPlaceholder": "Notes to print on the receipt",
+      "receiptNotesHint": "Saving regenerates the receipt PDF with these notes. Check the result below before printing.",
+      "saveAndRegenerate": "Save & regenerate",
+      "receiptPreview": "Receipt preview",
+      "receiptRegenerateFailed": "Notes saved, but regenerating the receipt failed. Please retry — the current printout still shows the old content."
     },
     "states": {
       "EXPECTED": "Expected",

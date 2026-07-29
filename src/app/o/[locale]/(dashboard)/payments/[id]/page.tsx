@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { formatDate, formatDateTime, formatVnd } from "@/lib/format";
 
@@ -77,6 +77,14 @@ export default function PaymentDetailPage() {
   const [writeOffReason, setWriteOffReason] = useState("");
   const [showPartial, setShowPartial] = useState(false);
   const [partialAmount, setPartialAmount] = useState("");
+  // Receipt notes editor (요청 #4). `draftNotes === null` means untouched — the
+  // textarea then shows the server value; once edited it holds the draft. After
+  // a save we reset to null so it re-derives from the freshly-loaded notes.
+  // (No effect / no ref-in-render — avoids the sync-state lint pitfalls.)
+  const [draftNotes, setDraftNotes] = useState<string | null>(null);
+  const [receiptSaving, setReceiptSaving] = useState(false);
+  const [receiptVersion, setReceiptVersion] = useState(0);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
 
   const query = useApiQuery<PaymentDetail>(
     id ? `/api/payments/${id}` : null,
@@ -85,6 +93,36 @@ export default function PaymentDetailPage() {
   const loading = query.isLoading;
   const load = async () => {
     await query.refetch();
+  };
+
+  // Shown value: the draft if the operator has typed, else the server notes.
+  const receiptNotes = draftNotes ?? data?.notes ?? "";
+
+  const handleSaveReceiptNotes = async () => {
+    setReceiptSaving(true);
+    setReceiptError(null);
+    try {
+      await api.patch(`/api/payments/${id}`, { notes: receiptNotes });
+    } catch (e) {
+      setReceiptError(e instanceof Error ? e.message : String(e));
+      setReceiptSaving(false);
+      return;
+    }
+    // Notes are committed. Regenerate the receipt PDF from them; if only THIS
+    // step fails, the saved notes are correct but the printed/downloaded
+    // receipt is stale until the operator retries — say so explicitly.
+    try {
+      await api.post(`/api/payments/${id}/receipt-pdf?locale=${locale}`, {});
+      // Reload the record first, THEN clear the draft, so the textarea snaps
+      // straight to the new server value with no revert-to-old flicker.
+      await load();
+      setDraftNotes(null);
+      setReceiptVersion((v) => v + 1);
+    } catch {
+      setReceiptError(t("detail.receiptRegenerateFailed"));
+    } finally {
+      setReceiptSaving(false);
+    }
   };
 
   if (loading) {
@@ -299,15 +337,52 @@ export default function PaymentDetailPage() {
             )}
 
             {tab === "receipt" && (
-              <div className="text-sm">
-                <a
-                  href={`/api/payments/${data.id}/receipt-pdf?locale=${locale}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[var(--brand-blue-700)] hover:underline"
-                >
-                  {t("detail.downloadReceipt")}
-                </a>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <label
+                    htmlFor="receipt-notes"
+                    className="mb-1 block text-xs font-medium text-[#525252]"
+                  >
+                    {t("detail.receiptNotes")}
+                  </label>
+                  <Textarea
+                    id="receipt-notes"
+                    value={receiptNotes}
+                    onChange={(e) => setDraftNotes(e.target.value)}
+                    rows={3}
+                    maxLength={2000}
+                    placeholder={t("detail.receiptNotesPlaceholder")}
+                  />
+                  <p className="mt-1 text-xs text-[#737373]">{t("detail.receiptNotesHint")}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleSaveReceiptNotes}
+                    isLoading={receiptSaving}
+                  >
+                    {t("detail.saveAndRegenerate")}
+                  </Button>
+                  <a
+                    href={`/api/payments/${data.id}/receipt-pdf?locale=${locale}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-md px-3 py-2 text-center text-sm font-medium text-[var(--brand-blue-700)] ring-1 ring-[var(--brand-blue-200)] hover:bg-[var(--brand-blue-50)]"
+                  >
+                    {t("detail.downloadReceipt")}
+                  </a>
+                </div>
+                {receiptError && (
+                  <p className="text-xs text-red-700" role="alert">
+                    {receiptError}
+                  </p>
+                )}
+                <iframe
+                  key={receiptVersion}
+                  src={`/api/payments/${data.id}/receipt-pdf?locale=${locale}&v=${receiptVersion}`}
+                  title={t("detail.receiptPreview")}
+                  className="h-[520px] w-full rounded border border-[#e5e5e5]"
+                />
               </div>
             )}
 

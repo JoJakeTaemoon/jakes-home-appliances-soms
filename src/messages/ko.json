@@ -1893,7 +1893,13 @@
       "partial": "부분 결제",
       "downloadReceipt": "영수증 다운로드",
       "regenerate": "PDF 재생성",
-      "bankTransfer": "계좌이체 등록"
+      "bankTransfer": "계좌이체 등록",
+      "receiptNotes": "영수증 메모",
+      "receiptNotesPlaceholder": "영수증에 인쇄할 메모를 입력하세요",
+      "receiptNotesHint": "저장하면 이 메모로 영수증 PDF가 다시 생성됩니다. 아래에서 출력 전 결과를 확인하세요.",
+      "saveAndRegenerate": "저장 후 재발급",
+      "receiptPreview": "영수증 미리보기",
+      "receiptRegenerateFailed": "메모는 저장됐지만 영수증 재생성에 실패했습니다. 다시 시도하세요 — 현재 인쇄본은 이전 내용입니다."
     },
     "states": {
       "EXPECTED": "예정",

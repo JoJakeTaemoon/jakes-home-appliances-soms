@@ -854,6 +854,16 @@ Tab: Chờ bàn giao / Chờ đối soát / Hoàn thành / Quá hạn / Tất c�
 | D+14 | Quá hạn 14 ngày | Gửi lại email |
 | D+30 | Quá hạn 30 ngày | SMS → Người ký HĐ + toàn bộ OPS. HĐ chuyển sang `OVERDUE` |
 
+### 12.6 Sửa & xem trước ghi chú biên lai (mới, yêu cầu #4)
+
+Trong chi tiết thanh toán → tab **Biên lai**, bạn có thể sửa trực tiếp **ghi chú** sẽ in trên biên lai:
+
+1. Nhập/sửa nội dung trong ô **Ghi chú biên lai** (điền sẵn nếu đã có ghi chú).
+2. Nhấn **"Lưu & tạo lại"** — ghi chú được lưu vào bản ghi thanh toán và **biên lai PDF được tạo lại** với ghi chú đó.
+3. Bản **xem trước** ngay bên dưới hiển thị biên lai vừa tạo để kiểm tra trước khi in. Nếu ổn, nhấn **Tải biên lai** để lấy PDF in.
+
+> Khác với chứng từ lượt thăm (§9.3), ghi chú biên lai được **lưu vào bản ghi thanh toán**, nên vẫn giữ nguyên khi tạo lại hoặc mở lại sau này.
+
 ---
 
 ## Chương 13. Hóa đơn GTGT (chỉ B2B)

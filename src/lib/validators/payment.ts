@@ -98,6 +98,13 @@ export const applyPartialSchema = z.object({
   partialAmount: money,
 });
 
+/** Editable receipt notes (요청 #4) — the free-text block printed on the
+ *  receipt PDF. Empty string and null both clear it (rendered only when
+ *  non-empty), so no `optStr`-style coercion. */
+export const updatePaymentNotesSchema = z.object({
+  notes: z.string().max(2000).nullable(),
+});
+
 export type CreatePaymentInput = z.infer<typeof createPaymentSchema>;
 export type ListPaymentQuery = z.infer<typeof listPaymentQuerySchema>;
 export type RecordBankTransferInput = z.infer<typeof recordBankTransferSchema>;

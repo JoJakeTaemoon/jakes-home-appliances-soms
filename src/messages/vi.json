@@ -1893,7 +1893,13 @@
       "partial": "Thanh toán một phần",
       "downloadReceipt": "Tải biên lai",
       "regenerate": "Tạo lại PDF",
-      "bankTransfer": "Ghi nhận chuyển khoản"
+      "bankTransfer": "Ghi nhận chuyển khoản",
+      "receiptNotes": "Ghi chú biên lai",
+      "receiptNotesPlaceholder": "Nhập ghi chú sẽ in trên biên lai",
+      "receiptNotesHint": "Khi lưu, biên lai PDF sẽ được tạo lại với ghi chú này. Xem kết quả bên dưới trước khi in.",
+      "saveAndRegenerate": "Lưu & tạo lại",
+      "receiptPreview": "Xem trước biên lai",
+      "receiptRegenerateFailed": "Đã lưu ghi chú nhưng tạo lại biên lai thất bại. Vui lòng thử lại — bản in hiện tại vẫn là nội dung cũ."
     },
     "states": {
       "EXPECTED": "Dự kiến",
