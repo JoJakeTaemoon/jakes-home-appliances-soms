@@ -572,6 +572,16 @@ Trên màn hình chi tiết hợp đồng, người dùng có quyền **MANAGER 
 - File PDF tải lên sẽ ghi đè lên bản tự động tạo
 - Hữu ích khi hợp đồng đã được ký trên giấy trước, cần cập nhật lại vào hệ thống
 
+### 8.4a Sửa & xem trước ghi chú hợp đồng (mới, yêu cầu #4)
+
+Trên màn hình chi tiết hợp đồng, có thể sửa **ghi chú** sẽ in trên hợp đồng PDF (nhân viên văn phòng, trạng thái **DRAFT·ACTIVE**):
+
+1. Nhập/sửa nội dung trong ô **Ghi chú** của hợp đồng.
+2. Nhấn **"Lưu & tạo lại"** — ghi chú được lưu và hợp đồng PDF được tạo lại.
+3. Bản **xem trước PDF** ngay bên dưới được cập nhật để kiểm tra trước khi in.
+
+> Ghi chú được lưu vào bản ghi hợp đồng nên vẫn giữ khi tạo lại/mở lại. Lưu với ô trống sẽ xóa ghi chú. Với hợp đồng **đã tải lên PDF đã ký (§8.4)**, bản tải lên được ưu tiên nên trình sửa ghi chú không hiển thị.
+
 ### 8.5 Tạo hợp đồng mới
 
 1. Danh sách hợp đồng → nút "**Hợp đồng mới**"

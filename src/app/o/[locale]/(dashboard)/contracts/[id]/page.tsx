@@ -12,10 +12,13 @@ import { useAuth } from "@/providers/auth-provider";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import { Input, Textarea } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { FormField } from "@/components/ui/form-field";
-import { canAmendContract } from "@/lib/contracts/access";
+import {
+  canAmendContract,
+  canRegenerateContractPdf,
+} from "@/lib/contracts/access";
 import {
   ContractStateBadge,
   ContractTypeBadge,
@@ -129,6 +132,16 @@ export default function ContractDetailPage() {
   // We can't (currently) read contract-party email from the detail payload;
   // assume it's available unless the contract is brand-new and unsigned.
   const hasContractPartyEmail = true;
+
+  // Contract memo is editable on DRAFT / ACTIVE (요청 #4) — but not when a signed
+  // PDF was manually uploaded (that upload is authoritative and served instead
+  // of the auto-rendered PDF the memo prints on). Gated on MANAGER+ because
+  // saving regenerates the PDF, and regenerate-pdf is MANAGER+ — a STAFF editor
+  // would persist notes but hit a permanent 403 on the regenerate step.
+  const canEditNotes =
+    !data.pdfUploadedAt &&
+    (data.state === "DRAFT" || data.state === "ACTIVE") &&
+    canRegenerateContractPdf(role);
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -249,13 +262,24 @@ export default function ContractDetailPage() {
                 )}
               </div>
             )}
-            {data.notes && (
-              <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:col-span-2">
-                <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
-                  {tc("notes")}
-                </h3>
-                <p className="whitespace-pre-wrap text-sm text-[#525252]">{data.notes}</p>
+            {canEditNotes ? (
+              <div className="sm:col-span-2">
+                <ContractNotesEditor
+                  key={data.id}
+                  contractId={data.id}
+                  initialNotes={data.notes}
+                  onSaved={reload}
+                />
               </div>
+            ) : (
+              data.notes && (
+                <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4 sm:col-span-2">
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-[#737373]">
+                    {tc("notes")}
+                  </h3>
+                  <p className="whitespace-pre-wrap text-sm text-[#525252]">{data.notes}</p>
+                </div>
+              )
             )}
             <div className="sm:col-span-2">
               <ContractPdfPreview contractId={data.id} cacheBuster={version} />
@@ -1016,6 +1040,77 @@ function ContractPaymentsTab({ contractId }: Readonly<{ contractId: string }>) {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Contract memo editor (요청 #4). Edits the free-text notes printed on the
+ * contract PDF, then regenerates so the inline preview reflects it before
+ * printing. Notes persist on the Contract row, so a re-open shows them again.
+ */
+function ContractNotesEditor({
+  contractId,
+  initialNotes,
+  onSaved,
+}: Readonly<{
+  contractId: string;
+  initialNotes: string | null;
+  onSaved: () => void | Promise<void>;
+}>) {
+  const t = useTranslations("contracts");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [notes, setNotes] = useState(initialNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.patch(`/api/contracts/${contractId}`, { notes });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setSaving(false);
+      return;
+    }
+    // Notes committed — regenerate the PDF so the preview/download reflect them.
+    // If only this fails, the saved-but-stale-printout state is surfaced.
+    try {
+      await api.post(`/api/contracts/${contractId}/regenerate-pdf`, {});
+      await onSaved();
+    } catch {
+      setError(t("notesRegenerateFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-[#e5e5e5] bg-white p-4">
+      <label htmlFor="contract-notes" className="text-xs font-medium uppercase tracking-wider text-[#737373]">
+        {tc("notes")}
+      </label>
+      <Textarea
+        id="contract-notes"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={4}
+        maxLength={2000}
+        placeholder={t("notesPlaceholder")}
+      />
+      <p className="text-xs text-[#737373]">{t("notesHint")}</p>
+      {error && (
+        <p className="text-xs text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+      <div>
+        <Button size="sm" onClick={save} isLoading={saving}>
+          {t("saveAndRegenerate")}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1195,7 +1195,11 @@
       "success": "Contract PDF uploaded.",
       "errorNotPdf": "Only PDF files can be uploaded.",
       "errorTooLarge": "File size must not exceed 10MB."
-    }
+    },
+    "notesPlaceholder": "Notes to print on the contract",
+    "notesHint": "Saving regenerates the contract PDF with these notes. Check the preview below before printing. (Not editable once a signed PDF is uploaded.)",
+    "saveAndRegenerate": "Save & regenerate",
+    "notesRegenerateFailed": "Notes saved, but regenerating the contract failed. Please retry — the current document still shows the old content."
   },
   "portal": {
     "logout": "Log out",

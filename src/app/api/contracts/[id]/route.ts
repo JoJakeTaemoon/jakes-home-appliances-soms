@@ -161,6 +161,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       }
     }
 
+    // Memo (요청 #4): undefined = unchanged; "" or null = clear (normalized to
+    // null so "no memo" has one representation); text = set.
+    const notesUpdate = data.notes === undefined ? undefined : data.notes || null;
+
     const updated = await prisma.contract.update({
       where: { id },
       data: {
@@ -177,6 +181,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           data.totalContractValue === undefined
             ? undefined
             : data.totalContractValue,
+        // Editable memo printed on the contract PDF (요청 #4). Allowed on both
+        // DRAFT and ACTIVE (the ACTIVE allow-list above permits only `notes`).
+        notes: notesUpdate,
       },
     });
 

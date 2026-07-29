@@ -5,6 +5,7 @@ import {
   contractStateTransitionSchema,
   contractRenewSchema,
   contractListQuerySchema,
+  updateContractSchema,
 } from "@/lib/validators/contract";
 
 describe("createContractSchema", () => {
@@ -52,6 +53,24 @@ describe("createContractSchema", () => {
       monthlyMaintenanceFee: 100_000,
     });
     expect(res.success).toBe(false);
+  });
+});
+
+describe("updateContractSchema — editable contract memo (요청 #4)", () => {
+  it("keeps an empty-string memo as a deliberate clear (not coerced to undefined)", () => {
+    expect(updateContractSchema.parse({ notes: "" }).notes).toBe("");
+  });
+  it("accepts null to clear the memo", () => {
+    expect(updateContractSchema.parse({ notes: null }).notes).toBeNull();
+  });
+  it("leaves notes undefined when omitted (unchanged)", () => {
+    expect(updateContractSchema.parse({}).notes).toBeUndefined();
+  });
+  it("passes through memo text", () => {
+    expect(updateContractSchema.parse({ notes: "Bàn giao kèm quà" }).notes).toBe("Bàn giao kèm quà");
+  });
+  it("rejects a memo longer than 2000 chars", () => {
+    expect(() => updateContractSchema.parse({ notes: "x".repeat(2001) })).toThrow();
   });
 });
 

@@ -1195,7 +1195,11 @@
       "success": "Đã tải lên hợp đồng PDF.",
       "errorNotPdf": "Chỉ có thể tải lên tệp PDF.",
       "errorTooLarge": "Kích thước tệp không được vượt quá 10MB."
-    }
+    },
+    "notesPlaceholder": "Nhập ghi chú sẽ in trên hợp đồng",
+    "notesHint": "Khi lưu, hợp đồng PDF sẽ được tạo lại với ghi chú này. Xem bản xem trước bên dưới trước khi in. (Không sửa được nếu đã tải lên PDF đã ký)",
+    "saveAndRegenerate": "Lưu & tạo lại",
+    "notesRegenerateFailed": "Đã lưu ghi chú nhưng tạo lại hợp đồng thất bại. Vui lòng thử lại — tài liệu hiện tại vẫn là nội dung cũ."
   },
   "portal": {
     "logout": "Đăng xuất",

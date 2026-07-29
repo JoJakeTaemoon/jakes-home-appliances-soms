@@ -338,7 +338,9 @@ async function loadContract(
     signedByCustomerAt: row.signedByCustomerAt,
     signedByCompanyAt: row.signedByCompanyAt,
     activatedAt: row.activatedAt,
-    notes: null, // exclude internal notes from PDFs by default
+    // Editable memo printed on the contract PDF (요청 #4). The shared
+    // ContractDocument renders a notes section only when this is non-empty.
+    notes: row.notes,
     parentContractNumber: row.parentContract?.contractNumber ?? null,
     amendmentRevision: row.amendmentRevision,
     amendmentReason: row.amendmentReason,

@@ -144,7 +144,10 @@ export const createContractSchema = z.discriminatedUnion("type", [
 ]);
 
 export const updateContractSchema = z.object({
-  notes: optStr(2000),
+  // Contract memo printed on the PDF (요청 #4). Plain string (not `optStr`) so an
+  // empty string is a deliberate clear rather than being coerced to undefined
+  // (= unchanged); null also clears; omitted leaves the existing memo.
+  notes: z.string().max(2000).nullable().optional(),
   startDate: z.coerce.date().nullable().optional(),
   signedAt: z.coerce.date().nullable().optional(),
   termMonths: z.coerce.number().int().min(1).max(120).nullable().optional(),

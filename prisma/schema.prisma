@@ -957,6 +957,11 @@ model Contract {
   amendmentRevision Int        @default(0)
   amendmentReason   String?
 
+  /// Free-text memo printed on the contract PDF (요청 #4). Editable on DRAFT
+  /// and ACTIVE contracts via PATCH; the contract renderer prints it in a
+  /// dedicated notes section when non-empty.
+  notes String?
+
   signedByCustomerAt      DateTime?
   signedByCompanyAt       DateTime?
   activatedAt             DateTime?
