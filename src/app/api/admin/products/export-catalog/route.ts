@@ -16,6 +16,7 @@ import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError } from "@/lib/api/error";
 import { toErrorResponse } from "@/lib/api/response";
+import { buildSpreadsheetML, type XlsxCell } from "@/lib/xlsx/spreadsheet-ml";
 
 /** RFC 4180 cell escape — wraps in quotes when the value carries comma/quote/newline. */
 function csvCell(value: string | number | null | undefined): string {
@@ -96,54 +97,97 @@ function baseRowFor(model: ModelWithParts): ReadonlyArray<string> {
   ];
 }
 
-/** Emit one CSV line per attached part (consumable + accessory), plus a single
- *  placeholder row when a model has neither. */
-function rowsForModel(model: ModelWithParts): string[] {
+type Cell = XlsxCell;
+
+/** Emit one row (cell array) per attached part (consumable + accessory), plus a
+ *  single placeholder row when a model has neither. Shared by the CSV and Excel
+ *  outputs (요청 A). */
+function rowsForModel(model: ModelWithParts): Cell[][] {
   const baseRow = baseRowFor(model);
-  const out: string[] = [];
+  const out: Cell[][] = [];
 
   if (model.consumables.length === 0 && model.accessories.length === 0) {
-    out.push(csvRow([...baseRow, "", "", "", "", "", "", "", "", ""]));
+    out.push([...baseRow, "", "", "", "", "", "", "", "", ""]);
     return out;
   }
 
   for (const link of model.consumables) {
     const c = link.consumable;
-    out.push(
-      csvRow([
-        ...baseRow,
-        "Consumable",
-        c.sku,
-        c.nameEn,
-        c.nameKo,
-        c.nameVi,
-        link.quantity,
-        c.replaceEveryDays,
-        cleanCycleCell(c),
-        "",
-      ]),
-    );
+    out.push([
+      ...baseRow,
+      "Consumable",
+      c.sku,
+      c.nameEn,
+      c.nameKo,
+      c.nameVi,
+      link.quantity,
+      c.replaceEveryDays,
+      cleanCycleCell(c),
+      "",
+    ]);
   }
 
   for (const link of model.accessories) {
     const a = link.accessory;
-    out.push(
-      csvRow([
-        ...baseRow,
-        "Accessory",
-        a.sku,
-        a.nameEn,
-        a.nameKo,
-        a.nameVi,
-        link.quantity,
-        "",
-        "",
-        a.isMinorPart ? "Y" : "N",
-      ]),
-    );
+    out.push([
+      ...baseRow,
+      "Accessory",
+      a.sku,
+      a.nameEn,
+      a.nameKo,
+      a.nameVi,
+      link.quantity,
+      "",
+      "",
+      a.isMinorPart ? "Y" : "N",
+    ]);
   }
 
   return out;
+}
+
+/** Filter-master sheet (요청 A) — the Consumable catalog on its own tab. */
+const FILTER_HEADERS = [
+  "No.",
+  "SKU",
+  "Filter Name (EN)",
+  "Filter Name (KO)",
+  "Filter Name (VI)",
+  "Replace Every (days)",
+  "Clean Every (days)",
+  "Sale Price (VND)",
+  "Active",
+  "Notes",
+];
+
+async function loadFilters(): Promise<Cell[][]> {
+  const rows = await prisma.consumable.findMany({
+    orderBy: { sku: "asc" },
+    select: {
+      sku: true,
+      nameEn: true,
+      nameKo: true,
+      nameVi: true,
+      replaceEveryDays: true,
+      cleanEveryDays: true,
+      cleanOnEveryVisit: true,
+      retailPrice: true,
+      notes: true,
+      isActive: true,
+    },
+  });
+  return rows.map((c, i) => [
+    i + 1,
+    c.sku,
+    c.nameEn,
+    c.nameKo,
+    c.nameVi,
+    c.replaceEveryDays,
+    cleanCycleCell(c),
+    Number(c.retailPrice),
+    c.isActive ? "Y" : "N",
+    c.notes ?? "",
+  ]);
 }
 
 export async function GET(request: NextRequest) {
@@ -171,24 +215,43 @@ export async function GET(request: NextRequest) {
       "Part Name (KO)",
       "Part Name (VI)",
       "Quantity",
-      "Replace Every (months)",
-      "Clean Every (months)",
+      "Replace Every (days)",
+      "Clean Every (days)",
       "Minor Part",
     ];
-    const lines: string[] = [csvRow(headers)];
-    // 1-indexed sequence over every emitted body row (per part, not per model).
+    // Shared body rows (No. + model + part columns), reused by CSV and Excel.
+    const catalogRows: Cell[][] = [];
     let seq = 0;
     for (const model of models) {
-      for (const raw of rowsForModel(model)) {
+      for (const row of rowsForModel(model)) {
         seq++;
-        lines.push(`${csvRow([seq])},${raw}`);
+        catalogRows.push([seq, ...row]);
       }
     }
 
+    const today = new Date().toISOString().slice(0, 10);
+    const format = new URL(request.url).searchParams.get("format");
+
+    if (format === "xlsx") {
+      const filters = await loadFilters();
+      const xml = buildSpreadsheetML([
+        { name: "Catalog", headers, rows: catalogRows },
+        { name: "Filters", headers: FILTER_HEADERS, rows: filters },
+      ]);
+      return new NextResponse(xml, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+          "Content-Disposition": `attachment; filename="seoul-aqua-product-catalog-${today}.xls"`,
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+
+    const lines: string[] = [csvRow(headers), ...catalogRows.map(csvRow)];
     // UTF-8 BOM so Excel opens the file as UTF-8 (otherwise KR/VI characters
     // turn into mojibake on Windows).
     const body = `﻿${lines.join("\r\n")}\r\n`;
-    const today = new Date().toISOString().slice(0, 10);
 
     return new NextResponse(body, {
       status: 200,

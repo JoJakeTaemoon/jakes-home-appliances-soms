@@ -2300,7 +2300,8 @@
       "notAllowed": "Chỉ Quản trị viên hoặc Quản lý mới truy cập được trang này.",
       "colReplaceCycleUnit": "Đơn vị",
       "cycleUnitDay": "Ngày",
-      "cycleUnitMonth": "Tháng"
+      "cycleUnitMonth": "Tháng",
+      "downloadCatalogExcel": "Xuất Excel"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

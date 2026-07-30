@@ -2300,7 +2300,8 @@
       "notAllowed": "This page is restricted to Admin or Manager.",
       "colReplaceCycleUnit": "Unit",
       "cycleUnitDay": "Days",
-      "cycleUnitMonth": "Months"
+      "cycleUnitMonth": "Months",
+      "downloadCatalogExcel": "Export Excel"
     },
     "notificationTemplates": {
       "title": "Notification templates",

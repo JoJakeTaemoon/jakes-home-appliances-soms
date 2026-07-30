@@ -940,6 +940,8 @@ Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự đ�
 
 Đăng ký sản phẩm theo cấu trúc Brand → Model. Đăng ký chu kỳ thay lõi lọc tương thích cho từng model — cron kiểm tra định kỳ sẽ dựa vào đây để tự tính ngày thay tiếp theo.
 
+> **Xuất dữ liệu**: góc trên bên phải màn hình có **Tải danh mục CSV** hoặc **Xuất Excel** để tải toàn bộ danh mục ra file. File Excel gồm hai trang tính: **Catalog** (model × phụ tùng) + **Filters** (danh mục lõi lọc).
+
 #### Cấu hình lõi lọc ngay trên màn hình Model (cải tiến)
 
 Trước đây, sau khi tạo model mới phải **vào màn hình quản lý lõi lọc (vật tư) rồi thêm model đó vào từng lõi một**. Nay làm ngược lại: **chọn trực tiếp các lõi lọc thuộc model ngay trên màn hình tạo/sửa Model**.

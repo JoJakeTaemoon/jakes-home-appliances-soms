@@ -188,11 +188,12 @@ export default function ProductCatalogPage() {
     }
   }
 
-  async function downloadCatalogCsv() {
+  async function downloadCatalog(format: "csv" | "xlsx") {
     if (!accessToken) return;
     setExporting(true);
     try {
-      const res = await fetch("/api/admin/products/export-catalog", {
+      const qs = format === "xlsx" ? "?format=xlsx" : "";
+      const res = await fetch(`/api/admin/products/export-catalog${qs}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) {
@@ -205,7 +206,7 @@ export default function ProductCatalogPage() {
       a.href = url;
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const filenameMatch = /filename="?([^"]+)"?/.exec(disposition);
-      a.download = filenameMatch?.[1] ?? "product-catalog.csv";
+      a.download = filenameMatch?.[1] ?? `product-catalog.${format === "xlsx" ? "xls" : "csv"}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -250,8 +251,11 @@ export default function ProductCatalogPage() {
           >
             {t("uploadCatalogCsv")}
           </Button>
-          <Button variant="secondary" onClick={downloadCatalogCsv} isLoading={exporting}>
+          <Button variant="secondary" onClick={() => downloadCatalog("csv")} isLoading={exporting}>
             {t("downloadCatalogCsv")}
+          </Button>
+          <Button variant="secondary" onClick={() => downloadCatalog("xlsx")} isLoading={exporting}>
+            {t("downloadCatalogExcel")}
           </Button>
         </div>
       </header>
