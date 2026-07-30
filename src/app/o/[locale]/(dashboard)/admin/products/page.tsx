@@ -1106,7 +1106,6 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
 
 function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const locale = useLocale();
-  const tEq = useTranslations("equipmentModels");
   const models = useModelOptions(api);
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
@@ -1116,10 +1115,6 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [modelFilter, setModelFilter] = useState<string | null>(null);
-  // Create-form-only: brand + category narrow which models the
-  // CompatibilityPicker exposes for selection.
-  const [formBrand, setFormBrand] = useState<string | null>(null);
-  const [formCategory, setFormCategory] = useState<string | null>(null);
   const [form, setForm] = useState({
     sku: "",
     nameKo: "",
@@ -1130,7 +1125,6 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     cleanEveryDays: "" as string,
     cleanOnEveryVisit: false,
     retailPrice: 0,
-    compatibleModelIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"sku" | "nameVi" | "replaceEveryDays" | "cleanEveryDays" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
@@ -1161,7 +1155,8 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         cleanEveryDays: form.cleanEveryDays === "" ? null : Number(form.cleanEveryDays),
         cleanOnEveryVisit: form.cleanOnEveryVisit,
         retailPrice: form.retailPrice,
-        compatibleModels: form.compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
+        // Model↔filter links are set from the model screen — a new filter starts
+        // with none (the API defaults `compatibleModels` to []).
       });
       setShowForm(false);
       setForm({
@@ -1174,7 +1169,6 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         cleanEveryDays: "",
         cleanOnEveryVisit: false,
         retailPrice: 0,
-        compatibleModelIds: [],
       });
       await load();
     } catch (err) {
@@ -1205,35 +1199,6 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         .map((m) => ({ value: m.id, label: pickModelName(m, locale) })),
     [models, brandFilter, locale],
   );
-
-  // Distinct category enum values present in the model catalog (legacy
-  // `category` column on EquipmentModel: WATER_PURIFIER / BIDET / etc.).
-  const categoryOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const out: { value: string; label: string }[] = [];
-    for (const m of models) {
-      if (!m.category || seen.has(m.category)) continue;
-      seen.add(m.category);
-      out.push({ value: m.category, label: tEq(`categoryValues.${m.category}` as never) });
-    }
-    return out;
-  }, [models, tEq]);
-
-  // Bulk selector — replaces the create-form's compatibleModelIds with every
-  // model matching the current (brand, category) tuple. When both are cleared,
-  // the user's hand-curated selection is preserved (no destructive reset).
-  // The user can then fine-tune by toggling individual model chips.
-  function applyBulkSelect(brand: string | null, category: string | null) {
-    if (!brand && !category) return;
-    const matching = models
-      .filter(
-        (m) =>
-          (!brand || m.brand?.id === brand) &&
-          (!category || m.category === category),
-      )
-      .map((m) => m.id);
-    setForm((f) => ({ ...f, compatibleModelIds: matching }));
-  }
 
   const sorted = useMemo(
     () =>
@@ -1342,36 +1307,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               </label>
             </FormField>
           </div>
-          <FormField label={t("colCompatibility")}>
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Combobox
-                  value={formBrand}
-                  onChange={(v) => {
-                    setFormBrand(v);
-                    applyBulkSelect(v, formCategory);
-                  }}
-                  options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                  placeholder={t("colBrand")}
-                  allowClear
-                  ariaLabel={t("colBrand")}
-                />
-                <Combobox
-                  value={formCategory}
-                  onChange={(v) => {
-                    setFormCategory(v);
-                    applyBulkSelect(formBrand, v);
-                  }}
-                  options={categoryOptions}
-                  placeholder={t("colCategory")}
-                  allowClear
-                  ariaLabel={t("colCategory")}
-                />
-              </div>
-              <p className="text-xs text-text-secondary">{t("bulkSelectHint")}</p>
-              <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
-            </div>
-          </FormField>
+          <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
           <div className="flex gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>
             <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
@@ -1422,9 +1358,6 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           api={api}
           t={t}
           row={editing}
-          models={models}
-          brands={brands}
-          categoryOptions={categoryOptions}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
         />
@@ -1455,14 +1388,11 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 }
 
 function ConsumableEditModal({
-  api, t, row, models, brands, categoryOptions, onClose, onSaved,
+  api, t, row, onClose, onSaved,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
   row: ConsumableRow;
-  models: ModelRow[];
-  brands: BrandRow[];
-  categoryOptions: { value: string; label: string }[];
   onClose: () => void;
   onSaved: () => void;
 }>) {
@@ -1475,32 +1405,16 @@ function ConsumableEditModal({
   const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row.cleanOnEveryVisit);
   const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
   const [isActive, setIsActive] = useState(row.isActive);
-  const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
-  const [pickBrand, setPickBrand] = useState<string | null>(null);
-  const [pickCategory, setPickCategory] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Bulk selector — replaces compatibleModelIds with every model matching the
-  // current (brand, category) tuple. When both are cleared, the user's hand-
-  // curated selection is preserved (no destructive reset). After bulk-select
-  // the user can fine-tune by toggling individual model chips.
-  function applyBulkSelect(brand: string | null, category: string | null) {
-    if (!brand && !category) return;
-    setCompatibleModelIds(
-      models
-        .filter(
-          (m) =>
-            (!brand || m.brand?.id === brand) &&
-            (!category || m.category === category),
-        )
-        .map((m) => m.id),
-    );
-  }
   async function save() {
     setBusy(true);
     setErr(null);
     try {
+      // Model↔filter links are managed from the model screen now, so this
+      // filter-side edit deliberately omits `compatibleModels` (the API leaves
+      // existing links untouched when the field is absent).
       await api.patch(`/api/admin/products/consumables/${row.id}`, {
         nameKo, nameVi, nameEn,
         replaceEveryDays: cycleToStored(replaceEveryDays, replaceCycleUnit),
@@ -1509,7 +1423,6 @@ function ConsumableEditModal({
         cleanOnEveryVisit,
         retailPrice,
         isActive,
-        compatibleModels: compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
       });
       onSaved();
     } catch (e) {
@@ -1577,36 +1490,7 @@ function ConsumableEditModal({
             </label>
           </FormField>
         </div>
-        <FormField label={t("colCompatibility")}>
-          <div className="space-y-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Combobox
-                value={pickBrand}
-                onChange={(v) => {
-                  setPickBrand(v);
-                  applyBulkSelect(v, pickCategory);
-                }}
-                options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                placeholder={t("colBrand")}
-                allowClear
-                ariaLabel={t("colBrand")}
-              />
-              <Combobox
-                value={pickCategory}
-                onChange={(v) => {
-                  setPickCategory(v);
-                  applyBulkSelect(pickBrand, v);
-                }}
-                options={categoryOptions}
-                placeholder={t("colCategory")}
-                allowClear
-                ariaLabel={t("colCategory")}
-              />
-            </div>
-            <p className="text-xs text-text-secondary">{t("bulkSelectHint")}</p>
-            <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
-          </div>
-        </FormField>
+        <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
           {t("statusActive")}

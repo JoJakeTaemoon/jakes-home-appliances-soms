@@ -2278,7 +2278,6 @@
       "filterAll": "All",
       "filterByBrand": "Filter by brand",
       "filterByModel": "Filter by model",
-      "bulkSelectHint": "Selecting a brand or category bulk-selects all matching models. Click individual models to add or remove.",
       "colNameLocaleAware": "Name ({locale})",
       "addConsumable": "Add consumable",
       "addAccessory": "Add accessory",
@@ -2301,7 +2300,8 @@
       "colReplaceCycleUnit": "Unit",
       "cycleUnitDay": "Days",
       "cycleUnitMonth": "Months",
-      "downloadCatalogExcel": "Export Excel"
+      "downloadCatalogExcel": "Export Excel",
+      "filterModelHint": "Which models use this filter is set on the Model screen. (The filter master keeps only the filter's own info.)"
     },
     "notificationTemplates": {
       "title": "Notification templates",
