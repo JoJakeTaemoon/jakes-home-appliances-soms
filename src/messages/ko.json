@@ -2324,7 +2324,12 @@
       "cycleUnitDay": "일",
       "cycleUnitMonth": "개월",
       "downloadCatalogExcel": "Excel 내보내기",
-      "filterModelHint": "이 필터가 들어가는 모델은 모델 관리 화면에서 지정합니다. (필터 마스터는 필터 자체 정보만 관리)"
+      "filterModelHint": "이 필터가 들어가는 모델은 모델 관리 화면에서 지정합니다. (필터 마스터는 필터 자체 정보만 관리)",
+      "searchLabel": "검색",
+      "searchModels": "모델명·브랜드 검색",
+      "searchFilters": "SKU·필터명 검색",
+      "noModels": "등록된 모델이 없습니다",
+      "noConsumables": "등록된 필터가 없습니다"
     },
     "users": {
       "title": "사용자 관리",

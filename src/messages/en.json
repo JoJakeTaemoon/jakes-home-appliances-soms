@@ -2301,7 +2301,12 @@
       "cycleUnitDay": "Days",
       "cycleUnitMonth": "Months",
       "downloadCatalogExcel": "Export Excel",
-      "filterModelHint": "Which models use this filter is set on the Model screen. (The filter master keeps only the filter's own info.)"
+      "filterModelHint": "Which models use this filter is set on the Model screen. (The filter master keeps only the filter's own info.)",
+      "searchLabel": "Search",
+      "searchModels": "Search model / brand",
+      "searchFilters": "Search SKU / filter name",
+      "noModels": "No models yet",
+      "noConsumables": "No filters yet"
     },
     "notificationTemplates": {
       "title": "Notification templates",

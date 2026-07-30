@@ -2301,7 +2301,12 @@
       "cycleUnitDay": "Ngày",
       "cycleUnitMonth": "Tháng",
       "downloadCatalogExcel": "Xuất Excel",
-      "filterModelHint": "Model chứa lõi lọc này được chỉ định ở màn hình quản lý Model. (Master lõi lọc chỉ quản lý thông tin của chính lõi.)"
+      "filterModelHint": "Model chứa lõi lọc này được chỉ định ở màn hình quản lý Model. (Master lõi lọc chỉ quản lý thông tin của chính lõi.)",
+      "searchLabel": "Tìm kiếm",
+      "searchModels": "Tìm theo tên model·thương hiệu",
+      "searchFilters": "Tìm theo SKU·tên lõi lọc",
+      "noModels": "Chưa có model",
+      "noConsumables": "Chưa có lõi lọc"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

@@ -15,6 +15,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { pickModelName } from "@/lib/products/name";
 import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
+import { cn } from "@/lib/cn";
+import { foldDiacritics } from "@/lib/vn-text";
 
 type ApiClient = ReturnType<typeof useApi>;
 type Translate = ReturnType<typeof useTranslations>;
@@ -937,11 +939,15 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [editing, setEditing] = useState<ModelRow | null>(null);
+  // Master-detail (요청 A): `selected` drives the left edit form; null = the
+  // "new model" form. `formKey` forces a fresh form after each save so the
+  // create form doesn't retain the just-saved values.
+  const [selected, setSelected] = useState<ModelRow | null>(null);
+  const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<ModelRow | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
-  const { sort, onClick } = useSort<"name" | "brand" | "category" | "isActive">("name");
+  const [search, setSearch] = useState("");
+  const { sort } = useSort<"name" | "brand" | "category" | "isActive">("name");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -956,10 +962,19 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
-  const filtered = useMemo(
-    () => (brandFilter ? rows.filter((r) => r.brand?.id === brandFilter) : rows),
-    [rows, brandFilter],
-  );
+  const filtered = useMemo(() => {
+    const q = foldDiacritics(search.trim());
+    return rows.filter((r) => {
+      if (brandFilter && r.brand?.id !== brandFilter) return false;
+      if (q) {
+        const hay = foldDiacritics(
+          `${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${r.category ?? ""}`,
+        );
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [rows, brandFilter, search, locale]);
 
   const sorted = useMemo(
     () =>
@@ -972,10 +987,26 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     [filtered, sort, locale],
   );
 
+  const handleNew = () => {
+    setSelected(null);
+    setFormKey((k) => k + 1);
+  };
+  const handleDone = () => {
+    void load();
+    setSelected(null);
+    setFormKey((k) => k + 1);
+  };
+
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="w-60">
+      {/* Top: search + brand filter + new */}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-56">
+          <FormField label={t("searchLabel")}>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchModels")} />
+          </FormField>
+        </div>
+        <div className="w-56">
           <FormField label={t("colBrand")}>
             <Combobox
               value={brandFilter}
@@ -987,69 +1018,76 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             />
           </FormField>
         </div>
-        <Button onClick={() => setCreating(true)}>+ {t("addModel")}</Button>
+        <Button className="ml-auto" onClick={handleNew}>+ {t("addModel")}</Button>
       </div>
-      <table className="w-full border border-border">
-        <thead className="bg-muted">
-          <tr>
-            <SortableTh column="name" sort={sort} onClick={onClick}>{t("colNameKo")}</SortableTh>
-            <SortableTh column="brand" sort={sort} onClick={onClick}>{t("colBrand")}</SortableTh>
-            <SortableTh column="category" sort={sort} onClick={onClick}>{t("colCategory")}</SortableTh>
-            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
-            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
-          ) : (
-            sorted.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2">{pickModelName(r, locale)}</td>
-                <td className="p-2 text-sm">{r.brand?.name ?? "—"}</td>
-                <td className="p-2">{r.category ?? "—"}</td>
-                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-                <td className="p-2 text-right">
-                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      {creating && (
-        <Modal
-          open
-          onClose={() => setCreating(false)}
-          title={t("addModel")}
-          size="lg"
-        >
-          <EquipmentModelForm mode="create" onDone={() => { setCreating(false); void load(); }} />
-        </Modal>
-      )}
-      {editing && (
-        <Modal
-          open
-          onClose={() => setEditing(null)}
-          title={t("editModel")}
-          size="lg"
-        >
+
+      {/* Master-detail: left = edit form, right = list */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
           <EquipmentModelForm
-            mode="edit"
-            initial={{
-              id: editing.id,
-              nameKo: editing.nameKo ?? "",
-              nameVi: editing.nameVi ?? "",
-              nameEn: editing.nameEn ?? "",
-              brandId: editing.brand?.id ?? null,
-              category: (editing.category ?? null) as
-                | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
-              isActive: editing.isActive,
-            }}
-            onDone={() => { setEditing(null); void load(); }}
+            key={selected ? `edit-${selected.id}` : `new-${formKey}`}
+            mode={selected ? "edit" : "create"}
+            initial={
+              selected
+                ? {
+                    id: selected.id,
+                    nameKo: selected.nameKo ?? "",
+                    nameVi: selected.nameVi ?? "",
+                    nameEn: selected.nameEn ?? "",
+                    brandId: selected.brand?.id ?? null,
+                    category: (selected.category ?? null) as
+                      | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
+                    isActive: selected.isActive,
+                  }
+                : undefined
+            }
+            onDone={handleDone}
           />
-        </Modal>
-      )}
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+          <div className="max-h-[72vh] divide-y divide-[#f0f0f0] overflow-y-auto">
+            {loading && <p className="p-4 text-center text-sm text-[#737373]">…</p>}
+            {!loading && sorted.length === 0 && (
+              <p className="p-4 text-center text-sm text-[#737373]">{t("noModels")}</p>
+            )}
+            {!loading &&
+              sorted.map((r) => (
+                <div
+                  key={r.id}
+                  className={cn(
+                    "flex items-center gap-1 hover:bg-[#f5f5f5]",
+                    selected?.id === r.id && "bg-[var(--brand-blue-50)]",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelected(r)}
+                    aria-current={selected?.id === r.id ? "true" : undefined}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[#111111]">{pickModelName(r, locale)}</p>
+                      <p className="truncate text-xs text-[#737373]">
+                        {r.brand?.name ?? "—"}
+                        {r.category ? ` · ${r.category}` : ""}
+                      </p>
+                    </div>
+                    <StatusPill active={r.isActive} t={t} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(r)}
+                    className="mr-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    {t("deactivate")}
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
       {deleting && (
         <ConfirmDialog
           open
@@ -1067,6 +1105,12 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             } catch (err) {
               alert(err instanceof Error ? err.message : t("errorGeneric"));
             } finally {
+              // If the just-deactivated row is the one loaded in the left form,
+              // clear it so a stray Save can't re-activate the now-stale copy.
+              if (selected?.id === deleting.id) {
+                setSelected(null);
+                setFormKey((k) => k + 1);
+              }
               setDeleting(null);
               await load();
             }
@@ -1110,24 +1154,14 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<ConsumableRow | null>(null);
+  // Master-detail (요청 A): `selected` drives the left form; null = new filter.
+  const [selected, setSelected] = useState<ConsumableRow | null>(null);
+  const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [modelFilter, setModelFilter] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    sku: "",
-    nameKo: "",
-    nameVi: "",
-    nameEn: "",
-    replaceEveryDays: "" as string,
-    replaceCycleUnit: "DAY" as "DAY" | "MONTH",
-    cleanEveryDays: "" as string,
-    cleanOnEveryVisit: false,
-    retailPrice: 0,
-  });
-  const [error, setError] = useState<string | null>(null);
-  const { sort, onClick } = useSort<"sku" | "nameVi" | "replaceEveryDays" | "cleanEveryDays" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
+  const [search, setSearch] = useState("");
+  const { sort } = useSort<"sku" | "nameVi" | "replaceEveryDays" | "cleanEveryDays" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1142,39 +1176,15 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
-  async function submitCreate() {
-    setError(null);
-    try {
-      await api.post("/api/admin/products/consumables", {
-        sku: form.sku,
-        nameKo: form.nameKo,
-        nameVi: form.nameVi,
-        nameEn: form.nameEn,
-        replaceEveryDays: cycleToStored(form.replaceEveryDays, form.replaceCycleUnit),
-        replaceCycleUnit: form.replaceCycleUnit,
-        cleanEveryDays: form.cleanEveryDays === "" ? null : Number(form.cleanEveryDays),
-        cleanOnEveryVisit: form.cleanOnEveryVisit,
-        retailPrice: form.retailPrice,
-        // Model↔filter links are set from the model screen — a new filter starts
-        // with none (the API defaults `compatibleModels` to []).
-      });
-      setShowForm(false);
-      setForm({
-        sku: "",
-        nameKo: "",
-        nameVi: "",
-        nameEn: "",
-        replaceEveryDays: "",
-        replaceCycleUnit: "DAY",
-        cleanEveryDays: "",
-        cleanOnEveryVisit: false,
-        retailPrice: 0,
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("errorGeneric"));
-    }
-  }
+  const handleNew = () => {
+    setSelected(null);
+    setFormKey((k) => k + 1);
+  };
+  const handleDone = () => {
+    void load();
+    setSelected(null);
+    setFormKey((k) => k + 1);
+  };
 
   // modelId → brandId, so the brand filter can narrow consumables by
   // following each consumable's compatibleModels.
@@ -1185,12 +1195,17 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   }, [models]);
 
   const filtered = useMemo(() => {
+    const q = foldDiacritics(search.trim());
     return rows.filter((r) => {
       if (modelFilter && !r.compatibleModels.some((cm) => cm.modelId === modelFilter)) return false;
       if (brandFilter && !r.compatibleModels.some((cm) => modelToBrand.get(cm.modelId) === brandFilter)) return false;
+      if (q) {
+        const hay = foldDiacritics(`${r.sku} ${r.nameKo} ${r.nameVi} ${r.nameEn}`);
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [rows, brandFilter, modelFilter, modelToBrand]);
+  }, [rows, brandFilter, modelFilter, modelToBrand, search]);
 
   const modelDropdownOptions = useMemo(
     () =>
@@ -1216,152 +1231,99 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="w-56">
-            <FormField label={t("filterByBrand")}>
-              <Combobox
-                value={brandFilter}
-                onChange={(v) => {
-                  setBrandFilter(v);
-                  // Drop a model filter that no longer matches the chosen brand.
-                  if (v && modelFilter && modelToBrand.get(modelFilter) !== v) {
-                    setModelFilter(null);
-                  }
-                }}
-                options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                placeholder={t("filterAll")}
-                allowClear
-                ariaLabel={t("filterByBrand")}
-              />
-            </FormField>
-          </div>
-          <div className="w-72">
-            <FormField label={t("filterByModel")}>
-              <Combobox
-                value={modelFilter}
-                onChange={setModelFilter}
-                options={modelDropdownOptions}
-                placeholder={t("filterAll")}
-                allowClear
-                ariaLabel={t("filterByModel")}
-              />
-            </FormField>
-          </div>
+      {/* Top: search + brand/model filters + new */}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-52">
+          <FormField label={t("searchLabel")}>
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchFilters")} />
+          </FormField>
         </div>
-        <Button onClick={() => setShowForm((s) => !s)}>+ {t("addConsumable")}</Button>
+        <div className="w-48">
+          <FormField label={t("filterByBrand")}>
+            <Combobox
+              value={brandFilter}
+              onChange={(v) => {
+                setBrandFilter(v);
+                if (v && modelFilter && modelToBrand.get(modelFilter) !== v) setModelFilter(null);
+              }}
+              options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              placeholder={t("filterAll")}
+              allowClear
+              ariaLabel={t("filterByBrand")}
+            />
+          </FormField>
+        </div>
+        <div className="w-56">
+          <FormField label={t("filterByModel")}>
+            <Combobox
+              value={modelFilter}
+              onChange={setModelFilter}
+              options={modelDropdownOptions}
+              placeholder={t("filterAll")}
+              allowClear
+              ariaLabel={t("filterByModel")}
+            />
+          </FormField>
+        </div>
+        <Button className="ml-auto" onClick={handleNew}>+ {t("addConsumable")}</Button>
       </div>
-      {showForm && (
-        <div className="border border-border p-4 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <FormField label={t("colSku")}>
-              <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="FLT-NEW-001" />
-            </FormField>
-            <FormField label={t("colNameKo")}>
-              <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
-            </FormField>
-            <FormField label={t("colNameVi")}>
-              <Input value={form.nameVi} onChange={(e) => setForm({ ...form, nameVi: e.target.value })} />
-            </FormField>
-            <FormField label={t("colNameEn")}>
-              <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
-            </FormField>
-            <FormField label={t("colReplaceCycle")}>
-              <div className="flex gap-2">
-                <Input type="number" value={form.replaceEveryDays} onChange={(e) => setForm({ ...form, replaceEveryDays: e.target.value })} />
-                <div className="w-28 shrink-0">
-                  <Combobox
-                    value={form.replaceCycleUnit}
-                    onChange={(v) => {
-                      const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
-                      // Reconvert the typed value so it keeps meaning the same
-                      // real length across a unit switch (180d ⇄ 6mo) rather
-                      // than being reinterpreted (180 → 5400d) at submit.
-                      setForm((f) => ({
-                        ...f,
-                        replaceEveryDays: cycleToDisplay(cycleToStored(f.replaceEveryDays, f.replaceCycleUnit), nextUnit),
-                        replaceCycleUnit: nextUnit,
-                      }));
-                    }}
-                    options={[
-                      { value: "DAY", label: t("cycleUnitDay") },
-                      { value: "MONTH", label: t("cycleUnitMonth") },
-                    ]}
-                    searchable={false}
-                    allowClear={false}
-                    ariaLabel={t("colReplaceCycleUnit")}
-                  />
-                </div>
-              </div>
-            </FormField>
-            <FormField label={t("colCleanCycle")}>
-              <Input type="number" value={form.cleanEveryDays} onChange={(e) => setForm({ ...form, cleanEveryDays: e.target.value })} />
-            </FormField>
-            <FormField label={t("colRetailPrice")}>
-              <Input type="number" value={form.retailPrice} onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })} />
-            </FormField>
-            <FormField label={t("colCleanOnVisit")}>
-              <label className="inline-flex items-center gap-2 mt-2">
-                <input type="checkbox" checked={form.cleanOnEveryVisit} onChange={(e) => setForm({ ...form, cleanOnEveryVisit: e.target.checked })} />
-                <span className="text-sm">{t("yes")}</span>
-              </label>
-            </FormField>
-          </div>
-          <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
-          <div className="flex gap-2">
-            <Button onClick={submitCreate}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
-          </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+
+      {/* Master-detail: left = edit form, right = list */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <ConsumableForm
+            key={selected ? `edit-${selected.id}` : `new-${formKey}`}
+            api={api}
+            t={t}
+            row={selected}
+            onDone={handleDone}
+          />
         </div>
-      )}
-      <table className="w-full border border-border">
-        <thead className="bg-muted">
-          <tr>
-            <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
-            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
-            <SortableTh column="replaceEveryDays" sort={sort} onClick={onClick} align="right">{t("colReplaceCycle")}</SortableTh>
-            <SortableTh column="cleanEveryDays" sort={sort} onClick={onClick} align="right">{t("colCleanCycle")}</SortableTh>
-            <SortableTh column="cleanOnEveryVisit" sort={sort} onClick={onClick} align="center">{t("colCleanOnVisit")}</SortableTh>
-            <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
-            <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
-            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
-            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={9} className="p-4 text-center">...</td></tr>
-          ) : (
-            sorted.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2 font-mono text-sm">{r.sku}</td>
-                <td className="p-2">{pickLocaleName(r, locale)}</td>
-                <td className="p-2 text-right">{r.replaceEveryDays ?? t("cycleNone")}</td>
-                <td className="p-2 text-right">{r.cleanEveryDays ?? t("cycleNone")}</td>
-                <td className="p-2 text-center">{r.cleanOnEveryVisit ? "✓" : ""}</td>
-                <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
-                <td className="p-2 text-xs">
-                  {r.compatibleModels.map((m) => `${pickModelName(m.model, locale)}${m.quantity > 1 ? `×${m.quantity}` : ""}`).join(", ") || "—"}
-                </td>
-                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-                <td className="p-2 text-right">
-                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      {editing && (
-        <ConsumableEditModal
-          api={api}
-          t={t}
-          row={editing}
-          onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); void load(); }}
-        />
-      )}
+
+        <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+          <div className="max-h-[72vh] divide-y divide-[#f0f0f0] overflow-y-auto">
+            {loading && <p className="p-4 text-center text-sm text-[#737373]">…</p>}
+            {!loading && sorted.length === 0 && (
+              <p className="p-4 text-center text-sm text-[#737373]">{t("noConsumables")}</p>
+            )}
+            {!loading &&
+              sorted.map((r) => (
+                <div
+                  key={r.id}
+                  className={cn(
+                    "flex items-center gap-1 hover:bg-[#f5f5f5]",
+                    selected?.id === r.id && "bg-[var(--brand-blue-50)]",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelected(r)}
+                    aria-current={selected?.id === r.id ? "true" : undefined}
+                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[#111111]">
+                        <span className="font-mono text-xs text-[#737373]">{r.sku}</span> · {pickLocaleName(r, locale)}
+                      </p>
+                      <p className="truncate text-xs text-[#737373]">
+                        {t("colReplaceCycle")}: {r.replaceEveryDays ?? t("cycleNone")} · {Number(r.retailPrice).toLocaleString()}
+                      </p>
+                    </div>
+                    <StatusPill active={r.isActive} t={t} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(r)}
+                    className="mr-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    {t("deactivate")}
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
       {deleting && (
         <ConfirmDialog
           open
@@ -1377,6 +1339,12 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             } catch (err) {
               alert(err instanceof Error ? err.message : t("errorGeneric"));
             } finally {
+              // If the just-deactivated row is the one loaded in the left form,
+              // clear it so a stray Save can't re-activate the now-stale copy.
+              if (selected?.id === deleting.id) {
+                setSelected(null);
+                setFormKey((k) => k + 1);
+              }
               setDeleting(null);
               await load();
             }
@@ -1387,117 +1355,133 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   );
 }
 
-function ConsumableEditModal({
-  api, t, row, onClose, onSaved,
+/** Unified filter (Consumable) form for the master-detail layout (요청 A):
+ *  create when `row` is null, edit otherwise. Model↔filter links are managed
+ *  from the model screen, so this form only handles the filter's own info. */
+function ConsumableForm({
+  api, t, row, onDone,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
-  row: ConsumableRow;
-  onClose: () => void;
-  onSaved: () => void;
+  row: ConsumableRow | null;
+  onDone: () => void;
 }>) {
-  const [nameKo, setNameKo] = useState(row.nameKo);
-  const [nameVi, setNameVi] = useState(row.nameVi);
-  const [nameEn, setNameEn] = useState(row.nameEn);
-  const [replaceCycleUnit, setReplaceCycleUnit] = useState<"DAY" | "MONTH">(row.replaceCycleUnit);
-  const [replaceEveryDays, setReplaceEveryMonths] = useState(cycleToDisplay(row.replaceEveryDays, row.replaceCycleUnit));
-  const [cleanEveryDays, setCleanEveryMonths] = useState(row.cleanEveryDays?.toString() ?? "");
-  const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row.cleanOnEveryVisit);
-  const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
-  const [isActive, setIsActive] = useState(row.isActive);
+  const locale = useLocale();
+  const isEdit = !!row;
+  const [sku, setSku] = useState(row?.sku ?? "");
+  const [nameKo, setNameKo] = useState(row?.nameKo ?? "");
+  const [nameVi, setNameVi] = useState(row?.nameVi ?? "");
+  const [nameEn, setNameEn] = useState(row?.nameEn ?? "");
+  const [replaceCycleUnit, setReplaceCycleUnit] = useState<"DAY" | "MONTH">(row?.replaceCycleUnit ?? "DAY");
+  const [replaceEveryDays, setReplaceEveryDays] = useState(
+    row ? cycleToDisplay(row.replaceEveryDays, row.replaceCycleUnit) : "",
+  );
+  const [cleanEveryDays, setCleanEveryDays] = useState(row?.cleanEveryDays?.toString() ?? "");
+  const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row?.cleanOnEveryVisit ?? false);
+  const [retailPrice, setRetailPrice] = useState(row ? Number(row.retailPrice) : 0);
+  const [isActive, setIsActive] = useState(row?.isActive ?? true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  function switchUnit(v: string | null) {
+    const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
+    // Reconvert so the value keeps the same real length across a unit switch
+    // (180d ⇄ 6mo) instead of being reinterpreted at submit.
+    setReplaceEveryDays(cycleToDisplay(cycleToStored(replaceEveryDays, replaceCycleUnit), nextUnit));
+    setReplaceCycleUnit(nextUnit);
+  }
 
   async function save() {
     setBusy(true);
     setErr(null);
     try {
-      // Model↔filter links are managed from the model screen now, so this
-      // filter-side edit deliberately omits `compatibleModels` (the API leaves
-      // existing links untouched when the field is absent).
-      await api.patch(`/api/admin/products/consumables/${row.id}`, {
+      const payload = {
         nameKo, nameVi, nameEn,
         replaceEveryDays: cycleToStored(replaceEveryDays, replaceCycleUnit),
         replaceCycleUnit,
         cleanEveryDays: cleanEveryDays === "" ? null : Number(cleanEveryDays),
         cleanOnEveryVisit,
         retailPrice,
-        isActive,
-      });
-      onSaved();
+      };
+      if (row) {
+        await api.patch(`/api/admin/products/consumables/${row.id}`, { ...payload, isActive });
+      } else {
+        await api.post("/api/admin/products/consumables", { sku, ...payload });
+      }
+      onDone();
     } catch (e) {
       setErr(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setBusy(false);
     }
   }
+
   return (
-    <Modal
-      open
-      onClose={onClose}
-      title={t("editConsumable")}
-      size="lg"
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
-          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
-        </>
-      }
-    >
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <FormField label={t("colSku")}><Input value={row.sku} disabled /></FormField>
-          <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
-          <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
-          <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
-          <FormField label={t("colReplaceCycle")}>
-            <div className="flex gap-2">
-              <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryMonths(e.target.value)} />
-              <div className="w-28 shrink-0">
-                <Combobox
-                  value={replaceCycleUnit}
-                  onChange={(v) => {
-                    const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
-                    // Re-express the already-shown cycle in the new unit so the
-                    // number keeps meaning the same real length (180d ⇄ 6mo),
-                    // instead of being silently reinterpreted (180 → 5400d).
-                    setReplaceEveryMonths(
-                      cycleToDisplay(cycleToStored(replaceEveryDays, replaceCycleUnit), nextUnit),
-                    );
-                    setReplaceCycleUnit(nextUnit);
-                  }}
-                  options={[
-                    { value: "DAY", label: t("cycleUnitDay") },
-                    { value: "MONTH", label: t("cycleUnitMonth") },
-                  ]}
-                  searchable={false}
-                  allowClear={false}
-                  ariaLabel={t("colReplaceCycleUnit")}
-                />
-              </div>
+    <div className="space-y-3 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <h2 className="text-sm font-semibold text-[#002A4D]">{isEdit ? t("editConsumable") : t("addConsumable")}</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <FormField label={t("colSku")}>
+          <Input value={sku} onChange={(e) => setSku(e.target.value)} disabled={isEdit} placeholder="FLT-NEW-001" />
+        </FormField>
+        <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
+        <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
+        <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
+        <FormField label={t("colReplaceCycle")}>
+          <div className="flex gap-2">
+            <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryDays(e.target.value)} />
+            <div className="w-28 shrink-0">
+              <Combobox
+                value={replaceCycleUnit}
+                onChange={switchUnit}
+                options={[
+                  { value: "DAY", label: t("cycleUnitDay") },
+                  { value: "MONTH", label: t("cycleUnitMonth") },
+                ]}
+                searchable={false}
+                allowClear={false}
+                ariaLabel={t("colReplaceCycleUnit")}
+              />
             </div>
-          </FormField>
-          <FormField label={t("colCleanCycle")}>
-            <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryMonths(e.target.value)} />
-          </FormField>
-          <FormField label={t("colRetailPrice")}>
-            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
-          </FormField>
-          <FormField label={t("colCleanOnVisit")}>
-            <label className="inline-flex items-center gap-2 mt-2">
-              <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
-              <span className="text-sm">{t("yes")}</span>
+          </div>
+        </FormField>
+        <FormField label={t("colCleanCycle")}>
+          <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
+        </FormField>
+        <FormField label={t("colRetailPrice")}>
+          <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
+        </FormField>
+        <FormField label={t("colCleanOnVisit")}>
+          <label className="mt-2 inline-flex items-center gap-2">
+            <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
+            <span className="text-sm">{t("yes")}</span>
+          </label>
+        </FormField>
+        {isEdit && (
+          <FormField label={t("colActive")}>
+            <label className="mt-2 inline-flex items-center gap-2">
+              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              <span className="text-sm">{t("statusActive")}</span>
             </label>
           </FormField>
-        </div>
-        <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-          {t("statusActive")}
-        </label>
+        )}
       </div>
-      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
-    </Modal>
+      <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
+      {isEdit && row.compatibleModels.length > 0 && (
+        <p className="text-xs text-[#525252]">
+          <span className="font-medium">{t("colCompatibility")}:</span>{" "}
+          {row.compatibleModels
+            .map((m) => {
+              const name = pickModelName(m.model, locale);
+              return m.quantity > 1 ? `${name}×${m.quantity}` : name;
+            })
+            .join(", ")}
+        </p>
+      )}
+      {err && <div className="text-sm text-red-600">{err}</div>}
+      <div className="flex justify-end">
+        <Button onClick={save} isLoading={busy} disabled={!isEdit && !sku}>{t("save")}</Button>
+      </div>
+    </div>
   );
 }
 
