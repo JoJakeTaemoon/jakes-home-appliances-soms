@@ -228,13 +228,13 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
             allowClear
           />
         </FormField>
-        <FormField label={t("nameKo")} required>
+        <FormField label={t("displayNameKo")} required>
           <Input value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="PTS-2100" />
         </FormField>
-        <FormField label={t("nameVi")} required>
+        <FormField label={t("displayNameVi")} required>
           <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="PTS-2100" />
         </FormField>
-        <FormField label={t("nameEn")} required>
+        <FormField label={t("displayNameEn")} required>
           <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="PTS-2100" />
         </FormField>
         <FormField label={t("inspectionEveryMonths")}>
