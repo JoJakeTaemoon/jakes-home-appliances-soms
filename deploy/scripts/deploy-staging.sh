@@ -30,11 +30,23 @@ else
   echo "APP_IMAGE=${APP_IMAGE}" >> .env
 fi
 
+echo "[deploy] Reclaiming disk before pull (old main-<sha> images accumulate)"
+# Old tagged images (main-<sha>) are not dangling, so -a is required to
+# remove them. Docker protects images referenced by running containers, so
+# the currently-live image survives. Pruning BEFORE pull frees space first,
+# which is what auto-recovers a box that is already full. || true keeps a
+# prune miss from aborting the deploy under `set -euo pipefail`.
+docker image prune -af || true
+docker builder prune -af || true
+
 echo "[deploy] Pulling images"
 docker compose pull
 
 echo "[deploy] Bringing up app + postgres + caddy"
 docker compose up -d --remove-orphans
+
+echo "[deploy] Post-up prune of images the new tag replaced (best-effort)"
+docker image prune -af || true
 
 echo "[deploy] Waiting for app to become healthy"
 for i in $(seq 1 30); do
