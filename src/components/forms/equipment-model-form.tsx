@@ -352,7 +352,7 @@ export function EquipmentModelForm({
         {(filtersReady || err) && filters.length === 0 && <p className="text-xs text-[#737373]">—</p>}
         {(filtersReady || err) && filters.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[24px_1fr_130px_auto] items-center gap-2 text-[10px] uppercase tracking-wider text-[#a3a3a3]">
+            <div className="grid grid-cols-[24px_minmax(0,1fr)_130px_auto] items-center gap-2 text-[10px] uppercase tracking-wider text-[#a3a3a3]">
               <span>#</span>
               <span>{t("filterConfigCol.filter")}</span>
               <span>{t("filterConfigCol.cycleDays")}</span>
@@ -365,7 +365,7 @@ export function EquipmentModelForm({
                 (o) => o.value === f.consumableId || !filters.some((g) => g !== f && g.consumableId === o.value),
               );
               return (
-                <div key={f.uid} className="grid grid-cols-[24px_1fr_130px_auto] items-center gap-2">
+                <div key={f.uid} className="grid grid-cols-[24px_minmax(0,1fr)_130px_auto] items-center gap-2">
                   <span className="text-xs text-[#737373]">{idx + 1}</span>
                   <Combobox
                     value={f.consumableId || null}

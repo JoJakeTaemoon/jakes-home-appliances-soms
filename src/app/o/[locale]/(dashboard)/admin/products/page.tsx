@@ -1734,7 +1734,7 @@ function ConsumableForm({
                 (o) => o.value === a.modelId || !applied.some((g) => g !== a && g.modelId === o.value),
               );
               return (
-                <div key={a.uid} className="grid grid-cols-[1fr_90px_auto] items-center gap-2">
+                <div key={a.uid} className="grid grid-cols-[minmax(0,1fr)_90px_auto] items-center gap-2">
                   <Combobox
                     value={a.modelId || null}
                     onChange={(v) => setApplied(applied.map((g, i) => (i === idx ? { ...g, modelId: v ?? "" } : g)))}

@@ -119,6 +119,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Global type scale-down (~10%). Tailwind's font sizes AND rem-based spacing
+   * derive from the root font-size, so this shrinks the whole UI slightly —
+   * fits more on the now-denser inventory/catalog screens. Bump toward 85% for
+   * a stronger reduction. Kept off `body` so `rem` resolves from a real root. */
+  html {
+    font-size: 90%;
+  }
   body {
     @apply bg-background text-foreground antialiased;
   }

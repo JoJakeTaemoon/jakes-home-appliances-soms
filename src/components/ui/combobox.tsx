@@ -180,10 +180,10 @@ export function Combobox({
           disabled && "cursor-not-allowed bg-[#fafafa] text-[#737373]",
         )}
       >
-        <span className={cn(selected ? "text-[#111111]" : "text-[#a3a3a3]", "truncate")}>
+        <span className={cn(selected ? "text-[#111111]" : "text-[#a3a3a3]", "min-w-0 flex-1 truncate")}>
           {selected ? selected.label : placeholder}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {allowClear && selected && !disabled && (
             <span
               role="button"
