@@ -56,12 +56,12 @@ export function ActionBar({
           variant={it.variant ?? "secondary"}
           onClick={it.onClick}
           disabled={it.disabled}
-          className="gap-1.5"
+          className="shrink-0 gap-1.5"
         >
           {it.icon}
           <span>{it.label}</span>
           {it.hotkey && (
-            <kbd className="ml-1 rounded border border-current/25 px-1 text-[11px] font-medium opacity-70">
+            <kbd className="ml-0.5 rounded border border-current/30 bg-current/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none">
               {it.hotkey}
             </kbd>
           )}

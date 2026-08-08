@@ -2368,7 +2368,11 @@
       "appliedModels": "Applied equipment (models)",
       "addModelLink": "Add model",
       "colDealerPrice": "Dealer price",
-      "colStock": "On hand"
+      "colStock": "On hand",
+      "groupBasic": "Basic info",
+      "groupPricing": "Pricing",
+      "groupStockCycle": "Stock & cycle",
+      "legendHelpToggle": "Screen area guide"
     },
     "notificationTemplates": {
       "title": "Notification templates",

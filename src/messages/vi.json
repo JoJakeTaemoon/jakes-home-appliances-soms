@@ -2368,7 +2368,11 @@
       "appliedModels": "Thiết bị (Model) áp dụng",
       "addModelLink": "Thêm Model",
       "colDealerPrice": "Giá tại đại lý",
-      "colStock": "Tồn kho"
+      "colStock": "Tồn kho",
+      "groupBasic": "Thông tin cơ bản",
+      "groupPricing": "Giá",
+      "groupStockCycle": "Tồn kho · Chu kỳ",
+      "legendHelpToggle": "Giải thích vùng màn hình"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

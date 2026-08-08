@@ -2391,7 +2391,11 @@
       "appliedModels": "적용 가능한 장비(모델)",
       "addModelLink": "모델 추가",
       "colDealerPrice": "지정가",
-      "colStock": "현재고"
+      "colStock": "현재고",
+      "groupBasic": "기본정보",
+      "groupPricing": "가격",
+      "groupStockCycle": "재고·주기",
+      "legendHelpToggle": "화면 영역 안내"
     },
     "users": {
       "title": "사용자 관리",

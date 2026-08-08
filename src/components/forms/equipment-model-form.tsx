@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
+import { FieldGroup } from "@/components/ui/field-group";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { cn } from "@/lib/cn";
 
@@ -235,99 +236,103 @@ export function EquipmentModelForm({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ① 모델 정보 */}
-      <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[#e5e5e5] bg-white p-6 sm:grid-cols-2">
-        <FormField label={t("displayNameKo")} required>
-          <Input value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="PTS-2100" />
-        </FormField>
-        <FormField label={tp("stockOnHand")}>
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "flex h-10 flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
-                lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
+      {/* ① 모델 정보 — 기본정보 / 가격 / 재고·주기로 그룹화(밀도 완화) */}
+      <div className="flex flex-col gap-6 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+        {/* 기본정보 */}
+        <FieldGroup title={tp("groupBasic")}>
+          <FormField label={t("displayNameKo")} required>
+            <Input value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="PTS-2100" />
+          </FormField>
+          <FormField label={t("displayNameVi")} required>
+            <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="PTS-2100" />
+          </FormField>
+          <FormField label={t("displayNameEn")} required>
+            <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="PTS-2100" />
+          </FormField>
+          <FormField label={t("category")}>
+            <Combobox
+              value={data.category}
+              onChange={(v) => setField("category", (v as CategoryValue | null) ?? null)}
+              options={(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"] as const).map((c) => ({
+                value: c,
+                label: t(`categoryValues.${c}`),
+              }))}
+              searchable={false}
+              allowClear
+            />
+          </FormField>
+          <FormField label={t("brand")}>
+            <Combobox
+              value={data.brandId ?? ""}
+              onChange={(v) => setField("brandId", v || null)}
+              options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              searchable
+              allowClear
+            />
+          </FormField>
+          <FormField label={t("isActive")}>
+            <label className="flex h-10 items-center gap-2 text-sm">
+              <input type="checkbox" checked={data.isActive} onChange={(e) => setField("isActive", e.target.checked)} />
+              {data.isActive ? tc("yes") : tc("no")}
+            </label>
+          </FormField>
+          <FormField label={t("description")} className="sm:col-span-2">
+            <Textarea value={data.description} onChange={(e) => setField("description", e.target.value)} rows={2} />
+          </FormField>
+        </FieldGroup>
+
+        {/* 가격 */}
+        <FieldGroup title={tp("groupPricing")}>
+          <FormField label={tp("consumerPrice")}>
+            <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={tp("salePrice")}>
+            <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={tp("purchasePrice")}>
+            <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={tp("fixedPrice")}>
+            <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={t("monthlyRentalPrice")}>
+            <Input value={data.monthlyRentalPrice} onChange={(e) => setField("monthlyRentalPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={t("monthlyMaintenancePrice")}>
+            <Input value={data.monthlyMaintenancePrice} onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+        </FieldGroup>
+
+        {/* 재고·주기 */}
+        <FieldGroup title={tp("groupStockCycle")}>
+          <FormField label={tp("stockOnHand")} className="sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={cn(
+                  "flex h-10 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                  lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
+                )}
+              >
+                {mode === "edit" ? stockOnHand.toLocaleString() : "—"}
+                {lowStock && <span className="ml-2 text-xs font-medium">{tp("lowStockBadge")}</span>}
+              </span>
+              {mode === "edit" && initial?.id && (
+                <Button variant="secondary" size="sm" className="shrink-0" onClick={() => setStockOpen(true)}>
+                  {tp("stockManage")}
+                </Button>
               )}
-            >
-              {mode === "edit" ? stockOnHand.toLocaleString() : "—"}
-              {lowStock && <span className="ml-2 text-xs font-medium">{tp("lowStockBadge")}</span>}
-            </span>
-            {mode === "edit" && initial?.id && (
-              <Button variant="secondary" size="sm" onClick={() => setStockOpen(true)}>
-                {tp("stockManage")}
-              </Button>
-            )}
-          </div>
-        </FormField>
-
-        <FormField label={t("displayNameVi")} required>
-          <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="PTS-2100" />
-        </FormField>
-        <FormField label={tp("consumerPrice")}>
-          <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-
-        <FormField label={t("displayNameEn")} required>
-          <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="PTS-2100" />
-        </FormField>
-        <FormField label={tp("purchasePrice")}>
-          <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-
-        <FormField label={t("category")}>
-          <Combobox
-            value={data.category}
-            onChange={(v) => setField("category", (v as CategoryValue | null) ?? null)}
-            options={(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"] as const).map((c) => ({
-              value: c,
-              label: t(`categoryValues.${c}`),
-            }))}
-            searchable={false}
-            allowClear
-          />
-        </FormField>
-        <FormField label={tp("fixedPrice")}>
-          <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-
-        <FormField label={t("brand")}>
-          <Combobox
-            value={data.brandId ?? ""}
-            onChange={(v) => setField("brandId", v || null)}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
-            searchable
-            allowClear
-          />
-        </FormField>
-        <FormField label={tp("salePrice")}>
-          <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-
-        <FormField label={t("description")} className="sm:col-span-2">
-          <Textarea value={data.description} onChange={(e) => setField("description", e.target.value)} rows={2} />
-        </FormField>
-
-        {/* 기능 필드 — 목업엔 없지만 계약·장비 로직이 사용하므로 유지 */}
-        <FormField label={t("inspectionEveryMonths")}>
-          <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="1" />
-        </FormField>
-        <FormField label={tp("safetyStock")}>
-          <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-        <FormField label={t("warrantyMonths")}>
-          <Input value={data.warrantyMonths} onChange={(e) => setField("warrantyMonths", e.target.value)} inputMode="numeric" placeholder="12" />
-        </FormField>
-        <FormField label={t("monthlyRentalPrice")}>
-          <Input value={data.monthlyRentalPrice} onChange={(e) => setField("monthlyRentalPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-        <FormField label={t("monthlyMaintenancePrice")}>
-          <Input value={data.monthlyMaintenancePrice} onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-        </FormField>
-        <FormField label={t("isActive")}>
-          <label className="flex h-10 items-center gap-2 text-sm">
-            <input type="checkbox" checked={data.isActive} onChange={(e) => setField("isActive", e.target.checked)} />
-            {data.isActive ? tc("yes") : tc("no")}
-          </label>
-        </FormField>
+            </div>
+          </FormField>
+          <FormField label={tp("safetyStock")}>
+            <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
+          </FormField>
+          <FormField label={t("inspectionEveryMonths")}>
+            <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="1" />
+          </FormField>
+          <FormField label={t("warrantyMonths")}>
+            <Input value={data.warrantyMonths} onChange={(e) => setField("warrantyMonths", e.target.value)} inputMode="numeric" placeholder="12" />
+          </FormField>
+        </FieldGroup>
       </div>
 
       {/* ② 필터 구성 */}

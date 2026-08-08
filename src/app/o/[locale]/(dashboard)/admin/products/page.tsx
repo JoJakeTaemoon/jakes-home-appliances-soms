@@ -29,6 +29,7 @@ import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ActionBar } from "@/components/ui/action-bar";
 import { LegendFooter } from "@/components/ui/legend-footer";
+import { FieldGroup } from "@/components/ui/field-group";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
 
@@ -1088,7 +1089,7 @@ function ModelsTab({
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-[#e5e5e5] bg-white">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
               <tr>
                 <th className="w-8 px-2 py-2" />
@@ -1126,7 +1127,7 @@ function ModelsTab({
                       )}
                     >
                       <td className="px-2 py-2 text-center">
-                        <input type="checkbox" checked={isSel} readOnly aria-label={pickModelName(r, locale)} />
+                        <input type="checkbox" checked={isSel} readOnly tabIndex={-1} aria-label={pickModelName(r, locale)} />
                       </td>
                       <td className="px-2 py-2 text-[#737373]">{i + 1}</td>
                       <td className="px-2 py-2 font-medium text-[#111]">{pickModelName(r, locale)}</td>
@@ -1166,6 +1167,7 @@ function ModelsTab({
         ]}
       />
       <LegendFooter
+        label={t("legendHelpToggle")}
         items={[
           { n: 1, title: t("legendInfoT"), body: t("legendInfoB") },
           { n: 2, title: t("legendFilterT"), body: t("legendFilterB") },
@@ -1378,7 +1380,7 @@ function ConsumablesTab({
         </div>
 
         <div className="overflow-x-auto rounded-2xl border border-[#e5e5e5] bg-white">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
               <tr>
                 <th className="px-2 py-2 text-left">#</th>
@@ -1456,6 +1458,7 @@ function ConsumablesTab({
         ]}
       />
       <LegendFooter
+        label={t("legendHelpToggle")}
         items={[
           { n: 1, title: t("legendFilterInfoT"), body: t("legendFilterInfoB") },
           { n: 2, title: t("legendAppliedModelsT"), body: t("legendAppliedModelsB") },
@@ -1519,6 +1522,7 @@ function ConsumableForm({
   onStockChanged: () => void;
 }>) {
   const locale = useLocale();
+  const tc = useTranslations("common");
   const isEdit = !!row;
   const [sku, setSku] = useState(row?.sku ?? "");
   const [nameKo, setNameKo] = useState(row?.nameKo ?? "");
@@ -1615,25 +1619,13 @@ function ConsumableForm({
   return (
     <div className="flex flex-col gap-4">
       {/* ① 필터 정보 */}
-      <div className="space-y-3 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <div className="flex flex-col gap-6 rounded-2xl border border-[#e5e5e5] bg-white p-6">
         <h2 className="text-sm font-semibold text-[#002A4D]">{isEdit ? t("editConsumable") : t("addConsumable")}</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+        {/* 기본정보 */}
+        <FieldGroup title={t("groupBasic")}>
           <FormField label={t("colSku")}>
             <Input value={sku} onChange={(e) => setSku(e.target.value)} disabled={isEdit} placeholder="FLT-NEW-001" />
-          </FormField>
-          <FormField label={t("stockOnHand")}>
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                "flex h-10 flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
-                lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
-              )}>
-                {isEdit ? stockOnHand.toLocaleString() : "—"}
-                {lowStock && <span className="ml-2 text-xs font-medium">{t("lowStockBadge")}</span>}
-              </span>
-              {isEdit && (
-                <Button variant="secondary" size="sm" onClick={() => setStockOpen(true)}>{t("stockManage")}</Button>
-              )}
-            </div>
           </FormField>
           <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
           <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
@@ -1656,6 +1648,48 @@ function ConsumableForm({
           </FormField>
           <FormField label={t("spec")}><Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="9 inch" /></FormField>
           <FormField label={t("mainUse")}><Input value={mainUse} onChange={(e) => setMainUse(e.target.value)} /></FormField>
+          {isEdit && (
+            <FormField label={t("colActive")}>
+              <label className="flex h-10 items-center gap-2 text-sm">
+                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                <span>{t("statusActive")}</span>
+              </label>
+            </FormField>
+          )}
+        </FieldGroup>
+
+        {/* 가격 */}
+        <FieldGroup title={t("groupPricing")}>
+          <FormField label={t("consumerPrice")}>
+            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} />
+          </FormField>
+          <FormField label={t("purchasePrice")}>
+            <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+          </FormField>
+          <FormField label={t("fixedPrice")}>
+            <Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} />
+          </FormField>
+        </FieldGroup>
+
+        {/* 재고·주기 */}
+        <FieldGroup title={t("groupStockCycle")}>
+          <FormField label={t("stockOnHand")} className="sm:col-span-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn(
+                "flex h-10 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
+              )}>
+                {isEdit ? stockOnHand.toLocaleString() : "—"}
+                {lowStock && <span className="ml-2 text-xs font-medium">{t("lowStockBadge")}</span>}
+              </span>
+              {isEdit && (
+                <Button variant="secondary" size="sm" className="shrink-0" onClick={() => setStockOpen(true)}>{t("stockManage")}</Button>
+              )}
+            </div>
+          </FormField>
+          <FormField label={t("safetyStock")}>
+            <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
+          </FormField>
           <FormField label={t("colReplaceCycle")}>
             <div className="flex gap-2">
               <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryDays(e.target.value)} />
@@ -1672,33 +1706,13 @@ function ConsumableForm({
           <FormField label={t("colCleanCycle")}>
             <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
           </FormField>
-          <FormField label={t("consumerPrice")}>
-            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} />
-          </FormField>
-          <FormField label={t("purchasePrice")}>
-            <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
-          </FormField>
-          <FormField label={t("fixedPrice")}>
-            <Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} />
-          </FormField>
-          <FormField label={t("safetyStock")}>
-            <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
-          </FormField>
           <FormField label={t("colCleanOnVisit")}>
-            <label className="mt-2 inline-flex items-center gap-2">
+            <label className="flex h-10 items-center gap-2 text-sm">
               <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
-              <span className="text-sm">{t("yes")}</span>
+              <span>{t("yes")}</span>
             </label>
           </FormField>
-          {isEdit && (
-            <FormField label={t("colActive")}>
-              <label className="mt-2 inline-flex items-center gap-2">
-                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-                <span className="text-sm">{t("statusActive")}</span>
-              </label>
-            </FormField>
-          )}
-        </div>
+        </FieldGroup>
       </div>
 
       {/* ② 적용 가능한 장비(모델) */}
@@ -1732,7 +1746,7 @@ function ConsumableForm({
                     aria-label={`${t("colQuantity")} ${idx + 1}`}
                   />
                   <Button variant="ghost" size="sm" onClick={() => setApplied(applied.filter((_, i) => i !== idx))}>
-                    {t("cancel")}
+                    {tc("remove")}
                   </Button>
                 </div>
               );
