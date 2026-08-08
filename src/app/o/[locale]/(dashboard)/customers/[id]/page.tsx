@@ -15,9 +15,8 @@ import {
   StatusBadge,
   customerStatusTone,
   customerTypeTone,
-  equipmentStatusTone,
-  equipmentOwnershipTone,
 } from "@/components/ui/status-badge";
+import { EquipmentMasterDetail } from "@/components/equipment/equipment-master-detail";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Avatar } from "@/components/ui/avatar";
 import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-modal";
@@ -174,7 +173,6 @@ function CustomerDetailInner() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const tSite = useTranslations("sites");
-  const tEq = useTranslations("equipment");
   const tOrders = useTranslations("orders");
   const router = useRouter();
   const pathname = usePathname();
@@ -200,7 +198,6 @@ function CustomerDetailInner() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showChangeSalesRep, setShowChangeSalesRep] = useState(false);
   const [showNewOrder, setShowNewOrder] = useState(false);
-  const [siteFilter, setSiteFilter] = useState<string | null>(null);
 
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
@@ -256,9 +253,6 @@ function CustomerDetailInner() {
   }
 
   const isInactive = data.status === "INACTIVE";
-  const filteredEquipment = siteFilter
-    ? data.equipment.filter((e) => e.siteId === siteFilter)
-    : data.equipment;
 
   return (
     <div className="flex w-full flex-col gap-6">
@@ -497,88 +491,14 @@ function CustomerDetailInner() {
         )}
 
         <TabPanel value="equipment">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              {data.type === "B2B" && data.sites.length > 0 && (
-                <div className="w-64">
-                  <Combobox
-                    value={siteFilter}
-                    onChange={setSiteFilter}
-                    options={[
-                      ...data.sites.map((s) => ({ value: s.id, label: s.name })),
-                    ]}
-                    placeholder={tEq("site")}
-                    searchable={data.sites.length > 5}
-                  />
-                </div>
-              )}
-              {canManageEquipment(role) && (
-                <Link href={`/o/equipment/register?customerId=${data.id}`}>
-                  <Button variant="secondary">{tEq("bulkRegister.title")}</Button>
-                </Link>
-              )}
-            </div>
-            {filteredEquipment.length === 0 ? (
-              <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-6 text-center text-sm text-[#737373]">
-                {tEq("noEquipment")}
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-white">
-                <table className="w-full text-sm">
-                  <thead className="bg-[#fafafa] text-[#525252]">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs uppercase">{tEq("model")}</th>
-                      <th className="px-3 py-2 text-left text-xs uppercase">{tEq("serial")}</th>
-                      {data.type === "B2B" && (
-                        <th className="px-3 py-2 text-left text-xs uppercase">{tEq("site")}</th>
-                      )}
-                      <th className="px-3 py-2 text-left text-xs uppercase">{tEq("installDate")}</th>
-                      <th className="px-3 py-2 text-left text-xs uppercase">{tEq("status")}</th>
-                      <th className="px-3 py-2 text-left text-xs uppercase">{tEq("ownership")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEquipment.map((e) => (
-                      <tr
-                        key={e.id}
-                        onClick={() => router.push(`/o/equipment/${e.id}`)}
-                        onKeyDown={(ev) => {
-                          if (ev.key === "Enter" || ev.key === " ") {
-                            ev.preventDefault();
-                            router.push(`/o/equipment/${e.id}`);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="link"
-                        aria-label={pickModelName(e.model, locale)}
-                        className="cursor-pointer border-b border-[#f5f5f5] last:border-b-0 hover:bg-[#fafafa] focus:bg-[#f0f7ff] focus:outline-none"
-                      >
-                        <td className="px-3 py-2">
-                          <div className="flex flex-col">
-                            <span className="font-medium">{pickModelName(e.model, locale)}</span>
-                            <span className="text-xs text-[#737373]">{pickModelName(e.model, locale)}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 font-mono text-xs">{e.serialNumber ?? "—"}</td>
-                        {data.type === "B2B" && (
-                          <td className="px-3 py-2">{e.site?.name ?? "—"}</td>
-                        )}
-                        <td className="px-3 py-2">{formatDate(e.installedAt, locale)}</td>
-                        <td className="px-3 py-2">
-                          <StatusBadge tone={equipmentStatusTone(e.status)}>{e.status}</StatusBadge>
-                        </td>
-                        <td className="px-3 py-2">
-                          <StatusBadge tone={equipmentOwnershipTone(e.ownership)}>
-                            {e.ownership}
-                          </StatusBadge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <EquipmentMasterDetail
+            customerId={data.id}
+            customerType={data.type}
+            equipment={data.equipment}
+            sites={data.sites.map((s) => ({ id: s.id, name: s.name }))}
+            role={role}
+            onChanged={reload}
+          />
         </TabPanel>
 
         <TabPanel value="contracts">

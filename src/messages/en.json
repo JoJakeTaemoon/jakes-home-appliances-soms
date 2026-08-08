@@ -926,6 +926,22 @@
       "customDescription": "Equipment description (off-catalog)",
       "notes": "Notes",
       "statusNote": "Change equipment status (active/deactivated/terminated) via the dedicated buttons above."
+    },
+    "panel": {
+      "tabBasic": "Basic info",
+      "tabFilter": "Filter info",
+      "tabService": "Service history",
+      "tabPayments": "Payment history",
+      "tabNotes": "Notes",
+      "keyInfo": "Key info",
+      "selectPrompt": "Select a unit from the list on the left",
+      "noNotes": "No notes"
+    },
+    "masterDetail": {
+      "register": "Register",
+      "edit": "Edit",
+      "detail": "Full page",
+      "close": "Close"
     }
   },
   "equipmentModels": {

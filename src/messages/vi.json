@@ -926,6 +926,22 @@
       "customDescription": "Mô tả thiết bị (ngoài danh mục)",
       "notes": "Ghi chú",
       "statusNote": "Đổi trạng thái thiết bị (hoạt động/ngừng/chấm dứt) bằng các nút riêng ở phía trên."
+    },
+    "panel": {
+      "tabBasic": "Thông tin cơ bản",
+      "tabFilter": "Thông tin lõi lọc",
+      "tabService": "Lịch sử dịch vụ",
+      "tabPayments": "Lịch sử thu tiền",
+      "tabNotes": "Ghi chú",
+      "keyInfo": "Thông tin chính",
+      "selectPrompt": "Chọn một thiết bị từ danh sách bên trái",
+      "noNotes": "Không có ghi chú"
+    },
+    "masterDetail": {
+      "register": "Đăng ký mới",
+      "edit": "Sửa",
+      "detail": "Trang chi tiết",
+      "close": "Đóng"
     }
   },
   "equipmentModels": {

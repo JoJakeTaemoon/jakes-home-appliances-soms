@@ -926,6 +926,22 @@
       "customDescription": "장비 설명(비표준)",
       "notes": "메모",
       "statusNote": "장비 상태(활성/비활성/해지) 변경은 상단의 전용 버튼을 사용하세요."
+    },
+    "panel": {
+      "tabBasic": "기본정보",
+      "tabFilter": "필터정보",
+      "tabService": "서비스이력",
+      "tabPayments": "수금내역",
+      "tabNotes": "메모",
+      "keyInfo": "주요정보",
+      "selectPrompt": "왼쪽 목록에서 장비를 선택하세요",
+      "noNotes": "메모 없음"
+    },
+    "masterDetail": {
+      "register": "신규 등록",
+      "edit": "수정",
+      "detail": "상세 페이지",
+      "close": "닫기"
     }
   },
   "equipmentModels": {
