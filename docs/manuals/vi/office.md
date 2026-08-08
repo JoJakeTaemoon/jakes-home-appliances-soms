@@ -293,7 +293,12 @@ Sau khi lưu, vào Chi tiết khách hàng → tab "**Địa điểm lắp đặ
 
 ![Tab thiết bị](../screenshots/vi/office/06-customer-equipment-tab.png)
 
-Nhấp vào một thiết bị trong danh sách sẽ chuyển đến **trang chi tiết thiết bị chuyên dụng** (§7.3). Nhấp vào thiết bị từ thẻ thiết bị ở tab **Tổng quan** cũng luôn chuyển đến cùng một trang này — trước đây màn hình hiển thị khác nhau tùy nơi bạn nhấp vào, còn bây giờ dù vào từ đâu bạn cũng thấy cùng một màn hình.
+**Tab Thiết bị nay là màn hình master-detail một trang (cải tiến).** Bên trái là danh sách thiết bị (tìm kiếm · lọc theo cơ sở), bên phải hiển thị chi tiết của thiết bị đang chọn. Nhấp một dòng ở danh sách sẽ đổi panel bên phải **mà không chuyển trang**.
+
+- **Chi tiết bên phải = 5 tab**: Thông tin cơ bản · Thông tin lõi lọc · Lịch sử dịch vụ · Lịch sử thu tiền · Ghi chú. Tab Thông tin cơ bản gồm bảng cấu hình dịch vụ (bên dưới) cùng thông tin chính và lịch tiếp theo.
+- **Nút chức năng dưới cùng**: Đăng ký mới (F2) · Sửa (F5) · Chi tiết (toàn màn hình) · Đóng. Đăng ký/Sửa chỉ hiện với quyền **Quản lý trở lên**.
+- **Xem toàn màn hình**: khi cần thao tác nặng (di dời · thay thế · chấm dứt · thu hồi), dùng liên kết **"Toàn màn hình"** ở panel để mở **trang chi tiết thiết bị chuyên dụng** (§7.3). Liên kết cũ · deep-link · nút Quay lại vẫn hoạt động; Quay lại vẫn ở tab Thiết bị.
+- Thiết bị đang chọn được ghi vào URL nên vẫn giữ khi tải lại / quay lại.
 
 **Bảng cấu hình dịch vụ hợp nhất** trên trang chi tiết thiết bị — chu kỳ kiểm tra và chu kỳ thay lõi lọc hiển thị trong một bảng:
 
@@ -940,9 +945,11 @@ Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự đ�
 
 Đăng ký sản phẩm theo cấu trúc Brand → Model. Đăng ký chu kỳ thay lõi lọc tương thích cho từng model — cron kiểm tra định kỳ sẽ dựa vào đây để tự tính ngày thay tiếp theo.
 
-> **Xuất dữ liệu**: góc trên bên phải màn hình có **Tải danh mục CSV** hoặc **Xuất Excel** để tải toàn bộ danh mục ra file. File Excel gồm hai trang tính: **Catalog** (model × phụ tùng) + **Filters** (danh mục lõi lọc).
+> **Xuất dữ liệu**: góc trên bên phải màn hình có **Tải danh mục CSV** hoặc **Xuất Excel** để tải toàn bộ danh mục ra file. File Excel gồm hai trang tính: **Catalog** (model × phụ tùng, kèm Tồn kho · Giá bán · Giá nhập · Giá đại lý) + **Filters** (danh mục lõi lọc, kèm Nhóm SP · Thương hiệu · Quy cách · Tồn kho · Giá nhập · Giá đại lý).
 
-> **Bố cục màn hình (master-detail)**: tab Model và Lõi lọc có cấu trúc **form sửa bên trái / danh sách bên phải**. Nhấn một mục ở danh sách bên phải để nạp vào form bên trái và sửa ngay; nút **"+ Mới"** mở form trống (mục mới). Dùng ô **tìm kiếm** phía trên để lọc danh sách; nút **Ngừng dùng** trên mỗi dòng để xóa mềm.
+> **Bố cục màn hình (master-detail)**: tab Model và Lõi lọc có cấu trúc **form sửa bên trái / danh sách dạng bảng bên phải**. Nhấn một dòng để nạp vào form bên trái. **Bảng Model**: STT · Tên model · Nhóm SP · Thương hiệu · Tồn kho · Giá bán lẻ · Giá đại lý · Giá nhập; **bảng Lõi lọc**: STT · Tên lõi · Nhóm SP · Thương hiệu · Quy cách · Chu kỳ thay · Tồn kho · Giá bán lẻ. Tồn kho dưới mức an toàn hiện **màu đỏ**.
+>
+> **Nút chức năng + phím tắt**: thanh nút dưới cùng có **Mới (F2) · Sửa (F3) · Xóa (F4) · Lưu (F5) · Excel (F6) · Đóng (Esc)**, bên dưới là phần **giải thích vùng ①~⑤**. Nút **Ngừng dùng** trên mỗi dòng để xóa mềm.
 
 #### Cấu hình lõi lọc ngay trên màn hình Model (cải tiến)
 
@@ -955,11 +962,21 @@ Trước đây, sau khi tạo model mới phải **vào màn hình quản lý l�
 
 Thứ tự ưu tiên chu kỳ: **theo thiết bị > ghi đè theo model > mặc định của lõi**.
 
-#### Master lõi lọc (vật tư) — chỉ quản lý thông tin của chính nó
+#### Master lõi lọc (vật tư)
 
-Màn hình quản lý lõi lọc nay chỉ chứa **thông tin của bản thân lõi**: SKU · tên (KO/VI/EN) · chu kỳ thay · giá bán · ghi chú. Việc lõi thuộc model nào được quản lý ở màn hình Model bên trên.
+Màn hình quản lý lõi lọc chứa thông tin cơ bản và tồn kho của lõi: SKU · tên (KO/VI/EN) · **Nhóm SP · Thương hiệu · Quy cách · Công dụng chính** · chu kỳ thay (+đơn vị) · chu kỳ vệ sinh · **Giá bán lẻ · Giá nhập · Giá đại lý · Tồn kho tối thiểu · Tồn kho hiện tại**.
 
-- **Đơn vị chu kỳ thay (ngày/tháng)**: chọn **Ngày** hoặc **Tháng** ở ô kế bên ô nhập chu kỳ. Hệ thống luôn lưu theo ngày (1 tháng = 30 ngày); khi đổi đơn vị, giá trị được tự quy đổi để giữ nguyên độ dài thực tế (ví dụ 180 ngày ⇄ 6 tháng).
+- **Đơn vị chu kỳ thay (ngày/tháng)**: chọn **Ngày** hoặc **Tháng** ở ô kế bên. Hệ thống luôn lưu theo ngày (1 tháng = 30 ngày); khi đổi đơn vị, giá trị tự quy đổi để giữ nguyên độ dài thực tế (ví dụ 180 ngày ⇄ 6 tháng).
+- **② Thiết bị (Model) áp dụng**: ngay trên form lõi lọc cũng có thể **chỉ định các model dùng lõi này** ("+ Thêm Model" → ô tìm kiếm). Liên kết được quản lý cả ở màn hình Model (model→lõi) lẫn màn hình lõi lọc (lõi→model).
+
+#### Điều chỉnh tồn kho (Nhập · Xuất · Điều chỉnh)
+
+Nút **Điều chỉnh tồn kho** kế bên **Tồn kho hiện tại** trên form sản phẩm/lõi lọc (chế độ sửa) để thay đổi tồn kho trực tiếp.
+
+- **Nhập kho**: cộng số lượng vào. **Xuất kho**: trừ đi. **Điều chỉnh**: đặt về **số lượng mục tiêu** sau kiểm kê (tự cộng/trừ phần chênh).
+- Mọi biến động đều lưu vào **lịch sử tồn kho (sổ cái)** — ai · khi nào · lý do. Chỉ quyền **Quản lý trở lên**, có ghi vào nhật ký kiểm toán.
+- **Tự động trừ kho**: lắp thiết bị → model −1; thay lõi trong lượt thăm → lõi −N; đơn hàng đã giao → trừ lõi bán ra.
+- **Cảnh báo tồn thấp**: Tồn kho hiện tại < Tồn kho tối thiểu sẽ hiện đỏ. Cho phép **tồn kho âm** để không chặn thao tác hiện trường; lệch thì sửa bằng **Điều chỉnh**.
 
 ### 15.3 Trọng số Bộ lập lịch
 
