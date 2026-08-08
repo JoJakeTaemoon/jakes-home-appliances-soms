@@ -89,8 +89,13 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           categoryId: data.categoryId,
           description: data.description,
           retailPrice: data.retailPrice,
+          salePrice: data.salePrice,
+          purchasePrice: data.purchasePrice,
+          fixedPrice: data.fixedPrice,
           monthlyRentalPrice: data.monthlyRentalPrice,
           monthlyMaintenancePrice: data.monthlyMaintenancePrice,
+          // stockOnHand is not editable here — it moves through the ledger.
+          safetyStock: data.safetyStock,
           inspectionEveryDays: data.inspectionEveryDays,
           warrantyMonths: data.warrantyMonths,
           // Prisma JSON columns don't accept literal null; use Prisma.DbNull.

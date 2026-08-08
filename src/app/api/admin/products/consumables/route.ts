@@ -14,6 +14,7 @@ import {
   consumableListQuerySchema,
 } from "@/lib/validators/product";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
+import { recordOpeningStock } from "@/lib/inventory/moves";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -41,6 +42,8 @@ export const GET = defineQuery({
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
+          brand: { select: { id: true, name: true } },
+          productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
           compatibleModels: {
             select: {
               modelId: true,
@@ -64,7 +67,7 @@ export const POST = defineMutation({
   },
   body: createConsumableSchema,
   successStatus: 201,
-  handler: async ({ body }) => {
+  handler: async ({ body, auth }) => {
     const existing = await prisma.consumable.findUnique({
       where: { sku: body.sku },
       select: { id: true },
@@ -81,7 +84,14 @@ export const POST = defineMutation({
           replaceCycleUnit: body.replaceCycleUnit,
           cleanEveryDays: body.cleanEveryDays ?? null,
           cleanOnEveryVisit: body.cleanOnEveryVisit,
+          categoryId: body.categoryId ?? null,
+          brandId: body.brandId ?? null,
+          spec: body.spec ?? null,
+          mainUse: body.mainUse ?? null,
           retailPrice: body.retailPrice,
+          purchasePrice: body.purchasePrice ?? null,
+          fixedPrice: body.fixedPrice ?? null,
+          safetyStock: body.safetyStock,
           notes: body.notes ?? null,
           isActive: body.isActive,
         },
@@ -95,6 +105,12 @@ export const POST = defineMutation({
           })),
         });
       }
+      await recordOpeningStock(tx, {
+        itemKind: "CONSUMABLE",
+        consumableId: row.id,
+        qty: body.stockOnHand,
+        createdById: auth.userId,
+      });
       return row;
     });
   },

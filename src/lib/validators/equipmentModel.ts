@@ -47,8 +47,16 @@ export const createEquipmentModelSchema = z.object({
   categoryId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
+  // 판매가 / 입고가 / 지정가 (mockup). All optional; retailPrice stays 소비자가.
+  salePrice: z.coerce.number().nonnegative().nullable().optional(),
+  purchasePrice: z.coerce.number().nonnegative().nullable().optional(),
+  fixedPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
+  // Opening stock balance (negative allowed). The create handler records an
+  // opening StockMove when non-zero so the ledger stays the source of truth.
+  stockOnHand: z.coerce.number().int().min(-9999999).max(9999999).default(0),
+  safetyStock: z.coerce.number().int().min(0).max(9999999).default(0),
   // PDF A.2 — periodic inspection cycle in months (1 for water purifiers).
   inspectionEveryDays: z.coerce.number().int().min(1).max(18000).nullable().optional(),
   // Warranty period in months for SALE customers — drives the charge-policy
@@ -81,8 +89,14 @@ export const updateEquipmentModelSchema = z.object({
   categoryId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
+  salePrice: z.coerce.number().nonnegative().nullable().optional(),
+  purchasePrice: z.coerce.number().nonnegative().nullable().optional(),
+  fixedPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyRentalPrice: z.coerce.number().nonnegative().nullable().optional(),
   monthlyMaintenancePrice: z.coerce.number().nonnegative().nullable().optional(),
+  // stockOnHand is intentionally absent — on-hand changes go through the
+  // StockMove ledger (POST /api/inventory/moves), never a bare model PATCH.
+  safetyStock: z.coerce.number().int().min(0).max(9999999).optional(),
   inspectionEveryDays: z.coerce.number().int().min(1).max(18000).nullable().optional(),
   warrantyMonths: z.coerce.number().int().min(0).max(600).nullable().optional(),
   filterPolicy: filterPolicySchema.nullable().optional(),

@@ -82,8 +82,15 @@ async function loadModelsWithParts() {
   });
 }
 
+type Cell = XlsxCell;
+
+/** Decimal|null → number cell (blank when null). */
+function priceCell(v: { toString(): string } | null | undefined): Cell {
+  return v == null ? "" : Number(v);
+}
+
 /** Build the leading columns shared by every row emitted for a given model. */
-function baseRowFor(model: ModelWithParts): ReadonlyArray<string> {
+function baseRowFor(model: ModelWithParts): ReadonlyArray<Cell> {
   const cat = model.productCategory;
   return [
     model.brand?.name ?? "",
@@ -94,10 +101,14 @@ function baseRowFor(model: ModelWithParts): ReadonlyArray<string> {
     model.nameEn ?? "",
     model.nameKo ?? "",
     model.nameVi ?? "",
+    model.stockOnHand,
+    model.safetyStock,
+    priceCell(model.salePrice),
+    priceCell(model.retailPrice),
+    priceCell(model.purchasePrice),
+    priceCell(model.fixedPrice),
   ];
 }
-
-type Cell = XlsxCell;
 
 /** Emit one row (cell array) per attached part (consumable + accessory), plus a
  *  single placeholder row when a model has neither. Shared by the CSV and Excel
@@ -153,9 +164,16 @@ const FILTER_HEADERS = [
   "Filter Name (EN)",
   "Filter Name (KO)",
   "Filter Name (VI)",
+  "Category (KO)",
+  "Brand",
+  "Spec",
   "Replace Every (days)",
   "Clean Every (days)",
-  "Sale Price (VND)",
+  "On Hand",
+  "Safety Stock",
+  "Retail Price (VND)",
+  "Purchase Price (VND)",
+  "Dealer Price (VND)",
   "Active",
   "Notes",
 ];
@@ -168,12 +186,19 @@ async function loadFilters(): Promise<Cell[][]> {
       nameEn: true,
       nameKo: true,
       nameVi: true,
+      spec: true,
       replaceEveryDays: true,
       cleanEveryDays: true,
       cleanOnEveryVisit: true,
       retailPrice: true,
+      purchasePrice: true,
+      fixedPrice: true,
+      stockOnHand: true,
+      safetyStock: true,
       notes: true,
       isActive: true,
+      brand: { select: { name: true } },
+      productCategory: { select: { nameKo: true } },
     },
   });
   return rows.map((c, i) => [
@@ -182,9 +207,16 @@ async function loadFilters(): Promise<Cell[][]> {
     c.nameEn,
     c.nameKo,
     c.nameVi,
+    c.productCategory?.nameKo ?? "",
+    c.brand?.name ?? "",
+    c.spec ?? "",
     c.replaceEveryDays,
     cleanCycleCell(c),
+    c.stockOnHand,
+    c.safetyStock,
     Number(c.retailPrice),
+    priceCell(c.purchasePrice),
+    priceCell(c.fixedPrice),
     c.isActive ? "Y" : "N",
     c.notes ?? "",
   ]);
@@ -209,6 +241,12 @@ export async function GET(request: NextRequest) {
       "Product Name (EN)",
       "Product Name (KO)",
       "Product Name (VI)",
+      "On Hand",
+      "Safety Stock",
+      "Sale Price (VND)",
+      "Retail Price (VND)",
+      "Purchase Price (VND)",
+      "Dealer Price (VND)",
       "Part Type",
       "Part SKU",
       "Part Name (EN)",

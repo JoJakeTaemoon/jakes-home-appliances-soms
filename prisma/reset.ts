@@ -29,6 +29,7 @@ async function main() {
     document:           await prisma.document.deleteMany(),
     taxInvoice:         await prisma.taxInvoice.deleteMany(),
     payment:            await prisma.payment.deleteMany(),
+    visitConsumableLog: await prisma.visitConsumableLog.deleteMany(),
     visit:              await prisma.visit.deleteMany(),
     serviceRequest:     await prisma.serviceRequest.deleteMany(),
     notificationLog:    await prisma.notificationLog.deleteMany(),
@@ -38,8 +39,20 @@ async function main() {
     order:              await prisma.order.deleteMany(),
     contractEquipment:  await prisma.contractEquipment.deleteMany(),
     contract:           await prisma.contract.deleteMany(),
+    equipmentConsumable: await prisma.equipmentConsumable.deleteMany(),
     equipment:          await prisma.equipment.deleteMany(),
+    // Catalog + inventory — clear fully so a reset rebuilds it from scratch
+    // (no stale orphan parts, and StockMove empty so the seed writes fresh
+    // stock counters that reconcile with the ledger).
+    stockMove:          await prisma.stockMove.deleteMany(),
+    consumableOnModel:  await prisma.consumableOnModel.deleteMany(),
+    accessoryOnModel:   await prisma.accessoryOnModel.deleteMany(),
+    chargePolicy:       await prisma.chargePolicy.deleteMany(),
     equipmentModel:     await prisma.equipmentModel.deleteMany(),
+    consumable:         await prisma.consumable.deleteMany(),
+    accessory:          await prisma.accessory.deleteMany(),
+    brand:              await prisma.brand.deleteMany(),
+    productCategory:    await prisma.productCategory.deleteMany(),
     customerSession:    await prisma.customerSession.deleteMany(),
     customerContact:    await prisma.customerContact.deleteMany(),
     site:               await prisma.site.deleteMany(),

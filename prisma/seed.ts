@@ -411,9 +411,28 @@ async function main() {
     { code: "FBS-51PK",    name: "Frelle Microbubble Shower Head (Pink)", brand: "FRELLE", category: "HOUSEHOLD_FILTER", inspectionEveryDays: 60 },
   ];
 
+  // Only write direct stockOnHand on a fresh seed (no StockMove rows yet). On a
+  // bare re-seed we leave the cached counter alone so it stays reconciled with
+  // the ledger the reconcile block below wrote; a full db:reset clears both.
+  const stockSeedFresh = (await prisma.stockMove.count()) === 0;
+
   const modelByCode = new Map<string, { id: string; modelCode: string | null }>();
-  for (const m of modelSeed) {
+  for (const [mIdx, m] of modelSeed.entries()) {
     const legacy = legacyCategoryByCode[m.category] ?? "OTHER";
+    // Deterministic stock so the 재고 UI has real numbers to test against.
+    // A couple of models sit below safetyStock to exercise the low-stock alert.
+    const stockOnHand = mIdx % 6 === 0 ? 2 : 8 + ((mIdx * 13) % 55);
+    const stockField = stockSeedFresh ? { stockOnHand } : {};
+    const safetyStock = 5;
+    // Derived price ladder from retailPrice: 입고가 ~60%, 지정가 ~85%, 판매가 = 소비자가.
+    const priceExtras =
+      m.retailPrice != null
+        ? {
+            salePrice: m.retailPrice,
+            purchasePrice: Math.round(m.retailPrice * 0.6),
+            fixedPrice: Math.round(m.retailPrice * 0.85),
+          }
+        : {};
     const row = await prisma.equipmentModel.upsert({
       where: { modelCode: m.code },
       update: {
@@ -425,9 +444,12 @@ async function main() {
         category: legacy,
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
+        ...stockField,
+        safetyStock,
         ...(m.retailPrice != null ? { retailPrice: m.retailPrice } : {}),
         ...(m.monthlyRentalPrice != null ? { monthlyRentalPrice: m.monthlyRentalPrice } : {}),
         ...(m.monthlyMaintenancePrice != null ? { monthlyMaintenancePrice: m.monthlyMaintenancePrice } : {}),
+        ...priceExtras,
       },
       create: {
         modelCode: m.code,
@@ -439,9 +461,12 @@ async function main() {
         category: legacy,
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
+        ...stockField,
+        safetyStock,
         ...(m.retailPrice != null ? { retailPrice: m.retailPrice } : {}),
         ...(m.monthlyRentalPrice != null ? { monthlyRentalPrice: m.monthlyRentalPrice } : {}),
         ...(m.monthlyMaintenancePrice != null ? { monthlyMaintenancePrice: m.monthlyMaintenancePrice } : {}),
+        ...priceExtras,
       },
     });
     modelByCode.set(m.code, row);
@@ -991,7 +1016,19 @@ async function main() {
     },
   ];
 
-  for (const c of consumableSeed) {
+  const defaultFilterBrandId = brandsByName.get("Seoul Aqua")?.id;
+  for (const [cIdx, c] of consumableSeed.entries()) {
+    // Deterministic stock; a few filters sit below safetyStock for the alert.
+    const stockOnHand = cIdx % 5 === 0 ? 4 : 20 + ((cIdx * 17) % 120);
+    const safetyStock = 10;
+    const stockExtras = {
+      // Only seed the counter on a fresh seed (see stockSeedFresh note above).
+      ...(stockSeedFresh ? { stockOnHand } : {}),
+      safetyStock,
+      brandId: defaultFilterBrandId,
+      purchasePrice: Math.round(c.retailPrice * 0.55),
+      fixedPrice: Math.round(c.retailPrice * 0.8),
+    };
     const row = await prisma.consumable.upsert({
       where: { sku: c.sku },
       update: {
@@ -1002,6 +1039,7 @@ async function main() {
         cleanEveryDays: c.cleanEveryDays,
         cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
+        ...stockExtras,
       },
       create: {
         sku: c.sku,
@@ -1012,6 +1050,7 @@ async function main() {
         cleanEveryDays: c.cleanEveryDays,
         cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
+        ...stockExtras,
       },
     });
     // Reset compatibility and rewrite — keeps the join table aligned with
@@ -1029,6 +1068,54 @@ async function main() {
     }
   }
   console.log(`  ✓ consumables (${consumableSeed.length})`);
+
+  // ─── Stock-move history (재고 이력) — a few ledger rows so the history view
+  // and audit trail have content out of the box. Guarded so re-seeding (upsert
+  // path) doesn't pile up duplicate moves; a full db:reset clears it first.
+  if (stockSeedFresh) {
+    const pts2100 = modelByCode.get("PTS-2100");
+    const firstFilters = await prisma.consumable.findMany({
+      orderBy: { sku: "asc" },
+      take: 3,
+      select: { id: true },
+    });
+    const moves: {
+      itemKind: "MODEL" | "CONSUMABLE";
+      equipmentModelId?: string;
+      consumableId?: string;
+      direction: "IN" | "OUT";
+      quantity: number;
+      reason: "PURCHASE" | "SALE" | "INSTALL" | "FILTER_REPLACE" | "ADJUST" | "RETURN";
+      note: string;
+    }[] = [];
+    if (pts2100) {
+      moves.push(
+        { itemKind: "MODEL", equipmentModelId: pts2100.id, direction: "IN", quantity: 50, reason: "PURCHASE", note: "초기 입고" },
+        { itemKind: "MODEL", equipmentModelId: pts2100.id, direction: "OUT", quantity: 3, reason: "INSTALL", note: "설치 출고" },
+        { itemKind: "MODEL", equipmentModelId: pts2100.id, direction: "IN", quantity: 5, reason: "ADJUST", note: "실사 조정" },
+      );
+    }
+    firstFilters.forEach((f, i) => {
+      moves.push(
+        { itemKind: "CONSUMABLE", consumableId: f.id, direction: "IN", quantity: 100, reason: "PURCHASE", note: "초기 입고" },
+        { itemKind: "CONSUMABLE", consumableId: f.id, direction: "OUT", quantity: 6 + i, reason: "FILTER_REPLACE", note: "정기점검 교체" },
+      );
+    });
+    if (moves.length > 0) {
+      await prisma.stockMove.createMany({
+        data: moves.map((mv) => ({ ...mv, createdById: admin.id })),
+      });
+      // Align the cached counter with the ledger sum for these items so the
+      // history view reconciles with 현재고 during testing.
+      if (pts2100) {
+        await prisma.equipmentModel.update({ where: { id: pts2100.id }, data: { stockOnHand: 52 } });
+      }
+      for (const [i, f] of firstFilters.entries()) {
+        await prisma.consumable.update({ where: { id: f.id }, data: { stockOnHand: 100 - (6 + i) } });
+      }
+    }
+    console.log(`  ✓ stock moves (${moves.length})`);
+  }
 
   // ─── Accessories (parts / spare components) ─────────────────────────
   // Data-driven from the "정수기 부속품" PDF — common parts are wired to

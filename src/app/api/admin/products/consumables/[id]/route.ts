@@ -32,6 +32,8 @@ export const GET = defineQuery({
     const row = await prisma.consumable.findUnique({
       where: { id: params.id },
       include: {
+        brand: { select: { id: true, name: true } },
+        productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
         compatibleModels: {
           select: {
             modelId: true,
@@ -99,7 +101,15 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           replaceCycleUnit: data.replaceCycleUnit,
           cleanEveryDays: cleanMerged,
           cleanOnEveryVisit: data.cleanOnEveryVisit,
+          categoryId: data.categoryId,
+          brandId: data.brandId,
+          spec: data.spec,
+          mainUse: data.mainUse,
           retailPrice: data.retailPrice,
+          purchasePrice: data.purchasePrice,
+          fixedPrice: data.fixedPrice,
+          // stockOnHand not editable here — moves through the ledger.
+          safetyStock: data.safetyStock,
           notes: data.notes,
           isActive: data.isActive,
         },

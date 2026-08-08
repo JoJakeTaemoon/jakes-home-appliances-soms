@@ -20,12 +20,54 @@ import {
   type CreateOrderInput,
 } from "@/lib/validators/order";
 import { canManageEquipment } from "@/lib/customers/access";
+import { applyStockMove } from "@/lib/inventory/moves";
+import type { Prisma } from "@/generated/prisma/client";
 import { logAudit } from "@/lib/audit";
 import {
   deliveryKindForCustomerType,
   issueVisitDocument,
 } from "@/lib/visits/issue-document";
 import { canIssueVisitDocument } from "@/lib/visits/document-policy";
+
+/**
+ * A delivered order consumes stock. Only CONSUMABLE lines decrement here —
+ * EQUIPMENT lines move stock when the unit is installed (POST /api/equipment),
+ * so decrementing them here too would double-count.
+ *
+ * ponytail: the two APIs aren't linked, so an EQUIPMENT order whose install is
+ * never registered under-counts that model's stock; the office reconciles with
+ * a manual 조정. Upgrade path: tie the order's equipment line to the created
+ * Equipment row and verify.
+ */
+async function decrementDeliveredConsumables(
+  tx: Prisma.TransactionClient,
+  order: {
+    id: string;
+    items: Array<{
+      productKind: string;
+      consumableId: string | null;
+      quantity: number;
+      unitPrice: Prisma.Decimal;
+    }>;
+  },
+  actorId: string,
+): Promise<void> {
+  for (const it of order.items) {
+    if (it.productKind === "CONSUMABLE" && it.consumableId) {
+      await applyStockMove(tx, {
+        itemKind: "CONSUMABLE",
+        consumableId: it.consumableId,
+        direction: "OUT",
+        quantity: it.quantity,
+        reason: "SALE",
+        unitPrice: Number(it.unitPrice),
+        sourceType: "ORDER",
+        sourceId: order.id,
+        createdById: actorId,
+      });
+    }
+  }
+}
 
 /**
  * Verify FKs on the create-order payload (serviceRequest + equipment
@@ -260,7 +302,7 @@ export async function POST(request: NextRequest) {
           }
           // 2) Order — pin the visit + SR FK so the modal-driven
           //    flow is fully linked end-to-end in one round trip.
-          return tx.order.create({
+          const order = await tx.order.create({
             data: {
               orderNumber,
               customerId: data.customerId,
@@ -291,6 +333,10 @@ export async function POST(request: NextRequest) {
             },
             include: { items: true, visit: true },
           });
+          if (order.state === "DELIVERED") {
+            await decrementDeliveredConsumables(tx, order, auth.userId);
+          }
+          return order;
         });
         await logAudit({
           actorType: "USER",

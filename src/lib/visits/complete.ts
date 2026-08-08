@@ -21,6 +21,7 @@ import { sendNotification } from "@/lib/notifications/send";
 import { renderPdf } from "@/lib/pdf/renderer";
 import { langPairForLocale } from "@/lib/pdf/types";
 import { recordCashCollection } from "@/lib/payments/operations";
+import { applyStockMove } from "@/lib/inventory/moves";
 import {
   planVisitTransition,
   type VisitState,
@@ -175,13 +176,34 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
   // legacy `partsReplaced` JSON is still written above for PDF + back-compat
   // — the next cleanup pass will drop it once all readers are migrated.
   if (input.consumableLogs && input.consumableLogs.length > 0) {
-    await prisma.visitConsumableLog.createMany({
-      data: input.consumableLogs.map((c) => ({
-        visitId,
-        consumableId: c.consumableId,
-        action: c.action,
-        notes: c.notes ?? null,
-      })),
+    const logs = input.consumableLogs;
+    await prisma.$transaction(async (tx) => {
+      await tx.visitConsumableLog.createMany({
+        data: logs.map((c) => ({
+          visitId,
+          consumableId: c.consumableId,
+          action: c.action,
+          notes: c.notes ?? null,
+        })),
+      });
+      // Each REPLACE consumes one unit of that consumable from stock.
+      // ponytail: 1 unit per REPLACE log — the log carries no quantity, so
+      // models that use 2+ of a filter under-decrement; office corrects via
+      // manual 조정. CLEAN actions don't consume stock.
+      for (const c of logs) {
+        if (c.action === "REPLACE") {
+          await applyStockMove(tx, {
+            itemKind: "CONSUMABLE",
+            consumableId: c.consumableId,
+            direction: "OUT",
+            quantity: 1,
+            reason: "FILTER_REPLACE",
+            sourceType: "VISIT",
+            sourceId: visitId,
+            createdById: actorUserId,
+          });
+        }
+      }
     });
   }
 

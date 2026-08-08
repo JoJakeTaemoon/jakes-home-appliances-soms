@@ -68,6 +68,7 @@ model User {
   assignedCustomers    Customer[]     @relation("CustomerSalesRep")
   registeredEquipment  Equipment[]    @relation("EquipmentRegisteredBy")
   createdOrders        Order[]        @relation("OrderCreatedBy")
+  stockMoves           StockMove[]    @relation("StockMoveCreatedBy")
 
   @@index([role, status])
   @@index([isSalesRep])
@@ -409,7 +410,8 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models EquipmentModel[]
+  models      EquipmentModel[]
+  consumables Consumable[]
 
   @@index([isActive, sortOrder])
 }
@@ -424,7 +426,8 @@ model Brand {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models EquipmentModel[]
+  models      EquipmentModel[]
+  consumables Consumable[]
 
   @@index([isActive, sortOrder])
 }
@@ -451,9 +454,20 @@ model EquipmentModel {
   productCategory         ProductCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   description             String?
   filterPolicy            Json? // legacy: { filters: [{type, replaceEveryDays}, ...] } — use Consumable instead
-  retailPrice             Decimal?           @db.Decimal(14, 2)
+  retailPrice             Decimal?           @db.Decimal(14, 2) // 소비자가 (Giá bán lẻ)
+  // 판매가 (Giá bán) — mockup shows this alongside 소비자가; kept distinct so
+  // list price and actual sale price can differ. Nullable; UI falls back to retailPrice.
+  salePrice               Decimal?           @db.Decimal(14, 2)
+  // 입고가 (Giá nhập) — purchase/inbound unit cost.
+  purchasePrice           Decimal?           @db.Decimal(14, 2)
+  // 지정가 (Giá tại đại lý) — dealer/agency price.
+  fixedPrice              Decimal?           @db.Decimal(14, 2)
   monthlyRentalPrice      Decimal?           @db.Decimal(14, 2)
   monthlyMaintenancePrice Decimal?           @db.Decimal(14, 2)
+  // Inventory — cached on-hand counter (StockMove ledger is history-of-record)
+  // and low-stock threshold. Negative on-hand is allowed (alert, not a block).
+  stockOnHand             Int                @default(0)
+  safetyStock             Int                @default(0)
   // Periodic inspection cycle (days). 30 for water purifiers (PDF A.2).
   inspectionEveryDays     Int?
   // Warranty months for SALE customers — used by charge-policy default rules.
@@ -466,6 +480,7 @@ model EquipmentModel {
   consumables ConsumableOnModel[]
   accessories AccessoryOnModel[]
   orderItems  OrderItem[]
+  stockMoves  StockMove[]         @relation("StockMoveModel")
 
   @@index([category, isActive])
   @@index([categoryId, isActive])
@@ -500,7 +515,22 @@ model Consumable {
   // (no fixed month-based cycle). When true, recommender prefills CLEAN
   // on every PERIODIC_INSPECTION visit regardless of cycle math.
   cleanOnEveryVisit Boolean             @default(false)
-  retailPrice       Decimal             @db.Decimal(14, 2)
+  // Product classification — mirrors EquipmentModel so the filter master can
+  // carry its own 제품그룹 (category) + 브랜드 (brand), independent of which
+  // models it attaches to. Nullable; FK set-null on delete.
+  categoryId        String?
+  productCategory   ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brandId           String?
+  brand             Brand?              @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  spec              String? // 규격 (Quy cách) — e.g. "9 inch", "14 W"
+  mainUse           String? // 주요용도 (Công dụng chính)
+  retailPrice       Decimal             @db.Decimal(14, 2) // 소비자가
+  // 입고가 / 지정가 — same semantics as EquipmentModel.
+  purchasePrice     Decimal?            @db.Decimal(14, 2)
+  fixedPrice        Decimal?            @db.Decimal(14, 2)
+  // Inventory — see EquipmentModel. Negative on-hand allowed (alert, not block).
+  stockOnHand       Int                 @default(0)
+  safetyStock       Int                 @default(0)
   notes             String?
   isActive          Boolean             @default(true)
   createdAt         DateTime            @default(now())
@@ -511,8 +541,11 @@ model Consumable {
   chargePolicies   ChargePolicy[]
   equipmentLinks   EquipmentConsumable[]
   orderItems       OrderItem[]
+  stockMoves       StockMove[]           @relation("StockMoveConsumable")
 
   @@index([isActive])
+  @@index([categoryId, isActive])
+  @@index([brandId, isActive])
 }
 
 // Non-cyclical attachments (mounts, adapters, hoses…) sold or replaced
@@ -840,6 +873,63 @@ model OrderItem {
   @@index([consumableId])
   @@index([equipmentModelId])
   @@index([equipmentId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// INVENTORY LEDGER (added 2026-08)
+//
+// StockMove is the append-only history-of-record for every stock change on a
+// product (EquipmentModel) or consumable (Consumable). EquipmentModel.stockOnHand
+// / Consumable.stockOnHand are cached counters kept in sync in the SAME
+// transaction as each move. Negative on-hand is allowed — the field surfaces it
+// as a low-stock alert, it never blocks an install/replacement/order.
+//
+// Moves are created by:
+//   - Manual 입고/출고/조정 via POST /api/inventory/moves (MANAGER+)
+//   - Auto OUT on equipment install (INSTALL), filter replacement
+//     (FILTER_REPLACE), and order delivery (SALE)
+// ─────────────────────────────────────────────────────────────────────────
+enum StockItemKind {
+  MODEL
+  CONSUMABLE
+}
+
+enum StockDirection {
+  IN
+  OUT
+}
+
+enum StockMoveReason {
+  PURCHASE // inbound purchase (IN)
+  SALE // order delivery to customer (OUT)
+  INSTALL // equipment installed at a site (OUT)
+  FILTER_REPLACE // consumable used on a service visit (OUT)
+  ADJUST // manual correction to a target quantity (IN or OUT)
+  RETURN // returned to stock (IN)
+}
+
+model StockMove {
+  id               String          @id @default(cuid())
+  itemKind         StockItemKind
+  equipmentModelId String?
+  equipmentModel   EquipmentModel? @relation("StockMoveModel", fields: [equipmentModelId], references: [id], onDelete: Cascade)
+  consumableId     String?
+  consumable       Consumable?     @relation("StockMoveConsumable", fields: [consumableId], references: [id], onDelete: Cascade)
+  direction        StockDirection
+  quantity         Int
+  reason           StockMoveReason
+  unitPrice        Decimal?        @db.Decimal(14, 2)
+  /// Origin link back to what caused an automatic move ("ORDER"/"VISIT"/
+  /// "EQUIPMENT" + row id). Null for manual moves.
+  sourceType       String?
+  sourceId         String?
+  note             String?
+  createdById      String?
+  createdBy        User?           @relation("StockMoveCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt        DateTime        @default(now())
+
+  @@index([equipmentModelId, createdAt])
+  @@index([consumableId, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────

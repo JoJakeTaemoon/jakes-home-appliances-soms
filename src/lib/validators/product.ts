@@ -85,7 +85,19 @@ const consumableCoreShape = {
   replaceCycleUnit: z.enum(["DAY", "MONTH"]).default("DAY"),
   cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().default(false),
+  // 제품그룹 / 브랜드 / 규격 / 주요용도 (mockup) — the filter master carries its
+  // own classification, independent of which models it attaches to.
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  brandId: z.string().trim().min(1).nullable().optional(),
+  spec: optStr(120),
+  mainUse: optStr(500),
   retailPrice: z.coerce.number().nonnegative().max(99999999999.99),
+  // 입고가 / 지정가 (mockup) — optional.
+  purchasePrice: z.coerce.number().nonnegative().max(99999999999.99).nullable().optional(),
+  fixedPrice: z.coerce.number().nonnegative().max(99999999999.99).nullable().optional(),
+  // Opening stock balance (negative allowed). Non-zero → opening StockMove.
+  stockOnHand: z.coerce.number().int().min(-9999999).max(9999999).default(0),
+  safetyStock: z.coerce.number().int().min(0).max(9999999).default(0),
   notes: optStr(2000),
   isActive: z.boolean().default(true),
   compatibleModels: z.array(compatibilityEntrySchema).default([]),
@@ -122,7 +134,15 @@ export const updateConsumableSchema = z.object({
   replaceCycleUnit: z.enum(["DAY", "MONTH"]).optional(),
   cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().optional(),
+  categoryId: z.string().trim().min(1).nullable().optional(),
+  brandId: z.string().trim().min(1).nullable().optional(),
+  spec: optStr(120),
+  mainUse: optStr(500),
   retailPrice: consumableCoreShape.retailPrice.optional(),
+  purchasePrice: consumableCoreShape.purchasePrice,
+  fixedPrice: consumableCoreShape.fixedPrice,
+  // stockOnHand absent — on-hand goes through the StockMove ledger, not PATCH.
+  safetyStock: z.coerce.number().int().min(0).max(9999999).optional(),
   notes: optStr(2000),
   isActive: z.boolean().optional(),
   compatibleModels: z.array(compatibilityEntrySchema).optional(),

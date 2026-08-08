@@ -11,6 +11,7 @@ import {
   equipmentModelListQuerySchema,
 } from "@/lib/validators/equipmentModel";
 import { ForbiddenError } from "@/lib/api/error";
+import { recordOpeningStock } from "@/lib/inventory/moves";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -58,7 +59,7 @@ export const POST = defineMutation({
   },
   body: createEquipmentModelSchema,
   successStatus: 201,
-  handler: async ({ body }) => {
+  handler: async ({ body, auth }) => {
     const filters = body.compatibleConsumables ?? [];
     return prisma.$transaction(async (tx) => {
       const model = await tx.equipmentModel.create({
@@ -71,8 +72,12 @@ export const POST = defineMutation({
           categoryId: body.categoryId ?? null,
           description: body.description ?? null,
           retailPrice: body.retailPrice ?? null,
+          salePrice: body.salePrice ?? null,
+          purchasePrice: body.purchasePrice ?? null,
+          fixedPrice: body.fixedPrice ?? null,
           monthlyRentalPrice: body.monthlyRentalPrice ?? null,
           monthlyMaintenancePrice: body.monthlyMaintenancePrice ?? null,
+          safetyStock: body.safetyStock,
           inspectionEveryDays: body.inspectionEveryDays ?? null,
           warrantyMonths: body.warrantyMonths ?? null,
           filterPolicy: body.filterPolicy ?? undefined,
@@ -91,6 +96,13 @@ export const POST = defineMutation({
           skipDuplicates: true,
         });
       }
+      // Opening stock as a single ADJUST move so ledger == cached counter.
+      await recordOpeningStock(tx, {
+        itemKind: "MODEL",
+        equipmentModelId: model.id,
+        qty: body.stockOnHand,
+        createdById: auth.userId,
+      });
       return model;
     });
   },

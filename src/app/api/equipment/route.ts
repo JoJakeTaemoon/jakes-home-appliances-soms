@@ -11,6 +11,7 @@ import {
   equipmentListQuerySchema,
 } from "@/lib/validators/equipment";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
+import { applyStockMove } from "@/lib/inventory/moves";
 import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -103,7 +104,7 @@ export const POST = defineMutation({
   },
   body: createEquipmentSchema,
   successStatus: 201,
-  handler: async ({ body }) => {
+  handler: async ({ body, auth }) => {
     const customer = await prisma.customer.findUnique({
       where: { id: body.customerId },
       select: { id: true, type: true },
@@ -130,25 +131,45 @@ export const POST = defineMutation({
       if (!model) throw new NotFoundError("Model not found");
     }
 
-    return prisma.equipment.create({
-      data: {
-        customerId: body.customerId,
-        siteId: body.siteId ?? null,
-        modelId: body.modelId ?? null,
-        customDescription: body.customDescription ?? null,
-        customMaintenanceCycleDays: body.customMaintenanceCycleDays ?? null,
-        serialNumber: body.serialNumber ?? null,
-        ownership: body.ownership,
-        installedAt: body.installedAt ?? null,
-        installedByTechnicianId: body.installedByTechnicianId ?? null,
-        notes: body.notes ?? null,
-        status: "ACTIVE",
-      },
-      include: {
-        model: true,
-        site: true,
-        customer: { select: { id: true, code: true, name: true } },
-      },
+    return prisma.$transaction(async (tx) => {
+      const created = await tx.equipment.create({
+        data: {
+          customerId: body.customerId,
+          siteId: body.siteId ?? null,
+          modelId: body.modelId ?? null,
+          customDescription: body.customDescription ?? null,
+          customMaintenanceCycleDays: body.customMaintenanceCycleDays ?? null,
+          serialNumber: body.serialNumber ?? null,
+          ownership: body.ownership,
+          installedAt: body.installedAt ?? null,
+          installedByTechnicianId: body.installedByTechnicianId ?? null,
+          notes: body.notes ?? null,
+          status: "ACTIVE",
+        },
+        include: {
+          model: true,
+          site: true,
+          customer: { select: { id: true, code: true, name: true } },
+        },
+      });
+      // Installing a catalog model consumes one physical unit from stock.
+      // ponytail: decrement whenever modelId is set — covers rental + sale
+      // deployments. The rare "customer already owned this catalog model, we
+      // only maintain it" case over-decrements by 1; the office corrects it
+      // with a manual 조정. Upgrade path: a "suppliedFromStock" flag on install.
+      if (body.modelId) {
+        await applyStockMove(tx, {
+          itemKind: "MODEL",
+          equipmentModelId: body.modelId,
+          direction: "OUT",
+          quantity: 1,
+          reason: "INSTALL",
+          sourceType: "EQUIPMENT",
+          sourceId: created.id,
+          createdById: auth.userId,
+        });
+      }
+      return created;
     });
   },
   audit: {
