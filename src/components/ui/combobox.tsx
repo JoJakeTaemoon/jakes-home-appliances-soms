@@ -147,8 +147,21 @@ export function Combobox({
       if (dropdownRef.current?.contains(target)) return;
       setOpen(false);
     };
+    // Escape closes the dropdown and is swallowed here, so a global Esc hotkey
+    // (ActionBar 닫기) can't also fire and reset the form behind it.
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("keydown", keyHandler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", keyHandler);
+    };
   }, [open]);
 
   return (

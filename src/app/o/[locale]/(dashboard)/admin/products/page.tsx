@@ -10,7 +10,7 @@
  * volumes fit comfortably in memory).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { pickModelName } from "@/lib/products/name";
@@ -27,6 +27,9 @@ import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ActionBar } from "@/components/ui/action-bar";
+import { LegendFooter } from "@/components/ui/legend-footer";
+import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
 
 type Tab = "brands" | "categories" | "models" | "consumables" | "accessories" | "charges";
@@ -68,6 +71,12 @@ interface ModelRow {
   category: string | null;
   isActive: boolean;
   brand: { id: string; name: string } | null;
+  stockOnHand?: number;
+  safetyStock?: number;
+  retailPrice?: number | string | null;
+  salePrice?: number | string | null;
+  purchasePrice?: number | string | null;
+  fixedPrice?: number | string | null;
 }
 
 interface ConsumableRow {
@@ -82,6 +91,16 @@ interface ConsumableRow {
   cleanEveryDays: number | null;
   cleanOnEveryVisit: boolean;
   retailPrice: string;
+  purchasePrice?: string | number | null;
+  fixedPrice?: string | number | null;
+  stockOnHand?: number;
+  safetyStock?: number;
+  spec?: string | null;
+  mainUse?: string | null;
+  categoryId?: string | null;
+  brandId?: string | null;
+  brand?: { id: string; name: string } | null;
+  productCategory?: { id: string; nameKo: string; nameVi: string; nameEn: string } | null;
   isActive: boolean;
   compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
@@ -296,8 +315,10 @@ export default function ProductCatalogPage() {
 
       {tab === "brands" && <BrandsTab api={api} t={t} />}
       {tab === "categories" && <CategoriesTab api={api} t={t} />}
-      {tab === "models" && <ModelsTab api={api} t={t} />}
-      {tab === "consumables" && <ConsumablesTab api={api} t={t} />}
+      {tab === "models" && <ModelsTab api={api} t={t} onExportExcel={() => downloadCatalog("xlsx")} />}
+      {tab === "consumables" && (
+        <ConsumablesTab api={api} t={t} onExportExcel={() => downloadCatalog("xlsx")} />
+      )}
       {tab === "accessories" && <AccessoriesTab api={api} t={t} />}
       {tab === "charges" && <ChargesTab api={api} t={t} />}
     </div>
@@ -934,7 +955,11 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
 // Models
 // ───────────────────────────────────────────────────────────────────────────
 
-function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+function ModelsTab({
+  api,
+  t,
+  onExportExcel,
+}: Readonly<{ api: ApiClient; t: Translate; onExportExcel: () => void }>) {
   const locale = useLocale();
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ModelRow[]>([]);
@@ -948,6 +973,7 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const { sort } = useSort<"name" | "brand" | "category" | "isActive">("name");
+  const submitRef = useRef<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -997,13 +1023,22 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     setFormKey((k) => k + 1);
   };
 
+  const s = (v: number | string | null | undefined) => (v == null ? "" : String(Number(v)));
+  const fmtPrice = (v: number | string | null | undefined) =>
+    v == null ? "—" : Number(v).toLocaleString();
+
   return (
     <section className="space-y-4">
-      {/* Top: search + brand filter + new */}
+      {/* ③ Top: search [F10] + brand filter */}
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-56">
-          <FormField label={t("searchLabel")}>
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchModels")} />
+          <FormField label={`${t("searchLabel")} [F10]`}>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t("searchModels")}
+              data-catalog-search
+            />
           </FormField>
         </div>
         <div className="w-56">
@@ -1018,15 +1053,16 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             />
           </FormField>
         </div>
-        <Button className="ml-auto" onClick={handleNew}>+ {t("addModel")}</Button>
       </div>
 
-      {/* Master-detail: left = edit form, right = list */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      {/* Master-detail: ① left edit form / ④ right list table */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <div className="min-w-0">
           <EquipmentModelForm
             key={selected ? `edit-${selected.id}` : `new-${formKey}`}
             mode={selected ? "edit" : "create"}
+            submitRef={submitRef}
+            onStockChanged={() => void load()}
             initial={
               selected
                 ? {
@@ -1038,6 +1074,12 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
                     category: (selected.category ?? null) as
                       | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
                     isActive: selected.isActive,
+                    stockOnHand: selected.stockOnHand ?? 0,
+                    safetyStock: s(selected.safetyStock),
+                    retailPrice: s(selected.retailPrice),
+                    salePrice: s(selected.salePrice),
+                    purchasePrice: s(selected.purchasePrice),
+                    fixedPrice: s(selected.fixedPrice),
                   }
                 : undefined
             }
@@ -1045,48 +1087,93 @@ function ModelsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
           />
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
-          <div className="max-h-[72vh] divide-y divide-[#f0f0f0] overflow-y-auto">
-            {loading && <p className="p-4 text-center text-sm text-[#737373]">…</p>}
-            {!loading && sorted.length === 0 && (
-              <p className="p-4 text-center text-sm text-[#737373]">{t("noModels")}</p>
-            )}
-            {!loading &&
-              sorted.map((r) => (
-                <div
-                  key={r.id}
-                  className={cn(
-                    "flex items-center gap-1 hover:bg-[#f5f5f5]",
-                    selected?.id === r.id && "bg-[var(--brand-blue-50)]",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(r)}
-                    aria-current={selected?.id === r.id ? "true" : undefined}
-                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[#111111]">{pickModelName(r, locale)}</p>
-                      <p className="truncate text-xs text-[#737373]">
-                        {r.brand?.name ?? "—"}
-                        {r.category ? ` · ${r.category}` : ""}
-                      </p>
-                    </div>
-                    <StatusPill active={r.isActive} t={t} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(r)}
-                    className="mr-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    {t("deactivate")}
-                  </button>
-                </div>
-              ))}
-          </div>
+        <div className="overflow-x-auto rounded-2xl border border-[#e5e5e5] bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
+              <tr>
+                <th className="w-8 px-2 py-2" />
+                <th className="px-2 py-2 text-left">#</th>
+                <th className="px-2 py-2 text-left">{t("colName")}</th>
+                <th className="px-2 py-2 text-left">{t("colCategory")}</th>
+                <th className="px-2 py-2 text-left">{t("colBrand")}</th>
+                <th className="px-2 py-2 text-right">{t("stockOnHand")}</th>
+                <th className="px-2 py-2 text-right">{t("consumerPrice")}</th>
+                <th className="px-2 py-2 text-right">{t("fixedPrice")}</th>
+                <th className="px-2 py-2 text-right">{t("purchasePrice")}</th>
+                <th className="w-8 px-2 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f0f0]">
+              {loading && (
+                <tr><td colSpan={10} className="p-4 text-center text-[#737373]">…</td></tr>
+              )}
+              {!loading && sorted.length === 0 && (
+                <tr><td colSpan={10} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
+              )}
+              {!loading &&
+                sorted.map((r, i) => {
+                  const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
+                  const isSel = selected?.id === r.id;
+                  return (
+                    <tr
+                      key={r.id}
+                      onClick={() => setSelected(r)}
+                      aria-current={isSel ? "true" : undefined}
+                      className={cn(
+                        "cursor-pointer hover:bg-[#f5f5f5]",
+                        isSel && "bg-[var(--brand-blue-50)]",
+                        !r.isActive && "opacity-50",
+                      )}
+                    >
+                      <td className="px-2 py-2 text-center">
+                        <input type="checkbox" checked={isSel} readOnly aria-label={pickModelName(r, locale)} />
+                      </td>
+                      <td className="px-2 py-2 text-[#737373]">{i + 1}</td>
+                      <td className="px-2 py-2 font-medium text-[#111]">{pickModelName(r, locale)}</td>
+                      <td className="px-2 py-2 text-[#586a7c]">{r.category ?? "—"}</td>
+                      <td className="px-2 py-2 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                      <td className={cn("px-2 py-2 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                        {(r.stockOnHand ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
+                      <td className="px-2 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setDeleting(r); }}
+                          className="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          {t("deactivate")}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* ⑤ Bottom action bar + legend */}
+      <ActionBar
+        items={[
+          { key: "new", label: t("actNew"), hotkey: "F2", variant: "secondary", onClick: handleNew },
+          { key: "save", label: t("actSave"), hotkey: "F5", variant: "primary", onClick: () => submitRef.current?.() },
+          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: !selected, onClick: () => selected && setDeleting(selected) },
+          { key: "excel", label: t("actExcel"), hotkey: "F6", variant: "secondary", onClick: onExportExcel },
+          { key: "close", label: t("actClose"), hotkey: "Esc", variant: "ghost", onClick: handleNew },
+        ]}
+      />
+      <LegendFooter
+        items={[
+          { n: 1, title: t("legendInfoT"), body: t("legendInfoB") },
+          { n: 2, title: t("legendFilterT"), body: t("legendFilterB") },
+          { n: 3, title: t("legendSearchT"), body: t("legendSearchB") },
+          { n: 4, title: t("legendListT"), body: t("legendListB") },
+          { n: 5, title: t("legendActionsT"), body: t("legendActionsB") },
+        ]}
+      />
 
       {deleting && (
         <ConfirmDialog
@@ -1148,7 +1235,11 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
 // Consumables
 // ───────────────────────────────────────────────────────────────────────────
 
-function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+function ConsumablesTab({
+  api,
+  t,
+  onExportExcel,
+}: Readonly<{ api: ApiClient; t: Translate; onExportExcel: () => void }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
   const brands = useBrandOptions(api);
@@ -1158,6 +1249,7 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const [selected, setSelected] = useState<ConsumableRow | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
+  const submitRef = useRef<(() => void) | null>(null);
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
   const [modelFilter, setModelFilter] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -1229,12 +1321,14 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     [filtered, sort, locale],
   );
 
+  const fmtPrice = (v: number | string | null | undefined) => (v == null ? "—" : Number(v).toLocaleString());
+
   return (
     <section className="space-y-4">
-      {/* Top: search + brand/model filters + new */}
+      {/* ③ Top: search [F10] + brand/model filters */}
       <div className="flex flex-wrap items-end gap-2">
         <div className="w-52">
-          <FormField label={t("searchLabel")}>
+          <FormField label={`${t("searchLabel")} [F10]`}>
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchFilters")} />
           </FormField>
         </div>
@@ -1265,64 +1359,111 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             />
           </FormField>
         </div>
-        <Button className="ml-auto" onClick={handleNew}>+ {t("addConsumable")}</Button>
       </div>
 
-      {/* Master-detail: left = edit form, right = list */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      {/* Master-detail: ① left form (+ ② applied models) / ④ right list table */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <div className="min-w-0">
           <ConsumableForm
             key={selected ? `edit-${selected.id}` : `new-${formKey}`}
             api={api}
             t={t}
             row={selected}
+            models={models}
+            brands={brands}
+            submitRef={submitRef}
+            onStockChanged={() => void load()}
             onDone={handleDone}
           />
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
-          <div className="max-h-[72vh] divide-y divide-[#f0f0f0] overflow-y-auto">
-            {loading && <p className="p-4 text-center text-sm text-[#737373]">…</p>}
-            {!loading && sorted.length === 0 && (
-              <p className="p-4 text-center text-sm text-[#737373]">{t("noConsumables")}</p>
-            )}
-            {!loading &&
-              sorted.map((r) => (
-                <div
-                  key={r.id}
-                  className={cn(
-                    "flex items-center gap-1 hover:bg-[#f5f5f5]",
-                    selected?.id === r.id && "bg-[var(--brand-blue-50)]",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(r)}
-                    aria-current={selected?.id === r.id ? "true" : undefined}
-                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[#111111]">
-                        <span className="font-mono text-xs text-[#737373]">{r.sku}</span> · {pickLocaleName(r, locale)}
-                      </p>
-                      <p className="truncate text-xs text-[#737373]">
-                        {t("colReplaceCycle")}: {r.replaceEveryDays ?? t("cycleNone")} · {Number(r.retailPrice).toLocaleString()}
-                      </p>
-                    </div>
-                    <StatusPill active={r.isActive} t={t} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleting(r)}
-                    className="mr-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    {t("deactivate")}
-                  </button>
-                </div>
-              ))}
-          </div>
+        <div className="overflow-x-auto rounded-2xl border border-[#e5e5e5] bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
+              <tr>
+                <th className="px-2 py-2 text-left">#</th>
+                <th className="px-2 py-2 text-left">{t("colName")}</th>
+                <th className="px-2 py-2 text-left">{t("colCategory")}</th>
+                <th className="px-2 py-2 text-left">{t("colBrand")}</th>
+                <th className="px-2 py-2 text-left">{t("spec")}</th>
+                <th className="px-2 py-2 text-right">{t("colReplaceCycle")}</th>
+                <th className="px-2 py-2 text-right">{t("stockOnHand")}</th>
+                <th className="px-2 py-2 text-right">{t("consumerPrice")}</th>
+                <th className="w-8 px-2 py-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f0f0]">
+              {loading && <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>}
+              {!loading && sorted.length === 0 && (
+                <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noConsumables")}</td></tr>
+              )}
+              {!loading &&
+                sorted.map((r, i) => {
+                  const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
+                  const isSel = selected?.id === r.id;
+                  const catName = r.productCategory
+                    ? (locale === "vi" ? r.productCategory.nameVi : locale === "en" ? r.productCategory.nameEn : r.productCategory.nameKo)
+                    : "—";
+                  return (
+                    <tr
+                      key={r.id}
+                      onClick={() => setSelected(r)}
+                      aria-current={isSel ? "true" : undefined}
+                      className={cn(
+                        "cursor-pointer hover:bg-[#f5f5f5]",
+                        isSel && "bg-[var(--brand-blue-50)]",
+                        !r.isActive && "opacity-50",
+                      )}
+                    >
+                      <td className="px-2 py-2 text-[#737373]">{i + 1}</td>
+                      <td className="px-2 py-2">
+                        <span className="font-mono text-xs text-[#737373]">{r.sku}</span>
+                        <span className="ml-1 font-medium text-[#111]">{pickLocaleName(r, locale)}</span>
+                      </td>
+                      <td className="px-2 py-2 text-[#586a7c]">{catName}</td>
+                      <td className="px-2 py-2 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                      <td className="px-2 py-2 text-[#586a7c]">{r.spec ?? "—"}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
+                      <td className={cn("px-2 py-2 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                        {(r.stockOnHand ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                      <td className="px-2 py-2 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setDeleting(r); }}
+                          className="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+                        >
+                          {t("deactivate")}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
         </div>
       </div>
+
+      {/* ⑤ Bottom action bar + legend */}
+      <ActionBar
+        items={[
+          { key: "new", label: t("actNew"), hotkey: "F2", variant: "secondary", onClick: handleNew },
+          { key: "save", label: t("actSave"), hotkey: "F5", variant: "primary", onClick: () => submitRef.current?.() },
+          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: !selected, onClick: () => selected && setDeleting(selected) },
+          { key: "excel", label: t("actExcel"), hotkey: "F6", variant: "secondary", onClick: onExportExcel },
+          { key: "close", label: t("actClose"), hotkey: "Esc", variant: "ghost", onClick: handleNew },
+        ]}
+      />
+      <LegendFooter
+        items={[
+          { n: 1, title: t("legendFilterInfoT"), body: t("legendFilterInfoB") },
+          { n: 2, title: t("legendAppliedModelsT"), body: t("legendAppliedModelsB") },
+          { n: 3, title: t("legendSearchT"), body: t("legendSearchB") },
+          { n: 4, title: t("legendFilterListT"), body: t("legendFilterListB") },
+          { n: 5, title: t("legendActionsT"), body: t("legendActionsB") },
+        ]}
+      />
 
       {deleting && (
         <ConfirmDialog
@@ -1355,16 +1496,27 @@ function ConsumablesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   );
 }
 
-/** Unified filter (Consumable) form for the master-detail layout (요청 A):
- *  create when `row` is null, edit otherwise. Model↔filter links are managed
- *  from the model screen, so this form only handles the filter's own info. */
+interface AppliedModelRow {
+  uid: string;
+  modelId: string;
+  quantity: string;
+}
+let appliedRowCounter = 0;
+
+/** Filter (Consumable) form for the master-detail layout. Carries the filter's
+ *  own info + the "적용 가능한 장비(모델)" editor (WS-3 re-adds bidirectional
+ *  model links) + stock adjust. The page ActionBar drives Save via submitRef. */
 function ConsumableForm({
-  api, t, row, onDone,
+  api, t, row, models, brands, onDone, submitRef, onStockChanged,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
   row: ConsumableRow | null;
+  models: ModelRow[];
+  brands: { id: string; name: string }[];
   onDone: () => void;
+  submitRef: RefObject<(() => void) | null>;
+  onStockChanged: () => void;
 }>) {
   const locale = useLocale();
   const isEdit = !!row;
@@ -1372,36 +1524,75 @@ function ConsumableForm({
   const [nameKo, setNameKo] = useState(row?.nameKo ?? "");
   const [nameVi, setNameVi] = useState(row?.nameVi ?? "");
   const [nameEn, setNameEn] = useState(row?.nameEn ?? "");
+  const [categoryId, setCategoryId] = useState<string | null>(row?.categoryId ?? null);
+  const [brandId, setBrandId] = useState<string | null>(row?.brandId ?? null);
+  const [spec, setSpec] = useState(row?.spec ?? "");
+  const [mainUse, setMainUse] = useState(row?.mainUse ?? "");
   const [replaceCycleUnit, setReplaceCycleUnit] = useState<"DAY" | "MONTH">(row?.replaceCycleUnit ?? "DAY");
   const [replaceEveryDays, setReplaceEveryDays] = useState(
     row ? cycleToDisplay(row.replaceEveryDays, row.replaceCycleUnit) : "",
   );
   const [cleanEveryDays, setCleanEveryDays] = useState(row?.cleanEveryDays?.toString() ?? "");
   const [cleanOnEveryVisit, setCleanOnEveryVisit] = useState(row?.cleanOnEveryVisit ?? false);
-  const [retailPrice, setRetailPrice] = useState(row ? Number(row.retailPrice) : 0);
+  const [retailPrice, setRetailPrice] = useState(row ? String(Number(row.retailPrice)) : "");
+  const [purchasePrice, setPurchasePrice] = useState(row?.purchasePrice != null ? String(Number(row.purchasePrice)) : "");
+  const [fixedPrice, setFixedPrice] = useState(row?.fixedPrice != null ? String(Number(row.fixedPrice)) : "");
+  const [safetyStock, setSafetyStock] = useState(String(row?.safetyStock ?? 0));
   const [isActive, setIsActive] = useState(row?.isActive ?? true);
+  const [applied, setApplied] = useState<AppliedModelRow[]>(
+    (row?.compatibleModels ?? []).map((m) => ({ uid: `a${appliedRowCounter++}`, modelId: m.modelId, quantity: String(m.quantity) })),
+  );
+  const [stockOpen, setStockOpen] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; nameKo: string; nameVi: string; nameEn: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const stockOnHand = row?.stockOnHand ?? 0;
+  const lowStock = isEdit && stockOnHand < Number(safetyStock || "0");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const c = await api.get<{ id: string; nameKo: string; nameVi: string; nameEn: string }[]>(
+          "/api/admin/products/categories?pageSize=100&isActive=true",
+        );
+        setCategories(c.data ?? []);
+      } catch {
+        /* categories optional */
+      }
+    })();
+  }, [api]);
+
   function switchUnit(v: string | null) {
     const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
-    // Reconvert so the value keeps the same real length across a unit switch
-    // (180d ⇄ 6mo) instead of being reinterpreted at submit.
     setReplaceEveryDays(cycleToDisplay(cycleToStored(replaceEveryDays, replaceCycleUnit), nextUnit));
     setReplaceCycleUnit(nextUnit);
   }
 
+  const num = (s: string) => (s === "" ? null : Number(s));
+
   async function save() {
+    if (busy) return;
     setBusy(true);
     setErr(null);
     try {
+      const compatibleModels = applied
+        .filter((a) => a.modelId)
+        .map((a) => ({ modelId: a.modelId, quantity: a.quantity ? Number(a.quantity) : 1 }));
       const payload = {
         nameKo, nameVi, nameEn,
+        categoryId, brandId,
+        spec: spec || undefined,
+        mainUse: mainUse || undefined,
         replaceEveryDays: cycleToStored(replaceEveryDays, replaceCycleUnit),
         replaceCycleUnit,
         cleanEveryDays: cleanEveryDays === "" ? null : Number(cleanEveryDays),
         cleanOnEveryVisit,
-        retailPrice,
+        retailPrice: retailPrice === "" ? 0 : Number(retailPrice),
+        purchasePrice: num(purchasePrice),
+        fixedPrice: num(fixedPrice),
+        safetyStock: Number(safetyStock || "0"),
+        compatibleModels,
       };
       if (row) {
         await api.patch(`/api/admin/products/consumables/${row.id}`, { ...payload, isActive });
@@ -1415,72 +1606,151 @@ function ConsumableForm({
       setBusy(false);
     }
   }
+  useEffect(() => {
+    if (submitRef) submitRef.current = () => void save();
+  });
+
+  const modelOptions = models.map((m) => ({ value: m.id, label: pickModelName(m, locale) }));
 
   return (
-    <div className="space-y-3 rounded-2xl border border-[#e5e5e5] bg-white p-6">
-      <h2 className="text-sm font-semibold text-[#002A4D]">{isEdit ? t("editConsumable") : t("addConsumable")}</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label={t("colSku")}>
-          <Input value={sku} onChange={(e) => setSku(e.target.value)} disabled={isEdit} placeholder="FLT-NEW-001" />
-        </FormField>
-        <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
-        <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
-        <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
-        <FormField label={t("colReplaceCycle")}>
-          <div className="flex gap-2">
-            <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryDays(e.target.value)} />
-            <div className="w-28 shrink-0">
-              <Combobox
-                value={replaceCycleUnit}
-                onChange={switchUnit}
-                options={[
-                  { value: "DAY", label: t("cycleUnitDay") },
-                  { value: "MONTH", label: t("cycleUnitMonth") },
-                ]}
-                searchable={false}
-                allowClear={false}
-                ariaLabel={t("colReplaceCycleUnit")}
-              />
+    <div className="flex flex-col gap-4">
+      {/* ① 필터 정보 */}
+      <div className="space-y-3 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+        <h2 className="text-sm font-semibold text-[#002A4D]">{isEdit ? t("editConsumable") : t("addConsumable")}</h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={t("colSku")}>
+            <Input value={sku} onChange={(e) => setSku(e.target.value)} disabled={isEdit} placeholder="FLT-NEW-001" />
+          </FormField>
+          <FormField label={t("stockOnHand")}>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "flex h-10 flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
+              )}>
+                {isEdit ? stockOnHand.toLocaleString() : "—"}
+                {lowStock && <span className="ml-2 text-xs font-medium">{t("lowStockBadge")}</span>}
+              </span>
+              {isEdit && (
+                <Button variant="secondary" size="sm" onClick={() => setStockOpen(true)}>{t("stockManage")}</Button>
+              )}
             </div>
-          </div>
-        </FormField>
-        <FormField label={t("colCleanCycle")}>
-          <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
-        </FormField>
-        <FormField label={t("colRetailPrice")}>
-          <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
-        </FormField>
-        <FormField label={t("colCleanOnVisit")}>
-          <label className="mt-2 inline-flex items-center gap-2">
-            <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
-            <span className="text-sm">{t("yes")}</span>
-          </label>
-        </FormField>
-        {isEdit && (
-          <FormField label={t("colActive")}>
+          </FormField>
+          <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
+          <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
+          <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
+          <FormField label={t("colCategory")}>
+            <Combobox
+              value={categoryId}
+              onChange={(v) => setCategoryId(v || null)}
+              options={categories.map((c) => ({ value: c.id, label: locale === "vi" ? c.nameVi : locale === "en" ? c.nameEn : c.nameKo }))}
+              searchable allowClear ariaLabel={t("colCategory")}
+            />
+          </FormField>
+          <FormField label={t("colBrand")}>
+            <Combobox
+              value={brandId}
+              onChange={(v) => setBrandId(v || null)}
+              options={brands.map((b) => ({ value: b.id, label: b.name }))}
+              searchable allowClear ariaLabel={t("colBrand")}
+            />
+          </FormField>
+          <FormField label={t("spec")}><Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="9 inch" /></FormField>
+          <FormField label={t("mainUse")}><Input value={mainUse} onChange={(e) => setMainUse(e.target.value)} /></FormField>
+          <FormField label={t("colReplaceCycle")}>
+            <div className="flex gap-2">
+              <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryDays(e.target.value)} />
+              <div className="w-28 shrink-0">
+                <Combobox
+                  value={replaceCycleUnit}
+                  onChange={switchUnit}
+                  options={[{ value: "DAY", label: t("cycleUnitDay") }, { value: "MONTH", label: t("cycleUnitMonth") }]}
+                  searchable={false} allowClear={false} ariaLabel={t("colReplaceCycleUnit")}
+                />
+              </div>
+            </div>
+          </FormField>
+          <FormField label={t("colCleanCycle")}>
+            <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
+          </FormField>
+          <FormField label={t("consumerPrice")}>
+            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} />
+          </FormField>
+          <FormField label={t("purchasePrice")}>
+            <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+          </FormField>
+          <FormField label={t("fixedPrice")}>
+            <Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} />
+          </FormField>
+          <FormField label={t("safetyStock")}>
+            <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
+          </FormField>
+          <FormField label={t("colCleanOnVisit")}>
             <label className="mt-2 inline-flex items-center gap-2">
-              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-              <span className="text-sm">{t("statusActive")}</span>
+              <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
+              <span className="text-sm">{t("yes")}</span>
             </label>
           </FormField>
+          {isEdit && (
+            <FormField label={t("colActive")}>
+              <label className="mt-2 inline-flex items-center gap-2">
+                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                <span className="text-sm">{t("statusActive")}</span>
+              </label>
+            </FormField>
+          )}
+        </div>
+      </div>
+
+      {/* ② 적용 가능한 장비(모델) */}
+      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-[#111111]">{t("appliedModels")}</h2>
+          <Button
+            variant="secondary" size="sm"
+            onClick={() => setApplied([...applied, { uid: `a${appliedRowCounter++}`, modelId: "", quantity: "1" }])}
+          >
+            {t("addModelLink")}
+          </Button>
+        </div>
+        {applied.length === 0 && <p className="text-xs text-[#737373]">—</p>}
+        {applied.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {applied.map((a, idx) => {
+              const rowOptions = modelOptions.filter(
+                (o) => o.value === a.modelId || !applied.some((g) => g !== a && g.modelId === o.value),
+              );
+              return (
+                <div key={a.uid} className="grid grid-cols-[1fr_90px_auto] items-center gap-2">
+                  <Combobox
+                    value={a.modelId || null}
+                    onChange={(v) => setApplied(applied.map((g, i) => (i === idx ? { ...g, modelId: v ?? "" } : g)))}
+                    options={rowOptions} searchable placeholder={t("appliedModels")} ariaLabel={`${t("appliedModels")} ${idx + 1}`}
+                  />
+                  <Input
+                    value={a.quantity} inputMode="numeric" placeholder="1"
+                    onChange={(e) => setApplied(applied.map((g, i) => (i === idx ? { ...g, quantity: e.target.value } : g)))}
+                    aria-label={`${t("colQuantity")} ${idx + 1}`}
+                  />
+                  <Button variant="ghost" size="sm" onClick={() => setApplied(applied.filter((_, i) => i !== idx))}>
+                    {t("cancel")}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
-      <p className="text-xs text-text-secondary">{t("filterModelHint")}</p>
-      {isEdit && row.compatibleModels.length > 0 && (
-        <p className="text-xs text-[#525252]">
-          <span className="font-medium">{t("colCompatibility")}:</span>{" "}
-          {row.compatibleModels
-            .map((m) => {
-              const name = pickModelName(m.model, locale);
-              return m.quantity > 1 ? `${name}×${m.quantity}` : name;
-            })
-            .join(", ")}
-        </p>
+
+      {err && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>}
+
+      {isEdit && row && (
+        <StockAdjustModal
+          open={stockOpen} onClose={() => setStockOpen(false)}
+          itemKind="CONSUMABLE" itemId={row.id}
+          itemLabel={nameKo || nameVi || nameEn || sku}
+          currentStock={stockOnHand} onDone={onStockChanged}
+        />
       )}
-      {err && <div className="text-sm text-red-600">{err}</div>}
-      <div className="flex justify-end">
-        <Button onClick={save} isLoading={busy} disabled={!isEdit && !sku}>{t("save")}</Button>
-      </div>
     </div>
   );
 }

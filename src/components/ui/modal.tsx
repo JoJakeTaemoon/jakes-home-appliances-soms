@@ -44,7 +44,13 @@ export function Modal({
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        // Stop here so a global Esc hotkey (e.g. ActionBar 닫기) doesn't also
+        // fire and reset the form behind this modal. `document` bubbles before
+        // `window`, so this pre-empts window-level keydown listeners.
+        e.stopPropagation();
+        onClose();
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);

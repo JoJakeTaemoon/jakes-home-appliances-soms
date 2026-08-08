@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
@@ -8,16 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
+import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
+import { cn } from "@/lib/cn";
 
 /** One row in the model's filter config (요청 A) — which filter, how many, and
- *  an optional per-model cycle override (empty = use the filter's own cycle).
- *  `uid` is a stable React key so add/remove/reorder don't reuse a sibling's
- *  Combobox internal state. */
+ *  an optional per-model cycle override (empty = use the filter's own cycle). */
 interface ModelFilterRow {
   uid: string;
   consumableId: string;
   quantity: string;
-  cycleOverride: string; // empty → inherit the filter's replaceEveryDays
+  cycleOverride: string;
 }
 
 let rowCounter = 0;
@@ -36,6 +36,10 @@ interface ModelInput {
   category: CategoryValue | null;
   description: string;
   retailPrice: string;
+  salePrice: string;
+  purchasePrice: string;
+  fixedPrice: string;
+  safetyStock: string;
   monthlyRentalPrice: string;
   monthlyMaintenancePrice: string;
   inspectionEveryDays: string;
@@ -44,10 +48,13 @@ interface ModelInput {
 }
 
 interface Props {
-  initial?: Partial<ModelInput> & { id?: string };
+  initial?: Partial<ModelInput> & { id?: string; stockOnHand?: number };
   mode: "create" | "edit";
-  /** When provided, replaces the default `finish()` on save/cancel. */
   onDone?: () => void;
+  /** The page-level ActionBar drives Save via this ref (F5). */
+  submitRef?: RefObject<(() => void) | null>;
+  /** Called after a stock move so the list can refresh the on-hand column. */
+  onStockChanged?: () => void;
 }
 
 interface BrandOpt {
@@ -72,6 +79,10 @@ const EMPTY: ModelInput = {
   category: null,
   description: "",
   retailPrice: "",
+  salePrice: "",
+  purchasePrice: "",
+  fixedPrice: "",
+  safetyStock: "0",
   monthlyRentalPrice: "",
   monthlyMaintenancePrice: "",
   inspectionEveryDays: "",
@@ -79,8 +90,15 @@ const EMPTY: ModelInput = {
   isActive: true,
 };
 
-export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
+export function EquipmentModelForm({
+  initial,
+  mode,
+  onDone,
+  submitRef,
+  onStockChanged,
+}: Readonly<Props>) {
   const t = useTranslations("equipmentModels");
+  const tp = useTranslations("admin.products");
   const tc = useTranslations("common");
   const router = useRouter();
   const api = useApi();
@@ -90,16 +108,17 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
   };
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
   const [filters, setFilters] = useState<ModelFilterRow[]>([]);
-  // Edit mode loads the existing filter config asynchronously. Until it
-  // resolves we must NOT submit `compatibleConsumables` — an empty list would
-  // wipe the model's existing filters. Create mode is ready immediately.
   const [filtersReady, setFiltersReady] = useState(mode !== "edit");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
   const [consumables, setConsumables] = useState<ConsumableOpt[]>([]);
+  const [stockOpen, setStockOpen] = useState(false);
 
-  // Load brands + the filter catalog (for the filter picker).
+  const stockOnHand = initial?.stockOnHand ?? 0;
+  const safetyNum = Number(data.safetyStock || "0");
+  const lowStock = mode === "edit" && stockOnHand < safetyNum;
+
   useEffect(() => {
     void (async () => {
       try {
@@ -116,7 +135,6 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
     })();
   }, [api]);
 
-  // Edit mode: prefill the filter config from the model's ConsumableOnModel rows.
   useEffect(() => {
     if (mode !== "edit" || !initial?.id) return;
     void (async () => {
@@ -138,9 +156,6 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         );
         setFiltersReady(true);
       } catch (e) {
-        // Surface the failure and leave `filtersReady` false so Save stays
-        // disabled — never submit an empty filter list that would silently
-        // wipe the model's existing config.
         setErr(e instanceof Error ? e.message : String(e));
       }
     })();
@@ -164,7 +179,10 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
     setFilters((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   }
 
+  const num = (s: string) => (s ? Number(s) : null);
+
   async function submit() {
+    if (busy || !filtersReady) return;
     setBusy(true);
     setErr(null);
     try {
@@ -183,14 +201,18 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         brandId: data.brandId,
         category: data.category ?? null,
         description: data.description || undefined,
-        retailPrice: data.retailPrice ? Number(data.retailPrice) : null,
-        monthlyRentalPrice: data.monthlyRentalPrice ? Number(data.monthlyRentalPrice) : null,
-        monthlyMaintenancePrice: data.monthlyMaintenancePrice ? Number(data.monthlyMaintenancePrice) : null,
-        inspectionEveryDays: data.inspectionEveryDays ? Number(data.inspectionEveryDays) : null,
-        warrantyMonths: data.warrantyMonths ? Number(data.warrantyMonths) : null,
-        // Omit when the edit-mode prefill hasn't resolved — sending [] here
-        // would wipe the model's existing filters (PATCH replaces wholesale).
+        retailPrice: num(data.retailPrice),
+        salePrice: num(data.salePrice),
+        purchasePrice: num(data.purchasePrice),
+        fixedPrice: num(data.fixedPrice),
+        safetyStock: data.safetyStock ? Number(data.safetyStock) : 0,
+        monthlyRentalPrice: num(data.monthlyRentalPrice),
+        monthlyMaintenancePrice: num(data.monthlyMaintenancePrice),
+        inspectionEveryDays: num(data.inspectionEveryDays),
+        warrantyMonths: num(data.warrantyMonths),
         ...(filtersReady ? { compatibleConsumables } : {}),
+        // On create, opening stock starts at 0 — office receives stock via the
+        // 조정 modal after the model exists.
         isActive: data.isActive,
       };
       if (mode === "create") {
@@ -206,53 +228,51 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
       setBusy(false);
     }
   }
+  // Let the page-level ActionBar (F5 저장) call the latest submit closure.
+  useEffect(() => {
+    if (submitRef) submitRef.current = () => void submit();
+  });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[#002A4D]">
-          {mode === "create" ? t("newModel") : t("title")}
-        </h1>
-        <Button variant="ghost" onClick={() => finish()}>
-          {tc("cancel")}
-        </Button>
-      </header>
-
+    <div className="flex flex-col gap-4">
+      {/* ① 모델 정보 */}
       <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[#e5e5e5] bg-white p-6 sm:grid-cols-2">
-        <FormField label={t("brand")}>
-          <Combobox
-            value={data.brandId ?? ""}
-            onChange={(v) => setField("brandId", v || null)}
-            options={brands.map((b) => ({ value: b.id, label: b.name }))}
-            searchable
-            allowClear
-          />
-        </FormField>
         <FormField label={t("displayNameKo")} required>
           <Input value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="PTS-2100" />
         </FormField>
+        <FormField label={tp("stockOnHand")}>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "flex h-10 flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
+              )}
+            >
+              {mode === "edit" ? stockOnHand.toLocaleString() : "—"}
+              {lowStock && <span className="ml-2 text-xs font-medium">{tp("lowStockBadge")}</span>}
+            </span>
+            {mode === "edit" && initial?.id && (
+              <Button variant="secondary" size="sm" onClick={() => setStockOpen(true)}>
+                {tp("stockManage")}
+              </Button>
+            )}
+          </div>
+        </FormField>
+
         <FormField label={t("displayNameVi")} required>
           <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="PTS-2100" />
         </FormField>
+        <FormField label={tp("consumerPrice")}>
+          <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
+
         <FormField label={t("displayNameEn")} required>
           <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="PTS-2100" />
         </FormField>
-        <FormField label={t("inspectionEveryMonths")}>
-          <Input
-            value={data.inspectionEveryDays}
-            onChange={(e) => setField("inspectionEveryDays", e.target.value)}
-            inputMode="numeric"
-            placeholder="1"
-          />
+        <FormField label={tp("purchasePrice")}>
+          <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
         </FormField>
-        <FormField label={t("warrantyMonths")}>
-          <Input
-            value={data.warrantyMonths}
-            onChange={(e) => setField("warrantyMonths", e.target.value)}
-            inputMode="numeric"
-            placeholder="12"
-          />
-        </FormField>
+
         <FormField label={t("category")}>
           <Combobox
             value={data.category}
@@ -265,51 +285,52 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
             allowClear
           />
         </FormField>
+        <FormField label={tp("fixedPrice")}>
+          <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
+
+        <FormField label={t("brand")}>
+          <Combobox
+            value={data.brandId ?? ""}
+            onChange={(v) => setField("brandId", v || null)}
+            options={brands.map((b) => ({ value: b.id, label: b.name }))}
+            searchable
+            allowClear
+          />
+        </FormField>
+        <FormField label={tp("salePrice")}>
+          <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
+
+        <FormField label={t("description")} className="sm:col-span-2">
+          <Textarea value={data.description} onChange={(e) => setField("description", e.target.value)} rows={2} />
+        </FormField>
+
+        {/* 기능 필드 — 목업엔 없지만 계약·장비 로직이 사용하므로 유지 */}
+        <FormField label={t("inspectionEveryMonths")}>
+          <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="1" />
+        </FormField>
+        <FormField label={tp("safetyStock")}>
+          <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
+        <FormField label={t("warrantyMonths")}>
+          <Input value={data.warrantyMonths} onChange={(e) => setField("warrantyMonths", e.target.value)} inputMode="numeric" placeholder="12" />
+        </FormField>
+        <FormField label={t("monthlyRentalPrice")}>
+          <Input value={data.monthlyRentalPrice} onChange={(e) => setField("monthlyRentalPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
+        <FormField label={t("monthlyMaintenancePrice")}>
+          <Input value={data.monthlyMaintenancePrice} onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+        </FormField>
         <FormField label={t("isActive")}>
           <label className="flex h-10 items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={data.isActive}
-              onChange={(e) => setField("isActive", e.target.checked)}
-            />
+            <input type="checkbox" checked={data.isActive} onChange={(e) => setField("isActive", e.target.checked)} />
             {data.isActive ? tc("yes") : tc("no")}
           </label>
         </FormField>
-        <FormField label={t("description")} className="sm:col-span-2">
-          <Textarea
-            value={data.description}
-            onChange={(e) => setField("description", e.target.value)}
-            rows={3}
-          />
-        </FormField>
-        <FormField label={t("retailPrice")}>
-          <Input
-            value={data.retailPrice}
-            onChange={(e) => setField("retailPrice", e.target.value)}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </FormField>
-        <FormField label={t("monthlyRentalPrice")}>
-          <Input
-            value={data.monthlyRentalPrice}
-            onChange={(e) => setField("monthlyRentalPrice", e.target.value)}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </FormField>
-        <FormField label={t("monthlyMaintenancePrice")}>
-          <Input
-            value={data.monthlyMaintenancePrice}
-            onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)}
-            inputMode="numeric"
-            placeholder="0"
-          />
-        </FormField>
       </div>
 
-      {/* Filter config — pick which filters this model uses (요청 A). Selecting a
-          filter auto-fills its cycle; the cycle can be overridden per model. */}
+      {/* ② 필터 구성 */}
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[#111111]">{t("filterConfig")}</h2>
@@ -317,39 +338,29 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
             variant="secondary"
             size="sm"
             disabled={!filtersReady}
-            onClick={() =>
-              setFilters([...filters, { uid: newRowUid(), consumableId: "", quantity: "1", cycleOverride: "" }])
-            }
+            onClick={() => setFilters([...filters, { uid: newRowUid(), consumableId: "", quantity: "1", cycleOverride: "" }])}
           >
             {t("addFilter")}
           </Button>
         </div>
-        {!filtersReady && !err && (
-          <p className="text-xs text-[#737373]">{tc("loading")}</p>
-        )}
-        {(filtersReady || err) && filters.length === 0 && (
-          <p className="text-xs text-[#737373]">—</p>
-        )}
+        {!filtersReady && !err && <p className="text-xs text-[#737373]">{tc("loading")}</p>}
+        {(filtersReady || err) && filters.length === 0 && <p className="text-xs text-[#737373]">—</p>}
         {(filtersReady || err) && filters.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[24px_1fr_110px_90px_auto] items-center gap-2 text-[10px] uppercase tracking-wider text-[#a3a3a3]">
+            <div className="grid grid-cols-[24px_1fr_130px_auto] items-center gap-2 text-[10px] uppercase tracking-wider text-[#a3a3a3]">
               <span>#</span>
               <span>{t("filterConfigCol.filter")}</span>
               <span>{t("filterConfigCol.cycleDays")}</span>
-              <span>{t("filterConfigCol.quantity")}</span>
               <span />
             </div>
             {filters.map((f, idx) => {
               const picked = f.consumableId ? consumableById.get(f.consumableId) : null;
               const defaultCycle = picked?.replaceEveryDays ?? null;
-              // Hide filters already chosen in other rows so the same filter
-              // can't be added twice (the server rejects dupes, but with a
-              // generic error — exclude them up front instead).
               const rowOptions = consumableOptions.filter(
                 (o) => o.value === f.consumableId || !filters.some((g) => g !== f && g.consumableId === o.value),
               );
               return (
-                <div key={f.uid} className="grid grid-cols-[24px_1fr_110px_90px_auto] items-center gap-2">
+                <div key={f.uid} className="grid grid-cols-[24px_1fr_130px_auto] items-center gap-2">
                   <span className="text-xs text-[#737373]">{idx + 1}</span>
                   <Combobox
                     value={f.consumableId || null}
@@ -366,18 +377,7 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
                     placeholder={defaultCycle != null ? String(defaultCycle) : "—"}
                     aria-label={`${t("filterConfigCol.cycleDays")} ${idx + 1}`}
                   />
-                  <Input
-                    value={f.quantity}
-                    onChange={(e) => updateFilter(idx, { quantity: e.target.value })}
-                    inputMode="numeric"
-                    placeholder="1"
-                    aria-label={`${t("filterConfigCol.quantity")} ${idx + 1}`}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFilters(filters.filter((_, i) => i !== idx))}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setFilters(filters.filter((_, i) => i !== idx))}>
                     {tc("remove")}
                   </Button>
                 </div>
@@ -388,22 +388,19 @@ export function EquipmentModelForm({ initial, mode, onDone }: Readonly<Props>) {
         )}
       </div>
 
-      {err && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>
-      )}
+      {err && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>}
 
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={() => finish()} disabled={busy}>
-          {tc("cancel")}
-        </Button>
-        <Button
-          onClick={submit}
-          isLoading={busy}
-          disabled={(!data.nameKo && !data.nameVi && !data.nameEn) || !filtersReady}
-        >
-          {tc("save")}
-        </Button>
-      </div>
+      {mode === "edit" && initial?.id && (
+        <StockAdjustModal
+          open={stockOpen}
+          onClose={() => setStockOpen(false)}
+          itemKind="MODEL"
+          itemId={initial.id}
+          itemLabel={data.nameKo || data.nameVi || data.nameEn || ""}
+          currentStock={stockOnHand}
+          onDone={() => onStockChanged?.()}
+        />
+      )}
     </div>
   );
 }
