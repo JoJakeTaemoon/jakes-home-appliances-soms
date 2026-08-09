@@ -44,7 +44,7 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
         onClick={() => setSidebarOpen(false)}
       />
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 lg:hidden transition-transform duration-200 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 w-[12.8rem] lg:hidden transition-transform duration-200 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <Sidebar />
       </div>

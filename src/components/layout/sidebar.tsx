@@ -187,7 +187,7 @@ export function Sidebar() {
   const unreadCount = unreadQuery.data?.count ?? 0;
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-[#e5e5e5] bg-white">
+    <aside className="flex h-full w-[12.8rem] flex-col border-r border-[#e5e5e5] bg-white">
       <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-[var(--brand-blue-500)] px-4">
         <div className="flex size-9 items-center justify-center overflow-hidden rounded-md bg-white">
           <Image
