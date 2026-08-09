@@ -1092,16 +1092,16 @@ function ModelsTab({
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
               <tr>
-                <th className="w-8 px-2 py-2" />
-                <th className="px-2 py-2 text-left">#</th>
-                <th className="px-2 py-2 text-left">{t("colName")}</th>
-                <th className="px-2 py-2 text-left">{t("colCategory")}</th>
-                <th className="px-2 py-2 text-left">{t("colBrand")}</th>
-                <th className="px-2 py-2 text-right">{t("stockOnHand")}</th>
-                <th className="px-2 py-2 text-right">{t("consumerPrice")}</th>
-                <th className="px-2 py-2 text-right">{t("fixedPrice")}</th>
-                <th className="px-2 py-2 text-right">{t("purchasePrice")}</th>
-                <th className="w-8 px-2 py-2" />
+                <th className="w-8 px-2 py-1.5" />
+                <th className="px-2 py-1.5 text-left">#</th>
+                <th className="px-2 py-1.5 text-left">{t("colName")}</th>
+                <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+                <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
+                <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
+                <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
+                <th className="px-2 py-1.5 text-right">{t("fixedPrice")}</th>
+                <th className="px-2 py-1.5 text-right">{t("purchasePrice")}</th>
+                <th className="w-8 px-2 py-1.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0f0f0]">
@@ -1126,20 +1126,20 @@ function ModelsTab({
                         !r.isActive && "opacity-50",
                       )}
                     >
-                      <td className="px-2 py-2 text-center">
+                      <td className="px-2 py-1.5 text-center">
                         <input type="checkbox" checked={isSel} readOnly tabIndex={-1} aria-label={pickModelName(r, locale)} />
                       </td>
-                      <td className="px-2 py-2 text-[#737373]">{i + 1}</td>
-                      <td className="px-2 py-2 font-medium text-[#111]">{pickModelName(r, locale)}</td>
-                      <td className="px-2 py-2 text-[#586a7c]">{r.category ?? "—"}</td>
-                      <td className="px-2 py-2 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
-                      <td className={cn("px-2 py-2 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                      <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
+                      <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{r.category ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                      <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                         {(r.stockOnHand ?? 0).toLocaleString()}
                       </td>
-                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
-                      <td className="px-2 py-2 text-right">
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
+                      <td className="px-2 py-1.5 text-right">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setDeleting(r); }}
@@ -1383,15 +1383,15 @@ function ConsumablesTab({
           <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
               <tr>
-                <th className="px-2 py-2 text-left">#</th>
-                <th className="px-2 py-2 text-left">{t("colName")}</th>
-                <th className="px-2 py-2 text-left">{t("colCategory")}</th>
-                <th className="px-2 py-2 text-left">{t("colBrand")}</th>
-                <th className="px-2 py-2 text-left">{t("spec")}</th>
-                <th className="px-2 py-2 text-right">{t("colReplaceCycle")}</th>
-                <th className="px-2 py-2 text-right">{t("stockOnHand")}</th>
-                <th className="px-2 py-2 text-right">{t("consumerPrice")}</th>
-                <th className="w-8 px-2 py-2" />
+                <th className="px-2 py-1.5 text-left">#</th>
+                <th className="px-2 py-1.5 text-left">{t("colName")}</th>
+                <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+                <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
+                <th className="px-2 py-1.5 text-left">{t("spec")}</th>
+                <th className="px-2 py-1.5 text-right">{t("colReplaceCycle")}</th>
+                <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
+                <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
+                <th className="w-8 px-2 py-1.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#f0f0f0]">
@@ -1417,20 +1417,20 @@ function ConsumablesTab({
                         !r.isActive && "opacity-50",
                       )}
                     >
-                      <td className="px-2 py-2 text-[#737373]">{i + 1}</td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
+                      <td className="px-2 py-1.5">
                         <span className="font-mono text-xs text-[#737373]">{r.sku}</span>
                         <span className="ml-1 font-medium text-[#111]">{pickLocaleName(r, locale)}</span>
                       </td>
-                      <td className="px-2 py-2 text-[#586a7c]">{catName}</td>
-                      <td className="px-2 py-2 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
-                      <td className="px-2 py-2 text-[#586a7c]">{r.spec ?? "—"}</td>
-                      <td className="px-2 py-2 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
-                      <td className={cn("px-2 py-2 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{catName}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{r.spec ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
+                      <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                         {(r.stockOnHand ?? 0).toLocaleString()}
                       </td>
-                      <td className="px-2 py-2 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
-                      <td className="px-2 py-2 text-right">
+                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                      <td className="px-2 py-1.5 text-right">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setDeleting(r); }}
@@ -1619,7 +1619,7 @@ function ConsumableForm({
   return (
     <div className="flex flex-col gap-4">
       {/* ① 필터 정보 */}
-      <div className="flex flex-col gap-6 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <div className="flex flex-col gap-5 rounded-2xl border border-[#e5e5e5] bg-white p-4">
         <h2 className="text-sm font-semibold text-[#002A4D]">{isEdit ? t("editConsumable") : t("addConsumable")}</h2>
 
         {/* 기본정보 */}
@@ -1650,7 +1650,7 @@ function ConsumableForm({
           <FormField label={t("mainUse")}><Input value={mainUse} onChange={(e) => setMainUse(e.target.value)} /></FormField>
           {isEdit && (
             <FormField label={t("colActive")}>
-              <label className="flex h-10 items-center gap-2 text-sm">
+              <label className="flex h-9 items-center gap-2 text-sm">
                 <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
                 <span>{t("statusActive")}</span>
               </label>
@@ -1676,7 +1676,7 @@ function ConsumableForm({
           <FormField label={t("stockOnHand")} className="sm:col-span-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className={cn(
-                "flex h-10 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                "flex h-9 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
                 lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
               )}>
                 {isEdit ? stockOnHand.toLocaleString() : "—"}
@@ -1707,7 +1707,7 @@ function ConsumableForm({
             <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
           </FormField>
           <FormField label={t("colCleanOnVisit")}>
-            <label className="flex h-10 items-center gap-2 text-sm">
+            <label className="flex h-9 items-center gap-2 text-sm">
               <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
               <span>{t("yes")}</span>
             </label>
@@ -1716,7 +1716,7 @@ function ConsumableForm({
       </div>
 
       {/* ② 적용 가능한 장비(모델) */}
-      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[#111111]">{t("appliedModels")}</h2>
           <Button

@@ -51,7 +51,7 @@ export function DashboardShell({ children }: Readonly<{ children: ReactNode }>) 
 
       <div className="flex flex-1 flex-col min-w-0">
         <Topbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-8 bg-white">
+        <main className="flex-1 p-4 sm:p-6 bg-white">
           <OfficeBreadcrumb />
           {children}
         </main>

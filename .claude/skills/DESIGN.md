@@ -163,8 +163,8 @@ Same shape as Primary but `bg-status-error-accent` (`#dc2626`) and slightly more
 
 ### Inputs and forms
 
-- Default: `bg-white border border-border rounded px-3 h-10 text-sm text-text-primary outline-none placeholder:text-text-placeholder hover:border-border-strong focus:border-brand-blue-500 focus:ring-2 focus:ring-brand-blue-200`
-- Mobile: bump to `h-11`
+- Default (office, compact): `bg-white border border-border rounded px-3 h-9 text-sm text-text-primary outline-none placeholder:text-text-placeholder hover:border-border-strong focus:border-brand-blue-500 focus:ring-2 focus:ring-brand-blue-200`
+- Mobile / technician: bump to `h-11` (44 px touch target)
 - Number inputs: **always** use `<NumberInput>` from `src/components/ui/number-input.tsx` — never raw `<input type="number">` (cleared-input bug)
 - Custom dropdowns: full `<button>` trigger styled like input, panel `rounded-lg shadow-md`. No native `<select>` per UI Rule. Searchable when options > 5.
 - Labels: above field, `text-xs font-medium text-text-secondary mb-1.5`
@@ -191,7 +191,7 @@ Pill, brand-blue or status family.
 
 ### Tables
 
-Desktop: standard `<table>` with `bg-surface-sunken` thead, `border-border` row dividers, `hover:bg-surface-hover` on rows.
+Desktop (office): dense `<table>` — `bg-surface-sunken` thead, `px-2 py-1.5` cells, `text-sm`/`text-xs`, `tabular-nums` on number columns, `border-border` hairline row dividers (no zebra), `hover:bg-surface-hover` on rows. Wide multi-column tables scroll inside an `overflow-x-auto` container (`min-w-[640px]`) rather than dropping columns.
 
 Mobile (`< md`): **card stack pattern** — `<table className="hidden md:table">` + `<ul className="md:hidden divide-y divide-border">`. Carry forward the PMIS pattern. Carry forward the touch-target rule (44 px CTA inside each card).
 
@@ -208,9 +208,36 @@ Mobile (`< md`): **card stack pattern** — `<table className="hidden md:table">
 
 ## 5. Layout Principles
 
+### Information density (desktop-first office screens)
+
+The office app is a **data-dense desktop ERP**, benchmarked against the client's
+registration/management mockups (제품·소모품 등록, 고객별 장비관리). The goal on
+office screens is **maximum useful information per viewport** — a manager should
+see a full model list, the edit form, and the function bar without scrolling.
+Prefer tight, scannable layouts over airy ones:
+
+- **Compact by default.** Root font is scaled to **90 %** (`html { font-size: 90% }`),
+  so rem-based type and spacing are ~10 % tighter everywhere. Effective body ≈ 14 px.
+- **Inputs** are `h-9` (not `h-10`) on office screens; controls sit close together.
+- **Form cards** use `p-4` (not `p-6`); field grids use `gap-3`; grouped sections
+  `gap-5`. Group related fields under a small `FieldGroup` heading instead of one
+  airy uniform grid.
+- **Tables** are the densest surface: `px-2 py-1.5` cells, `text-sm`/`text-xs`,
+  `tabular-nums`, hairline row dividers, no zebra. Show every column the mockup
+  shows; let a wide table scroll inside its own `overflow-x-auto` container
+  (`min-w-[640px]`) rather than dropping columns.
+- **Master-detail** (left list / right form-or-detail) is the default shape for
+  registration and management screens — it packs a picker and an editor on one
+  screen, matching the mockups.
+- **Content padding**: `p-4` on `< sm`, `p-5`/`p-6` on larger (not `p-8`).
+- Mobile/technician screens keep the larger touch targets (§4) — density applies
+  to the desktop office app, not the field PWA.
+
 ### Spacing scale
 
-Base 4 px. Common values: 4, 8, 12, 16, 20, 24, 32, 40, 48 (Tailwind 1, 2, 3, 4, 5, 6, 8, 10, 12). Major sections `space-y-8`; within cards `space-y-3` or `space-y-4`.
+Base 4 px. Common values: 4, 8, 12, 16, 20, 24, 32 (Tailwind 1, 2, 3, 4, 5, 6, 8).
+Office sections `space-y-4`/`space-y-6`; within cards `gap-3`/`gap-4`. Reserve the
+larger steps (32 px+) for page-level separation, not between every card.
 
 ### Grid
 

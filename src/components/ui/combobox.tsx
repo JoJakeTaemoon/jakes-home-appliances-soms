@@ -175,7 +175,7 @@ export function Combobox({
         aria-expanded={open}
         onClick={() => !disabled && setOpen((o) => !o)}
         className={cn(
-          "flex h-10 w-full items-center justify-between rounded-lg border border-[#e5e5e5] bg-white px-3 text-left text-sm",
+          "flex h-9 w-full items-center justify-between rounded-lg border border-[#e5e5e5] bg-white px-3 text-left text-sm",
           "focus:border-[var(--brand-blue-500)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-blue-200)]",
           disabled && "cursor-not-allowed bg-[#fafafa] text-[#737373]",
         )}

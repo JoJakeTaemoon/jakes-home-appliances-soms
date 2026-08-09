@@ -2372,7 +2372,11 @@
       "groupBasic": "Basic info",
       "groupPricing": "Pricing",
       "groupStockCycle": "Stock & cycle",
-      "legendHelpToggle": "Screen area guide"
+      "legendHelpToggle": "Screen area guide",
+      "retailPriceHelp": "Suggested retail price shown to the end consumer.",
+      "salePriceHelp": "Actual selling (transaction) price; may differ from retail after negotiation/discount.",
+      "purchasePriceHelp": "Inbound/cost unit price at receiving; used for stock value & margin.",
+      "fixedPriceHelp": "Fixed supply price set for dealers/agencies."
     },
     "notificationTemplates": {
       "title": "Notification templates",

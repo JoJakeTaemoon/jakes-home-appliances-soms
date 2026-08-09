@@ -172,7 +172,7 @@ export function NumberInput({
         // Baseline — matches `<Input>` (see components/ui/input.tsx) so
         // the field reads as editable even without a caller-provided
         // className. Hover/focus accents flag "you can type here".
-        "h-10 w-full rounded-lg border-2 bg-white px-3 text-sm text-[#111111] outline-none",
+        "h-9 w-full rounded-lg border-2 bg-white px-3 text-sm text-[#111111] outline-none",
         "hover:border-[var(--brand-blue-300)]",
         "focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]",
         "disabled:cursor-not-allowed disabled:bg-[#fafafa] disabled:text-[#737373]",

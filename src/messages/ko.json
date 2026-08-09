@@ -2395,7 +2395,11 @@
       "groupBasic": "기본정보",
       "groupPricing": "가격",
       "groupStockCycle": "재고·주기",
-      "legendHelpToggle": "화면 영역 안내"
+      "legendHelpToggle": "화면 영역 안내",
+      "retailPriceHelp": "최종 소비자에게 안내하는 권장 소매가입니다.",
+      "salePriceHelp": "실제 판매(거래) 가격입니다. 협상·할인으로 소비자가와 달라질 수 있습니다.",
+      "purchasePriceHelp": "매입·입고 시 단가(원가)입니다. 재고 가치·마진 계산에 사용됩니다.",
+      "fixedPriceHelp": "대리점·판매점에 지정하는 공급가입니다."
     },
     "users": {
       "title": "사용자 관리",

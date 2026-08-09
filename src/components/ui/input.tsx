@@ -75,7 +75,7 @@ export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTML
         placeholder={placeholder}
         aria-label={ariaLabel}
         className={cn(
-          "h-10 w-full rounded-lg border border-[#e5e5e5] bg-white px-3 text-sm text-[#111111] outline-none",
+          "h-9 w-full rounded-lg border border-[#e5e5e5] bg-white px-3 text-sm text-[#111111] outline-none",
           "placeholder:text-[#a3a3a3]",
           "focus:border-[var(--brand-blue-500)] focus:ring-2 focus:ring-[var(--brand-blue-200)]",
           "disabled:cursor-not-allowed disabled:bg-[#fafafa] disabled:text-[#737373]",

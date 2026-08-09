@@ -182,14 +182,14 @@ export function EquipmentMasterDetail({
               <table className="w-full text-sm">
                 <thead className="bg-[#fafafa] text-[#525252]">
                   <tr>
-                    <th className="px-2 py-2 text-left text-xs uppercase">#</th>
-                    <th className="px-2 py-2 text-left text-xs uppercase">{t("model")}</th>
-                    <th className="px-2 py-2 text-left text-xs uppercase">{t("serial")}</th>
+                    <th className="px-2 py-1.5 text-left text-xs uppercase">#</th>
+                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("model")}</th>
+                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("serial")}</th>
                     {isB2B && (
-                      <th className="px-2 py-2 text-left text-xs uppercase">{t("site")}</th>
+                      <th className="px-2 py-1.5 text-left text-xs uppercase">{t("site")}</th>
                     )}
-                    <th className="px-2 py-2 text-left text-xs uppercase">{t("installDate")}</th>
-                    <th className="px-2 py-2 text-left text-xs uppercase">{t("status")}</th>
+                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("installDate")}</th>
+                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("status")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,14 +215,14 @@ export function EquipmentMasterDetail({
                             : "hover:bg-[#fafafa] focus:bg-[#f0f7ff]"
                         }`}
                       >
-                        <td className="px-2 py-2 text-xs text-[#737373]">{i + 1}</td>
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-1.5 text-xs text-[#737373]">{i + 1}</td>
+                        <td className="px-2 py-1.5">
                           <span className="font-medium">{pickModelName(e.model, locale)}</span>
                         </td>
-                        <td className="px-2 py-2 font-mono text-xs">{e.serialNumber ?? "—"}</td>
-                        {isB2B && <td className="px-2 py-2">{e.site?.name ?? "—"}</td>}
-                        <td className="px-2 py-2 text-xs">{formatDate(e.installedAt, locale)}</td>
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-1.5 font-mono text-xs">{e.serialNumber ?? "—"}</td>
+                        {isB2B && <td className="px-2 py-1.5">{e.site?.name ?? "—"}</td>}
+                        <td className="px-2 py-1.5 text-xs">{formatDate(e.installedAt, locale)}</td>
+                        <td className="px-2 py-1.5">
                           <StatusBadge tone={equipmentStatusTone(e.status)}>{e.status}</StatusBadge>
                         </td>
                       </tr>

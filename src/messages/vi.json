@@ -2372,7 +2372,11 @@
       "groupBasic": "Thông tin cơ bản",
       "groupPricing": "Giá",
       "groupStockCycle": "Tồn kho · Chu kỳ",
-      "legendHelpToggle": "Giải thích vùng màn hình"
+      "legendHelpToggle": "Giải thích vùng màn hình",
+      "retailPriceHelp": "Giá bán lẻ đề xuất cho người tiêu dùng cuối.",
+      "salePriceHelp": "Giá bán (giao dịch) thực tế; có thể khác giá bán lẻ khi thương lượng/giảm giá.",
+      "purchasePriceHelp": "Đơn giá nhập/vốn khi nhập kho; dùng để tính giá trị tồn kho & biên lợi nhuận.",
+      "fixedPriceHelp": "Giá cung cấp ấn định cho đại lý/điểm bán."
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

@@ -9,6 +9,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { FieldGroup } from "@/components/ui/field-group";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { cn } from "@/lib/cn";
 
@@ -182,6 +183,14 @@ export function EquipmentModelForm({
 
   const num = (s: string) => (s ? Number(s) : null);
 
+  // Field label + a "?" help tooltip explaining the pricing field.
+  const priceLabel = (label: string, help: string) => (
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <HelpTooltip text={help} />
+    </span>
+  );
+
   async function submit() {
     if (busy || !filtersReady) return;
     setBusy(true);
@@ -237,7 +246,7 @@ export function EquipmentModelForm({
   return (
     <div className="flex flex-col gap-4">
       {/* ① 모델 정보 — 기본정보 / 가격 / 재고·주기로 그룹화(밀도 완화) */}
-      <div className="flex flex-col gap-6 rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <div className="flex flex-col gap-5 rounded-2xl border border-[#e5e5e5] bg-white p-4">
         {/* 기본정보 */}
         <FieldGroup title={tp("groupBasic")}>
           <FormField label={t("displayNameKo")} required>
@@ -271,7 +280,7 @@ export function EquipmentModelForm({
             />
           </FormField>
           <FormField label={t("isActive")}>
-            <label className="flex h-10 items-center gap-2 text-sm">
+            <label className="flex h-9 items-center gap-2 text-sm">
               <input type="checkbox" checked={data.isActive} onChange={(e) => setField("isActive", e.target.checked)} />
               {data.isActive ? tc("yes") : tc("no")}
             </label>
@@ -283,16 +292,16 @@ export function EquipmentModelForm({
 
         {/* 가격 */}
         <FieldGroup title={tp("groupPricing")}>
-          <FormField label={tp("consumerPrice")}>
+          <FormField label={priceLabel(tp("consumerPrice"), tp("retailPriceHelp"))}>
             <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
           </FormField>
-          <FormField label={tp("salePrice")}>
+          <FormField label={priceLabel(tp("salePrice"), tp("salePriceHelp"))}>
             <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
           </FormField>
-          <FormField label={tp("purchasePrice")}>
+          <FormField label={priceLabel(tp("purchasePrice"), tp("purchasePriceHelp"))}>
             <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
           </FormField>
-          <FormField label={tp("fixedPrice")}>
+          <FormField label={priceLabel(tp("fixedPrice"), tp("fixedPriceHelp"))}>
             <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
           </FormField>
           <FormField label={t("monthlyRentalPrice")}>
@@ -309,7 +318,7 @@ export function EquipmentModelForm({
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={cn(
-                  "flex h-10 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
+                  "flex h-9 min-w-[8rem] flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
                   lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
                 )}
               >
@@ -336,7 +345,7 @@ export function EquipmentModelForm({
       </div>
 
       {/* ② 필터 구성 */}
-      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[#111111]">{t("filterConfig")}</h2>
           <Button

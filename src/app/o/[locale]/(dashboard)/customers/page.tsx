@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/status-badge";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Avatar } from "@/components/ui/avatar";
-import { SidebarFilter } from "@/components/ui/sidebar-filter";
 
 interface SalesRepLite {
   id: string;
@@ -101,13 +100,6 @@ export default function CustomersPage() {
   const [contractState, setContractState] = useState<
     "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null
   >(null);
-  // Pending filter state for the sidebar (only applied on [적용하기]).
-  const [pendingRegion, setPendingRegion] = useState<string | null>(null);
-  const [pendingSalesRepId, setPendingSalesRepId] = useState<string | null>(null);
-  const [pendingContractState, setPendingContractState] = useState<
-    "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null
-  >(null);
-  const [pendingType, setPendingType] = useState<"B2C" | "B2B" | null>(null);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "code",
@@ -123,19 +115,18 @@ export default function CustomersPage() {
     setPage(1);
   };
 
-  const applyFilters = () => {
-    setType(pendingType);
-    setRegion(pendingRegion);
-    setSalesRepId(pendingSalesRepId);
-    setContractState(pendingContractState);
-    setPage(1);
-  };
+  // Quick filters apply immediately (no [적용] step); each change resets to page 1.
+  const onType = (v: "B2C" | "B2B" | null) => { setType(v); setPage(1); };
+  const onContractState = (
+    v: "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null,
+  ) => { setContractState(v); setPage(1); };
+  const onRegion = (v: string | null) => { setRegion(v); setPage(1); };
+  const onSalesRep = (v: string | null) => { setSalesRepId(v); setPage(1); };
+  const hasFilters = !!(q || type || status || region || salesRepId || contractState);
   const resetFilters = () => {
-    setPendingType(null);
-    setPendingRegion(null);
-    setPendingSalesRepId(null);
-    setPendingContractState(null);
+    setQ("");
     setType(null);
+    setStatus(null);
     setRegion(null);
     setSalesRepId(null);
     setContractState(null);
@@ -362,43 +353,44 @@ export default function CustomersPage() {
         </div>
       </header>
 
-      {/* KPI strip — bigger cards on wide screens so they breathe */}
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label={t("stats.totalCustomers")} value={stats?.totalCustomers ?? "—"} />
-        <KpiCard
-          label={t("stats.activeCustomers")}
-          value={stats?.activeCustomers ?? "—"}
-          hint={t("stats.activeHint")}
-        />
-        <KpiCard label={t("stats.b2bCount")} value={stats?.b2bCount ?? "—"} />
-        <KpiCard label={t("stats.b2cCount")} value={stats?.b2cCount ?? "—"} />
-        <KpiCard
-          label={t("stats.totalEquipment")}
-          value={stats?.totalEquipment ?? "—"}
-          hint={tc("unitCount")}
-        />
-        <KpiCard
-          label={t("stats.totalContracts")}
-          value={stats?.totalContracts ?? "—"}
-          hint={tc("count")}
-        />
+      {/* KPI strip — compact (dense) so it takes ~half the height */}
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        <KpiCard dense label={t("stats.totalCustomers")} value={stats?.totalCustomers ?? "—"} />
+        <KpiCard dense label={t("stats.activeCustomers")} value={stats?.activeCustomers ?? "—"} />
+        <KpiCard dense label={t("stats.b2bCount")} value={stats?.b2bCount ?? "—"} />
+        <KpiCard dense label={t("stats.b2cCount")} value={stats?.b2cCount ?? "—"} />
+        <KpiCard dense label={t("stats.totalEquipment")} value={stats?.totalEquipment ?? "—"} />
+        <KpiCard dense label={t("stats.totalContracts")} value={stats?.totalContracts ?? "—"} />
       </section>
 
-      {/* Body: sidebar + table */}
-      <div className="flex flex-col gap-4 md:flex-row">
-        <SidebarFilter
-          title={t("quickFilters")}
-          applyLabel={t("apply")}
-          resetLabel={t("reset")}
-          onApply={applyFilters}
-          onReset={resetFilters}
-        >
+      {/* Quick filters — horizontal bar above the table (scrolls with the page,
+          not sticky). Each filter applies immediately; the table gets full width. */}
+      <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-[#e5e5e5] bg-white p-3">
+        <div className="min-w-[200px] flex-1">
+          <FilterGroup label={t("searchPlaceholder")}>
+            <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={t("searchPlaceholder")} />
+          </FilterGroup>
+        </div>
+        <div className="w-36">
+          <FilterGroup label={t("filterStatus")}>
+            <Combobox
+              value={status}
+              onChange={(v) => onStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)}
+              options={[
+                { value: "ACTIVE", label: "ACTIVE" },
+                { value: "INACTIVE", label: "INACTIVE" },
+                { value: "PROSPECT", label: "PROSPECT" },
+              ]}
+              placeholder={t("all")}
+              searchable={false}
+            />
+          </FilterGroup>
+        </div>
+        <div className="w-40">
           <FilterGroup label={t("contractStatus")}>
             <Combobox
-              value={pendingContractState}
-              onChange={(v) =>
-                setPendingContractState(v as typeof pendingContractState)
-              }
+              value={contractState}
+              onChange={(v) => onContractState(v as typeof contractState)}
               options={[
                 { value: "ACTIVE", label: t("contractState.ACTIVE") },
                 { value: "EXPIRING", label: t("contractState.EXPIRING") },
@@ -409,10 +401,12 @@ export default function CustomersPage() {
               searchable={false}
             />
           </FilterGroup>
+        </div>
+        <div className="w-28">
           <FilterGroup label={t("type")}>
             <Combobox
-              value={pendingType}
-              onChange={(v) => setPendingType(v as "B2C" | "B2B" | null)}
+              value={type}
+              onChange={(v) => onType(v as "B2C" | "B2B" | null)}
               options={[
                 { value: "B2C", label: "B2C" },
                 { value: "B2B", label: "B2B" },
@@ -421,71 +415,41 @@ export default function CustomersPage() {
               searchable={false}
             />
           </FilterGroup>
+        </div>
+        <div className="w-40">
           <FilterGroup label={t("preferredRegion")}>
-            <Input
-              value={pendingRegion ?? ""}
-              onChange={(e) => setPendingRegion(e.target.value || null)}
-              placeholder={t("regionPlaceholder")}
-            />
+            <Input value={region ?? ""} onChange={(e) => onRegion(e.target.value || null)} placeholder={t("regionPlaceholder")} />
           </FilterGroup>
+        </div>
+        <div className="w-44">
           <FilterGroup label={t("salesRep")}>
             <Combobox
-              value={pendingSalesRepId}
-              onChange={(v) => setPendingSalesRepId(v as string | null)}
+              value={salesRepId}
+              onChange={(v) => onSalesRep(v as string | null)}
               options={reps.map((r) => ({ value: r.id, label: r.username }))}
               placeholder={t("all")}
               searchable
             />
           </FilterGroup>
-        </SidebarFilter>
-
-        <div className="min-w-0 flex-1">
-          <DataTable<CustomerRowWithIndex>
-            columns={columns}
-            rows={rows}
-            rowKey={(r) => r.id}
-            isLoading={loading}
-            sort={sort}
-            onSortChange={setSort}
-            emptyText={debouncedQ || type || status ? t("noResults") : t("noCustomers")}
-            onRowClick={(r) => router.push(`/o/customers/${r.id}`)}
-            toolbar={
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="flex-1">
-                  <Input
-                    value={q}
-                    onChange={(e) => onQ(e.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                  />
-                </div>
-                <div className="w-full sm:w-44">
-                  <Combobox
-                    value={status}
-                    onChange={(v) =>
-                      onStatus(v as "ACTIVE" | "INACTIVE" | "PROSPECT" | null)
-                    }
-                    options={[
-                      { value: "ACTIVE", label: "ACTIVE" },
-                      { value: "INACTIVE", label: "INACTIVE" },
-                      { value: "PROSPECT", label: "PROSPECT" },
-                    ]}
-                    placeholder={t("filterStatus")}
-                    searchable={false}
-                  />
-                </div>
-              </div>
-            }
-            footer={
-              <Pagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={total}
-                onPageChange={setPage}
-              />
-            }
-          />
         </div>
+        {hasFilters && (
+          <Button variant="ghost" onClick={resetFilters}>{t("reset")}</Button>
+        )}
       </div>
+
+      <DataTable<CustomerRowWithIndex>
+        columns={columns}
+        rows={rows}
+        rowKey={(r) => r.id}
+        isLoading={loading}
+        sort={sort}
+        onSortChange={setSort}
+        emptyText={hasFilters ? t("noResults") : t("noCustomers")}
+        onRowClick={(r) => router.push(`/o/customers/${r.id}`)}
+        footer={
+          <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} />
+        }
+      />
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
