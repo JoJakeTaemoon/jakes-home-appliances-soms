@@ -25,6 +25,7 @@
         "db:reset:dev": "dotenv -e .env.dev -o -- npx prisma migrate deploy && npx prisma generate && dotenv -e .env.dev -o -- npx tsx prisma/reset.ts && dotenv -e .env.dev -o -- npx prisma db seed",
         "vercel:deploy": "bash scripts/vercel-deploy.sh",
         "manuals:pdf": "npx tsx scripts/manuals/build-pdf.ts",
+        "changelog:pdf": "npx tsx scripts/changelog-pdf.ts",
         "manuals:screenshots": "npx tsx scripts/manuals/capture-screenshots.ts",
         "manuals:all": "npm run manuals:screenshots && npm run manuals:pdf"
     },
