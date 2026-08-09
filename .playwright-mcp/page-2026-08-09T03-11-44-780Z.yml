@@ -1,0 +1,208 @@
+- generic [active] [ref=f38e1]:
+  - generic [ref=f38e2]:
+    - complementary [ref=f38e4]:
+      - generic [ref=f38e5]:
+        - img "Seoul Aqua" [ref=f38e7]
+        - generic [ref=f38e8]: Seoul Aqua SOMS
+      - navigation [ref=f38e9]:
+        - paragraph [ref=f38e10]: 메인
+        - list [ref=f38e11]:
+          - listitem [ref=f38e12]:
+            - link "대시보드" [ref=f38e13] [cursor=pointer]:
+              - /url: /o/ko/dashboard
+          - listitem [ref=f38e20]:
+            - link "고객" [ref=f38e21] [cursor=pointer]:
+              - /url: /o/ko/customers
+          - listitem [ref=f38e28]:
+            - link "장비" [ref=f38e29] [cursor=pointer]:
+              - /url: /o/ko/equipment
+            - list [ref=f38e34]:
+              - listitem [ref=f38e35]:
+                - link "대량 장비 등록 / 설치" [ref=f38e36] [cursor=pointer]:
+                  - /url: /o/ko/equipment/bulk-register
+              - listitem [ref=f38e39]:
+                - link "설치 이력" [ref=f38e40] [cursor=pointer]:
+                  - /url: /o/ko/equipment/installation-history
+          - listitem [ref=f38e43]:
+            - link "계약" [ref=f38e44] [cursor=pointer]:
+              - /url: /o/ko/contracts
+          - listitem [ref=f38e49]:
+            - link "서비스 요청 확인하지 않은 고객 메시지" [ref=f38e50] [cursor=pointer]:
+              - /url: /o/ko/service-requests
+              - generic [ref=f38e54]: 서비스 요청
+              - generic "확인하지 않은 고객 메시지" [ref=f38e55]: "2"
+          - listitem [ref=f38e59]:
+            - link "방문" [ref=f38e60] [cursor=pointer]:
+              - /url: /o/ko/visits
+          - listitem [ref=f38e65]:
+            - link "오늘의 배정" [ref=f38e66] [cursor=pointer]:
+              - /url: /o/ko/schedule-board
+          - listitem [ref=f38e73]:
+            - link "일괄 인쇄" [ref=f38e74] [cursor=pointer]:
+              - /url: /o/ko/visits/print
+          - listitem [ref=f38e80]:
+            - link "수금" [ref=f38e81] [cursor=pointer]:
+              - /url: /o/ko/payments
+          - listitem [ref=f38e86]:
+            - link "세금계산서" [ref=f38e87] [cursor=pointer]:
+              - /url: /o/ko/tax-invoices
+          - listitem [ref=f38e92]:
+            - link "판매원" [ref=f38e93] [cursor=pointer]:
+              - /url: /o/ko/sales-reps
+          - listitem [ref=f38e100]:
+            - link "보고서" [ref=f38e101] [cursor=pointer]:
+              - /url: /o/ko/reports
+        - paragraph [ref=f38e105]: 관리자
+        - list [ref=f38e106]:
+          - listitem [ref=f38e107]:
+            - link "감사 로그" [ref=f38e108] [cursor=pointer]:
+              - /url: /o/ko/reports/audit
+          - listitem [ref=f38e113]:
+            - link "제품 카탈로그" [ref=f38e114] [cursor=pointer]:
+              - /url: /o/ko/admin/products
+          - listitem [ref=f38e120]:
+            - link "사용자 관리" [ref=f38e121] [cursor=pointer]:
+              - /url: /o/ko/admin/users
+          - listitem [ref=f38e128]:
+            - link "회사 정보" [ref=f38e129] [cursor=pointer]:
+              - /url: /o/ko/admin/company-contact
+        - generic [ref=f38e133]: 설정
+        - list [ref=f38e138]:
+          - listitem [ref=f38e139]:
+            - link "알림 서식" [ref=f38e140] [cursor=pointer]:
+              - /url: /o/ko/admin/notification-templates
+      - generic [ref=f38e146]:
+        - generic [ref=f38e147]: A
+        - generic [ref=f38e149]:
+          - generic [ref=f38e150]: admin
+          - generic [ref=f38e151]: 관리자
+    - generic [ref=f38e152]:
+      - banner [ref=f38e153]:
+        - generic [ref=f38e154]:
+          - button "Change language" [ref=f38e156] [cursor=pointer]: 한국어
+          - button "A admin 관리자" [ref=f38e163] [cursor=pointer]:
+            - generic [ref=f38e164]: A
+            - generic [ref=f38e166]:
+              - generic [ref=f38e167]: admin
+              - generic [ref=f38e168]: 관리자
+      - main [ref=f38e169]:
+        - navigation "Breadcrumb" [ref=f38e170]:
+          - button "뒤로" [ref=f38e171]
+          - list [ref=f38e174]:
+            - listitem [ref=f38e175]:
+              - link "홈" [ref=f38e176] [cursor=pointer]:
+                - /url: /o/ko
+            - listitem [ref=f38e177]:
+              - link "고객" [ref=f38e180] [cursor=pointer]:
+                - /url: /o/ko/customers
+            - listitem [ref=f38e181]:
+              - generic [ref=f38e184]: Nguyễn Thị Lan
+        - generic [ref=f38e185]:
+          - generic [ref=f38e187]:
+            - generic [ref=f38e188]:
+              - generic "Nguyễn Thị Lan" [ref=f38e189]: NL
+              - generic [ref=f38e190]:
+                - generic [ref=f38e191]:
+                  - heading "Nguyễn Thị Lan" [level=1] [ref=f38e192]
+                  - generic [ref=f38e193]: KH00001
+                - generic [ref=f38e194]:
+                  - generic [ref=f38e195]: B2C
+                  - generic [ref=f38e196]: ACTIVE
+                - generic [ref=f38e197]:
+                  - generic [ref=f38e198]:
+                    - generic [ref=f38e199]: "주 담당자:"
+                    - text: Nguyễn Văn Hùng
+                  - generic [ref=f38e200]:
+                    - generic [ref=f38e201]: "전화번호:"
+                    - text: "0901234568"
+                  - generic [ref=f38e202]:
+                    - generic [ref=f38e203]: "이메일:"
+                    - text: hung.nguyen@example.com
+                  - generic [ref=f38e204]:
+                    - generic [ref=f38e205]: "주소:"
+                    - text: 123 Lê Lợi, Phường Bến Thành, Thành phố Hồ Chí Minh
+                - generic [ref=f38e206]:
+                  - generic [ref=f38e207]: "메모:"
+                  - text: VIP 고객 / 정기 관리 요청
+            - generic [ref=f38e208]:
+              - link [ref=f38e209] [cursor=pointer]:
+                - /url: /o/ko/customers/cmsjrqo6f0050tyc9rgtamsog/edit
+                - button "수정" [ref=f38e210]
+              - button "담당자 변경" [ref=f38e211]
+              - button "+ 새 주문 등록" [ref=f38e212]
+              - link [ref=f38e213] [cursor=pointer]:
+                - /url: /o/ko/equipment/register?customerId=cmsjrqo6f0050tyc9rgtamsog
+                - button "+ 신규 장비 등록" [ref=f38e214]
+              - button "비활성화" [ref=f38e215]
+          - generic [ref=f38e216]:
+            - generic [ref=f38e218]:
+              - generic [ref=f38e219]: 총 장비 수
+              - generic [ref=f38e220]: "2"
+              - generic [ref=f38e221]: "대 · 활성 고객: 2 / 0"
+            - generic [ref=f38e223]:
+              - generic [ref=f38e224]: 총 계약 수
+              - generic [ref=f38e225]: "2"
+              - generic [ref=f38e226]: 건 · 2 / 0
+            - generic [ref=f38e228]:
+              - generic [ref=f38e229]: 월 유지보수 매출
+              - generic [ref=f38e230]: 0 ₫
+            - generic [ref=f38e232]:
+              - generic [ref=f38e233]: 월 렌탈 매출
+              - generic [ref=f38e234]: 550.000 ₫
+            - generic [ref=f38e236]:
+              - generic [ref=f38e237]: 총 미수금
+              - generic [ref=f38e238]: 980.000 ₫
+          - generic [ref=f38e239]:
+            - tablist [ref=f38e240]:
+              - tab "개요" [ref=f38e241]
+              - tab "장비" [selected] [ref=f38e242]
+              - tab "계약" [ref=f38e243]
+              - tab "유지보수 이력" [ref=f38e244]
+              - tab "필터 교환 이력" [ref=f38e245]
+              - tab "결제 현황" [ref=f38e246]
+              - tab "구매 이력" [ref=f38e247]
+              - tab "주문 내역 (판매)" [ref=f38e248]
+              - tab "설치 장소" [ref=f38e249]
+              - tab "메모 및 첨부파일" [ref=f38e250]
+              - tab "담당자" [ref=f38e251]
+              - tab "서비스 요청" [ref=f38e252]
+              - tab "활동 로그" [ref=f38e253]
+            - tabpanel [ref=f38e254]:
+              - generic [ref=f38e255]:
+                - textbox "시리얼 / 고객 코드 / 모델 검색" [ref=f38e258]
+                - table [ref=f38e260]:
+                  - rowgroup [ref=f38e261]:
+                    - row [ref=f38e262]:
+                      - columnheader [ref=f38e263]
+                      - columnheader "#" [ref=f38e264]
+                      - columnheader "모델" [ref=f38e265]
+                      - columnheader "시리얼 번호" [ref=f38e266]
+                      - columnheader "설치일" [ref=f38e267]
+                      - columnheader "상태" [ref=f38e268]
+                  - rowgroup [ref=f38e269]:
+                    - button "PTS-2100" [ref=f38e270] [cursor=pointer]:
+                      - cell [ref=f38e271]:
+                        - generic [ref=f38e272]: ▸
+                      - cell "1" [ref=f38e273]
+                      - cell "PTS-2100" [ref=f38e274]
+                      - cell "PTS-2100-000001" [ref=f38e275]
+                      - cell "2025-06-15" [ref=f38e276]
+                      - cell "ACTIVE" [ref=f38e277]
+                    - button "SA-J430" [ref=f38e279] [cursor=pointer]:
+                      - cell [ref=f38e280]:
+                        - generic [ref=f38e281]: ▸
+                      - cell "2" [ref=f38e282]
+                      - cell "SA-J430" [ref=f38e283]
+                      - cell "SA-J430-000002" [ref=f38e284]
+                      - cell "2025-06-15" [ref=f38e285]
+                      - cell "ACTIVE" [ref=f38e286]
+                - generic [ref=f38e288]:
+                  - button "신규 등록 F2" [ref=f38e289]:
+                    - generic [ref=f38e290]: 신규 등록
+                    - generic [ref=f38e291]: F2
+                  - button "수정 F5" [disabled] [ref=f38e292]:
+                    - generic [ref=f38e293]: 수정
+                    - generic [ref=f38e294]: F5
+                  - button "상세 페이지" [disabled] [ref=f38e295]
+                  - button "닫기" [disabled] [ref=f38e297]
+  - alert [ref=f38e299]

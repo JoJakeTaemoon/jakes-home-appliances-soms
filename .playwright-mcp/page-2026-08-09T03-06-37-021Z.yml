@@ -1,0 +1,99 @@
+- generic [active] [ref=f36e1]:
+  - generic [ref=f36e2]:
+    - complementary [ref=f36e4]:
+      - generic [ref=f36e5]:
+        - img "Seoul Aqua" [ref=f36e7]
+        - generic [ref=f36e8]: Seoul Aqua SOMS
+      - navigation [ref=f36e9]:
+        - paragraph [ref=f36e10]: 메인
+        - list [ref=f36e11]:
+          - listitem [ref=f36e12]:
+            - link "대시보드" [ref=f36e13] [cursor=pointer]:
+              - /url: /o/ko/dashboard
+          - listitem [ref=f36e20]:
+            - link "고객" [ref=f36e21] [cursor=pointer]:
+              - /url: /o/ko/customers
+          - listitem [ref=f36e28]:
+            - link "장비" [ref=f36e29] [cursor=pointer]:
+              - /url: /o/ko/equipment
+            - list [ref=f36e34]:
+              - listitem [ref=f36e35]:
+                - link "대량 장비 등록 / 설치" [ref=f36e36] [cursor=pointer]:
+                  - /url: /o/ko/equipment/bulk-register
+              - listitem [ref=f36e39]:
+                - link "설치 이력" [ref=f36e40] [cursor=pointer]:
+                  - /url: /o/ko/equipment/installation-history
+          - listitem [ref=f36e43]:
+            - link "계약" [ref=f36e44] [cursor=pointer]:
+              - /url: /o/ko/contracts
+          - listitem [ref=f36e49]:
+            - link "서비스 요청" [ref=f36e50] [cursor=pointer]:
+              - /url: /o/ko/service-requests
+          - listitem [ref=f36e55]:
+            - link "방문" [ref=f36e56] [cursor=pointer]:
+              - /url: /o/ko/visits
+          - listitem [ref=f36e61]:
+            - link "오늘의 배정" [ref=f36e62] [cursor=pointer]:
+              - /url: /o/ko/schedule-board
+          - listitem [ref=f36e69]:
+            - link "일괄 인쇄" [ref=f36e70] [cursor=pointer]:
+              - /url: /o/ko/visits/print
+          - listitem [ref=f36e76]:
+            - link "수금" [ref=f36e77] [cursor=pointer]:
+              - /url: /o/ko/payments
+          - listitem [ref=f36e82]:
+            - link "세금계산서" [ref=f36e83] [cursor=pointer]:
+              - /url: /o/ko/tax-invoices
+          - listitem [ref=f36e88]:
+            - link "판매원" [ref=f36e89] [cursor=pointer]:
+              - /url: /o/ko/sales-reps
+          - listitem [ref=f36e96]:
+            - link "보고서" [ref=f36e97] [cursor=pointer]:
+              - /url: /o/ko/reports
+        - paragraph [ref=f36e101]: 관리자
+        - list [ref=f36e102]:
+          - listitem [ref=f36e103]:
+            - link "감사 로그" [ref=f36e104] [cursor=pointer]:
+              - /url: /o/ko/reports/audit
+          - listitem [ref=f36e109]:
+            - link "제품 카탈로그" [ref=f36e110] [cursor=pointer]:
+              - /url: /o/ko/admin/products
+          - listitem [ref=f36e116]:
+            - link "사용자 관리" [ref=f36e117] [cursor=pointer]:
+              - /url: /o/ko/admin/users
+          - listitem [ref=f36e124]:
+            - link "회사 정보" [ref=f36e125] [cursor=pointer]:
+              - /url: /o/ko/admin/company-contact
+        - generic [ref=f36e129]: 설정
+        - list [ref=f36e134]:
+          - listitem [ref=f36e135]:
+            - link "알림 서식" [ref=f36e136] [cursor=pointer]:
+              - /url: /o/ko/admin/notification-templates
+      - generic [ref=f36e142]:
+        - generic [ref=f36e143]: A
+        - generic [ref=f36e145]:
+          - generic [ref=f36e146]: admin
+          - generic [ref=f36e147]: 관리자
+    - generic [ref=f36e148]:
+      - banner [ref=f36e149]:
+        - generic [ref=f36e150]:
+          - button "Change language" [ref=f36e152] [cursor=pointer]: 한국어
+          - button "A admin 관리자" [ref=f36e159] [cursor=pointer]:
+            - generic [ref=f36e160]: A
+            - generic [ref=f36e162]:
+              - generic [ref=f36e163]: admin
+              - generic [ref=f36e164]: 관리자
+      - main [ref=f36e165]:
+        - navigation "Breadcrumb" [ref=f36e166]:
+          - button "뒤로" [ref=f36e167]
+          - list [ref=f36e170]:
+            - listitem [ref=f36e171]:
+              - link "홈" [ref=f36e172] [cursor=pointer]:
+                - /url: /o/ko
+            - listitem [ref=f36e173]:
+              - link "고객" [ref=f36e176] [cursor=pointer]:
+                - /url: /o/ko/customers
+            - listitem [ref=f36e177]:
+              - generic [ref=f36e180]: 상세
+        - generic [ref=f36e181]: 로딩 중...
+  - alert [ref=f36e182]

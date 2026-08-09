@@ -9,7 +9,7 @@
  * the customer page already uses.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
@@ -71,7 +71,8 @@ export function EquipmentMasterDetail({
     const qs = new URLSearchParams();
     qs.set("tab", "equipment");
     if (id) qs.set("equipmentId", id);
-    router.replace(`${pathname}?${qs.toString()}` as "/o");
+    // ponytail: scroll:false keeps viewport put — selecting a row must not jump to top
+    router.replace(`${pathname}?${qs.toString()}` as "/o", { scroll: false });
   };
 
   // Guard: a selectedId that isn't in THIS customer's list (deep-linked to a
@@ -150,105 +151,107 @@ export function EquipmentMasterDetail({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* ① Master — equipment list */}
-        <div className="flex flex-col gap-3 lg:col-span-5">
-          <div className="flex items-center gap-2">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("searchPlaceholder")}
-              aria-label={t("searchPlaceholder")}
+      {/* Search + site filter (full width) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-[220px] flex-1">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
+          />
+        </div>
+        {isB2B && sites.length > 0 && (
+          <div className="w-48 shrink-0">
+            <Combobox
+              value={siteFilter}
+              onChange={setSiteFilter}
+              options={sites.map((s) => ({ value: s.id, label: s.name }))}
+              placeholder={t("site")}
+              searchable={sites.length > 5}
             />
-            {isB2B && sites.length > 0 && (
-              <div className="w-40 shrink-0">
-                <Combobox
-                  value={siteFilter}
-                  onChange={setSiteFilter}
-                  options={sites.map((s) => ({ value: s.id, label: s.name }))}
-                  placeholder={t("site")}
-                  searchable={sites.length > 5}
-                />
-              </div>
-            )}
           </div>
+        )}
+      </div>
 
-          {filtered.length === 0 ? (
-            <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-6 text-center text-sm text-[#737373]">
-              {t("noEquipment")}
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-[#e5e5e5] bg-white">
-              <table className="w-full text-sm">
-                <thead className="bg-[#fafafa] text-[#525252]">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left text-xs uppercase">#</th>
-                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("model")}</th>
-                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("serial")}</th>
-                    {isB2B && (
-                      <th className="px-2 py-1.5 text-left text-xs uppercase">{t("site")}</th>
-                    )}
-                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("installDate")}</th>
-                    <th className="px-2 py-1.5 text-left text-xs uppercase">{t("status")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((e, i) => {
-                    const active = e.id === selectedId;
-                    return (
-                      <tr
-                        key={e.id}
-                        onClick={() => select(e.id)}
-                        onKeyDown={(ev) => {
-                          if (ev.key === "Enter" || ev.key === " ") {
-                            ev.preventDefault();
-                            select(e.id);
-                          }
-                        }}
-                        tabIndex={0}
-                        role="button"
-                        aria-pressed={active}
-                        aria-label={pickModelName(e.model, locale)}
-                        className={`cursor-pointer border-b border-[#f5f5f5] last:border-b-0 focus:outline-none ${
-                          active
-                            ? "bg-[var(--brand-blue-50)]"
-                            : "hover:bg-[#fafafa] focus:bg-[#f0f7ff]"
-                        }`}
-                      >
-                        <td className="px-2 py-1.5 text-xs text-[#737373]">{i + 1}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="font-medium">{pickModelName(e.model, locale)}</span>
-                        </td>
-                        <td className="px-2 py-1.5 font-mono text-xs">{e.serialNumber ?? "—"}</td>
-                        {isB2B && <td className="px-2 py-1.5">{e.site?.name ?? "—"}</td>}
-                        <td className="px-2 py-1.5 text-xs">{formatDate(e.installedAt, locale)}</td>
-                        <td className="px-2 py-1.5">
-                          <StatusBadge tone={equipmentStatusTone(e.status)}>{e.status}</StatusBadge>
+      {/* Full-width list; the selected row expands its detail inline below it. */}
+      {filtered.length === 0 ? (
+        <div className="rounded-xl border border-[#e5e5e5] bg-[#fafafa] p-6 text-center text-sm text-[#737373]">
+          {t("noEquipment")}
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-[#e5e5e5] bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-[#fafafa] text-[#525252]">
+              <tr>
+                <th className="w-8 px-2 py-1.5" />
+                <th className="px-2 py-1.5 text-left text-xs uppercase">#</th>
+                <th className="px-2 py-1.5 text-left text-xs uppercase">{t("model")}</th>
+                <th className="px-2 py-1.5 text-left text-xs uppercase">{t("serial")}</th>
+                {isB2B && <th className="px-2 py-1.5 text-left text-xs uppercase">{t("site")}</th>}
+                <th className="px-2 py-1.5 text-left text-xs uppercase">{t("installDate")}</th>
+                <th className="px-2 py-1.5 text-left text-xs uppercase">{t("status")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((e, i) => {
+                const active = e.id === selectedId;
+                return (
+                  <Fragment key={e.id}>
+                    <tr
+                      onClick={() => select(active ? null : e.id)}
+                      onKeyDown={(ev) => {
+                        if (ev.key === "Enter" || ev.key === " ") {
+                          ev.preventDefault();
+                          select(active ? null : e.id);
+                        }
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-expanded={active}
+                      aria-label={pickModelName(e.model, locale)}
+                      className={`cursor-pointer border-b border-[#f5f5f5] focus:outline-none ${
+                        active ? "bg-[var(--brand-blue-50)]" : "hover:bg-[#fafafa] focus:bg-[#f0f7ff]"
+                      }`}
+                    >
+                      <td className="px-2 py-1.5 text-center text-[#737373]">
+                        <span aria-hidden className={`inline-block transition-transform ${active ? "rotate-90" : ""}`}>▸</span>
+                      </td>
+                      <td className="px-2 py-1.5 text-xs text-[#737373]">{i + 1}</td>
+                      <td className="px-2 py-1.5">
+                        <span className="font-medium">{pickModelName(e.model, locale)}</span>
+                      </td>
+                      <td className="px-2 py-1.5 font-mono text-xs">{e.serialNumber ?? "—"}</td>
+                      {isB2B && <td className="px-2 py-1.5">{e.site?.name ?? "—"}</td>}
+                      <td className="px-2 py-1.5 text-xs">{formatDate(e.installedAt, locale)}</td>
+                      <td className="px-2 py-1.5">
+                        <StatusBadge tone={equipmentStatusTone(e.status)}>{e.status}</StatusBadge>
+                      </td>
+                    </tr>
+                    {active && (
+                      <tr className="bg-[#fafafa]">
+                        <td colSpan={isB2B ? 7 : 6} className="border-b border-[#e5e5e5] p-0">
+                          <div className="animate-expand-row">
+                            <div className="overflow-hidden">
+                              <div className="p-3">
+                                <EquipmentDetailPanel
+                                  equipmentId={e.id}
+                                  canManage={canManage}
+                                  onEdit={canManage ? () => setShowEdit(true) : undefined}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-
-        {/* ② Detail — selected unit */}
-        <div className="lg:col-span-7">
-          {selectedId ? (
-            <EquipmentDetailPanel
-              equipmentId={selectedId}
-              canManage={canManage}
-              onEdit={canManage ? () => setShowEdit(true) : undefined}
-            />
-          ) : (
-            <div className="flex h-full min-h-40 items-center justify-center rounded-xl border border-dashed border-[#d4d4d4] bg-[#fafafa] p-6 text-center text-sm text-[#737373]">
-              {t("panel.selectPrompt")}
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* ③ Function bar */}
       <ActionBar items={actionItems} className="rounded-xl border border-[#e5e5e5]" />

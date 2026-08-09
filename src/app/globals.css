@@ -162,3 +162,18 @@
   /* Photos / drawings: keep aspect, allow page breaks between */
   img   { max-width: 100%; height: auto; page-break-inside: avoid; }
 }
+
+/* Inline detail row expand — grid-rows 0fr→1fr animates height without
+   knowing content size. 0.4s expand. */
+@keyframes expand-row {
+  from { grid-template-rows: 0fr; opacity: 0; }
+  to   { grid-template-rows: 1fr; opacity: 1; }
+}
+.animate-expand-row {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: expand-row 0.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-expand-row { animation: none; }
+}
