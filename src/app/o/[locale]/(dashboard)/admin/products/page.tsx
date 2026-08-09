@@ -23,6 +23,7 @@ type Translate = ReturnType<typeof useTranslations>;
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { SectionBadge } from "@/components/ui/section-badge";
 import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
 import { Modal } from "@/components/ui/modal";
@@ -962,7 +963,12 @@ function ModelsTab({
   onExportExcel,
 }: Readonly<{ api: ApiClient; t: Translate; onExportExcel: () => void }>) {
   const locale = useLocale();
-  const brands = useBrandOptions(api);
+  const tem = useTranslations("equipmentModels");
+  // Localize the category enum for the list column (matches the form's combobox
+  // labels); unknown values fall through to the raw string.
+  const CATEGORY_KEYS = new Set(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]);
+  const catLabel = (c: string | null | undefined) =>
+    c && CATEGORY_KEYS.has(c) ? tem(`categoryValues.${c}`) : (c ?? "—");
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
   // Master-detail (요청 A): `selected` drives the left edit form; null = the
@@ -971,10 +977,12 @@ function ModelsTab({
   const [selected, setSelected] = useState<ModelRow | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [deleting, setDeleting] = useState<ModelRow | null>(null);
-  const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [search, setSearch] = useState("");
   const { sort } = useSort<"name" | "brand" | "category" | "isActive">("name");
   const submitRef = useRef<(() => void) | null>(null);
+  const focusRef = useRef<(() => void) | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -991,17 +999,11 @@ function ModelsTab({
 
   const filtered = useMemo(() => {
     const q = foldDiacritics(search.trim());
-    return rows.filter((r) => {
-      if (brandFilter && r.brand?.id !== brandFilter) return false;
-      if (q) {
-        const hay = foldDiacritics(
-          `${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${r.category ?? ""}`,
-        );
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [rows, brandFilter, search, locale]);
+    if (!q) return rows;
+    return rows.filter((r) =>
+      foldDiacritics(`${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${r.category ?? ""}`).includes(q),
+    );
+  }, [rows, search]);
 
   const sorted = useMemo(
     () =>
@@ -1028,41 +1030,33 @@ function ModelsTab({
   const fmtPrice = (v: number | string | null | undefined) =>
     v == null ? "—" : Number(v).toLocaleString();
 
+  const allChecked = sorted.length > 0 && sorted.every((r) => checkedIds.has(r.id));
+  const toggleAll = () => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (allChecked) sorted.forEach((r) => next.delete(r.id));
+      else sorted.forEach((r) => next.add(r.id));
+      return next;
+    });
+  };
+  const toggleOne = (id: string) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <section className="space-y-4">
-      {/* ③ Top: search [F10] + brand filter */}
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="w-56">
-          <FormField label={`${t("searchLabel")} [F10]`}>
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("searchModels")}
-              data-catalog-search
-            />
-          </FormField>
-        </div>
-        <div className="w-56">
-          <FormField label={t("colBrand")}>
-            <Combobox
-              value={brandFilter}
-              onChange={setBrandFilter}
-              options={brands.map((b) => ({ value: b.id, label: b.name }))}
-              placeholder={t("filterAll")}
-              allowClear
-              ariaLabel={t("colBrand")}
-            />
-          </FormField>
-        </div>
-      </div>
-
-      {/* Master-detail: ① left edit form / ④ right list table */}
+      {/* ① form on the left · ③ search + ④ list on the right */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <div className="min-w-0">
           <EquipmentModelForm
             key={selected ? `edit-${selected.id}` : `new-${formKey}`}
             mode={selected ? "edit" : "create"}
             submitRef={submitRef}
+            focusRef={focusRef}
             onStockChanged={() => void load()}
             initial={
               selected
@@ -1088,71 +1082,86 @@ function ModelsTab({
           />
         </div>
 
-        <div className="overflow-x-auto rounded-2xl border border-[#e5e5e5] bg-white">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
-              <tr>
-                <th className="w-8 px-2 py-1.5" />
-                <th className="px-2 py-1.5 text-left">#</th>
-                <th className="px-2 py-1.5 text-left">{t("colName")}</th>
-                <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
-                <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
-                <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
-                <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
-                <th className="px-2 py-1.5 text-right">{t("fixedPrice")}</th>
-                <th className="px-2 py-1.5 text-right">{t("purchasePrice")}</th>
-                <th className="w-8 px-2 py-1.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f0f0f0]">
-              {loading && (
-                <tr><td colSpan={10} className="p-4 text-center text-[#737373]">…</td></tr>
-              )}
-              {!loading && sorted.length === 0 && (
-                <tr><td colSpan={10} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
-              )}
-              {!loading &&
-                sorted.map((r, i) => {
-                  const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
-                  const isSel = selected?.id === r.id;
-                  return (
-                    <tr
-                      key={r.id}
-                      onClick={() => setSelected(r)}
-                      aria-current={isSel ? "true" : undefined}
-                      className={cn(
-                        "cursor-pointer hover:bg-[#f5f5f5]",
-                        isSel && "bg-[var(--brand-blue-50)]",
-                        !r.isActive && "opacity-50",
-                      )}
-                    >
-                      <td className="px-2 py-1.5 text-center">
-                        <input type="checkbox" checked={isSel} readOnly tabIndex={-1} aria-label={pickModelName(r, locale)} />
-                      </td>
-                      <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
-                      <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
-                      <td className="px-2 py-1.5 text-[#586a7c]">{r.category ?? "—"}</td>
-                      <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
-                      <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
-                        {(r.stockOnHand ?? 0).toLocaleString()}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
-                      <td className="px-2 py-1.5 text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setDeleting(r); }}
-                          className="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50"
+        <div className="flex min-w-0 flex-col gap-3">
+          {/* ③ search */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <FormField label={`${t("searchDataLabel")} [F10]`}>
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchModels")} data-catalog-search />
+              </FormField>
+            </div>
+            <Button variant="secondary" onClick={() => { /* live filter */ }}>{t("searchLabel")}</Button>
+          </div>
+
+          {/* ④ model list */}
+          <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+            <div className="border-b border-[#f0f0f0] px-3 py-2">
+              <SectionBadge n={4} title={t("secModelList")} />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
+                  <tr>
+                    <th className="w-8 px-2 py-1.5 text-center">
+                      <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label={t("colName")} />
+                    </th>
+                    <th className="px-2 py-1.5 text-left">#</th>
+                    <th className="px-2 py-1.5 text-left">{t("colName")}</th>
+                    <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+                    <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
+                    <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
+                    <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
+                    <th className="px-2 py-1.5 text-right">{t("fixedPrice")}</th>
+                    <th className="px-2 py-1.5 text-right">{t("purchasePrice")}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#f0f0f0]">
+                  {loading && (
+                    <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>
+                  )}
+                  {!loading && sorted.length === 0 && (
+                    <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
+                  )}
+                  {!loading &&
+                    sorted.map((r, i) => {
+                      const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
+                      const isSel = selected?.id === r.id;
+                      return (
+                        <tr
+                          key={r.id}
+                          onClick={() => setSelected(r)}
+                          aria-current={isSel ? "true" : undefined}
+                          className={cn(
+                            "cursor-pointer hover:bg-[#f5f5f5]",
+                            isSel && "bg-[var(--brand-blue-50)]",
+                            !r.isActive && "opacity-50",
+                          )}
                         >
-                          {t("deactivate")}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
+                          <td className="px-2 py-1.5 text-center">
+                            <input
+                              type="checkbox" checked={checkedIds.has(r.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={() => toggleOne(r.id)}
+                              aria-label={pickModelName(r, locale)}
+                            />
+                          </td>
+                          <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
+                          <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
+                          <td className="px-2 py-1.5 text-[#586a7c]">{catLabel(r.category)}</td>
+                          <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                          <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                            {(r.stockOnHand ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1160,8 +1169,9 @@ function ModelsTab({
       <ActionBar
         items={[
           { key: "new", label: t("actNew"), hotkey: "F2", variant: "secondary", onClick: handleNew },
+          { key: "edit", label: t("actEdit"), hotkey: "F3", variant: "secondary", disabled: !selected, onClick: () => focusRef.current?.() },
+          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: checkedIds.size === 0 && !selected, onClick: () => { if (checkedIds.size > 0) setBulkOpen(true); else if (selected) setDeleting(selected); } },
           { key: "save", label: t("actSave"), hotkey: "F5", variant: "primary", onClick: () => submitRef.current?.() },
-          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: !selected, onClick: () => selected && setDeleting(selected) },
           { key: "excel", label: t("actExcel"), hotkey: "F6", variant: "secondary", onClick: onExportExcel },
           { key: "close", label: t("actClose"), hotkey: "Esc", variant: "ghost", onClick: handleNew },
         ]}
@@ -1206,6 +1216,34 @@ function ModelsTab({
           }}
         />
       )}
+
+      {bulkOpen && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirmBulk", { count: checkedIds.size })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setBulkOpen(false)}
+          onConfirm={async () => {
+            try {
+              // Model has no DELETE endpoint — PATCH isActive=false soft-disables.
+              await Promise.all([...checkedIds].map((id) => api.patch(`/api/equipment-models/${id}`, { isActive: false })));
+            } catch (err) {
+              alert(err instanceof Error ? err.message : t("errorGeneric"));
+            } finally {
+              if (selected && checkedIds.has(selected.id)) {
+                setSelected(null);
+                setFormKey((k) => k + 1);
+              }
+              setCheckedIds(new Set());
+              setBulkOpen(false);
+              await load();
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -1236,18 +1274,6 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
 // ───────────────────────────────────────────────────────────────────────────
 // Consumables
 // ───────────────────────────────────────────────────────────────────────────
-
-/** Numbered blue section badge (① ② ③) matching the ERP mockup headers. */
-function SectionBadge({ n, title }: Readonly<{ n: number; title: string }>) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="flex size-5 shrink-0 items-center justify-center rounded bg-[var(--brand-blue-600,#1657c8)] text-[11px] font-bold text-white">
-        {n}
-      </span>
-      <h2 className="text-sm font-semibold text-[#002A4D]">{title}</h2>
-    </div>
-  );
-}
 
 function ConsumablesTab({
   api,
