@@ -1,7 +1,7 @@
 # Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
-**Phiên bản**: 2026-07-22 (Sửa toàn bộ thông tin thiết bị + Hợp nhất trang chi tiết thiết bị + Liên kết chọn Thương hiệu · Nhóm sản phẩm · Mẫu + Cải tiến nút Quay lại)
+**Phiên bản**: 2026-08-09 (Tab Thiết bị mở rộng nội tuyến theo dòng + Bố cục 2 cột · số thứ tự cho Danh mục sản phẩm + Thêm phần giải thích quan hệ giữa các trường)
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Kỹ thuật viên](./field.md) · [Hướng dẫn Khách hàng](./customer.md)
 
@@ -293,12 +293,12 @@ Sau khi lưu, vào Chi tiết khách hàng → tab "**Địa điểm lắp đặ
 
 ![Tab thiết bị](../screenshots/vi/office/06-customer-equipment-tab.png)
 
-**Tab Thiết bị nay là màn hình master-detail một trang (cải tiến).** Bên trái là danh sách thiết bị (tìm kiếm · lọc theo cơ sở), bên phải hiển thị chi tiết của thiết bị đang chọn. Nhấp một dòng ở danh sách sẽ đổi panel bên phải **mà không chuyển trang**.
+**Tab Thiết bị nay dùng cách mở rộng dòng nội tuyến (cải tiến).** Nhấp vào một dòng thiết bị trong danh sách sẽ **không chuyển sang màn hình khác** — chi tiết sẽ mở rộng ngay **bên dưới dòng đó, chiếm toàn bộ chiều rộng bảng** (dạng accordion). Nếu nhấp vào một thiết bị khác, chi tiết đang mở sẽ thu lại và chi tiết của thiết bị mới sẽ mở ra, kèm **hiệu ứng chuyển động mượt khoảng 0,4 giây**. Vị trí cuộn của màn hình **được giữ nguyên** khi nhấp vào thiết bị, không bị nhảy lên đầu trang.
 
-- **Chi tiết bên phải = 5 tab**: Thông tin cơ bản · Thông tin lõi lọc · Lịch sử dịch vụ · Lịch sử thu tiền · Ghi chú. Tab Thông tin cơ bản gồm bảng cấu hình dịch vụ (bên dưới) cùng thông tin chính và lịch tiếp theo.
+- **Chi tiết mở rộng = 5 tab**: Thông tin cơ bản · Thông tin lõi lọc · Lịch sử dịch vụ · Lịch sử thu tiền · Ghi chú. Tab Thông tin cơ bản gồm bảng cấu hình dịch vụ (bên dưới) cùng thông tin chính và lịch tiếp theo. Vì chiếm toàn bộ chiều rộng bảng nên dễ xem hơn so với panel hẹp bên phải trước đây.
+- **Liên kết "Xem toàn màn hình" ở góc trên bên phải phần mở rộng**: khi cần thao tác nặng (di dời · thay thế · chấm dứt · thu hồi), dùng liên kết này để mở **trang chi tiết thiết bị chuyên dụng** (§7.3).
 - **Nút chức năng dưới cùng**: Đăng ký mới (F2) · Sửa (F5) · Chi tiết (toàn màn hình) · Đóng. Đăng ký/Sửa chỉ hiện với quyền **Quản lý trở lên**.
-- **Xem toàn màn hình**: khi cần thao tác nặng (di dời · thay thế · chấm dứt · thu hồi), dùng liên kết **"Toàn màn hình"** ở panel để mở **trang chi tiết thiết bị chuyên dụng** (§7.3). Liên kết cũ · deep-link · nút Quay lại vẫn hoạt động; Quay lại vẫn ở tab Thiết bị.
-- Thiết bị đang chọn được ghi vào URL nên vẫn giữ khi tải lại / quay lại.
+- Liên kết cũ · deep-link · nút Quay lại vẫn hoạt động như trước — thiết bị đang chọn được ghi vào URL nên vẫn giữ khi tải lại / quay lại, và nút Quay lại vẫn ở tab Thiết bị.
 
 **Bảng cấu hình dịch vụ hợp nhất** trên trang chi tiết thiết bị — chu kỳ kiểm tra và chu kỳ thay lõi lọc hiển thị trong một bảng:
 
@@ -428,7 +428,9 @@ Nhấp vào một dòng sẽ chuyển đến **cùng một trang chi tiết thi�
 
 ![Chi tiết thiết bị](../screenshots/vi/office/16-equipment-detail.png)
 
-**Luôn cùng một màn hình dù vào từ đâu** (mới): dù nhấp vào thiết bị từ thẻ thiết bị ở tab **Tổng quan** của khách hàng, từ tab **Thiết bị** (§5.5), hay từ dòng trong **danh sách thiết bị** (§7.2) — tất cả đều chuyển đến **cùng một trang chi tiết thiết bị chuyên dụng**. Trước đây màn hình hiển thị khác nhau tùy nơi bạn nhấp vào, còn bây giờ vào từ đâu cũng thấy cùng một màn hình.
+**Luôn cùng một màn hình dù vào từ đâu** (mới): dù nhấp vào thiết bị từ thẻ thiết bị ở tab **Tổng quan** của khách hàng, hay từ dòng trong **danh sách thiết bị** (§7.2) — tất cả đều chuyển đến **cùng một trang chi tiết thiết bị chuyên dụng**. Trước đây màn hình hiển thị khác nhau tùy nơi bạn nhấp vào, còn bây giờ vào từ đâu cũng thấy cùng một màn hình.
+
+> Tuy nhiên, ở tab **Thiết bị** trong Chi tiết khách hàng (§5.5), nhấp vào thiết bị sẽ **không** chuyển thẳng đến trang này — chi tiết sẽ **mở rộng nội tuyến ngay bên dưới dòng đó**. Có thể mở trang chuyên dụng này bằng liên kết "Xem toàn màn hình" trong phần mở rộng đó.
 
 Nhấp vào một thiết bị để xem:
 
@@ -947,9 +949,17 @@ Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự đ�
 
 > **Xuất dữ liệu**: góc trên bên phải màn hình có **Tải danh mục CSV** hoặc **Xuất Excel** để tải toàn bộ danh mục ra file. File Excel gồm hai trang tính: **Catalog** (model × phụ tùng, kèm Tồn kho · Giá bán · Giá nhập · Giá đại lý) + **Filters** (danh mục lõi lọc, kèm Nhóm SP · Thương hiệu · Quy cách · Tồn kho · Giá nhập · Giá đại lý).
 
-> **Bố cục màn hình (master-detail)**: tab Model và Lõi lọc có cấu trúc **form sửa bên trái / danh sách dạng bảng bên phải**. Nhấn một dòng để nạp vào form bên trái. **Bảng Model**: STT · Tên model · Nhóm SP · Thương hiệu · Tồn kho · Giá bán lẻ · Giá đại lý · Giá nhập; **bảng Lõi lọc**: STT · Tên lõi · Nhóm SP · Thương hiệu · Quy cách · Chu kỳ thay · Tồn kho · Giá bán lẻ. Tồn kho dưới mức an toàn hiện **màu đỏ**.
+> **Bố cục màn hình (master-detail + số thứ tự)**: tab Model và Lõi lọc có cấu trúc **form sửa bên trái / danh sách dạng bảng bên phải**, và giống như bản mẫu, mỗi vùng trên màn hình có số thứ tự **①②③④⑤** — ① Thông tin model/lõi lọc ② Cấu hình lõi lọc/Model áp dụng ③ Tìm kiếm ④ Danh sách ⑤ Nút chức năng. Nhấn một dòng ở bảng bên phải để nạp vào form bên trái.
 >
-> **Nút chức năng + phím tắt**: thanh nút dưới cùng có **Mới (F2) · Sửa (F3) · Xóa (F4) · Lưu (F5) · Excel (F6) · Đóng (Esc)**, bên dưới là phần **giải thích vùng ①~⑤**. Nút **Ngừng dùng** trên mỗi dòng để xóa mềm.
+> **Form Model (vùng ①) chia 2 cột**: cột trái — Tên model · Nhóm sản phẩm · Thương hiệu · Mô tả model · Giá bán; cột phải — Tồn kho hiện tại · Giá bán lẻ · Giá nhập · Giá đại lý. Bên dưới là vùng phụ gồm Phí thuê tháng · Phí quản lý tháng · Tồn kho tối thiểu · Chu kỳ kiểm tra · Thời hạn bảo hành · Trạng thái hoạt động.
+>
+> **Form Lõi lọc (vùng ①) cũng chia 2 cột**: cột trái — Tên lõi · Nhóm sản phẩm · Thương hiệu · Quy cách · Công dụng chính; cột phải — Chu kỳ thay · Tồn kho hiện tại · Tồn kho tối thiểu · Giá bán lẻ · Giá đại lý · Giá nhập. Ô **Ghi chú** ở cuối form chiếm toàn bộ chiều rộng.
+>
+> **Bảng Model (vùng ④)** có các cột STT · Tên model · Nhóm SP · Thương hiệu · Tồn kho · Giá bán lẻ · Giá đại lý · Giá nhập, mỗi dòng có **ô tích chọn** và tiêu đề bảng có ô **chọn tất cả**. Tích chọn nhiều model rồi nhấn **Xóa (F4)** để vô hiệu hóa hàng loạt cùng lúc; nếu không tích chọn dòng nào, thao tác chỉ áp dụng cho model đang nạp trong form bên trái. **Bảng Lõi lọc**: STT · Tên lõi · Nhóm SP · Thương hiệu · Quy cách · Chu kỳ thay · Tồn kho · Giá bán lẻ, trong đó **Nhóm SP** được điền tự động theo nhóm sản phẩm của thiết bị đang dùng lõi lọc đó. Tồn kho dưới mức an toàn hiện **màu đỏ**.
+>
+> **Nút chức năng (vùng ⑤) + phím tắt**: thanh nút dưới cùng có **Mới (F2) · Sửa (F3) · Xóa (F4) · Lưu (F5) · Xuất Excel (F6)**, riêng **màn hình Lõi lọc có thêm nút Xuất báo cáo (F7)**. Nhấn **Đóng (Esc)** để thoát chỉnh sửa. Nút **Ngừng dùng** trên mỗi dòng dùng để xóa mềm.
+
+![Danh mục sản phẩm — Đăng ký Model](../screenshots/vi/office/14-admin-products.png)
 
 #### Cấu hình lõi lọc ngay trên màn hình Model (cải tiến)
 
@@ -964,10 +974,12 @@ Thứ tự ưu tiên chu kỳ: **theo thiết bị > ghi đè theo model > mặc
 
 #### Master lõi lọc (vật tư)
 
+![Danh mục sản phẩm — Đăng ký lõi lọc (vật tư)](../screenshots/vi/office/14b-admin-products-consumables.png)
+
 Màn hình quản lý lõi lọc chứa thông tin cơ bản và tồn kho của lõi: SKU · tên (KO/VI/EN) · **Nhóm SP · Thương hiệu · Quy cách · Công dụng chính** · chu kỳ thay (+đơn vị) · chu kỳ vệ sinh · **Giá bán lẻ · Giá nhập · Giá đại lý · Tồn kho tối thiểu · Tồn kho hiện tại**.
 
 - **Đơn vị chu kỳ thay (ngày/tháng)**: chọn **Ngày** hoặc **Tháng** ở ô kế bên. Hệ thống luôn lưu theo ngày (1 tháng = 30 ngày); khi đổi đơn vị, giá trị tự quy đổi để giữ nguyên độ dài thực tế (ví dụ 180 ngày ⇄ 6 tháng).
-- **② Thiết bị (Model) áp dụng**: ngay trên form lõi lọc cũng có thể **chỉ định các model dùng lõi này** ("+ Thêm Model" → ô tìm kiếm). Liên kết được quản lý cả ở màn hình Model (model→lõi) lẫn màn hình lõi lọc (lõi→model).
+- **② Thiết bị (Model) áp dụng nay là bảng**: chọn model từ ô dropdown rồi nhấn **"Thêm"**, model đó sẽ được thêm vào **bảng** bên dưới (STT · Tên model · Nhóm sản phẩm · Thương hiệu · Số lượng · Xóa) — thay cho cách liệt kê nội tuyến trước đây. Liên kết được quản lý cả ở màn hình Model (model→lõi) lẫn màn hình lõi lọc (lõi→model); thêm ở bên nào cũng **phản ánh đồng thời ở cả hai bên**.
 
 #### Điều chỉnh tồn kho (Nhập · Xuất · Điều chỉnh)
 
@@ -977,6 +989,18 @@ Nút **Điều chỉnh tồn kho** kế bên **Tồn kho hiện tại** trên fo
 - Mọi biến động đều lưu vào **lịch sử tồn kho (sổ cái)** — ai · khi nào · lý do. Chỉ quyền **Quản lý trở lên**, có ghi vào nhật ký kiểm toán.
 - **Tự động trừ kho**: lắp thiết bị → model −1; thay lõi trong lượt thăm → lõi −N; đơn hàng đã giao → trừ lõi bán ra.
 - **Cảnh báo tồn thấp**: Tồn kho hiện tại < Tồn kho tối thiểu sẽ hiện đỏ. Cho phép **tồn kho âm** để không chặn thao tác hiện trường; lệch thì sửa bằng **Điều chỉnh**.
+
+#### Các trường liên quan với nhau như thế nào (quan hệ giữa các trường)
+
+Các con số và lựa chọn trong Danh mục sản phẩm không độc lập với nhau. Hiểu các quan hệ dưới đây sẽ giúp bạn nắm được vì sao màn hình hoạt động như vậy.
+
+1. **Quan hệ giữa 4 loại giá**: thứ tự thông thường là **Giá nhập** (giá gốc, đơn giá mua vào) ≤ **Giá đại lý** (giá cấp cho đại lý/điểm bán) ≤ **Giá bán lẻ** (giá bán lẻ khuyến nghị). **Giá bán** là giá giao dịch thực tế dùng trong báo giá/hợp đồng, có thể khác Giá bán lẻ. "Giá bán lẻ" trên màn hình chính là trường retailPrice trong hệ thống.
+2. **Tồn kho hiện tại ↔ Tồn kho tối thiểu**: Tồn kho hiện tại không phải là giá trị bạn gõ trực tiếp trên form — nó chỉ thay đổi qua **luân chuyển tồn kho (nhập·xuất·điều chỉnh)** và **tự động trừ kho** từ lượt thăm/đơn hàng. Khi Tồn kho hiện tại thấp hơn Tồn kho tối thiểu, hệ thống hiện **cảnh báo tồn thấp (màu đỏ)**. Để không chặn thao tác tại hiện trường, hệ thống **cho phép tồn kho âm**; khi lệch với thực tế, dùng **Điều chỉnh** để sửa lại.
+3. **Thời điểm tự động trừ kho**: Lắp đặt thiết bị → Tồn kho hiện tại của model đó **−1** / Thay lõi lọc trong lượt thăm → Tồn kho hiện tại của lõi lọc đó **−(Số lượng trong cấu hình lõi lọc)** / Đơn hàng đã giao (giao hàng hoàn tất) → Tồn kho hiện tại của lõi lọc bán ra **−(Số lượng đặt hàng)**.
+4. **Thứ tự ưu tiên của Chu kỳ thay**: áp dụng theo thứ tự **chu kỳ tùy chỉnh theo thiết bị > ghi đè theo model > chu kỳ mặc định của lõi lọc**. Khi chọn lõi lọc trong cấu hình lõi của model, chu kỳ thay mặc định của lõi đó sẽ tự động hiện lên làm gợi ý; muốn dùng chu kỳ khác chỉ riêng cho model này thì nhập giá trị (ghi đè), để trống thì dùng nguyên chu kỳ mặc định của lõi.
+5. **Model áp dụng là quan hệ hai chiều**: liên kết Model↔Lõi lọc là cùng một quan hệ được hiển thị ở hai màn hình, nên dù bạn thiết lập từ màn hình Model (mục "Cấu hình lõi lọc ngay trên màn hình Model") hay từ màn hình Lõi lọc (mục "② Thiết bị (Model) áp dụng"), kết quả đều **được phản ánh ở cả hai bên như nhau**.
+6. **Quan hệ tính toán trong bảng cấu hình dịch vụ thiết bị** (§5.5·§7.3): **Lần thực hiện gần nhất + Chu kỳ (ngày) = Ngày dự kiến tiếp theo**, **Hôm nay − Ngày dự kiến tiếp theo = Số ngày còn lại**. Nếu số ngày còn lại là số âm, hệ thống hiện **quá hạn (màu đỏ)**. Nếu để trống chu kỳ tùy chỉnh theo thiết bị, hệ thống sẽ tính theo chu kỳ mặc định của model/lõi lọc.
+7. **Chọn Model → Thiết bị kế thừa thông tin**: khi đăng ký hoặc sửa thiết bị, chọn một model sẽ kéo theo Nhóm sản phẩm · Thương hiệu · chu kỳ kiểm tra/lõi lọc mặc định của model đó. Cách **Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu** ở wizard đăng ký (§7.5·§7.6) và màn hình sửa (§7.4) cũng phản ánh đúng quan hệ này — chọn bất kỳ trường nào trước, các trường còn lại sẽ tự động thu hẹp theo.
 
 ### 15.3 Trọng số Bộ lập lịch
 
