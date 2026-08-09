@@ -81,3 +81,6 @@ next-env.d.ts
 /tmp
 user_list.txt
 change_log.pdf
+
+# Playwright MCP scratch artifacts
+.playwright-mcp/

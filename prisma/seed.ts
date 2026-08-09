@@ -417,7 +417,11 @@ async function main() {
   const stockSeedFresh = (await prisma.stockMove.count()) === 0;
 
   const modelByCode = new Map<string, { id: string; modelCode: string | null }>();
+  // code → ProductCategory code, so filters can inherit a 제품군 from the
+  // appliance they fit (the 소모품 list shows this column).
+  const modelCategoryCodeByCode = new Map<string, string>();
   for (const [mIdx, m] of modelSeed.entries()) {
+    modelCategoryCodeByCode.set(m.code, m.category);
     const legacy = legacyCategoryByCode[m.category] ?? "OTHER";
     // Deterministic stock so the 재고 UI has real numbers to test against.
     // A couple of models sit below safetyStock to exercise the low-stock alert.
@@ -1021,11 +1025,17 @@ async function main() {
     // Deterministic stock; a few filters sit below safetyStock for the alert.
     const stockOnHand = cIdx % 5 === 0 ? 4 : 20 + ((cIdx * 17) % 120);
     const safetyStock = 10;
+    // 제품군: inherit from the first compatible model whose category is known.
+    const firstCatCode = c.compatibleModels
+      .map((cm) => modelCategoryCodeByCode.get(cm.modelCode))
+      .find((code): code is string => !!code && categoriesByCode.has(code));
+    const derivedCategoryId = firstCatCode ? categoriesByCode.get(firstCatCode)?.id : undefined;
     const stockExtras = {
       // Only seed the counter on a fresh seed (see stockSeedFresh note above).
       ...(stockSeedFresh ? { stockOnHand } : {}),
       safetyStock,
       brandId: defaultFilterBrandId,
+      ...(derivedCategoryId ? { categoryId: derivedCategoryId } : {}),
       purchasePrice: Math.round(c.retailPrice * 0.55),
       fixedPrice: Math.round(c.retailPrice * 0.8),
     };
