@@ -226,12 +226,44 @@ Prefer tight, scannable layouts over airy ones:
   `tabular-nums`, hairline row dividers, no zebra. Show every column the mockup
   shows; let a wide table scroll inside its own `overflow-x-auto` container
   (`min-w-[640px]`) rather than dropping columns.
-- **Master-detail** (left list / right form-or-detail) is the default shape for
-  registration and management screens — it packs a picker and an editor on one
-  screen, matching the mockups.
+- **Master-detail** (left detail/form **fixed**, right list **scrolling
+  independently**) is the default shape for registration and management
+  screens — the editor stays put while the list scrolls in its own region, so
+  the page itself barely scrolls. (Earlier drafts of this doc said "left list
+  / right form" — that was backwards; the catalog mockups and the shipped
+  catalog tabs put the editor on the left.) Full spec, wireframes, and
+  per-screen variants: `docs/design/master-detail-pattern.md`.
 - **Content padding**: `p-4` on `< sm`, `p-5`/`p-6` on larger (not `p-8`).
 - Mobile/technician screens keep the larger touch targets (§4) — density applies
   to the desktop office app, not the field PWA.
+
+### Master-detail state convention
+
+Applies to every master-detail screen (catalog tabs, customer 장비 tab, and
+future adoptions — see `docs/design/master-detail-pattern.md` for the full
+spec and wireframes).
+
+- **Three states, one panel**: 조회 (view, read-only) → 수정 (edit) / 신규
+  등록 (create) → back to 조회 on save or cancel. Never show an editable form
+  and no save button, or vice versa — the mode is always unambiguous.
+- **State badge** in the detail-panel header names the mode: neutral pill for
+  조회 (`bg-surface-sunken text-text-secondary`), warning-tinted for 수정 중
+  (`bg-status-warning-bg`), brand-tinted for 신규 등록 (`bg-brand-blue-50
+  text-brand-blue-700`).
+- **Actions live in the detail-panel header**, not a page-level bottom bar:
+  조회 shows `[신규등록][수정]` (+ `[삭제]` where applicable); 수정/신규 등록
+  show only `[저장][취소]`. List-level actions (검색, 엑셀, 보고서 등) live at
+  the top of the list panel instead.
+- **Read-only rendering**: in 조회, a field is static text in a sunken,
+  non-interactive box (`bg-surface-sunken border border-border rounded px-3
+  h-9 flex items-center`) at the exact grid position the real `<Input>`
+  occupies in 수정/신규 — switching modes never shifts the layout.
+- **Independent scroll**: detail panel and list panel share a fixed-height row
+  (`lg:h-[calc(100vh-…)] lg:min-h-0`); each scrolls its own content
+  (`overflow-y-auto`) instead of the page. List tables use `sticky top-0`
+  headers inside their scroll region.
+- **Keyboard**: F2 신규, F3 수정, F5 저장, Esc 취소 — bound while the panel is
+  mounted, same `useHotkeys` mechanism as the existing `ActionBar`.
 
 ### Spacing scale
 
@@ -328,4 +360,5 @@ larger steps (32 px+) for page-level separation, not between every card.
 
 ## Change log
 
+- **2026-08-22** — v0.2 — §5 master-detail note corrected: **left detail/form (fixed) + right list (independent scroll)**, not "left list / right form" as originally written. Added the view/create/edit 3-state convention (state badge, in-header actions, independent-scroll rules). Full spec: `docs/design/master-detail-pattern.md`.
 - **2026-05-25** — v0.1 — Initial design system. Intercom-frame adopted; primary accent set to Seoul Aqua brand blue `#0071BD` (extracted from `reference/brand/Seoul Aqua Logo.jpg`, dominant cluster n=3820). Mirrors MegaDnC PMIS DESIGN.md structure for familiarity but rebuilt content for the warm + tactile feel.
