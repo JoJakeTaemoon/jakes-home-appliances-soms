@@ -23,6 +23,7 @@ type Translate = ReturnType<typeof useTranslations>;
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { SectionBadge } from "@/components/ui/section-badge";
 import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
@@ -1625,6 +1626,12 @@ function ConsumableForm({
   }
 
   const num = (s: string) => (s === "" ? null : Number(s));
+  // Money fields: grouped digits via NumberInput(money), preserving the string
+  // state + "empty = unset" semantics by mapping 0 ⇄ "".
+  const money = (v: string, set: (s: string) => void) => ({
+    value: v === "" ? 0 : Number(v),
+    onChange: (n: number) => set(n === 0 ? "" : String(n)),
+  });
 
   async function save() {
     if (busy) return;
@@ -1757,13 +1764,13 @@ function ConsumableForm({
               <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
             </ModeField>
             <ModeField label={t("consumerPrice")} mode={mode} value={fmtMoney(retailPrice)}>
-              <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} />
+              <NumberInput variant="money" min={0} {...money(retailPrice, setRetailPrice)} />
             </ModeField>
             <ModeField label={t("fixedPrice")} mode={mode} value={fmtMoney(fixedPrice)}>
-              <Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} />
+              <NumberInput variant="money" min={0} {...money(fixedPrice, setFixedPrice)} />
             </ModeField>
             <ModeField label={t("purchasePrice")} mode={mode} value={fmtMoney(purchasePrice)}>
-              <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+              <NumberInput variant="money" min={0} {...money(purchasePrice, setPurchasePrice)} />
             </ModeField>
           </div>
         </div>

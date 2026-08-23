@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
 import { ModeField } from "@/components/ui/mode-field";
@@ -199,6 +200,17 @@ export function EquipmentModelForm({
     setData((d) => ({ ...d, [key]: value }));
   }
 
+  // Money fields: NumberInput(money) shows grouped digits (1.500.000) while
+  // preserving the string state + "empty = unset" semantics — 0 ⇄ "" — so a
+  // blank price still saves as null (num("")) instead of a real 0.
+  type MoneyKey =
+    | "retailPrice" | "salePrice" | "purchasePrice" | "fixedPrice"
+    | "monthlyRentalPrice" | "monthlyMaintenancePrice";
+  const moneyField = (k: MoneyKey) => ({
+    value: data[k] === "" ? 0 : Number(data[k]),
+    onChange: (n: number) => setField(k, n === 0 ? "" : String(n)),
+  });
+
   function consumableLabel(c: ConsumableOpt): string {
     const name = c.nameKo || c.nameVi || c.nameEn || c.sku;
     return `${name} (${c.sku})`;
@@ -319,7 +331,7 @@ export function EquipmentModelForm({
               <Textarea value={data.description} onChange={(e) => setField("description", e.target.value)} rows={3} />
             </ModeField>
             <ModeField label={priceLabel(tp("salePrice"), tp("salePriceHelp"))} mode={mode} value={fmtMoney(data.salePrice)}>
-              <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+              <NumberInput variant="money" min={0} {...moneyField("salePrice")} />
             </ModeField>
           </div>
 
@@ -344,13 +356,13 @@ export function EquipmentModelForm({
               </div>
             </FormField>
             <ModeField label={priceLabel(tp("consumerPrice"), tp("retailPriceHelp"))} mode={mode} value={fmtMoney(data.retailPrice)}>
-              <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+              <NumberInput variant="money" min={0} {...moneyField("retailPrice")} />
             </ModeField>
             <ModeField label={priceLabel(tp("purchasePrice"), tp("purchasePriceHelp"))} mode={mode} value={fmtMoney(data.purchasePrice)}>
-              <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+              <NumberInput variant="money" min={0} {...moneyField("purchasePrice")} />
             </ModeField>
             <ModeField label={priceLabel(tp("fixedPrice"), tp("fixedPriceHelp"))} mode={mode} value={fmtMoney(data.fixedPrice)}>
-              <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+              <NumberInput variant="money" min={0} {...moneyField("fixedPrice")} />
             </ModeField>
           </div>
         </div>
@@ -358,10 +370,10 @@ export function EquipmentModelForm({
         {/* secondary — kept fields not in the mockup (월렌탈료·월관리비·안전재고·점검·보증·활성) */}
         <div className="mt-3 grid gap-x-6 gap-y-3 border-t border-[#f0f0f0] pt-3 sm:grid-cols-2 lg:grid-cols-3">
           <ModeField label={t("monthlyRentalPrice")} mode={mode} value={fmtMoney(data.monthlyRentalPrice)}>
-            <Input value={data.monthlyRentalPrice} onChange={(e) => setField("monthlyRentalPrice", e.target.value)} inputMode="numeric" placeholder="0" />
+            <NumberInput variant="money" min={0} {...moneyField("monthlyRentalPrice")} />
           </ModeField>
           <ModeField label={t("monthlyMaintenancePrice")} mode={mode} value={fmtMoney(data.monthlyMaintenancePrice)}>
-            <Input value={data.monthlyMaintenancePrice} onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)} inputMode="numeric" placeholder="0" />
+            <NumberInput variant="money" min={0} {...moneyField("monthlyMaintenancePrice")} />
           </ModeField>
           <ModeField label={tp("safetyStock")} mode={mode} value={data.safetyStock}>
             <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
