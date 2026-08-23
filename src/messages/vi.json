@@ -2344,7 +2344,7 @@
       "stockManage": "Điều chỉnh tồn kho",
       "lowStockBadge": "Thiếu",
       "actNew": "Mới",
-      "actEdit": "Sửa",
+      "actEdit": "Chỉnh sửa",
       "actDelete": "Xóa",
       "actSave": "Lưu",
       "actExcel": "Xuất Excel",
@@ -2354,8 +2354,6 @@
       "stateView": "Xem",
       "stateEditing": "Đang sửa",
       "stateCreating": "Tạo mới",
-      "actEdit": "Chỉnh sửa",
-      "actReport": "In báo cáo",
       "secFilterInfo": "Thông tin Filter",
       "secFilterList": "Danh sách Filter (vật tư tiêu hao)",
       "secModelInfo": "Thông tin Model",
@@ -2451,7 +2449,8 @@
       "errorGeneric": "Không thể cập nhật.",
       "errorSelfDisable": "Không thể vô hiệu hóa tài khoản của chính mình.",
       "errorManagerOnAdmin": "MANAGER không thể sửa hoặc vô hiệu hóa ADMIN.",
-      "notAllowed": "Trang này chỉ dành cho ADMIN hoặc MANAGER."
+      "notAllowed": "Trang này chỉ dành cho ADMIN hoặc MANAGER.",
+      "noUsersInRole": "Không có người dùng cho vai trò này."
     }
   },
   "merge": {

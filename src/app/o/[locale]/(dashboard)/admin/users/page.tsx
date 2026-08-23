@@ -13,7 +13,7 @@
  * single-click delete is intentionally not exposed.
  */
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/providers/auth-provider";
 import { useApi, ApiClientError } from "@/lib/api/client";
@@ -165,50 +165,78 @@ export default function AdminUsersPage() {
               </tr>
             )}
             {!loading &&
-              rows.map((row) => (
-                <tr key={row.id} className="hover:bg-[#fafafa]">
-                  <td className="px-4 py-3 font-medium text-[#262626]">
-                    {row.username}
-                    {row.id === user?.id && (
-                      <span className="ml-1 text-xs text-[#737373]">(me)</span>
+              rows.length > 0 &&
+              // Group by role in hierarchy order (관리자→매니저→직원→기사); each
+              // section gets a header row with its count. Empty roles still show
+              // the header + a placeholder so the 4-section structure is stable.
+              ROLES.map((role) => {
+                const group = rows.filter((r) => r.role === role);
+                return (
+                  <Fragment key={role}>
+                    <tr className="bg-[var(--brand-blue-50)]">
+                      <td
+                        colSpan={6}
+                        className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--brand-blue-700)]"
+                      >
+                        {tRoles(role)}
+                        <span className="ml-1.5 font-normal text-[#737373]">({group.length})</span>
+                      </td>
+                    </tr>
+                    {group.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-3 text-center text-xs italic text-[#a3a3a3]">
+                          {t("noUsersInRole")}
+                        </td>
+                      </tr>
+                    ) : (
+                      group.map((row) => (
+                        <tr key={row.id} className="hover:bg-[#fafafa]">
+                          <td className="px-4 py-3 font-medium text-[#262626]">
+                            {row.username}
+                            {row.id === user?.id && (
+                              <span className="ml-1 text-xs text-[#737373]">(me)</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-[#525252]">
+                            {tRoles(row.role)}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[#262626]">{row.phone}</td>
+                          <td className="px-4 py-3 text-[#525252]">
+                            {row.preferredRegion ?? "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge tone={row.status === "ACTIVE" ? "success" : "muted"}>
+                              {row.status === "ACTIVE"
+                                ? t("statusActive")
+                                : t("statusDisabled")}
+                            </StatusBadge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="inline-flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setEditing(row)}
+                                disabled={!canEditRow(row)}
+                              >
+                                {t("editUser")}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDeleting(row)}
+                                disabled={!canDeleteRow(row)}
+                              >
+                                {t("deactivate")}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-[#525252]">
-                    {tRoles(row.role)}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-[#262626]">{row.phone}</td>
-                  <td className="px-4 py-3 text-[#525252]">
-                    {row.preferredRegion ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge tone={row.status === "ACTIVE" ? "success" : "muted"}>
-                      {row.status === "ACTIVE"
-                        ? t("statusActive")
-                        : t("statusDisabled")}
-                    </StatusBadge>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="inline-flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setEditing(row)}
-                        disabled={!canEditRow(row)}
-                      >
-                        {t("editUser")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setDeleting(row)}
-                        disabled={!canDeleteRow(row)}
-                      >
-                        {t("deactivate")}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                );
+              })}
           </tbody>
         </table>
       </div>

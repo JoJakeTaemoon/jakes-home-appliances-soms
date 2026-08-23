@@ -2354,8 +2354,6 @@
       "stateView": "View",
       "stateEditing": "Editing",
       "stateCreating": "Creating",
-      "actEdit": "Edit",
-      "actReport": "Print report",
       "secFilterInfo": "Filter info",
       "secFilterList": "Filter (consumable) list",
       "secModelInfo": "Model info",
@@ -2451,7 +2449,8 @@
       "errorGeneric": "Could not update.",
       "errorSelfDisable": "You cannot deactivate your own account.",
       "errorManagerOnAdmin": "MANAGER cannot edit or deactivate an ADMIN user.",
-      "notAllowed": "This page is only available to ADMIN or MANAGER."
+      "notAllowed": "This page is only available to ADMIN or MANAGER.",
+      "noUsersInRole": "No users in this role."
     }
   },
   "merge": {
