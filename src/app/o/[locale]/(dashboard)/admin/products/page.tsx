@@ -10,7 +10,7 @@
  * volumes fit comfortably in memory).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { pickModelName } from "@/lib/products/name";
@@ -28,8 +28,10 @@ import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ActionBar } from "@/components/ui/action-bar";
-import { LegendFooter } from "@/components/ui/legend-footer";
+import { RecordWorkspace } from "@/components/ui/record-workspace";
+import { DetailActions, type DetailActionLabels } from "@/components/ui/detail-actions";
+import { ModeField } from "@/components/ui/mode-field";
+import { useRecordMode, type RecordMode } from "@/lib/hooks/use-record-mode";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
 
@@ -317,9 +319,9 @@ export default function ProductCatalogPage() {
 
       {tab === "brands" && <BrandsTab api={api} t={t} />}
       {tab === "categories" && <CategoriesTab api={api} t={t} />}
-      {tab === "models" && <ModelsTab api={api} t={t} onExportExcel={() => downloadCatalog("xlsx")} />}
+      {tab === "models" && <ModelsTab api={api} t={t} canManage={allowed} onExportExcel={() => downloadCatalog("xlsx")} />}
       {tab === "consumables" && (
-        <ConsumablesTab api={api} t={t} onExportExcel={() => downloadCatalog("xlsx")} />
+        <ConsumablesTab api={api} t={t} canManage={allowed} onExportExcel={() => downloadCatalog("xlsx")} />
       )}
       {tab === "accessories" && <AccessoriesTab api={api} t={t} />}
       {tab === "charges" && <ChargesTab api={api} t={t} />}
@@ -960,8 +962,9 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
 function ModelsTab({
   api,
   t,
+  canManage,
   onExportExcel,
-}: Readonly<{ api: ApiClient; t: Translate; onExportExcel: () => void }>) {
+}: Readonly<{ api: ApiClient; t: Translate; canManage: boolean; onExportExcel: () => void }>) {
   const locale = useLocale();
   const tem = useTranslations("equipmentModels");
   // Localize the category enum for the list column (matches the form's combobox
@@ -971,11 +974,12 @@ function ModelsTab({
     c && CATEGORY_KEYS.has(c) ? tem(`categoryValues.${c}`) : (c ?? "—");
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
-  // Master-detail (요청 A): `selected` drives the left edit form; null = the
-  // "new model" form. `formKey` forces a fresh form after each save so the
-  // create form doesn't retain the just-saved values.
-  const [selected, setSelected] = useState<ModelRow | null>(null);
-  const [formKey, setFormKey] = useState(0);
+  // Master-detail record machine (조회/수정/신규 등록): selecting a row → 조회,
+  // [수정]/[신규등록] flip the shared left form editable. `formKey` remounts the
+  // form on every transition except 수정 진입 (so entering edit keeps loaded state).
+  const { mode, selected, isEditing, formKey, select, startEdit, startCreate, cancel, saved } =
+    useRecordMode<ModelRow>();
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<ModelRow | null>(null);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -984,15 +988,18 @@ function ModelsTab({
   const submitRef = useRef<(() => void) | null>(null);
   const focusRef = useRef<(() => void) | null>(null);
 
+  const fetchRows = useCallback(async () => {
+    const res = await api.get<ModelRow[]>("/api/equipment-models?pageSize=100");
+    return res.data;
+  }, [api]);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<ModelRow[]>("/api/equipment-models?pageSize=100");
-      setRows(res.data);
+      setRows(await fetchRows());
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [fetchRows]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
@@ -1016,15 +1023,13 @@ function ModelsTab({
     [filtered, sort, locale],
   );
 
-  const handleNew = () => {
-    setSelected(null);
-    setFormKey((k) => k + 1);
-  };
-  const handleDone = () => {
-    void load();
-    setSelected(null);
-    setFormKey((k) => k + 1);
-  };
+  // After a save: reload the list, then re-sync the selection to the fresh row
+  // (edit) or clear it (create) and return to 조회.
+  const handleSaved = useCallback(async () => {
+    const data = await fetchRows();
+    setRows(data);
+    saved(selected ? data.find((r) => r.id === selected.id) ?? null : null);
+  }, [fetchRows, saved, selected]);
 
   const s = (v: number | string | null | undefined) => (v == null ? "" : String(Number(v)));
   const fmtPrice = (v: number | string | null | undefined) =>
@@ -1047,145 +1052,163 @@ function ModelsTab({
     });
   };
 
-  return (
-    <section className="space-y-4">
-      {/* ① form on the left · ③ search + ④ list on the right */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="min-w-0">
-          <EquipmentModelForm
-            key={selected ? `edit-${selected.id}` : `new-${formKey}`}
-            mode={selected ? "edit" : "create"}
-            submitRef={submitRef}
-            focusRef={focusRef}
-            onStockChanged={() => void load()}
-            initial={
-              selected
-                ? {
-                    id: selected.id,
-                    nameKo: selected.nameKo ?? "",
-                    nameVi: selected.nameVi ?? "",
-                    nameEn: selected.nameEn ?? "",
-                    brandId: selected.brand?.id ?? null,
-                    category: (selected.category ?? null) as
-                      | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
-                    isActive: selected.isActive,
-                    stockOnHand: selected.stockOnHand ?? 0,
-                    safetyStock: s(selected.safetyStock),
-                    retailPrice: s(selected.retailPrice),
-                    salePrice: s(selected.salePrice),
-                    purchasePrice: s(selected.purchasePrice),
-                    fixedPrice: s(selected.fixedPrice),
-                  }
-                : undefined
+  const labels: DetailActionLabels = {
+    view: t("stateView"),
+    editing: t("stateEditing"),
+    creating: t("stateCreating"),
+    create: t("actNew"),
+    edit: t("actEdit"),
+    delete: t("actDelete"),
+    save: t("actSave"),
+    cancel: t("actCancel"),
+  };
+
+  const detailActions = (
+    <DetailActions
+      mode={mode}
+      labels={labels}
+      canManage={canManage}
+      canEdit={selected != null}
+      saving={saving}
+      onCreate={startCreate}
+      onEdit={() => { startEdit(); requestAnimationFrame(() => focusRef.current?.()); }}
+      onDelete={() => selected && setDeleting(selected)}
+      onSave={() => submitRef.current?.()}
+      onCancel={cancel}
+    />
+  );
+
+  const detail = (
+    <EquipmentModelForm
+      key={selected ? `row-${selected.id}-${formKey}` : `new-${formKey}`}
+      mode={mode}
+      submitRef={submitRef}
+      focusRef={focusRef}
+      headerActions={detailActions}
+      onSavingChange={setSaving}
+      onStockChanged={() => void load()}
+      initial={
+        selected
+          ? {
+              id: selected.id,
+              nameKo: selected.nameKo ?? "",
+              nameVi: selected.nameVi ?? "",
+              nameEn: selected.nameEn ?? "",
+              brandId: selected.brand?.id ?? null,
+              category: (selected.category ?? null) as
+                | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
+              isActive: selected.isActive,
+              stockOnHand: selected.stockOnHand ?? 0,
+              safetyStock: s(selected.safetyStock),
+              retailPrice: s(selected.retailPrice),
+              salePrice: s(selected.salePrice),
+              purchasePrice: s(selected.purchasePrice),
+              fixedPrice: s(selected.fixedPrice),
             }
-            onDone={handleDone}
-          />
+          : undefined
+      }
+      onDone={handleSaved}
+    />
+  );
+
+  const list = (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+      {/* toolbar — list actions + search (stays put while the table scrolls) */}
+      <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] p-3">
+        <div className="flex items-center justify-between gap-2">
+          <SectionBadge n={4} title={t("secModelList")} />
+          <div className="flex items-center gap-2">
+            {canManage && checkedIds.size > 0 && (
+              <Button variant="danger" size="sm" disabled={isEditing} onClick={() => setBulkOpen(true)}>
+                {t("deactivate")} ({checkedIds.size})
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={onExportExcel}>{t("actExcel")}</Button>
+          </div>
         </div>
-
-        <div className="flex min-w-0 flex-col gap-3">
-          {/* ③ search */}
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <FormField label={`${t("searchDataLabel")} [F10]`}>
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchModels")} data-catalog-search />
-              </FormField>
-            </div>
-            <Button variant="secondary" onClick={() => { /* live filter */ }}>{t("searchLabel")}</Button>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <FormField label={`${t("searchDataLabel")} [F10]`}>
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchModels")} data-catalog-search />
+            </FormField>
           </div>
-
-          {/* ④ model list */}
-          <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
-            <div className="border-b border-[#f0f0f0] px-3 py-2">
-              <SectionBadge n={4} title={t("secModelList")} />
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
-                  <tr>
-                    <th className="w-8 px-2 py-1.5 text-center">
-                      <input type="checkbox" checked={allChecked} onChange={toggleAll} aria-label={t("colName")} />
-                    </th>
-                    <th className="px-2 py-1.5 text-left">#</th>
-                    <th className="px-2 py-1.5 text-left">{t("colName")}</th>
-                    <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
-                    <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("fixedPrice")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("purchasePrice")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {loading && (
-                    <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>
-                  )}
-                  {!loading && sorted.length === 0 && (
-                    <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
-                  )}
-                  {!loading &&
-                    sorted.map((r, i) => {
-                      const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
-                      const isSel = selected?.id === r.id;
-                      return (
-                        <tr
-                          key={r.id}
-                          onClick={() => setSelected(r)}
-                          aria-current={isSel ? "true" : undefined}
-                          className={cn(
-                            "cursor-pointer hover:bg-[#f5f5f5]",
-                            isSel && "bg-[var(--brand-blue-50)]",
-                            !r.isActive && "opacity-50",
-                          )}
-                        >
-                          <td className="px-2 py-1.5 text-center">
-                            <input
-                              type="checkbox" checked={checkedIds.has(r.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={() => toggleOne(r.id)}
-                              aria-label={pickModelName(r, locale)}
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
-                          <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
-                          <td className="px-2 py-1.5 text-[#586a7c]">{catLabel(r.category)}</td>
-                          <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
-                          <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
-                            {(r.stockOnHand ?? 0).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Button variant="secondary" onClick={() => { /* live filter */ }}>{t("searchLabel")}</Button>
         </div>
       </div>
 
-      {/* ⑤ Bottom action bar + legend */}
-      <ActionBar
-        items={[
-          { key: "new", label: t("actNew"), hotkey: "F2", variant: "secondary", onClick: handleNew },
-          { key: "edit", label: t("actEdit"), hotkey: "F3", variant: "secondary", disabled: !selected, onClick: () => focusRef.current?.() },
-          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: checkedIds.size === 0 && !selected, onClick: () => { if (checkedIds.size > 0) setBulkOpen(true); else if (selected) setDeleting(selected); } },
-          { key: "save", label: t("actSave"), hotkey: "F5", variant: "primary", onClick: () => submitRef.current?.() },
-          { key: "excel", label: t("actExcel"), hotkey: "F6", variant: "secondary", onClick: onExportExcel },
-          { key: "close", label: t("actClose"), hotkey: "Esc", variant: "ghost", onClick: handleNew },
-        ]}
-      />
-      <LegendFooter
-        label={t("legendHelpToggle")}
-        items={[
-          { n: 1, title: t("legendInfoT"), body: t("legendInfoB") },
-          { n: 2, title: t("legendFilterT"), body: t("legendFilterB") },
-          { n: 3, title: t("legendSearchT"), body: t("legendSearchB") },
-          { n: 4, title: t("legendListT"), body: t("legendListB") },
-          { n: 5, title: t("legendActionsT"), body: t("legendActionsB") },
-        ]}
-      />
+      {/* scroll region — table with a sticky header */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[720px] text-sm">
+          <thead className="sticky top-0 z-10 bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
+            <tr>
+              <th className="w-8 px-2 py-1.5 text-center">
+                <input type="checkbox" checked={allChecked} disabled={isEditing} onChange={toggleAll} aria-label={t("colName")} />
+              </th>
+              <th className="px-2 py-1.5 text-left">#</th>
+              <th className="px-2 py-1.5 text-left">{t("colName")}</th>
+              <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+              <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
+              <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
+              <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
+              <th className="px-2 py-1.5 text-right">{t("fixedPrice")}</th>
+              <th className="px-2 py-1.5 text-right">{t("purchasePrice")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#f0f0f0]">
+            {loading && (
+              <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>
+            )}
+            {!loading && sorted.length === 0 && (
+              <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
+            )}
+            {!loading &&
+              sorted.map((r, i) => {
+                const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
+                const isSel = selected?.id === r.id;
+                return (
+                  <tr
+                    key={r.id}
+                    onClick={() => { if (!isEditing) select(r); }}
+                    aria-current={isSel ? "true" : undefined}
+                    aria-disabled={isEditing || undefined}
+                    className={cn(
+                      isEditing ? "cursor-default" : "cursor-pointer hover:bg-[#f5f5f5]",
+                      isSel && "bg-[var(--brand-blue-50)]",
+                      isEditing && "opacity-50",
+                      !r.isActive && "opacity-50",
+                    )}
+                  >
+                    <td className="px-2 py-1.5 text-center">
+                      <input
+                        type="checkbox" checked={checkedIds.has(r.id)}
+                        disabled={isEditing}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={() => toggleOne(r.id)}
+                        aria-label={pickModelName(r, locale)}
+                      />
+                    </td>
+                    <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
+                    <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{catLabel(r.category)}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                    <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                      {(r.stockOnHand ?? 0).toLocaleString()}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.fixedPrice)}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.purchasePrice)}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <section>
+      <RecordWorkspace detail={detail} list={list} heightClass="lg:h-[calc(100dvh-17rem)]" />
 
       {deleting && (
         <ConfirmDialog
@@ -1204,12 +1227,9 @@ function ModelsTab({
             } catch (err) {
               alert(err instanceof Error ? err.message : t("errorGeneric"));
             } finally {
-              // If the just-deactivated row is the one loaded in the left form,
+              // If the just-deactivated row is the one loaded in the left panel,
               // clear it so a stray Save can't re-activate the now-stale copy.
-              if (selected?.id === deleting.id) {
-                setSelected(null);
-                setFormKey((k) => k + 1);
-              }
+              if (selected?.id === deleting.id) select(null);
               setDeleting(null);
               await load();
             }
@@ -1233,10 +1253,7 @@ function ModelsTab({
             } catch (err) {
               alert(err instanceof Error ? err.message : t("errorGeneric"));
             } finally {
-              if (selected && checkedIds.has(selected.id)) {
-                setSelected(null);
-                setFormKey((k) => k + 1);
-              }
+              if (selected && checkedIds.has(selected.id)) select(null);
               setCheckedIds(new Set());
               setBulkOpen(false);
               await load();
@@ -1278,44 +1295,48 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
 function ConsumablesTab({
   api,
   t,
+  canManage,
   onExportExcel,
-}: Readonly<{ api: ApiClient; t: Translate; onExportExcel: () => void }>) {
+}: Readonly<{ api: ApiClient; t: Translate; canManage: boolean; onExportExcel: () => void }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
   const brands = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
-  // Master-detail (요청 A): `selected` drives the left form; null = new filter.
-  const [selected, setSelected] = useState<ConsumableRow | null>(null);
-  const [formKey, setFormKey] = useState(0);
+  // Master-detail record machine (조회/수정/신규 등록) — same convention as the
+  // Models tab; `formKey` remounts the form on every transition except 수정 진입.
+  const { mode, selected, isEditing, formKey, select, startEdit, startCreate, cancel, saved } =
+    useRecordMode<ConsumableRow>();
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<ConsumableRow | null>(null);
   const submitRef = useRef<(() => void) | null>(null);
   const focusRef = useRef<(() => void) | null>(null);
   const [search, setSearch] = useState("");
   const { sort } = useSort<"sku" | "nameVi" | "replaceEveryDays" | "cleanEveryDays" | "cleanOnEveryVisit" | "retailPrice" | "isActive">("sku");
 
+  const fetchRows = useCallback(async () => {
+    const res = await api.get<ConsumableRow[]>("/api/admin/products/consumables?pageSize=100");
+    return res.data;
+  }, [api]);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<ConsumableRow[]>("/api/admin/products/consumables?pageSize=100");
-      setRows(res.data);
+      setRows(await fetchRows());
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [fetchRows]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
-  const handleNew = () => {
-    setSelected(null);
-    setFormKey((k) => k + 1);
-  };
-  const handleDone = () => {
-    void load();
-    setSelected(null);
-    setFormKey((k) => k + 1);
-  };
+  // After a save: reload, re-sync selection to the fresh row (edit) or clear it
+  // (create), and return to 조회.
+  const handleSaved = useCallback(async () => {
+    const data = await fetchRows();
+    setRows(data);
+    saved(selected ? data.find((r) => r.id === selected.id) ?? null : null);
+  }, [fetchRows, saved, selected]);
 
   const filtered = useMemo(() => {
     const q = foldDiacritics(search.trim());
@@ -1339,122 +1360,135 @@ function ConsumablesTab({
 
   const fmtPrice = (v: number | string | null | undefined) => (v == null ? "—" : Number(v).toLocaleString());
 
-  return (
-    <section className="space-y-4">
-      {/* ① form (+ ② applied models) on the left · search + ③ list on the right */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <div className="min-w-0">
-          <ConsumableForm
-            key={selected ? `edit-${selected.id}` : `new-${formKey}`}
-            api={api}
-            t={t}
-            row={selected}
-            models={models}
-            brands={brands}
-            submitRef={submitRef}
-            focusRef={focusRef}
-            onStockChanged={() => void load()}
-            onDone={handleDone}
-          />
+  const labels: DetailActionLabels = {
+    view: t("stateView"),
+    editing: t("stateEditing"),
+    creating: t("stateCreating"),
+    create: t("actNew"),
+    edit: t("actEdit"),
+    delete: t("actDelete"),
+    save: t("actSave"),
+    cancel: t("actCancel"),
+  };
+
+  const detailActions = (
+    <DetailActions
+      mode={mode}
+      labels={labels}
+      canManage={canManage}
+      canEdit={selected != null}
+      saving={saving}
+      onCreate={startCreate}
+      onEdit={() => { startEdit(); requestAnimationFrame(() => focusRef.current?.()); }}
+      onDelete={() => selected && setDeleting(selected)}
+      onSave={() => submitRef.current?.()}
+      onCancel={cancel}
+    />
+  );
+
+  const detail = (
+    <ConsumableForm
+      key={selected ? `row-${selected.id}-${formKey}` : `new-${formKey}`}
+      api={api}
+      t={t}
+      mode={mode}
+      row={selected}
+      models={models}
+      brands={brands}
+      submitRef={submitRef}
+      focusRef={focusRef}
+      headerActions={detailActions}
+      onSavingChange={setSaving}
+      onStockChanged={() => void load()}
+      onDone={handleSaved}
+    />
+  );
+
+  const list = (
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
+      {/* toolbar — list actions + search (stays put while the table scrolls) */}
+      <div className="shrink-0 space-y-3 border-b border-[#f0f0f0] p-3">
+        <div className="flex items-center justify-between gap-2">
+          <SectionBadge n={3} title={t("secFilterList")} />
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={onExportExcel}>{t("actExcel")}</Button>
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>{t("actReport")}</Button>
+          </div>
         </div>
-
-        <div className="flex min-w-0 flex-col gap-3">
-          {/* search area (top-right) */}
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <FormField label={`${t("searchDataLabel")} [F10]`}>
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchFilters")} />
-              </FormField>
-            </div>
-            <Button variant="secondary" onClick={() => { /* live filter — button is a visual affordance */ }}>
-              {t("searchLabel")}
-            </Button>
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <FormField label={`${t("searchDataLabel")} [F10]`}>
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchFilters")} data-catalog-search />
+            </FormField>
           </div>
-
-          {/* ③ filter list */}
-          <div className="overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
-            <div className="border-b border-[#f0f0f0] px-3 py-2">
-              <SectionBadge n={3} title={t("secFilterList")} />
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] text-sm">
-                <thead className="bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left">#</th>
-                    <th className="px-2 py-1.5 text-left">{t("colName")}</th>
-                    <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
-                    <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
-                    <th className="px-2 py-1.5 text-left">{t("spec")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("colReplaceCycle")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
-                    <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f0f0f0]">
-                  {loading && <tr><td colSpan={8} className="p-4 text-center text-[#737373]">…</td></tr>}
-                  {!loading && sorted.length === 0 && (
-                    <tr><td colSpan={8} className="p-4 text-center text-[#737373]">{t("noConsumables")}</td></tr>
-                  )}
-                  {!loading &&
-                    sorted.map((r, i) => {
-                      const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
-                      const isSel = selected?.id === r.id;
-                      const catName = r.productCategory
-                        ? (locale === "vi" ? r.productCategory.nameVi : locale === "en" ? r.productCategory.nameEn : r.productCategory.nameKo)
-                        : "—";
-                      return (
-                        <tr
-                          key={r.id}
-                          onClick={() => setSelected(r)}
-                          aria-current={isSel ? "true" : undefined}
-                          className={cn(
-                            "cursor-pointer hover:bg-[#f5f5f5]",
-                            isSel && "bg-[var(--brand-blue-50)]",
-                            !r.isActive && "opacity-50",
-                          )}
-                        >
-                          <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
-                          <td className="px-2 py-1.5 font-medium text-[#111]">{pickLocaleName(r, locale)}</td>
-                          <td className="px-2 py-1.5 text-[#586a7c]">{catName}</td>
-                          <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
-                          <td className="px-2 py-1.5 text-[#586a7c]">{r.spec ?? "—"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
-                          <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
-                            {(r.stockOnHand ?? 0).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <Button variant="secondary" onClick={() => { /* live filter — button is a visual affordance */ }}>
+            {t("searchLabel")}
+          </Button>
         </div>
       </div>
 
-      {/* Bottom action bar + legend */}
-      <ActionBar
-        items={[
-          { key: "new", label: t("actNew"), hotkey: "F2", variant: "secondary", onClick: handleNew },
-          { key: "edit", label: t("actEdit"), hotkey: "F3", variant: "secondary", disabled: !selected, onClick: () => focusRef.current?.() },
-          { key: "delete", label: t("actDelete"), hotkey: "F4", variant: "danger", disabled: !selected, onClick: () => selected && setDeleting(selected) },
-          { key: "save", label: t("actSave"), hotkey: "F5", variant: "primary", onClick: () => submitRef.current?.() },
-          { key: "excel", label: t("actExcel"), hotkey: "F6", variant: "secondary", onClick: onExportExcel },
-          { key: "report", label: t("actReport"), hotkey: "F7", variant: "secondary", onClick: () => window.print() },
-          { key: "close", label: t("actClose"), hotkey: "Esc", variant: "ghost", onClick: handleNew },
-        ]}
-      />
-      <LegendFooter
-        label={t("legendHelpToggle")}
-        items={[
-          { n: 1, title: t("legendSearchT"), body: t("legendSearchB") },
-          { n: 2, title: t("legendFilterInfoT"), body: t("legendFilterInfoB") },
-          { n: 3, title: t("legendAppliedModelsT"), body: t("legendAppliedModelsB") },
-          { n: 4, title: t("legendFilterListT"), body: t("legendFilterListB") },
-          { n: 5, title: t("legendActionsT"), body: t("legendActionsB") },
-        ]}
-      />
+      {/* scroll region — table with a sticky header */}
+      <div className="min-h-0 flex-1 overflow-auto">
+        <table className="w-full min-w-[620px] text-sm">
+          <thead className="sticky top-0 z-10 bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
+            <tr>
+              <th className="px-2 py-1.5 text-left">#</th>
+              <th className="px-2 py-1.5 text-left">{t("colName")}</th>
+              <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+              <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
+              <th className="px-2 py-1.5 text-left">{t("spec")}</th>
+              <th className="px-2 py-1.5 text-right">{t("colReplaceCycle")}</th>
+              <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
+              <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#f0f0f0]">
+            {loading && <tr><td colSpan={8} className="p-4 text-center text-[#737373]">…</td></tr>}
+            {!loading && sorted.length === 0 && (
+              <tr><td colSpan={8} className="p-4 text-center text-[#737373]">{t("noConsumables")}</td></tr>
+            )}
+            {!loading &&
+              sorted.map((r, i) => {
+                const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
+                const isSel = selected?.id === r.id;
+                const catName = r.productCategory
+                  ? (locale === "vi" ? r.productCategory.nameVi : locale === "en" ? r.productCategory.nameEn : r.productCategory.nameKo)
+                  : "—";
+                return (
+                  <tr
+                    key={r.id}
+                    onClick={() => { if (!isEditing) select(r); }}
+                    aria-current={isSel ? "true" : undefined}
+                    aria-disabled={isEditing || undefined}
+                    className={cn(
+                      isEditing ? "cursor-default" : "cursor-pointer hover:bg-[#f5f5f5]",
+                      isSel && "bg-[var(--brand-blue-50)]",
+                      isEditing && "opacity-50",
+                      !r.isActive && "opacity-50",
+                    )}
+                  >
+                    <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
+                    <td className="px-2 py-1.5 font-medium text-[#111]">{pickLocaleName(r, locale)}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{catName}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{r.spec ?? "—"}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
+                    <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                      {(r.stockOnHand ?? 0).toLocaleString()}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <section>
+      <RecordWorkspace detail={detail} list={list} heightClass="lg:h-[calc(100dvh-17rem)]" />
 
       {deleting && (
         <ConfirmDialog
@@ -1471,12 +1505,9 @@ function ConsumablesTab({
             } catch (err) {
               alert(err instanceof Error ? err.message : t("errorGeneric"));
             } finally {
-              // If the just-deactivated row is the one loaded in the left form,
+              // If the just-deactivated row is the one loaded in the left panel,
               // clear it so a stray Save can't re-activate the now-stale copy.
-              if (selected?.id === deleting.id) {
-                setSelected(null);
-                setFormKey((k) => k + 1);
-              }
+              if (selected?.id === deleting.id) select(null);
               setDeleting(null);
               await load();
             }
@@ -1496,12 +1527,14 @@ let appliedRowCounter = 0;
 
 /** Filter (Consumable) form for the master-detail layout. Carries the filter's
  *  own info + the "적용 가능한 장비(모델)" editor (WS-3 re-adds bidirectional
- *  model links) + stock adjust. The page ActionBar drives Save via submitRef. */
+ *  model links) + stock adjust. Renders read-only in 조회(view); the detail-panel
+ *  DetailActions drives Save via submitRef. */
 function ConsumableForm({
-  api, t, row, models, brands, onDone, submitRef, focusRef, onStockChanged,
+  api, t, mode, row, models, brands, onDone, submitRef, focusRef, onStockChanged, headerActions, onSavingChange,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
+  mode: RecordMode;
   row: ConsumableRow | null;
   models: ModelRow[];
   brands: { id: string; name: string }[];
@@ -1509,10 +1542,13 @@ function ConsumableForm({
   submitRef: RefObject<(() => void) | null>;
   focusRef: RefObject<(() => void) | null>;
   onStockChanged: () => void;
+  headerActions?: ReactNode;
+  onSavingChange?: (saving: boolean) => void;
 }>) {
   const locale = useLocale();
   const tc = useTranslations("common");
-  const isEdit = !!row;
+  const isEdit = mode === "edit";
+  const isView = mode === "view";
   const nameRef = useRef<HTMLInputElement | null>(null);
   const [sku, setSku] = useState(row?.sku ?? "");
   const [nameKo, setNameKo] = useState(row?.nameKo ?? "");
@@ -1544,7 +1580,13 @@ function ConsumableForm({
   const [err, setErr] = useState<string | null>(null);
 
   const stockOnHand = row?.stockOnHand ?? 0;
-  const lowStock = isEdit && stockOnHand < Number(safetyStock || "0");
+  const lowStock = mode !== "create" && stockOnHand < Number(safetyStock || "0");
+  const fmtMoney = (v: string) => (v ? Number(v).toLocaleString() : "");
+
+  // Surface save-in-flight to the DetailActions spinner.
+  useEffect(() => {
+    onSavingChange?.(busy);
+  }, [busy, onSavingChange]);
 
   useEffect(() => {
     void (async () => {
@@ -1558,6 +1600,23 @@ function ConsumableForm({
       }
     })();
   }, [api]);
+
+  const categoryName = (() => {
+    const c = categories.find((x) => x.id === categoryId);
+    if (!c) return "";
+    return locale === "vi" ? c.nameVi : locale === "en" ? c.nameEn : c.nameKo;
+  })();
+  const brandName = brands.find((b) => b.id === brandId)?.name ?? "";
+  const replaceView = replaceEveryDays
+    ? `${replaceEveryDays} ${replaceCycleUnit === "DAY" ? t("cycleUnitDay") : t("cycleUnitMonth")}`
+    : "";
+  const nameView = (
+    <span className="flex flex-col leading-tight">
+      <span>{nameKo || "—"}</span>
+      <span className="text-[#586a7c]">{nameVi || "—"}</span>
+      <span className="text-[#586a7c]">{nameEn || "—"}</span>
+    </span>
+  );
 
   function switchUnit(v: string | null) {
     const nextUnit = (v as "DAY" | "MONTH") ?? "DAY";
@@ -1623,49 +1682,51 @@ function ConsumableForm({
     <div className="flex flex-col gap-4">
       {/* ① 필터 정보 */}
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
-        <div className="mb-3 border-b border-[#f0f0f0] pb-2">
+        <div className="mb-3 flex items-center justify-between gap-2 border-b border-[#f0f0f0] pb-2">
           <SectionBadge n={1} title={t("secFilterInfo")} />
+          {headerActions}
         </div>
         <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
           {/* LEFT — descriptive */}
           <div className="flex flex-col gap-3">
-            <FormField label={t("colName")}>
+            <ModeField label={t("colName")} mode={mode} value={nameView}>
               <div className="flex flex-col gap-1">
                 <Input ref={nameRef} value={nameKo} onChange={(e) => setNameKo(e.target.value)} placeholder="한국어" aria-label={t("colNameKo")} />
                 <Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} placeholder="Tiếng Việt" aria-label={t("colNameVi")} />
                 <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} placeholder="English" aria-label={t("colNameEn")} />
               </div>
-            </FormField>
-            {!isEdit && (
-              <FormField label={t("colSku")}>
-                <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="FLT-NEW-001" />
-              </FormField>
-            )}
-            <FormField label={t("colCategory")}>
+            </ModeField>
+            {/* SKU is immutable after creation — editable only in 신규 등록, read-only elsewhere. */}
+            <ModeField label={t("colSku")} mode={mode === "create" ? "create" : "view"} value={sku}>
+              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="FLT-NEW-001" />
+            </ModeField>
+            <ModeField label={t("colCategory")} mode={mode} value={categoryName}>
               <Combobox
                 value={categoryId}
                 onChange={(v) => setCategoryId(v || null)}
                 options={categories.map((c) => ({ value: c.id, label: locale === "vi" ? c.nameVi : locale === "en" ? c.nameEn : c.nameKo }))}
                 searchable allowClear ariaLabel={t("colCategory")}
               />
-            </FormField>
-            <FormField label={t("colBrand")}>
+            </ModeField>
+            <ModeField label={t("colBrand")} mode={mode} value={brandName}>
               <Combobox
                 value={brandId}
                 onChange={(v) => setBrandId(v || null)}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
                 searchable allowClear ariaLabel={t("colBrand")}
               />
-            </FormField>
-            <FormField label={t("spec")}><Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="9 inch" /></FormField>
-            <FormField label={t("mainUse")}>
+            </ModeField>
+            <ModeField label={t("spec")} mode={mode} value={spec}>
+              <Input value={spec} onChange={(e) => setSpec(e.target.value)} placeholder="9 inch" />
+            </ModeField>
+            <ModeField label={t("mainUse")} mode={mode} value={mainUse}>
               <Textarea value={mainUse} onChange={(e) => setMainUse(e.target.value)} rows={3} />
-            </FormField>
+            </ModeField>
           </div>
 
           {/* RIGHT — numeric */}
           <div className="flex flex-col gap-3">
-            <FormField label={t("colReplaceCycle")}>
+            <ModeField label={t("colReplaceCycle")} mode={mode} value={replaceView}>
               <div className="flex gap-2">
                 <Input type="number" value={replaceEveryDays} onChange={(e) => setReplaceEveryDays(e.target.value)} />
                 <div className="w-28 shrink-0">
@@ -1677,14 +1738,14 @@ function ConsumableForm({
                   />
                 </div>
               </div>
-            </FormField>
+            </ModeField>
             <FormField label={t("stockOnHand")}>
               <div className="flex items-center gap-2">
                 <span className={cn(
                   "flex h-9 flex-1 items-center rounded-lg border px-3 text-sm tabular-nums",
                   lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
                 )}>
-                  {isEdit ? stockOnHand.toLocaleString() : "—"}
+                  {mode !== "create" ? stockOnHand.toLocaleString() : "—"}
                   {lowStock && <span className="ml-2 text-xs font-medium">{t("lowStockBadge")}</span>}
                 </span>
                 {isEdit && (
@@ -1692,37 +1753,47 @@ function ConsumableForm({
                 )}
               </div>
             </FormField>
-            <FormField label={t("safetyStock")}><Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} /></FormField>
-            <FormField label={t("consumerPrice")}><Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} /></FormField>
-            <FormField label={t("fixedPrice")}><Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} /></FormField>
-            <FormField label={t("purchasePrice")}><Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} /></FormField>
+            <ModeField label={t("safetyStock")} mode={mode} value={safetyStock}>
+              <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
+            </ModeField>
+            <ModeField label={t("consumerPrice")} mode={mode} value={fmtMoney(retailPrice)}>
+              <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(e.target.value)} />
+            </ModeField>
+            <ModeField label={t("fixedPrice")} mode={mode} value={fmtMoney(fixedPrice)}>
+              <Input type="number" value={fixedPrice} onChange={(e) => setFixedPrice(e.target.value)} />
+            </ModeField>
+            <ModeField label={t("purchasePrice")} mode={mode} value={fmtMoney(purchasePrice)}>
+              <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+            </ModeField>
           </div>
         </div>
 
         {/* secondary: cleaning cycle + active */}
         <div className="mt-3 grid gap-x-6 gap-y-3 border-t border-[#f0f0f0] pt-3 md:grid-cols-2">
-          <FormField label={t("colCleanCycle")}><Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} /></FormField>
-          <FormField label={t("colCleanOnVisit")}>
+          <ModeField label={t("colCleanCycle")} mode={mode} value={cleanEveryDays}>
+            <Input type="number" value={cleanEveryDays} onChange={(e) => setCleanEveryDays(e.target.value)} />
+          </ModeField>
+          <ModeField label={t("colCleanOnVisit")} mode={mode} value={cleanOnEveryVisit ? t("yes") : tc("no")}>
             <label className="flex h-9 items-center gap-2 text-sm">
               <input type="checkbox" checked={cleanOnEveryVisit} onChange={(e) => setCleanOnEveryVisit(e.target.checked)} />
               <span>{t("yes")}</span>
             </label>
-          </FormField>
-          {isEdit && (
-            <FormField label={t("colActive")}>
+          </ModeField>
+          {mode !== "create" && (
+            <ModeField label={t("colActive")} mode={mode} value={isActive ? t("statusActive") : t("statusInactive")}>
               <label className="flex h-9 items-center gap-2 text-sm">
                 <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
                 <span>{t("statusActive")}</span>
               </label>
-            </FormField>
+            </ModeField>
           )}
         </div>
 
         {/* 비고 — full width */}
         <div className="mt-3">
-          <FormField label={t("notes")}>
+          <ModeField label={t("notes")} mode={mode} value={notes}>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
-          </FormField>
+          </ModeField>
         </div>
       </div>
 
@@ -1731,16 +1802,18 @@ function ConsumableForm({
         <div className="mb-3 border-b border-[#f0f0f0] pb-2">
           <SectionBadge n={2} title={t("appliedModels")} />
         </div>
-        <div className="mb-3 flex items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <Combobox
-              value={pendingModel} onChange={setPendingModel}
-              options={availableModelOptions} searchable allowClear
-              placeholder={t("addModelPlaceholder")} ariaLabel={t("addModelLink")}
-            />
+        {!isView && (
+          <div className="mb-3 flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <Combobox
+                value={pendingModel} onChange={setPendingModel}
+                options={availableModelOptions} searchable allowClear
+                placeholder={t("addModelPlaceholder")} ariaLabel={t("addModelLink")}
+              />
+            </div>
+            <Button variant="secondary" onClick={addPendingModel} disabled={!pendingModel}>{tc("add")}</Button>
           </div>
-          <Button variant="secondary" onClick={addPendingModel} disabled={!pendingModel}>{tc("add")}</Button>
-        </div>
+        )}
         {applied.length === 0 ? (
           <p className="text-xs text-[#737373]">—</p>
         ) : (
@@ -1753,7 +1826,7 @@ function ConsumableForm({
                   <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
                   <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
                   <th className="w-20 px-2 py-1.5 text-right">{t("colQuantity")}</th>
-                  <th className="w-8 px-2 py-1.5" />
+                  {!isView && <th className="w-8 px-2 py-1.5" />}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
@@ -1765,19 +1838,25 @@ function ConsumableForm({
                       <td className="px-2 py-1.5 font-medium text-[#111]">{m ? pickModelName(m, locale) : "—"}</td>
                       <td className="px-2 py-1.5 text-[#586a7c]">{m?.category ?? "—"}</td>
                       <td className="px-2 py-1.5 text-[#586a7c]">{m?.brand?.name ?? "—"}</td>
-                      <td className="px-2 py-1.5 text-right">
-                        <Input
-                          value={a.quantity} inputMode="numeric" placeholder="1"
-                          onChange={(e) => setApplied(applied.map((g, i) => (i === idx ? { ...g, quantity: e.target.value } : g)))}
-                          aria-label={`${t("colQuantity")} ${idx + 1}`} className="h-8 text-right"
-                        />
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
-                        <button
-                          type="button" onClick={() => setApplied(applied.filter((_, i) => i !== idx))}
-                          aria-label={tc("remove")} className="rounded px-1.5 py-0.5 text-sm text-red-600 hover:bg-red-50"
-                        >✕</button>
-                      </td>
+                      {isView ? (
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[#111]">{a.quantity || "1"}</td>
+                      ) : (
+                        <>
+                          <td className="px-2 py-1.5 text-right">
+                            <Input
+                              value={a.quantity} inputMode="numeric" placeholder="1"
+                              onChange={(e) => setApplied(applied.map((g, i) => (i === idx ? { ...g, quantity: e.target.value } : g)))}
+                              aria-label={`${t("colQuantity")} ${idx + 1}`} className="h-8 text-right"
+                            />
+                          </td>
+                          <td className="px-2 py-1.5 text-right">
+                            <button
+                              type="button" onClick={() => setApplied(applied.filter((_, i) => i !== idx))}
+                              aria-label={tc("remove")} className="rounded px-1.5 py-0.5 text-sm text-red-600 hover:bg-red-50"
+                            >✕</button>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}

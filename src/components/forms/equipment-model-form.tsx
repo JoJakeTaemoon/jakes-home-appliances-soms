@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { FormField } from "@/components/ui/form-field";
+import { ModeField } from "@/components/ui/mode-field";
 import { SectionBadge } from "@/components/ui/section-badge";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
+import type { RecordMode } from "@/lib/hooks/use-record-mode";
 import { cn } from "@/lib/cn";
 
 /** One row in the model's filter config (요청 A) — which filter, how many, and
@@ -51,14 +53,19 @@ interface ModelInput {
 
 interface Props {
   initial?: Partial<ModelInput> & { id?: string; stockOnHand?: number };
-  mode: "create" | "edit";
+  /** view = read-only (조회), edit = 수정, create = 신규 등록. */
+  mode: RecordMode;
   onDone?: () => void;
-  /** The page-level ActionBar drives Save via this ref (F5). */
+  /** The detail-panel DetailActions drives Save via this ref (F5). */
   submitRef?: RefObject<(() => void) | null>;
-  /** The page-level ActionBar focuses the form via this ref (F3 수정). */
+  /** The detail-panel DetailActions focuses the form on 수정 진입 via this ref. */
   focusRef?: RefObject<(() => void) | null>;
   /** Called after a stock move so the list can refresh the on-hand column. */
   onStockChanged?: () => void;
+  /** Rendered in the ① header row (the DetailActions cluster). */
+  headerActions?: ReactNode;
+  /** Reports the in-flight save state up so DetailActions can show a spinner. */
+  onSavingChange?: (saving: boolean) => void;
 }
 
 interface BrandOpt {
@@ -101,19 +108,23 @@ export function EquipmentModelForm({
   submitRef,
   focusRef,
   onStockChanged,
+  headerActions,
+  onSavingChange,
 }: Readonly<Props>) {
   const t = useTranslations("equipmentModels");
   const tp = useTranslations("admin.products");
   const tc = useTranslations("common");
   const router = useRouter();
   const api = useApi();
+  const isView = mode === "view";
   const finish = () => {
     if (onDone) onDone();
     else router.push("/admin/products");
   };
   const [data, setData] = useState<ModelInput>({ ...EMPTY, ...initial });
   const [filters, setFilters] = useState<ModelFilterRow[]>([]);
-  const [filtersReady, setFiltersReady] = useState(mode !== "edit");
+  // Nothing to load when creating, or in the empty 조회 state (no record id).
+  const [filtersReady, setFiltersReady] = useState(mode === "create" || !initial?.id);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
@@ -123,7 +134,22 @@ export function EquipmentModelForm({
 
   const stockOnHand = initial?.stockOnHand ?? 0;
   const safetyNum = Number(data.safetyStock || "0");
-  const lowStock = mode === "edit" && stockOnHand < safetyNum;
+  const lowStock = mode !== "create" && stockOnHand < safetyNum;
+  const fmtMoney = (v: string) => (v ? Number(v).toLocaleString() : "");
+  const brandName = brands.find((b) => b.id === data.brandId)?.name ?? "";
+  const categoryLabel = data.category ? t(`categoryValues.${data.category}`) : "";
+  const nameView = (
+    <span className="flex flex-col leading-tight">
+      <span>{data.nameKo || "—"}</span>
+      <span className="text-[#586a7c]">{data.nameVi || "—"}</span>
+      <span className="text-[#586a7c]">{data.nameEn || "—"}</span>
+    </span>
+  );
+
+  // Surface save-in-flight to the DetailActions spinner.
+  useEffect(() => {
+    onSavingChange?.(busy);
+  }, [busy, onSavingChange]);
 
   useEffect(() => {
     void (async () => {
@@ -142,7 +168,9 @@ export function EquipmentModelForm({
   }, [api]);
 
   useEffect(() => {
-    if (mode !== "edit" || !initial?.id) return;
+    // View + edit both load the existing model's filter config (view renders it
+    // read-only); create starts empty.
+    if (mode === "create" || !initial?.id) return;
     void (async () => {
       try {
         const res = await api.get<{
@@ -252,20 +280,21 @@ export function EquipmentModelForm({
     <div className="flex flex-col gap-4">
       {/* ① 모델 정보 */}
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
-        <div className="mb-3 border-b border-[#f0f0f0] pb-2">
+        <div className="mb-3 flex items-center justify-between gap-2 border-b border-[#f0f0f0] pb-2">
           <SectionBadge n={1} title={tp("secModelInfo")} />
+          {headerActions}
         </div>
         <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
           {/* LEFT — descriptive */}
           <div className="flex flex-col gap-3">
-            <FormField label={t("displayNameKo")} required>
+            <ModeField label={t("displayNameKo")} mode={mode} required value={nameView}>
               <div className="flex flex-col gap-1">
                 <Input ref={nameRef} value={data.nameKo} onChange={(e) => setField("nameKo", e.target.value)} placeholder="한국어 · PTS-2100" aria-label={t("displayNameKo")} />
                 <Input value={data.nameVi} onChange={(e) => setField("nameVi", e.target.value)} placeholder="Tiếng Việt" aria-label={t("displayNameVi")} />
                 <Input value={data.nameEn} onChange={(e) => setField("nameEn", e.target.value)} placeholder="English" aria-label={t("displayNameEn")} />
               </div>
-            </FormField>
-            <FormField label={t("category")} required>
+            </ModeField>
+            <ModeField label={t("category")} mode={mode} required value={categoryLabel}>
               <Combobox
                 value={data.category}
                 onChange={(v) => setField("category", (v as CategoryValue | null) ?? null)}
@@ -276,8 +305,8 @@ export function EquipmentModelForm({
                 searchable={false}
                 allowClear
               />
-            </FormField>
-            <FormField label={t("brand")} required>
+            </ModeField>
+            <ModeField label={t("brand")} mode={mode} required value={brandName}>
               <Combobox
                 value={data.brandId ?? ""}
                 onChange={(v) => setField("brandId", v || null)}
@@ -285,13 +314,13 @@ export function EquipmentModelForm({
                 searchable
                 allowClear
               />
-            </FormField>
-            <FormField label={t("description")}>
+            </ModeField>
+            <ModeField label={t("description")} mode={mode} value={data.description}>
               <Textarea value={data.description} onChange={(e) => setField("description", e.target.value)} rows={3} />
-            </FormField>
-            <FormField label={priceLabel(tp("salePrice"), tp("salePriceHelp"))}>
+            </ModeField>
+            <ModeField label={priceLabel(tp("salePrice"), tp("salePriceHelp"))} mode={mode} value={fmtMoney(data.salePrice)}>
               <Input value={data.salePrice} onChange={(e) => setField("salePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-            </FormField>
+            </ModeField>
           </div>
 
           {/* RIGHT — numeric */}
@@ -304,7 +333,7 @@ export function EquipmentModelForm({
                     lowStock ? "border-red-300 bg-red-50 text-red-700" : "border-[#e5e5e5] bg-[#fafafa] text-[#111]",
                   )}
                 >
-                  {mode === "edit" ? stockOnHand.toLocaleString() : "—"}
+                  {mode !== "create" ? stockOnHand.toLocaleString() : "—"}
                   {lowStock && <span className="ml-2 text-xs font-medium">{tp("lowStockBadge")}</span>}
                 </span>
                 {mode === "edit" && initial?.id && (
@@ -314,41 +343,41 @@ export function EquipmentModelForm({
                 )}
               </div>
             </FormField>
-            <FormField label={priceLabel(tp("consumerPrice"), tp("retailPriceHelp"))}>
+            <ModeField label={priceLabel(tp("consumerPrice"), tp("retailPriceHelp"))} mode={mode} value={fmtMoney(data.retailPrice)}>
               <Input value={data.retailPrice} onChange={(e) => setField("retailPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-            </FormField>
-            <FormField label={priceLabel(tp("purchasePrice"), tp("purchasePriceHelp"))}>
+            </ModeField>
+            <ModeField label={priceLabel(tp("purchasePrice"), tp("purchasePriceHelp"))} mode={mode} value={fmtMoney(data.purchasePrice)}>
               <Input value={data.purchasePrice} onChange={(e) => setField("purchasePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-            </FormField>
-            <FormField label={priceLabel(tp("fixedPrice"), tp("fixedPriceHelp"))}>
+            </ModeField>
+            <ModeField label={priceLabel(tp("fixedPrice"), tp("fixedPriceHelp"))} mode={mode} value={fmtMoney(data.fixedPrice)}>
               <Input value={data.fixedPrice} onChange={(e) => setField("fixedPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-            </FormField>
+            </ModeField>
           </div>
         </div>
 
         {/* secondary — kept fields not in the mockup (월렌탈료·월관리비·안전재고·점검·보증·활성) */}
         <div className="mt-3 grid gap-x-6 gap-y-3 border-t border-[#f0f0f0] pt-3 sm:grid-cols-2 lg:grid-cols-3">
-          <FormField label={t("monthlyRentalPrice")}>
+          <ModeField label={t("monthlyRentalPrice")} mode={mode} value={fmtMoney(data.monthlyRentalPrice)}>
             <Input value={data.monthlyRentalPrice} onChange={(e) => setField("monthlyRentalPrice", e.target.value)} inputMode="numeric" placeholder="0" />
-          </FormField>
-          <FormField label={t("monthlyMaintenancePrice")}>
+          </ModeField>
+          <ModeField label={t("monthlyMaintenancePrice")} mode={mode} value={fmtMoney(data.monthlyMaintenancePrice)}>
             <Input value={data.monthlyMaintenancePrice} onChange={(e) => setField("monthlyMaintenancePrice", e.target.value)} inputMode="numeric" placeholder="0" />
-          </FormField>
-          <FormField label={tp("safetyStock")}>
+          </ModeField>
+          <ModeField label={tp("safetyStock")} mode={mode} value={data.safetyStock}>
             <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
-          </FormField>
-          <FormField label={t("inspectionEveryMonths")}>
+          </ModeField>
+          <ModeField label={t("inspectionEveryMonths")} mode={mode} value={data.inspectionEveryDays}>
             <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="1" />
-          </FormField>
-          <FormField label={t("warrantyMonths")}>
+          </ModeField>
+          <ModeField label={t("warrantyMonths")} mode={mode} value={data.warrantyMonths}>
             <Input value={data.warrantyMonths} onChange={(e) => setField("warrantyMonths", e.target.value)} inputMode="numeric" placeholder="12" />
-          </FormField>
-          <FormField label={t("isActive")}>
+          </ModeField>
+          <ModeField label={t("isActive")} mode={mode} value={data.isActive ? tc("yes") : tc("no")}>
             <label className="flex h-9 items-center gap-2 text-sm">
               <input type="checkbox" checked={data.isActive} onChange={(e) => setField("isActive", e.target.checked)} />
               {data.isActive ? tc("yes") : tc("no")}
             </label>
-          </FormField>
+          </ModeField>
         </div>
       </div>
 
@@ -356,14 +385,16 @@ export function EquipmentModelForm({
       <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
         <div className="mb-3 flex items-center justify-between border-b border-[#f0f0f0] pb-2">
           <SectionBadge n={2} title={t("filterConfig")} />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!filtersReady}
-            onClick={() => setFilters([...filters, { uid: newRowUid(), consumableId: "", quantity: "1", cycleOverride: "" }])}
-          >
-            {t("addFilter")}
-          </Button>
+          {!isView && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!filtersReady}
+              onClick={() => setFilters([...filters, { uid: newRowUid(), consumableId: "", quantity: "1", cycleOverride: "" }])}
+            >
+              {t("addFilter")}
+            </Button>
+          )}
         </div>
         {!filtersReady && !err && <p className="text-xs text-[#737373]">{tc("loading")}</p>}
         {(filtersReady || err) && filters.length === 0 && <p className="text-xs text-[#737373]">—</p>}
@@ -375,7 +406,7 @@ export function EquipmentModelForm({
                   <th className="w-10 px-2 py-1.5 text-left">#</th>
                   <th className="px-2 py-1.5 text-left">{t("filterConfigCol.filter")}</th>
                   <th className="w-36 px-2 py-1.5 text-left">{t("filterConfigCol.cycleDays")}</th>
-                  <th className="w-8 px-2 py-1.5" />
+                  {!isView && <th className="w-8 px-2 py-1.5" />}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0f0f0]">
@@ -385,6 +416,17 @@ export function EquipmentModelForm({
                   const rowOptions = consumableOptions.filter(
                     (o) => o.value === f.consumableId || !filters.some((g) => g !== f && g.consumableId === o.value),
                   );
+                  if (isView) {
+                    return (
+                      <tr key={f.uid}>
+                        <td className="px-2 py-1.5 text-xs text-[#737373]">{idx + 1}</td>
+                        <td className="px-2 py-1.5 text-[#111]">{picked ? consumableLabel(picked) : "—"}</td>
+                        <td className="px-2 py-1.5 tabular-nums text-[#111]">
+                          {f.cycleOverride || (defaultCycle != null ? String(defaultCycle) : "—")}
+                        </td>
+                      </tr>
+                    );
+                  }
                   return (
                     <tr key={f.uid}>
                       <td className="px-2 py-1.5 text-xs text-[#737373]">{idx + 1}</td>
@@ -420,7 +462,7 @@ export function EquipmentModelForm({
             </table>
           </div>
         )}
-        {(filtersReady || err) && <p className="mt-2 text-xs text-[#586a7c]">{t("filterConfigHint")}</p>}
+        {!isView && (filtersReady || err) && <p className="mt-2 text-xs text-[#586a7c]">{t("filterConfigHint")}</p>}
       </div>
 
       {err && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>}
