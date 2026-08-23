@@ -934,7 +934,7 @@
       "tabPayments": "수금내역",
       "tabNotes": "메모",
       "keyInfo": "주요정보",
-      "selectPrompt": "왼쪽 목록에서 장비를 선택하세요",
+      "selectPrompt": "위 목록에서 장비를 선택하세요",
       "noNotes": "메모 없음"
     },
     "masterDetail": {
