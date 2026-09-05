@@ -20,6 +20,7 @@
  */
 
 import type { Prisma } from "@/generated/prisma";
+import type { PrismaClient } from "@/generated/prisma/client";
 import { formatVstDateStamp } from "@/lib/contracts/code";
 
 /** Prefix used when the device has no catalog model / the model has no code. */
@@ -92,4 +93,65 @@ export async function allocateAssetCodes(
     });
   }
   return codes;
+}
+
+/**
+ * Fills in 장비코드 for rows that predate the system-issued rule (legacy
+ * imports, and the dev seed, which inserts equipment directly).
+ *
+ * Reuses the same allocator as every registration path, so back-filled units
+ * join the existing per-prefix sequence instead of starting a parallel one.
+ * Idempotent — rows that already have a code are untouched.
+ *
+ * Returns the number of rows written.
+ */
+export async function backfillMissingAssetCodes(
+  client: PrismaClient,
+  opts: { dryRun?: boolean; onAssign?: (id: string, code: string) => void } = {},
+): Promise<number> {
+  const pending = await client.equipment.findMany({
+    where: { assetCode: null },
+    select: {
+      id: true,
+      modelId: true,
+      installedAt: true,
+      createdAt: true,
+      model: { select: { modelCode: true } },
+    },
+    orderBy: [{ installedAt: "asc" }, { createdAt: "asc" }],
+  });
+  if (pending.length === 0) return 0;
+
+  // Group by model — the allocator takes one modelCode per call, and grouping
+  // keeps each model's sequence contiguous.
+  const byModel = new Map<string, typeof pending>();
+  for (const eq of pending) {
+    const key = eq.modelId ?? "__none__";
+    const bucket = byModel.get(key);
+    if (bucket) bucket.push(eq);
+    else byModel.set(key, [eq]);
+  }
+
+  let written = 0;
+  for (const [, rows] of byModel) {
+    await client.$transaction(async (tx) => {
+      const codes = await allocateAssetCodes(
+        tx,
+        rows[0].model?.modelCode ?? null,
+        // Never installed (legacy import / fixture) → stamp with the row's
+        // creation date so the code still says when it entered the system.
+        rows.map((r) => r.installedAt ?? r.createdAt),
+      );
+      for (const [i, row] of rows.entries()) {
+        opts.onAssign?.(row.id, codes[i]);
+        if (opts.dryRun) continue;
+        await tx.equipment.update({
+          where: { id: row.id },
+          data: { assetCode: codes[i] },
+        });
+        written += 1;
+      }
+    });
+  }
+  return written;
 }

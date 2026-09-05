@@ -103,6 +103,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated/prisma ./src/generated/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+# prisma/seed.ts imports src/lib/equipment/asset-code (장비코드 채번기) so the
+# seed issues the same codes the API does. tsconfig.json comes along because
+# that module resolves `@/…` through its `paths` when tsx runs it here.
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib ./src/lib
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
 
 USER nextjs
 EXPOSE 3000

@@ -313,10 +313,16 @@ Rules:
   2026-05-26).
 - `serialNumber` is a **separate, non-unique** field — the manufacturer number on
   the device. When no serial is supplied at registration it mirrors the 장비코드.
-- Rows predating the rule are filled in by `scripts/backfill-asset-codes.ts`,
-  which reuses the same allocator so back-filled units join the existing
-  sequence. `assetCode` stays nullable in the schema only to allow that
-  insert-then-backfill flow.
+- **Rows that bypass the API get swept.** `backfillMissingAssetCodes()` in the
+  same module fills in any row still missing a code, reusing the allocator so
+  back-filled units join the existing sequence. The dev seed calls it at the
+  end of `prisma/seed.ts` (fixtures are inserted straight through Prisma), and
+  `scripts/backfill-asset-codes.ts` exposes it as a CLI for databases you do
+  **not** reseed — the production / vhost.vn migration, or a staging box fixed
+  in place. Run the CLI from a workstation against `DATABASE_URL`: the app
+  container image ships neither `scripts/` nor the CLI's entrypoint.
+  `assetCode` stays nullable in the schema only to allow that
+  insert-then-sweep flow.
 
 ---
 

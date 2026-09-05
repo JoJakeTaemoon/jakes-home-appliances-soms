@@ -10,6 +10,10 @@ import { PrismaClient, Prisma } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
+// Shared with every registration path — the seed inserts Equipment rows
+// directly, so it sweeps them at the end instead of threading a code through
+// each of the ~10 fixture create sites.
+import { backfillMissingAssetCodes } from "../src/lib/equipment/asset-code";
 
 const pool = new Pool({
   connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL,
@@ -4330,6 +4334,12 @@ async function main() {
     });
   }
   console.log(`  ✓ sales-rep overdue receivables (${overduePaymentSeeds.length})`);
+
+  // 장비코드 — fixtures are inserted straight through Prisma, so no route
+  // allocated a code for them. One sweep gives every seeded unit the same
+  // {modelCode}{YYMMDD}{NNNN} identity a real registration would produce.
+  const coded = await backfillMissingAssetCodes(prisma);
+  console.log(`  ✓ 장비코드 발행 (${coded})`);
 
   console.log("\nDone seeding.");
   console.log("\nLogin credentials (dev only) — phone is the login key:");
