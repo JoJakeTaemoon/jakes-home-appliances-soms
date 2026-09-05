@@ -1,5 +1,5 @@
 /**
- * Permission verbs for Seoul Aqua SOMS.
+ * Permission verbs for Jake's Home Appliances SOMS.
  *
  * These wrap the pure-sync role primitives in `@/lib/auth/roles` with
  * domain language used by the screens (UC catalogue codes). Adding a new

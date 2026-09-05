@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — 사무실 직원 매뉴얼
+# Jake's Home Appliances SOMS — 사무실 직원 매뉴얼
 
 **대상 사용자**: 관리자(ADMIN), 매니저(MANAGER), 사무실 직원(STAFF)
 **버전**: 2026-08-22 (보유 장비 탭 상단 목록/하단 상세 구조로 변경 + 제품 카탈로그 조회·수정·신규 상태 분리 + 사용자 목록 역할별 섹션 구성)
@@ -36,7 +36,7 @@
 
 ### 1.1 SOMS란?
 
-**SOMS(Service Operation Management System)**는 Seoul Aqua의 통합 업무 시스템입니다. 고객 등록·계약·장비 설치·정기 점검·결제 수금·세금계산서·미수금 관리·감사 기록을 한 곳에서 처리합니다.
+**SOMS(Service Operation Management System)**는 Jake's Home Appliances의 통합 업무 시스템입니다. 고객 등록·계약·장비 설치·정기 점검·결제 수금·세금계산서·미수금 관리·감사 기록을 한 곳에서 처리합니다.
 
 기존 종이 장부와 Excel 파일을 대체하는 효과:
 
@@ -49,9 +49,9 @@
 
 | 접속 경로 | URL |
 |---|---|
-| **사무실 앱** | `https://soms.seoulaqua.com.vn/o/ko/login` |
-| **현장 기사 앱** | `https://soms.seoulaqua.com.vn/f/ko/login` |
-| **고객 포털** | `https://portal.seoulaqua.com.vn/ko/login` |
+| **사무실 앱** | `https://soms.jakeshomeappliances.com.vn/o/ko/login` |
+| **현장 기사 앱** | `https://soms.jakeshomeappliances.com.vn/f/ko/login` |
+| **고객 포털** | `https://portal.jakeshomeappliances.com.vn/ko/login` |
 
 > 도메인은 배포 환경에 따라 달라질 수 있습니다. 회사에서 공지한 주소를 사용하세요.
 
@@ -600,8 +600,8 @@ MANAGER 이상:
 2. 고객 선택 → 계약 종류 선택
 3. 장비 추가 (모델 카탈로그에서 선택)
 4. 저장 → 계약 번호 자동 발급:
-   - B2C: `HD-20260702/SA-KH00001`
-   - B2B: `HD-20260702/SA-SHV`
+   - B2C: `HD-20260702/JH-KH00001`
+   - B2B: `HD-20260702/JH-SHV`
 5. PDF 생성 → 고객 서명 → "**활성화**" 버튼
 6. 활성화 직후 설치 방문 자동 생성
 
@@ -610,7 +610,7 @@ MANAGER 이상:
 MANAGER 이상만 가능합니다.
 
 - **B2C 계약 수정**: 가격·장비를 직접 편집. 감사 기록에 변경 전/후 자동 기록.
-- **B2B 계약 부록 추가**: 계약 상세 → "**부록 추가**" 버튼 → 새 장비 또는 조건 입력 → 부록 번호 자동 발급 (예: `HD-.../SA-SHV-A1`)
+- **B2B 계약 부록 추가**: 계약 상세 → "**부록 추가**" 버튼 → 새 장비 또는 조건 입력 → 부록 번호 자동 발급 (예: `HD-.../JH-SHV-A1`)
 
 ### 8.7 계약 갱신 (Renew)
 

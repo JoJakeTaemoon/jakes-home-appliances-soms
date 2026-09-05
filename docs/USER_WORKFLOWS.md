@@ -1,4 +1,4 @@
-# USER_WORKFLOWS — Seoul Aqua SOMS End-to-End Workflows
+# USER_WORKFLOWS — Jake's Home Appliances SOMS End-to-End Workflows
 
 **Version:** 2026-06-02 draft
 **Audience:** New engineers / QA / sales / technician training leads
@@ -131,7 +131,7 @@ Data that ADMIN/MANAGER populates before service operations begin.
 ```mermaid
 flowchart LR
   subgraph Admin["ADMIN/MANAGER"]
-    A1["Create Brand<br/>e.g. 'Seoul Aqua'"]
+    A1["Create Brand<br/>e.g. 'Jake's Home Appliances'"]
     A2["Create EquipmentModel<br/>nameKo, nameVi, nameEn<br/>modelCode"]
     A3["Register compatible Filters<br/>partCode, replacementMonths"]
   end
@@ -330,7 +330,7 @@ sequenceDiagram
   participant DB as DB
 
   Staff->>System: POST /api/contracts<br/>(customerId, type, equipmentLines, dates...)
-  System->>System: Issue contract code<br/>B2C: HD-YYYYmmDD/SA-KH####<br/>B2B: HD-YYYYmmDD/SA-{shortcode}
+  System->>System: Issue contract code<br/>B2C: HD-YYYYmmDD/JH-KH####<br/>B2B: HD-YYYYmmDD/JH-{shortcode}
   System->>DB: Contract: DRAFT
   System->>DB: AuditLog: CONTRACT_CREATED
   System-->>Staff: 201 + contractId
@@ -388,9 +388,9 @@ When a B2B customer adds equipment to an existing contract, instead of issuing a
 
 ```mermaid
 flowchart LR
-  Original["Contract #1<br/>code: HD-20260101/SA-SHV<br/>amendmentRevision=0<br/>parentContractId=null"]
+  Original["Contract #1<br/>code: HD-20260101/JH-SHV<br/>amendmentRevision=0<br/>parentContractId=null"]
   Add["B2B customer: 'Install 20 more units'"]
-  Appendix["Contract #2 (Appendix)<br/>code: HD-20260315/SA-SHV-A1<br/>amendmentRevision=1<br/>parentContractId=#1"]
+  Appendix["Contract #2 (Appendix)<br/>code: HD-20260315/JH-SHV-A1<br/>amendmentRevision=1<br/>parentContractId=#1"]
   More["Contract #3 (next Appendix)<br/>amendmentRevision=2"]
 
   Original --> Add --> Appendix

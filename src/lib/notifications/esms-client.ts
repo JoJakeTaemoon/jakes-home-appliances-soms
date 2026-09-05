@@ -2,7 +2,7 @@
  * eSMS.vn Brandname provider — STUB.
  *
  * Phase 3.5 is mock-first; the real provider lands when credentials arrive:
- *   - Brandname `SeoulAqua` (CSKH / SmsType=2) — eSMS approval lead-time
+ *   - Brandname `JakeApp` (CSKH / SmsType=2) — eSMS approval lead-time
  *     ~2-3 weeks (see Q F.4 in `docs/QUESTIONS.docx`).
  *   - REST endpoint: `https://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_post_json/`
  *   - Verified pricing: 830 VND/segment + 50K VND/mo per-network maintenance

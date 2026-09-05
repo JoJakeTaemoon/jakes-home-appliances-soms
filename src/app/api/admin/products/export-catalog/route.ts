@@ -280,7 +280,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           "Content-Type": "application/vnd.ms-excel; charset=utf-8",
-          "Content-Disposition": `attachment; filename="seoul-aqua-product-catalog-${today}.xls"`,
+          "Content-Disposition": `attachment; filename="jakes-home-appliances-product-catalog-${today}.xls"`,
           "Cache-Control": "no-store",
         },
       });
@@ -295,7 +295,7 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="seoul-aqua-product-catalog-${today}.csv"`,
+        "Content-Disposition": `attachment; filename="jakes-home-appliances-product-catalog-${today}.csv"`,
         "Cache-Control": "no-store",
       },
     });

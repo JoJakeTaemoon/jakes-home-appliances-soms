@@ -15,9 +15,9 @@ squash merge.
 
 ```bash
 # 로컬에서 deploy 용 SSH 키 생성 (이미 있으면 skip)
-ssh-keygen -t ed25519 -f ~/.ssh/seoulaqua_staging_deploy -C "deploy@seoulaqua-staging"
+ssh-keygen -t ed25519 -f ~/.ssh/jakeshomeapp_staging_deploy -C "deploy@jakeshomeapp-staging"
 
-# 결과: ~/.ssh/seoulaqua_staging_deploy (private), .pub (public)
+# 결과: ~/.ssh/jakeshomeapp_staging_deploy (private), .pub (public)
 # private key 는 나중에 GitHub Secret 으로 등록
 ```
 
@@ -49,11 +49,11 @@ ssh root@103.27.60.70 'bash /tmp/bootstrap.sh'
 - 패키지 업데이트 + Docker Engine + Compose plugin 설치
 - 타임존 → Asia/Ho_Chi_Minh
 - `deploy` 사용자 생성 + docker 그룹 추가
-- sudoers 파편 (`/etc/sudoers.d/seoul-aqua-deploy`) — docker 명령 + `seoul-aqua-*`
+- sudoers 파편 (`/etc/sudoers.d/jakes-home-appliances-deploy`) — docker 명령 + `jakes-home-appliances-*`
   systemctl 만 NOPASSWD
 - UFW (`22/80/443/tcp`, `443/udp`) + fail2ban + unattended-upgrades
 - SSH 하드닝 (`PasswordAuthentication no`, `PermitRootLogin no`)
-- `/opt/seoul-aqua-soms/` 디렉토리 트리 (`postgres-data`, `uploads`, `backups`,
+- `/opt/jakes-home-appliances-soms/` 디렉토리 트리 (`postgres-data`, `uploads`, `backups`,
   `caddy-data`, `caddy-config`)
 
 **기대 출력**: 마지막에 `[bootstrap] Done. Next:` 가 보이면 성공.
@@ -62,14 +62,14 @@ ssh root@103.27.60.70 'bash /tmp/bootstrap.sh'
 
 ```bash
 # 로컬에서 — Phase 1-0 에서 만든 public 키를 deploy 계정에 추가
-ssh-copy-id -i ~/.ssh/seoulaqua_staging_deploy.pub deploy@103.27.60.70
+ssh-copy-id -i ~/.ssh/jakeshomeapp_staging_deploy.pub deploy@103.27.60.70
 ```
 
 만약 위가 password prompt 로 막히면 (root 접속만 가능한 상태) 임시로 paste:
 
 ```bash
 # 로컬에서
-cat ~/.ssh/seoulaqua_staging_deploy.pub
+cat ~/.ssh/jakeshomeapp_staging_deploy.pub
 # 출력을 클립보드에 복사
 
 # 서버에서 (root 로 SSH)
@@ -85,7 +85,7 @@ exit
 ### 1-3. deploy 로그인 검증
 
 ```bash
-ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70 'docker --version && docker compose version'
+ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70 'docker --version && docker compose version'
 ```
 
 **기대 출력**: `Docker version 27.x ...` + `Docker Compose version v2.x ...`
@@ -104,7 +104,7 @@ GitHub 웹 UI:
 |---|---|
 | `STAGING_HOST` | `103.27.60.70` |
 | `STAGING_USER` | `deploy` |
-| `STAGING_SSH_KEY` | `~/.ssh/seoulaqua_staging_deploy` 의 **전체 내용** (`-----BEGIN OPENSSH PRIVATE KEY-----` 포함) |
+| `STAGING_SSH_KEY` | `~/.ssh/jakeshomeapp_staging_deploy` 의 **전체 내용** (`-----BEGIN OPENSSH PRIVATE KEY-----` 포함) |
 
 그리고 **Settings → Environments → New environment → `staging`** 도 생성 (필수).
 머지 후 자동 배포가 이 environment 를 사용. 이때 protection rule (required reviewer
@@ -114,18 +114,18 @@ private key 복사 명령:
 
 ```bash
 # macOS
-pbcopy < ~/.ssh/seoulaqua_staging_deploy
+pbcopy < ~/.ssh/jakeshomeapp_staging_deploy
 ```
 
 ---
 
 ## Phase 3 — `.env` 작성 + 첫 배포 (1 회, ~10 분)
 
-### 3-1. `/opt/seoul-aqua-soms/.env` 작성
+### 3-1. `/opt/jakes-home-appliances-soms/.env` 작성
 
 ```bash
-ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70
+cd /opt/jakes-home-appliances-soms
 
 # 템플릿이 워크플로가 rsync 하기 전엔 없으므로 직접 작성
 cat > .env <<'EOF'
@@ -143,7 +143,7 @@ NEXT_PUBLIC_APP_URL=https://103.27.60.70
 SMS_PROVIDER=mock
 EMAIL_PROVIDER=mock
 
-APP_IMAGE=ghcr.io/jojaketaemoon/seoulaqua-soms:staging
+APP_IMAGE=ghcr.io/jojaketaemoon/jakeshomeapp-soms:staging
 EOF
 
 chmod 600 .env
@@ -174,12 +174,12 @@ GitHub → Actions → **"Deploy to staging"** → `Run workflow` → branch `ma
 파괴적이라 수동:
 
 ```bash
-ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70
+cd /opt/jakes-home-appliances-soms
 docker compose exec app npx prisma db seed
 ```
 
-**기대 출력**: `🌱 Seoul Aqua dev seed completed` 비슷한 메시지 + 사용자 /
+**기대 출력**: `🌱 Jake's Home Appliances dev seed completed` 비슷한 메시지 + 사용자 /
 카탈로그 row 수.
 
 ### 3-4. 동작 검증
@@ -204,8 +204,8 @@ curl -k https://103.27.60.70/api/health
 ### 4-1. Cron 타이머 등록 확인
 
 ```bash
-ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70
-systemctl list-timers --all | grep seoul-aqua
+ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70
+systemctl list-timers --all | grep jakes-home-appliances
 ```
 
 **기대**: 8 개 timer 가 보이고 (`overdue-escalation`, `filter-due`, `rental-renewal`,
@@ -215,8 +215,8 @@ systemctl list-timers --all | grep seoul-aqua
 ### 4-2. Cron 수동 실행 1 회
 
 ```bash
-sudo systemctl start seoul-aqua-cron@filter-due.service
-journalctl -u seoul-aqua-cron@filter-due -n 30
+sudo systemctl start jakes-home-appliances-cron@filter-due.service
+journalctl -u jakes-home-appliances-cron@filter-due -n 30
 ```
 
 **기대**: `curl ... 200 OK` + JSON 응답. 401 이 나오면 `.env` 의 `CRON_SECRET` 이
@@ -225,8 +225,8 @@ journalctl -u seoul-aqua-cron@filter-due -n 30
 ### 4-3. 백업 수동 실행
 
 ```bash
-sudo systemctl start seoul-aqua-backup.service
-ls -la /opt/seoul-aqua-soms/backups/
+sudo systemctl start jakes-home-appliances-backup.service
+ls -la /opt/jakes-home-appliances-soms/backups/
 ```
 
 **기대**: 오늘 날짜 `.sql.gz` 파일 (~1MB), 0 byte 아님.
@@ -248,8 +248,8 @@ ls -la /opt/seoul-aqua-soms/backups/
 문제 생기면:
 
 ```bash
-ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70
+cd /opt/jakes-home-appliances-soms
 docker compose logs --tail 100 app
 docker compose logs --tail 100 postgres
 docker compose logs --tail 100 caddy
@@ -265,8 +265,8 @@ docker compose logs --tail 100 caddy
 | `/api/health` → 503 + `db:"error"` | postgres 컨테이너가 healthy 안 됨 | `docker compose logs postgres` — 보통 `POSTGRES_PASSWORD` 불일치 또는 `postgres-data` 권한 |
 | 브라우저 self-signed 경고가 안 닫힘 | Chrome 의 HSTS 가 다른 도메인 거 캐시 | 시크릿 창에서 테스트 |
 | 워크플로 build 단계 OOM | GHCR 캐시 cold + Docker BuildKit 메모리 | 재실행하면 보통 통과 (cache-from gha 효과) |
-| cron 401 | `.env` 의 `CRON_SECRET` 불일치 또는 시스템 환경에 안 실림 | `deploy/systemd/seoul-aqua-cron@.service` 의 `EnvironmentFile=/opt/seoul-aqua-soms/.env` 확인 |
-| 디스크 가득 | Docker layer + Postgres WAL + 백업 누적 | `docker system prune -af --filter "until=720h"` + `du -sh /opt/seoul-aqua-soms/*` |
+| cron 401 | `.env` 의 `CRON_SECRET` 불일치 또는 시스템 환경에 안 실림 | `deploy/systemd/jakes-home-appliances-cron@.service` 의 `EnvironmentFile=/opt/jakes-home-appliances-soms/.env` 확인 |
+| 디스크 가득 | Docker layer + Postgres WAL + 백업 누적 | `docker system prune -af --filter "until=720h"` + `du -sh /opt/jakes-home-appliances-soms/*` |
 
 ---
 
@@ -275,8 +275,8 @@ docker compose logs --tail 100 caddy
 - [ ] **Phase 1**: `scp bootstrap.sh root@103.27.60.70:/tmp/ && ssh root@... 'bash /tmp/bootstrap.sh'`
 - [ ] **Phase 1**: deploy 사용자 SSH 키 등록 + `ssh deploy@... docker --version` 검증
 - [ ] **Phase 2**: GitHub Secrets 3 개 (`STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_KEY`) + `staging` environment 생성
-- [ ] **Phase 3**: `/opt/seoul-aqua-soms/.env` 작성 (chmod 600) + 워크플로 수동 트리거 + `db seed`
-- [ ] **Phase 4**: `curl /api/health` + 브라우저 로그인 + `systemctl list-timers | grep seoul-aqua` + cron 1 회 수동 실행 + 백업 1 회 수동 실행
+- [ ] **Phase 3**: `/opt/jakes-home-appliances-soms/.env` 작성 (chmod 600) + 워크플로 수동 트리거 + `db seed`
+- [ ] **Phase 4**: `curl /api/health` + 브라우저 로그인 + `systemctl list-timers | grep jakes-home-appliances` + cron 1 회 수동 실행 + 백업 1 회 수동 실행
 - [ ] **Phase 5**: 다음 PR 머지 → 자동 배포 동작 확인
 
 전체 ~40 분이면 끝.

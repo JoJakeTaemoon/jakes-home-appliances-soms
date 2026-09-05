@@ -1,24 +1,24 @@
-# eSMS Brandname Application — Seoul Aqua
+# eSMS Brandname Application — Jake's Home Appliances
 
 > ⚠️ **Status (2026-05-26): NOT BLOCKING PHASE 3.5 DEVELOPMENT** ⚠️
 >
 > Phase 3.5 customer-portal development uses a **mock SMS provider** (`SMS_PROVIDER=mock`) that logs messages to console + DB without delivering. This Brandname application is needed only before **production go-live** (still ~2-3 week telecom lead-time). Recommend submitting ~3-4 weeks before your target production launch date — there is no rush to file it during Phase 3.5 dev.
 >
-> When `ApiKey` / `SecretKey` / approved Brandname arrive, production rollout is an env-only flip: `SMS_PROVIDER=esms` + populate `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=SeoulAqua`. No code changes required.
+> When `ApiKey` / `SecretKey` / approved Brandname arrive, production rollout is an env-only flip: `SMS_PROVIDER=esms` + populate `ESMS_API_KEY` / `ESMS_SECRET_KEY` / `ESMS_BRANDNAME=JakeApp`. No code changes required.
 
-> **Audience:** Seoul Aqua office staff to submit to eSMS.vn account manager.
-> **Goal:** Register the Brandname `SeoulAqua` for transactional customer-care SMS (CSKH / SmsType=2) for use by the SOMS customer portal and visit-management system.
+> **Audience:** Jake's Home Appliances office staff to submit to eSMS.vn account manager.
+> **Goal:** Register the Brandname `JakeApp` for transactional customer-care SMS (CSKH / SmsType=2) for use by the SOMS customer portal and visit-management system.
 > **Lead-time:** 2–3 weeks for Vietnamese telecom approval (per eSMS.vn standard guidance).
-> **Format:** This document is presented in English + Vietnamese. The Vietnamese sections (§2, §4) are what telecom auditors review. KO summaries are included for Seoul Aqua office reference.
+> **Format:** This document is presented in English + Vietnamese. The Vietnamese sections (§2, §4) are what telecom auditors review. KO summaries are included for Jake's Home Appliances office reference.
 
 ---
 
-## 한국어 요약 (For Seoul Aqua Office)
+## 한국어 요약 (For Jake's Home Appliances Office)
 
 이 문서는 eSMS.vn에 **Brandname (발신자명) 등록 신청**을 위해 제출하는 양식입니다. eSMS 계정 매니저에게 이 파일(또는 PDF 변환본)을 전달하면 베트남 통신사 승인 절차가 시작됩니다.
 
 승인 받을 항목:
-- **발신자명**: `SeoulAqua` (영문 9자, 대소문자 구분, 공백 없음)
+- **발신자명**: `JakeApp` (영문 9자, 대소문자 구분, 공백 없음)
 - **용도**: 거래성 고객 응대 SMS (CSKH = Customer Care, SmsType 2) — 광고 SMS 아님
 - **포함 메시지 10건**: 포털 가입, 비밀번호 초기화, 방문 알림, 필터 교체 임박, 서비스 요청 접수/승인/반려, 방문 완료, 미수금, 계약 만료
 
@@ -29,7 +29,7 @@
 4. 회사 등록 주소 (베트남어)
 5. (선택) 위임장 — 대표자가 직접 신청하지 않는 경우
 
-승인되면 모든 SMS 본문이 `[SeoulAqua]`로 시작하며, 고객 휴대폰에 "SeoulAqua"로 표시됩니다 (랜덤 발신번호 X).
+승인되면 모든 SMS 본문이 `[JakeApp]`로 시작하며, 고객 휴대폰에 "JakeApp"로 표시됩니다 (랜덤 발신번호 X).
 
 ---
 
@@ -37,24 +37,24 @@
 
 | Field | Value |
 |---|---|
-| Legal entity (Tên doanh nghiệp) | **CÔNG TY TNHH MTV TM&DV ĐẠI Á** |
-| Trade name (Tên thương mại) | **Seoul Aqua** |
+| Legal entity (Tên doanh nghiệp) | **CÔNG TY TNHH MTV TM&DV JAKE'S HA** |
+| Trade name (Tên thương mại) | **Jake's Home Appliances** |
 | Tax code (MST — Mã số thuế) | `<<TODO_TAX_CODE>>` |
 | Business license number (Số GPKD) | `<<TODO_LICENSE_NUMBER>>` |
 | License issue date (Ngày cấp) | `<<TODO_LICENSE_DATE>>` |
 | Registered address (Địa chỉ ĐKKD) | `<<TODO_ADDRESS_VI>>` |
 | Authorized representative (Người đại diện) | `<<TODO_REPRESENTATIVE_NAME>>` |
 | Representative position (Chức vụ) | `<<TODO_REPRESENTATIVE_TITLE>>` |
-| **Requested Brandname** | `SeoulAqua` (9 chars, no spaces, case-sensitive) |
+| **Requested Brandname** | `JakeApp` (9 chars, no spaces, case-sensitive) |
 | **SMS service category** | CSKH (Chăm sóc khách hàng — Customer Care, transactional) |
 | **eSMS SmsType code** | `2` (CSKH primary). If eSMS prefers a split for OTP-only flows, use `24` for `SMS_PORTAL_WELCOME` and `SMS_PASSWORD_RESET`. |
-| Production domain | `seoulaqua.com.vn` (corporate); portal at subdomain `portal.seoulaqua.com.vn` |
+| Production domain | `jakeshomeappliances.com.vn` (corporate); portal at subdomain `portal.jakeshomeappliances.com.vn` |
 
 ---
 
 ## 2. Use case description — Mô tả mục đích sử dụng (Vietnamese)
 
-Hệ thống quản lý dịch vụ Seoul Aqua (SOMS) gửi tin nhắn giao dịch cho khách hàng đã ký hợp đồng thuê hoặc mua sản phẩm xử lý nước gia dụng và công nghiệp: máy lọc nước, máy lọc không khí, bồn cầu thông minh, và các phụ kiện liên quan.
+Hệ thống quản lý dịch vụ Jake's Home Appliances (SOMS) gửi tin nhắn giao dịch cho khách hàng đã ký hợp đồng thuê hoặc mua sản phẩm xử lý nước gia dụng và công nghiệp: máy lọc nước, máy lọc không khí, bồn cầu thông minh, và các phụ kiện liên quan.
 
 Tin nhắn được gửi tự động theo các sự kiện sau:
 - Kích hoạt tài khoản cổng khách hàng khi ký hợp đồng hoặc giao hàng
@@ -69,13 +69,13 @@ Tin nhắn được gửi tự động theo các sự kiện sau:
 
 **Tất cả tin nhắn đều là tin giao dịch (CSKH), không phải tin quảng cáo.** Khách hàng đồng ý nhận tin nhắn này khi ký hợp đồng (xem mục Chính sách bảo mật trong hợp đồng thuê/mua).
 
-Tin nhắn sẽ được gửi bằng tiếng Việt, tiếng Hàn, hoặc tiếng Anh tuỳ theo lựa chọn của từng khách hàng (lưu trong hệ thống). Brandname `SeoulAqua` được sử dụng cho cả ba ngôn ngữ.
+Tin nhắn sẽ được gửi bằng tiếng Việt, tiếng Hàn, hoặc tiếng Anh tuỳ theo lựa chọn của từng khách hàng (lưu trong hệ thống). Brandname `JakeApp` được sử dụng cho cả ba ngôn ngữ.
 
 ---
 
 ## 3. Expected monthly volume — Khối lượng tin nhắn dự kiến
 
-Seoul Aqua uses a **two-channel notification system**: only urgent/security/dunning-final messages go through SMS; receipts, acknowledgments, and early-stage reminders go through email (sender: `noreply@seoulaqua.com.vn`). This Brandname application covers the **SMS-only subset (7 templates)**.
+Jake's Home Appliances uses a **two-channel notification system**: only urgent/security/dunning-final messages go through SMS; receipts, acknowledgments, and early-stage reminders go through email (sender: `noreply@jakeshomeappliances.com.vn`). This Brandname application covers the **SMS-only subset (7 templates)**.
 
 | Category — Loại tin | Templates | Est. SMS/month |
 |---|---|---:|
@@ -85,7 +85,7 @@ Seoul Aqua uses a **two-channel notification system**: only urgent/security/dunn
 | Financial / contract final notices (Thông báo cuối) | #6 Overdue D+30, #7 Renewal D-7 | ~25 |
 | **Total — Tổng cộng SMS** | 7 templates | **~1,245** |
 
-> Note: Email volume (managed separately by direct sender from `seoulaqua.com.vn` root domain with DKIM/SPF — not eSMS) is estimated at ~1,560 msgs/month for receipts, acknowledgments, and early-stage reminders. Total notification volume across both channels ~2,805/month.
+> Note: Email volume (managed separately by direct sender from `jakeshomeappliances.com.vn` root domain with DKIM/SPF — not eSMS) is estimated at ~1,560 msgs/month for receipts, acknowledgments, and early-stage reminders. Total notification volume across both channels ~2,805/month.
 
 First-month onboarding may add ~200–400 extra SMS as existing customer base receives portal-welcome messages.
 
@@ -105,12 +105,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] Chào {name}. Cổng KH: portal.seoulaqua.com.vn · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.
+[JakeApp] Chào {name}. Cổng KH: portal.jakeshomeappliances.com.vn · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.
 ```
 
 **Sample (with placeholders filled):**
 ```
-[SeoulAqua] Chào Nguyễn Văn A. Cổng KH: portal.seoulaqua.com.vn · ID: 0901234567 · MK tạm: K7m3Px9Qrt. Đổi MK khi đăng nhập đầu.
+[JakeApp] Chào Nguyễn Văn A. Cổng KH: portal.jakeshomeappliances.com.vn · ID: 0901234567 · MK tạm: K7m3Px9Qrt. Đổi MK khi đăng nhập đầu.
 ```
 
 ### Template 2 — `SMS_PASSWORD_RESET`
@@ -121,12 +121,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · portal.seoulaqua.com.vn. Không phải bạn? LH {hq_phone}
+[JakeApp] MK của {name} đã đặt lại. MK mới: {pwd} · portal.jakeshomeappliances.com.vn. Không phải bạn? LH {hq_phone}
 ```
 
 **Sample:**
 ```
-[SeoulAqua] MK của Nguyễn Văn A đã đặt lại. MK mới: K7m3Px9Qrt · portal.seoulaqua.com.vn. Không phải bạn? LH 028-1234-5678
+[JakeApp] MK của Nguyễn Văn A đã đặt lại. MK mới: K7m3Px9Qrt · portal.jakeshomeappliances.com.vn. Không phải bạn? LH 028-1234-5678
 ```
 
 ### Template 3 — `SMS_VISIT_REMINDER`
@@ -137,12 +137,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] {date} {time}, {technician} đến ({service}). Đổi portal.seoulaqua.com.vn
+[JakeApp] {date} {time}, {technician} đến ({service}). Đổi portal.jakeshomeappliances.com.vn
 ```
 
 **Sample:**
 ```
-[SeoulAqua] 15/06/2026 14:00, Lê Văn B đến (Bảo trì). Đổi portal.seoulaqua.com.vn
+[JakeApp] 15/06/2026 14:00, Lê Văn B đến (Bảo trì). Đổi portal.jakeshomeappliances.com.vn
 ```
 
 ### Template 4 — `SMS_SR_APPROVED` (paid requests only)
@@ -153,12 +153,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: portal.seoulaqua.com.vn
+[JakeApp] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: portal.jakeshomeappliances.com.vn
 ```
 
 **Sample:**
 ```
-[SeoulAqua] YC #SR-2026-0042 duyệt. Chi phí: 1,500,000đ · Hẹn: 15/06/2026. XN: portal.seoulaqua.com.vn
+[JakeApp] YC #SR-2026-0042 duyệt. Chi phí: 1,500,000đ · Hẹn: 15/06/2026. XN: portal.jakeshomeappliances.com.vn
 ```
 
 ### Template 5 — `SMS_SR_REJECTED`
@@ -169,12 +169,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}
+[JakeApp] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}
 ```
 
 **Sample:**
 ```
-[SeoulAqua] YC #SR-2026-0042 từ chối. Lý do: Hết bảo hành. LH 028-1234-5678
+[JakeApp] YC #SR-2026-0042 từ chối. Lý do: Hết bảo hành. LH 028-1234-5678
 ```
 
 ### Template 6 — `SMS_PAYMENT_OVERDUE_FINAL` (D+30 only)
@@ -185,12 +185,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: portal.seoulaqua.com.vn hoặc {hq_phone}
+[JakeApp] {name}, phí thuê {month} {amount}đ chưa TT. TT: portal.jakeshomeappliances.com.vn hoặc {hq_phone}
 ```
 
 **Sample:**
 ```
-[SeoulAqua] Nguyễn Văn A, phí thuê T04/2026 1,500,000đ chưa TT. TT: portal.seoulaqua.com.vn hoặc 028-1234-5678
+[JakeApp] Nguyễn Văn A, phí thuê T04/2026 1,500,000đ chưa TT. TT: portal.jakeshomeappliances.com.vn hoặc 028-1234-5678
 ```
 
 ### Template 7 — `SMS_CONTRACT_RENEWAL_FINAL` (D-7 only)
@@ -201,12 +201,12 @@ First-month onboarding may add ~200–400 extra SMS as existing customer base re
 
 **VI:**
 ```
-[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: portal.seoulaqua.com.vn / {hq_phone}
+[JakeApp] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: portal.jakeshomeappliances.com.vn / {hq_phone}
 ```
 
 **Sample:**
 ```
-[SeoulAqua] Nguyễn Văn A, HĐ thuê hết hạn 15/06/2026 (còn 14 ngày). Chuyển SH/bảo trì: portal.seoulaqua.com.vn / 028-1234-5678
+[JakeApp] Nguyễn Văn A, HĐ thuê hết hạn 15/06/2026 (còn 14 ngày). Chuyển SH/bảo trì: portal.jakeshomeappliances.com.vn / 028-1234-5678
 ```
 
 ### Fallback notes (in case eSMS flags Vietnamese abbreviations)
@@ -250,8 +250,8 @@ If any are rejected, the unabridged versions add ~5–10 chars each, pushing the
 | `{hq_phone}` | HQ contact number / Số điện thoại văn phòng | 13 chars | `028-1234-5678` |
 
 > **Fixed values** (not variables):
-> - Brand prefix: `[SeoulAqua]` (always present at the start of every body)
-> - Portal URL: `portal.seoulaqua.com.vn` (hardcoded in every body, not a variable, to maximize compression)
+> - Brand prefix: `[JakeApp]` (always present at the start of every body)
+> - Portal URL: `portal.jakeshomeappliances.com.vn` (hardcoded in every body, not a variable, to maximize compression)
 
 ---
 
@@ -291,18 +291,18 @@ Submit these separately to eSMS (PDF/image scans):
 | Vietnamobile | 50,000 VND | 50,000 VND/mo |
 | Gmobile / Itel | **Free** | **Free** |
 
-Seoul Aqua = "general" (Other Business) classification. 4 networks selected (Big 3 + Vietnamobile) + Gmobile (free):
+Jake's Home Appliances = "general" (Other Business) classification. 4 networks selected (Big 3 + Vietnamobile) + Gmobile (free):
 - **One-time registration**: 50,000 × 4 = **200,000 VND** (~₩10,800)
 - **Monthly maintenance**: 50,000 × 4 = **200,000 VND/month** (~₩10,800/month)
 
 ### 8.2 Per-segment send rate — Đơn giá theo segment
 
-Per-segment rate (incl. 10% VAT) — Vietnamese networks by business category. Seoul Aqua = "Other Business" row:
+Per-segment rate (incl. 10% VAT) — Vietnamese networks by business category. Jake's Home Appliances = "Other Business" row:
 
 | Category — Phân loại | MobiFone | VinaPhone | Viettel | Vietnamobile | Gmobile | Itel |
 |---|---:|---:|---:|---:|---:|---:|
 | Healthcare / Education (preferential) | 440 | 430 | 440 | 1,550 | 400 | 850 |
-| **Other Business (Seoul Aqua)** | **830** | **830** | **830** | **1,550** | **400** | **850** |
+| **Other Business (Jake's Home Appliances)** | **830** | **830** | **830** | **1,550** | **400** | **850** |
 | Banking / Finance / Insurance | 830 | 830 | 830 | 1,550 | 400 | 850 |
 | Social Media | 600 | 600 | 600 | 1,550 | 400 | 850 |
 | E-commerce | 600 | 600 | 600 | 1,550 | 400 | 850 |
@@ -311,7 +311,7 @@ Per-segment rate (incl. 10% VAT) — Vietnamese networks by business category. S
 
 ### 8.3 Message-length × segment cost — Chi phí theo độ dài tin
 
-Big 3 carriers (Seoul Aqua's primary customer base):
+Big 3 carriers (Jake's Home Appliances's primary customer base):
 
 | Message length | Segments | Big 3 rate | Vietnamobile | Gmobile |
 |---|:-:|---:|---:|---:|
@@ -319,11 +319,11 @@ Big 3 carriers (Seoul Aqua's primary customer base):
 | 71–134 chars (2-seg) | 2 | **1,660 VND** | 3,100 | 800 |
 | 135–201 chars (3-seg) | 3 | **2,490 VND** | 4,650 | 1,200 |
 
-### 8.4 Seoul Aqua monthly cost estimate — Chi phí tháng dự kiến
+### 8.4 Jake's Home Appliances monthly cost estimate — Chi phí tháng dự kiến
 
 Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5%. Volume: ~1,245 SMS/month (per §3). VI:KO:EN language mix 80%:15%:5%.
 
-> **Revised 2026-05-26 (v1.3)** after client A.10 portal-URL decision: `portal.seoulaqua.com.vn` subdomain (23 chars) instead of root URL (16 chars) pushed `SMS_VISIT_REMINDER` VI from 1-seg to 2-seg.
+> **Revised 2026-05-26 (v1.3)** after client A.10 portal-URL decision: `portal.jakeshomeappliances.com.vn` subdomain (23 chars) instead of root URL (16 chars) pushed `SMS_VISIT_REMINDER` VI from 1-seg to 2-seg.
 
 | Item — Hạng mục | Volume × rate | Monthly cost |
 |---|---|---:|
@@ -335,7 +335,7 @@ Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5
 
 > **Regression from earlier estimate**: +600K VND/mo from A.3 VI 1→2 seg flip after subdomain URL choice. Original estimate with root URL was 1.70M VND/mo.
 >
-> Email channel (separate from this Brandname application, sent directly from `seoulaqua.com.vn` root domain via Resend) is estimated to add **~$0–20/month** (within Resend free tier of 100K msgs/mo at the projected ~1,560 msgs/mo).
+> Email channel (separate from this Brandname application, sent directly from `jakeshomeappliances.com.vn` root domain via Resend) is estimated to add **~$0–20/month** (within Resend free tier of 100K msgs/mo at the projected ~1,560 msgs/mo).
 
 ### 8.5 1-year cost estimate — Ước tính chi phí 1 năm
 
@@ -358,10 +358,10 @@ Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5
 | 5 | Minimum top-up | One-time deposit | ~500,000 VND minimum recharge |
 | 6 | Dormancy penalty | Inactive for X months | Brandname may auto-deregister; re-registration 2–3 weeks + 50K |
 | 7 | VAT 10% | All items | Above prices include VAT (Stringeex source); confirm with eSMS direct quote |
-| 8 | Banking/Finance category fee | If reclassified | 550K registration + 550K/mo (Seoul Aqua does NOT qualify) |
-| 9 | Healthcare/Education discount | If qualified | 430–440 VND/seg (Seoul Aqua does NOT qualify) |
+| 8 | Banking/Finance category fee | If reclassified | 550K registration + 550K/mo (Jake's Home Appliances does NOT qualify) |
+| 9 | Healthcare/Education discount | If qualified | 430–440 VND/seg (Jake's Home Appliances does NOT qualify) |
 | 10 | Volume discount | Above 5,000 msgs/mo | Negotiable via eSMS hotline 5–10% |
-| 11 | International SMS | Non-VN phone numbers | 4–6× domestic rate (Seoul Aqua N/A — all VN customers) |
+| 11 | International SMS | Non-VN phone numbers | 4–6× domestic rate (Jake's Home Appliances N/A — all VN customers) |
 | 12 | Brandname change / re-registration | After approval | Re-review 2–3 weeks + new registration fee |
 | 13 | Failed delivery | Not billed | Only successful submits are charged |
 
@@ -376,7 +376,7 @@ Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5
 
 | Priority | Action — Việc cần làm | Timeline |
 |---|---|---|
-| ★ 1 | Call eSMS hotline `0901 888 484` for official Seoul Aqua quote (table above is market average) | Immediate |
+| ★ 1 | Call eSMS hotline `0901 888 484` for official Jake's Home Appliances quote (table above is market average) | Immediate |
 | ★ 2 | Decide which networks to register (recommend Big 3 + Vietnamobile + Gmobile-free) | When F.4 answered |
 | 3 | Verify whether OTP split (SmsType=24) is viable | During Brandname submission |
 | 4 | Negotiate volume discount after 1st-month send data | Month 2 |
@@ -389,18 +389,14 @@ Assumed customer carrier mix: Big 3 ≈ 70%, Vietnamobile ≈ 25%, Gmobile ≈ 5
 
 ---
 
-## 9. Notes for Seoul Aqua office — 사무실 참고사항
+## 9. Notes for Jake's Home Appliances office — 사무실 참고사항
 
 - Templates use compressed Vietnamese abbreviations (`MK`, `KH`, `YC`, `TT`, `HĐ`, `SH`, `LH`, `XN`, `KTV`) common in Vietnamese CSKH SMS. If eSMS or any carrier rejects them, we have unabridged 3-segment fallbacks ready — see §4 fallback notes above.
 - Each template will be sent in the customer's chosen language (VI / KO / EN) based on `CustomerContact.language`. **eSMS only reviews the VI versions** for Brandname approval; KO/EN are stored in our system and rendered through the same Brandname.
-- Verified character counts use the URL `portal.seoulaqua.com.vn` (23 chars, subdomain confirmed by client A.10 2026-05-26). The earlier 16-char root URL assumption is superseded — `SMS_VISIT_REMINDER` VI is now 2-seg. If eSMS requires URL link-tracking (e.g., shortened URLs through their tracking domain), additional segment growth is possible — please confirm eSMS's URL tracking policy before resubmitting.
-- The Brandname `SeoulAqua` is locked once approved; changes require a new submission and another 2-3 week review.
-<!-- portfolio:drop-start -->
-- This application covers **7 SMS templates only**. An additional 9 email templates (receipts, acknowledgments, early-stage reminders) are sent directly from `seoulaqua.com.vn` root domain via Resend (transactional) + vhost.vn (operational), and do not require eSMS Brandname registration. See `docs/DOCUMENT_TEMPLATES.md` §B for the full email template catalog and §C for the channel selection rule.
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-- This application covers **7 SMS templates only**. An additional 9 email templates (receipts, acknowledgments, early-stage reminders) are sent directly from `seoulaqua.com.vn` root domain via Resend (single ESP), and do not require eSMS Brandname registration. See `docs/DOCUMENT_TEMPLATES.md` §B for the full email template catalog and §C for the channel selection rule.
-portfolio:add-end -->
+- Verified character counts use the URL `portal.jakeshomeappliances.com.vn` (23 chars, subdomain confirmed by client A.10 2026-05-26). The earlier 16-char root URL assumption is superseded — `SMS_VISIT_REMINDER` VI is now 2-seg. If eSMS requires URL link-tracking (e.g., shortened URLs through their tracking domain), additional segment growth is possible — please confirm eSMS's URL tracking policy before resubmitting.
+- The Brandname `JakeApp` is locked once approved; changes require a new submission and another 2-3 week review.
+
+- This application covers **7 SMS templates only**. An additional 9 email templates (receipts, acknowledgments, early-stage reminders) are sent directly from `jakeshomeappliances.com.vn` root domain via Resend (single ESP), and do not require eSMS Brandname registration. See `docs/DOCUMENT_TEMPLATES.md` §B for the full email template catalog and §C for the channel selection rule.
 - **Mock-first dev (2026-05-26 decision)**: Phase 3.5 implementation does not wait on this approval. The codebase ships with `SMS_PROVIDER=mock` that logs sends to console + `SmsLog` table with `status='MOCKED'`. When eSMS approval lands and credentials arrive, production env flips to `SMS_PROVIDER=esms` with no code rewrite. Submit this form when you know your production launch date.
 
 ---
@@ -408,6 +404,6 @@ portfolio:add-end -->
 ## Change log
 
 - **2026-05-26 (v1.2 latest)** — Status banner added at top: this application is no longer a Phase 3.5 blocker. Mock SMS provider (`SMS_PROVIDER=mock`) covers dev/staging; this form is needed only before production go-live (still 2-3 week telecom lead-time, submit ~3-4 weeks before target launch). No template content changes.
-- **2026-05-26 (v1.3 latest)** — **Client answer A.10 applied**: portal URL changed from root `seoulaqua.com.vn` (16 chars) to **subdomain `portal.seoulaqua.com.vn` (23 chars)**. All 7 SMS sample bodies updated. **Template 3 (`SMS_VISIT_REMINDER`) VI flipped from 1-seg to 2-seg** (70 → 77 chars). §8 monthly cost revised: ~1.70M → ~2.38M VND/mo (+0.68M/mo regression). 1-year total revised: ~21.0M → ~29.2M VND/yr. All other templates unaffected at segment level. Email channel sender domain confirmed as `seoulaqua.com.vn` root (not portal subdomain).
+- **2026-05-26 (v1.3 latest)** — **Client answer A.10 applied**: portal URL changed from root `jakeshomeappliances.com.vn` (16 chars) to **subdomain `portal.jakeshomeappliances.com.vn` (23 chars)**. All 7 SMS sample bodies updated. **Template 3 (`SMS_VISIT_REMINDER`) VI flipped from 1-seg to 2-seg** (70 → 77 chars). §8 monthly cost revised: ~1.70M → ~2.38M VND/mo (+0.68M/mo regression). 1-year total revised: ~21.0M → ~29.2M VND/yr. All other templates unaffected at segment level. Email channel sender domain confirmed as `jakeshomeappliances.com.vn` root (not portal subdomain).
 - **2026-05-26 (v1.1)** — Template count reduced 10 → 7 (email-eligible templates moved to direct email channel; only urgent/security/dunning-final/D-1 messages remain as SMS). §3 volume estimate revised from ~2,695 to ~1,245 SMS/mo. §8 Pricing breakdown added with verified eSMS rates (830 VND/seg Other Business, 50K/mo per network maintenance), 1-year cost estimate ~21M VND, and all-fees checklist. Numbering: previous §8 Notes is now §9 (after §8 Pricing was inserted).
 - **2026-05-26** — v1 initial draft. 10 templates locked. Awaiting eSMS account manager review.

@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho Nhân viên Văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
 **Phiên bản**: 2026-08-22 (Tab Thiết bị đổi sang bố cục danh sách trên/chi tiết dưới + Danh mục sản phẩm tách trạng thái Xem·Sửa·Tạo mới + Danh sách người dùng nhóm theo vai trò)
@@ -36,7 +36,7 @@
 
 ### 1.1 SOMS là gì?
 
-**SOMS (Service Operation Management System)** là hệ thống tích hợp của Seoul Aqua. Đăng ký khách hàng, hợp đồng, lắp đặt thiết bị, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ và nhật ký kiểm toán — tất cả được xử lý tại một nơi.
+**SOMS (Service Operation Management System)** là hệ thống tích hợp của Jake's Home Appliances. Đăng ký khách hàng, hợp đồng, lắp đặt thiết bị, bảo trì định kỳ, thu tiền, phát hành hóa đơn GTGT, quản lý công nợ và nhật ký kiểm toán — tất cả được xử lý tại một nơi.
 
 Lợi ích so với sổ giấy và bảng tính Excel:
 
@@ -49,9 +49,9 @@ Lợi ích so với sổ giấy và bảng tính Excel:
 
 | Ứng dụng | URL |
 |---|---|
-| **Văn phòng** | `https://soms.seoulaqua.com.vn/o/vi/login` |
-| **Kỹ thuật viên** | `https://soms.seoulaqua.com.vn/f/vi/login` |
-| **Cổng khách hàng** | `https://portal.seoulaqua.com.vn/vi/login` |
+| **Văn phòng** | `https://soms.jakeshomeappliances.com.vn/o/vi/login` |
+| **Kỹ thuật viên** | `https://soms.jakeshomeappliances.com.vn/f/vi/login` |
+| **Cổng khách hàng** | `https://portal.jakeshomeappliances.com.vn/vi/login` |
 
 > Tên miền có thể thay đổi theo môi trường triển khai. Vui lòng dùng địa chỉ công ty thông báo.
 
@@ -600,8 +600,8 @@ Trên màn hình chi tiết hợp đồng, có thể sửa **ghi chú** sẽ in 
 2. Chọn khách hàng → Chọn loại hợp đồng
 3. Thêm thiết bị (chọn từ danh mục)
 4. Lưu → Số HĐ tự động cấp:
-   - B2C: `HD-20260702/SA-KH00001`
-   - B2B: `HD-20260702/SA-SHV`
+   - B2C: `HD-20260702/JH-KH00001`
+   - B2B: `HD-20260702/JH-SHV`
 5. Tạo PDF → Khách ký → Nhấn "**Kích hoạt**"
 6. Sau khi kích hoạt, lượt thăm lắp đặt được tạo tự động
 
@@ -610,7 +610,7 @@ Trên màn hình chi tiết hợp đồng, có thể sửa **ghi chú** sẽ in 
 Chỉ từ MANAGER trở lên.
 
 - **Sửa HĐ B2C**: Chỉnh sửa trực tiếp giá và thiết bị. Thay đổi trước/sau được ghi tự động vào nhật ký kiểm toán.
-- **Thêm Phụ lục HĐ B2B**: Chi tiết HĐ → nút "**Thêm phụ lục**" → Nhập thiết bị hoặc điều khoản mới → Số phụ lục tự động cấp (ví dụ: `HD-.../SA-SHV-A1`)
+- **Thêm Phụ lục HĐ B2B**: Chi tiết HĐ → nút "**Thêm phụ lục**" → Nhập thiết bị hoặc điều khoản mới → Số phụ lục tự động cấp (ví dụ: `HD-.../JH-SHV-A1`)
 
 ### 8.7 Gia hạn hợp đồng (Renew)
 

@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Kỹ thuật viên
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho Kỹ thuật viên
 
 **Đối tượng**: Kỹ thuật viên (TECHNICIAN) — khoảng 80 người, chỉ dùng trên điện thoại
 **Phiên bản**: 2026-07 (cập nhật lượt thăm nhiều loại, giao hàng tiêu hao, KTV hỗ trợ)
@@ -47,7 +47,7 @@
 Mở Chrome hoặc Safari trên điện thoại:
 
 ```
-https://soms.seoulaqua.com.vn/f/vi/login
+https://soms.jakeshomeappliances.com.vn/f/vi/login
 ```
 
 > **Không cần tải ứng dụng.** Dùng ngay trên trình duyệt. Để truy cập nhanh, thêm vào Màn hình chính (menu trình duyệt → Thêm vào màn hình chính).
@@ -57,9 +57,9 @@ https://soms.seoulaqua.com.vn/f/vi/login
 Khi quản trị viên tạo tài khoản, bạn nhận được một SMS:
 
 ```
-Tài khoản kỹ thuật viên Seoul Aqua đã được tạo.
+Tài khoản kỹ thuật viên Jake's Home Appliances đã được tạo.
 Mật khẩu tạm thời: ********
-Đăng nhập: soms.seoulaqua.com.vn/f/login
+Đăng nhập: soms.jakeshomeappliances.com.vn/f/login
 ```
 
 Giữ SMS này cho bản thân. Tuyệt đối không chia sẻ mật khẩu với người khác.
@@ -447,7 +447,7 @@ Bắt buộc **đăng xuất** khi dùng điện thoại chung của công ty.
 ### Tình huống 2: Không tải được ảnh lên
 
 - Kiểm tra kết nối Internet (LTE/Wi-Fi)
-- Kiểm tra quyền camera (Cài đặt → Ứng dụng → Seoul Aqua → Camera → Cho phép)
+- Kiểm tra quyền camera (Cài đặt → Ứng dụng → Jake's Home Appliances → Camera → Cho phép)
 - Nếu ảnh quá nặng: Giảm độ phân giải hoặc chụp góc khác
 
 ### Tình huống 3: Màn hình chữ ký không hiện hoặc bị đơ

@@ -20,7 +20,7 @@ const WATERMARK_LOGO_PATH = path.join(
   process.cwd(),
   "public",
   "logo",
-  "seoul-aqua-logo.jpg",
+  "jakes-home-appliances-logo.jpg",
 );
 
 const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
@@ -341,8 +341,8 @@ function formatDate(d: Date): string {
 }
 
 const COMPANY = {
-  legalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á",
-  brandName: "SEOUL AQUA",
+  legalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA",
+  brandName: "JAKE'S HOME APPLIANCES",
   address: "TP. HCM, Việt Nam",
   taxCode: "0316XXXXXX",
 };

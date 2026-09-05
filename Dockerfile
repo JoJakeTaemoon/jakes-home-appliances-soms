@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.7
 #
-# Seoul Aqua SOMS — staging / self-hosted image.
+# Jake's Home Appliances SOMS — staging / self-hosted image.
 # Multi-stage build that produces a slim runtime from Next.js' standalone
 # output (see next.config.ts: output: "standalone").
 #
-# Build:   docker build -t seoulaqua-soms:local .
+# Build:   docker build -t jakeshomeapp-soms:local .
 # Run:     docker compose up app  (see docker-compose.yml for the full stack)
 
 # ─────────────────────────────────────────────────────────────────────────

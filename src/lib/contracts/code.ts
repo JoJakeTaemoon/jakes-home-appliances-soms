@@ -2,9 +2,9 @@
  * Contract code allocator.
  *
  * Formats (B.2 + B.5 confirmed 2026-05-26):
- *   - B2C original:    HD-YYYYmmDD/SA-KH##### (e.g. HD-20260526/SA-KH00001)
- *   - B2B original:    HD-YYYYmmDD/SA-{shortcode}  (e.g. HD-20260526/SA-SHV)
- *   - Amendments:      <parent code>-A{revision}     (e.g. HD-20260526/SA-SHV-A1)
+ *   - B2C original:    HD-YYYYmmDD/JH-KH##### (e.g. HD-20260526/JH-KH00001)
+ *   - B2B original:    HD-YYYYmmDD/JH-{shortcode}  (e.g. HD-20260526/JH-SHV)
+ *   - Amendments:      <parent code>-A{revision}     (e.g. HD-20260526/JH-SHV-A1)
  *
  * The date portion uses Vietnam Standard Time (UTC+7). The customer code or
  * shortcode itself uniquifies — we don't append a per-day sequence. If the
@@ -63,7 +63,7 @@ export interface ParsedContractCode {
 export function parseContractCode(code: string): ParsedContractCode | null {
   if (!code) return null;
   const trimmed = code.trim();
-  const m = /^HD-(\d{8})\/SA-([A-Z0-9]+)(?:-A(\d+))?$/.exec(trimmed);
+  const m = /^HD-(\d{8})\/JH-([A-Z0-9]+)(?:-A(\d+))?$/.exec(trimmed);
   if (!m) return null;
   const [, dateStamp, customerSuffix, rev] = m;
   return {
@@ -76,7 +76,7 @@ export function parseContractCode(code: string): ParsedContractCode | null {
 
 /** Compose a contract code from parsed components — inverse of `parseContractCode`. */
 export function formatContractCode(parts: ParsedContractCode): string {
-  const base = `HD-${parts.dateStamp}/SA-${parts.customerSuffix}`;
+  const base = `HD-${parts.dateStamp}/JH-${parts.customerSuffix}`;
   return parts.isAmendment && parts.amendmentRevision > 0
     ? `${base}-A${parts.amendmentRevision}`
     : base;
@@ -87,14 +87,14 @@ export function formatContractCode(parts: ParsedContractCode): string {
  *
  * Examples:
  *   allocateContractCode({ customer: { type: "B2C", code: "KH00001" }, type: "SALE", signedAt })
- *     → "HD-20260526/SA-KH00001"
+ *     → "HD-20260526/JH-KH00001"
  *   allocateContractCode({ customer: { type: "B2B", code: "KH00002", shortcode: "SHV" }, type: "RENTAL", signedAt })
- *     → "HD-20260526/SA-SHV"
+ *     → "HD-20260526/JH-SHV"
  *   allocateContractCode({
  *     customer: { type: "B2B", code: "KH00002", shortcode: "SHV" },
- *     parent: { contractNumber: "HD-20260526/SA-SHV", amendmentRevision: 0 },
+ *     parent: { contractNumber: "HD-20260526/JH-SHV", amendmentRevision: 0 },
  *   })
- *     → "HD-20260526/SA-SHV-A1"
+ *     → "HD-20260526/JH-SHV-A1"
  */
 export function allocateContractCode(input: AllocateContractCodeInput): string {
   if (input.parent) {
@@ -125,5 +125,5 @@ export function allocateContractCode(input: AllocateContractCodeInput): string {
     }
     suffix = customer.code.trim().toUpperCase();
   }
-  return `HD-${dateStamp}/SA-${suffix}`;
+  return `HD-${dateStamp}/JH-${suffix}`;
 }

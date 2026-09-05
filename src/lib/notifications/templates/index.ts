@@ -85,9 +85,9 @@ const SMS_PORTAL_WELCOME: TemplateDef = {
   channels: ["SMS"],
   category: "SYSTEM",
   bodies: {
-    ko: "[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.",
-    vi: "[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.",
-    en: "[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.",
+    ko: "[JakeApp] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.",
+    vi: "[JakeApp] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.",
+    en: "[JakeApp] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.",
   },
 };
 
@@ -96,9 +96,9 @@ const SMS_PASSWORD_RESET: TemplateDef = {
   channels: ["SMS"],
   category: "SYSTEM",
   bodies: {
-    ko: "[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}",
-    vi: "[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}",
-    en: "[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}",
+    ko: "[JakeApp] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}",
+    vi: "[JakeApp] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}",
+    en: "[JakeApp] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}",
   },
 };
 
@@ -113,9 +113,9 @@ const SMS_STAFF_RESET_CODE: TemplateDef = {
   channels: ["SMS"],
   category: "SYSTEM",
   bodies: {
-    ko: "[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.",
-    vi: "[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.",
-    en: "[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.",
+    ko: "[JakeApp] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.",
+    vi: "[JakeApp] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.",
+    en: "[JakeApp] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.",
   },
 };
 
@@ -124,9 +124,9 @@ const SMS_VISIT_REMINDER: TemplateDef = {
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] {date} {time}, {technician} 기사 방문({service}). 변경 {url}",
-    vi: "[SeoulAqua] {date} {time}, {technician} đến ({service}). Đổi {url}",
-    en: "[SeoulAqua] {date} {time}, {technician} visit ({service}). {url}",
+    ko: "[JakeApp] {date} {time}, {technician} 기사 방문({service}). 변경 {url}",
+    vi: "[JakeApp] {date} {time}, {technician} đến ({service}). Đổi {url}",
+    en: "[JakeApp] {date} {time}, {technician} visit ({service}). {url}",
   },
 };
 
@@ -135,9 +135,9 @@ const SMS_SR_APPROVED: TemplateDef = {
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}",
-    vi: "[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}",
-    en: "[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}",
+    ko: "[JakeApp] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}",
+    vi: "[JakeApp] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}",
+    en: "[JakeApp] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}",
   },
 };
 
@@ -146,9 +146,9 @@ const SMS_SR_REJECTED: TemplateDef = {
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}",
-    vi: "[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}",
-    en: "[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}",
+    ko: "[JakeApp] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}",
+    vi: "[JakeApp] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}",
+    en: "[JakeApp] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}",
   },
 };
 
@@ -157,9 +157,9 @@ const SMS_PAYMENT_OVERDUE_FINAL: TemplateDef = {
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}",
-    vi: "[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}",
-    en: "[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}",
+    ko: "[JakeApp] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}",
+    vi: "[JakeApp] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}",
+    en: "[JakeApp] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}",
   },
 };
 
@@ -168,9 +168,9 @@ const SMS_CONTRACT_RENEWAL_FINAL: TemplateDef = {
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}",
-    vi: "[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}",
-    en: "[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}",
+    ko: "[JakeApp] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}",
+    vi: "[JakeApp] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}",
+    en: "[JakeApp] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}",
   },
 };
 
@@ -181,14 +181,14 @@ const EMAIL_PORTAL_WELCOME: TemplateDef = {
   channels: ["EMAIL"],
   category: "SYSTEM",
   subjects: {
-    ko: "[Seoul Aqua] 고객 포털 가입을 환영합니다 — 로그인 정보 안내",
-    vi: "[Seoul Aqua] Chào mừng đến cổng khách hàng — Thông tin đăng nhập",
-    en: "[Seoul Aqua] Welcome to your customer portal — Login info",
+    ko: "[Jake's Home Appliances] 고객 포털 가입을 환영합니다 — 로그인 정보 안내",
+    vi: "[Jake's Home Appliances] Chào mừng đến cổng khách hàng — Thông tin đăng nhập",
+    en: "[Jake's Home Appliances] Welcome to your customer portal — Login info",
   },
   bodies: {
     ko: `{name}님 안녕하세요,
 
-Seoul Aqua를 선택해주셔서 감사합니다. 고객 포털 계정이 개설되었습니다.
+Jake's Home Appliances를 선택해주셔서 감사합니다. 고객 포털 계정이 개설되었습니다.
 
 ▸ 포털 주소: {url}
 ▸ 로그인 아이디: {phone}
@@ -202,12 +202,12 @@ Seoul Aqua를 선택해주셔서 감사합니다. 고객 포털 계정이 개설
 • 서비스 요청 제출 (정기점검 / 고장 / 교체 / 이전설치)
 • 결제 이력 및 청구서 다운로드
 
-문의: {hq_phone} / cs@seoulaqua.com.vn
+문의: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua 고객지원팀`,
+Jake's Home Appliances 고객지원팀`,
     vi: `Kính chào {name},
 
-Cảm ơn quý khách đã chọn Seoul Aqua. Tài khoản cổng khách hàng đã được kích hoạt.
+Cảm ơn quý khách đã chọn Jake's Home Appliances. Tài khoản cổng khách hàng đã được kích hoạt.
 
 ▸ Địa chỉ cổng: {url}
 ▸ Tên đăng nhập: {phone}
@@ -221,12 +221,12 @@ Dịch vụ qua cổng:
 • Gửi yêu cầu dịch vụ (bảo trì / báo lỗi / thay thế / di dời)
 • Lịch sử thanh toán và tải hóa đơn
 
-Liên hệ: {hq_phone} / cs@seoulaqua.com.vn
+Liên hệ: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Đội ngũ CSKH Seoul Aqua`,
+Đội ngũ CSKH Jake's Home Appliances`,
     en: `Dear {name},
 
-Thank you for choosing Seoul Aqua. Your customer portal account has been activated.
+Thank you for choosing Jake's Home Appliances. Your customer portal account has been activated.
 
 ▸ Portal URL: {url}
 ▸ Login ID: {phone}
@@ -240,9 +240,9 @@ What you can do in the portal:
 • Submit service requests (inspection / fault / replacement / relocation)
 • Access payment history and download invoices
 
-Contact: {hq_phone} / cs@seoulaqua.com.vn
+Contact: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua Customer Support`,
+Jake's Home Appliances Customer Support`,
   },
 };
 
@@ -251,9 +251,9 @@ const EMAIL_FILTER_DUE_D14: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] {equipment} {part_name} {action_label} 시기 안내 ({days}일 후)",
-    vi: "[Seoul Aqua] Đến hạn {action_label} {part_name} — {equipment} (còn {days} ngày)",
-    en: "[Seoul Aqua] {part_name} {action_label} due in {days} days — {equipment}",
+    ko: "[Jake's Home Appliances] {equipment} {part_name} {action_label} 시기 안내 ({days}일 후)",
+    vi: "[Jake's Home Appliances] Đến hạn {action_label} {part_name} — {equipment} (còn {days} ngày)",
+    en: "[Jake's Home Appliances] {part_name} {action_label} due in {days} days — {equipment}",
   },
   bodies: {
     ko: `{name}님,
@@ -303,9 +303,9 @@ const EMAIL_SR_RECEIVED: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] 서비스 요청 접수 #{req_no}",
-    vi: "[Seoul Aqua] Đã nhận yêu cầu dịch vụ #{req_no}",
-    en: "[Seoul Aqua] Service request #{req_no} received",
+    ko: "[Jake's Home Appliances] 서비스 요청 접수 #{req_no}",
+    vi: "[Jake's Home Appliances] Đã nhận yêu cầu dịch vụ #{req_no}",
+    en: "[Jake's Home Appliances] Service request #{req_no} received",
   },
   bodies: {
     ko: `{name}님,
@@ -361,9 +361,9 @@ const EMAIL_SR_APPROVED_DETAILS: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] 요청 #{req_no} 승인 — 견적 및 방문 일정",
-    vi: "[Seoul Aqua] Yêu cầu #{req_no} đã duyệt — Báo giá + lịch",
-    en: "[Seoul Aqua] Request #{req_no} approved — Quote + visit schedule",
+    ko: "[Jake's Home Appliances] 요청 #{req_no} 승인 — 견적 및 방문 일정",
+    vi: "[Jake's Home Appliances] Yêu cầu #{req_no} đã duyệt — Báo giá + lịch",
+    en: "[Jake's Home Appliances] Request #{req_no} approved — Quote + visit schedule",
   },
   bodies: {
     ko: `{name}님,
@@ -425,9 +425,9 @@ const EMAIL_VISIT_COMPLETED: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] {date} 방문 완료 — 작업확인서 (#{visit_no})",
-    vi: "[Seoul Aqua] Hoàn tất ngày {date} — Phiếu công việc (#{visit_no})",
-    en: "[Seoul Aqua] Visit completed {date} — Work confirmation (#{visit_no})",
+    ko: "[Jake's Home Appliances] {date} 방문 완료 — 작업확인서 (#{visit_no})",
+    vi: "[Jake's Home Appliances] Hoàn tất ngày {date} — Phiếu công việc (#{visit_no})",
+    en: "[Jake's Home Appliances] Visit completed {date} — Work confirmation (#{visit_no})",
   },
   bodies: {
     ko: `{name}님,
@@ -492,9 +492,9 @@ const EMAIL_PAYMENT_DUE_D7: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] {month} 임대료 결제 안내",
-    vi: "[Seoul Aqua] Nhắc thanh toán phí thuê {month}",
-    en: "[Seoul Aqua] Reminder — {month} rental payment",
+    ko: "[Jake's Home Appliances] {month} 임대료 결제 안내",
+    vi: "[Jake's Home Appliances] Nhắc thanh toán phí thuê {month}",
+    en: "[Jake's Home Appliances] Reminder — {month} rental payment",
   },
   bodies: {
     ko: `{name}님 안녕하세요,
@@ -512,7 +512,7 @@ const EMAIL_PAYMENT_DUE_D7: TemplateDef = {
 
 이미 결제하셨다면 본 메일을 무시해주세요 (시스템 반영 1~2일 소요).
 
-문의: {hq_phone} / accounts@seoulaqua.com.vn`,
+문의: {hq_phone} / accounts@jakeshomeappliances.com.vn`,
     vi: `Kính chào {name},
 
 Phí thuê tháng {month} của quý khách chưa được thanh toán.
@@ -528,7 +528,7 @@ Phương thức TT:
 
 Nếu đã TT, xin vui lòng bỏ qua email này (cập nhật hệ thống mất 1-2 ngày).
 
-Liên hệ: {hq_phone} / accounts@seoulaqua.com.vn`,
+Liên hệ: {hq_phone} / accounts@jakeshomeappliances.com.vn`,
     en: `Dear {name},
 
 Your {month} rental fee remains unpaid.
@@ -544,7 +544,7 @@ Payment options:
 
 If already paid, please disregard (system updates take 1-2 days).
 
-Contact: {hq_phone} / accounts@seoulaqua.com.vn`,
+Contact: {hq_phone} / accounts@jakeshomeappliances.com.vn`,
   },
 };
 
@@ -553,9 +553,9 @@ const EMAIL_PAYMENT_DUE_D14: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] {month} 미수금 안내 (2차)",
-    vi: "[Seoul Aqua] Phí thuê {month} chưa TT (Lần 2)",
-    en: "[Seoul Aqua] Second reminder — {month} payment outstanding",
+    ko: "[Jake's Home Appliances] {month} 미수금 안내 (2차)",
+    vi: "[Jake's Home Appliances] Phí thuê {month} chưa TT (Lần 2)",
+    en: "[Jake's Home Appliances] Second reminder — {month} payment outstanding",
   },
   bodies: {
     ko: `{name}님,
@@ -602,9 +602,9 @@ const EMAIL_RENTAL_DUE_D60: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] 임대 계약 만료 안내 (60일 전) — 옵션 비교",
-    vi: "[Seoul Aqua] HĐ thuê sắp hết hạn (còn 60 ngày) — So sánh phương án",
-    en: "[Seoul Aqua] Rental contract ending in 60 days — Options",
+    ko: "[Jake's Home Appliances] 임대 계약 만료 안내 (60일 전) — 옵션 비교",
+    vi: "[Jake's Home Appliances] HĐ thuê sắp hết hạn (còn 60 ngày) — So sánh phương án",
+    en: "[Jake's Home Appliances] Rental contract ending in 60 days — Options",
   },
   bodies: {
     ko: `{name}님,
@@ -666,9 +666,9 @@ const EMAIL_RENTAL_DUE_D30: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] 임대 만료 임박 (D-30) — 결정 부탁드립니다",
-    vi: "[Seoul Aqua] HĐ thuê còn 30 ngày — Quyết định",
-    en: "[Seoul Aqua] 30 days to rental expiry — please decide",
+    ko: "[Jake's Home Appliances] 임대 만료 임박 (D-30) — 결정 부탁드립니다",
+    vi: "[Jake's Home Appliances] HĐ thuê còn 30 ngày — Quyết định",
+    en: "[Jake's Home Appliances] 30 days to rental expiry — please decide",
   },
   bodies: {
     ko: `{name}님,
@@ -723,9 +723,9 @@ const EMAIL_RECEIPT: TemplateDef = {
   channels: ["EMAIL"],
   category: "SYSTEM", // payment receipts cannot be opted out of
   subjects: {
-    ko: "[Seoul Aqua] 결제 영수증 — {amount}₫ ({date})",
-    vi: "[Seoul Aqua] Biên lai thanh toán — {amount}đ ({date})",
-    en: "[Seoul Aqua] Payment receipt — {amount} VND ({date})",
+    ko: "[Jake's Home Appliances] 결제 영수증 — {amount}₫ ({date})",
+    vi: "[Jake's Home Appliances] Biên lai thanh toán — {amount}đ ({date})",
+    en: "[Jake's Home Appliances] Payment receipt — {amount} VND ({date})",
   },
   bodies: {
     ko: `{name}님,
@@ -739,7 +739,7 @@ const EMAIL_RECEIPT: TemplateDef = {
 
 문의: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     vi: `Kính chào {name},
 
 Thanh toán đã được ghi nhận. Vui lòng lưu lại biên lai.
@@ -751,7 +751,7 @@ Thanh toán đã được ghi nhận. Vui lòng lưu lại biên lai.
 
 Liên hệ: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     en: `Dear {name},
 
 Payment received. Please keep this receipt for your records.
@@ -763,7 +763,7 @@ Payment received. Please keep this receipt for your records.
 
 Contact: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
   },
 };
 
@@ -772,9 +772,9 @@ const EMAIL_TAX_INVOICE: TemplateDef = {
   channels: ["EMAIL"],
   category: "SYSTEM",
   subjects: {
-    ko: "[Seoul Aqua] 세금계산서 발행 — {invoice_no}",
-    vi: "[Seoul Aqua] Hóa đơn GTGT — {invoice_no}",
-    en: "[Seoul Aqua] e-Tax invoice — {invoice_no}",
+    ko: "[Jake's Home Appliances] 세금계산서 발행 — {invoice_no}",
+    vi: "[Jake's Home Appliances] Hóa đơn GTGT — {invoice_no}",
+    en: "[Jake's Home Appliances] e-Tax invoice — {invoice_no}",
   },
   bodies: {
     ko: `{name}님,
@@ -787,7 +787,7 @@ const EMAIL_TAX_INVOICE: TemplateDef = {
 ▸ VAT 10%: {vat}₫
 ▸ 합계: {total}₫
 
-첨부된 PDF를 확인하시기 바랍니다. 추가 문의는 cs@seoulaqua.com.vn 또는 {hq_phone}.`,
+첨부된 PDF를 확인하시기 바랍니다. 추가 문의는 cs@jakeshomeappliances.com.vn 또는 {hq_phone}.`,
     vi: `Kính chào {name},
 
 Đã phát hành hóa đơn GTGT.
@@ -798,7 +798,7 @@ const EMAIL_TAX_INVOICE: TemplateDef = {
 ▸ VAT 10%: {vat}đ
 ▸ Tổng: {total}đ
 
-Vui lòng xem file PDF đính kèm. Liên hệ: cs@seoulaqua.com.vn / {hq_phone}`,
+Vui lòng xem file PDF đính kèm. Liên hệ: cs@jakeshomeappliances.com.vn / {hq_phone}`,
     en: `Dear {name},
 
 Your e-tax invoice has been issued.
@@ -809,7 +809,7 @@ Your e-tax invoice has been issued.
 ▸ VAT 10%: {vat} VND
 ▸ Total: {total} VND
 
-See attached PDF. Questions: cs@seoulaqua.com.vn / {hq_phone}`,
+See attached PDF. Questions: cs@jakeshomeappliances.com.vn / {hq_phone}`,
   },
 };
 
@@ -818,9 +818,9 @@ const EMAIL_CONTRACT_COPY: TemplateDef = {
   channels: ["EMAIL"],
   category: "SYSTEM", // contract documents are legally required deliverables
   subjects: {
-    ko: "[Seoul Aqua] 계약서 사본 — {contract_no}",
-    vi: "[Seoul Aqua] Bản sao hợp đồng — {contract_no}",
-    en: "[Seoul Aqua] Contract copy — {contract_no}",
+    ko: "[Jake's Home Appliances] 계약서 사본 — {contract_no}",
+    vi: "[Jake's Home Appliances] Bản sao hợp đồng — {contract_no}",
+    en: "[Jake's Home Appliances] Contract copy — {contract_no}",
   },
   bodies: {
     ko: `{name}님,
@@ -830,9 +830,9 @@ const EMAIL_CONTRACT_COPY: TemplateDef = {
 ▸ 계약 번호: {contract_no}
 ▸ 발행일: {issued_at}
 
-문의: {hq_phone} / cs@seoulaqua.com.vn
+문의: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     vi: `Kính chào {name},
 
 Đính kèm bản sao hợp đồng theo yêu cầu.
@@ -840,9 +840,9 @@ Seoul Aqua`,
 ▸ Số hợp đồng: {contract_no}
 ▸ Ngày phát hành: {issued_at}
 
-Liên hệ: {hq_phone} / cs@seoulaqua.com.vn
+Liên hệ: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     en: `Dear {name},
 
 Please find a copy of your contract attached.
@@ -850,9 +850,9 @@ Please find a copy of your contract attached.
 ▸ Contract no.: {contract_no}
 ▸ Issued: {issued_at}
 
-Contact: {hq_phone} / cs@seoulaqua.com.vn
+Contact: {hq_phone} / cs@jakeshomeappliances.com.vn
 
-Seoul Aqua`,
+Jake's Home Appliances`,
   },
 };
 
@@ -861,9 +861,9 @@ const EMAIL_RENTAL_COMPLETED: TemplateDef = {
   channels: ["EMAIL"],
   category: "TRANSACTIONAL",
   subjects: {
-    ko: "[Seoul Aqua] 임대 계약 완료 — 장비 소유권 이전 안내",
-    vi: "[Seoul Aqua] Hợp đồng thuê đã hoàn tất — Chuyển quyền sở hữu",
-    en: "[Seoul Aqua] Rental contract completed — Ownership transferred",
+    ko: "[Jake's Home Appliances] 임대 계약 완료 — 장비 소유권 이전 안내",
+    vi: "[Jake's Home Appliances] Hợp đồng thuê đã hoàn tất — Chuyển quyền sở hữu",
+    en: "[Jake's Home Appliances] Rental contract completed — Ownership transferred",
   },
   bodies: {
     ko: `{name}님,
@@ -879,7 +879,7 @@ const EMAIL_RENTAL_COMPLETED: TemplateDef = {
 포털: {url}
 문의: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     vi: `Kính chào {name},
 
 Hợp đồng thuê 36 tháng đã hoàn tất.
@@ -893,7 +893,7 @@ Thiết bị nay thuộc quyền sở hữu của quý khách. Nếu cần HĐ b
 Cổng: {url}
 Liên hệ: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
     en: `Dear {name},
 
 Your 36-month rental contract has been completed successfully.
@@ -907,7 +907,7 @@ The equipment is now yours. If you'd like a maintenance contract, sign up via th
 Portal: {url}
 Contact: {hq_phone}
 
-Seoul Aqua`,
+Jake's Home Appliances`,
   },
 };
 

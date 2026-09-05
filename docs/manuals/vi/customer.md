@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn sử dụng Cổng Khách hàng
+# Jake's Home Appliances SOMS — Hướng dẫn sử dụng Cổng Khách hàng
 
 > Cập nhật lần cuối: Phản ánh cải tiến thiết bị, đại lý, đơn hàng và các loại lượt thăm mới (2026-07)
 
@@ -6,7 +6,7 @@
 
 ## Đối tượng hướng dẫn này
 
-Hướng dẫn này dành cho khách hàng đang thuê, mua hoặc bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh và các sản phẩm xử lý nước gia dụng từ Seoul Aqua. Sau khi đăng nhập vào Cổng Khách hàng (`portal.seoulaqua.com.vn`), bạn có thể xem tình trạng thiết bị, lịch sử lượt thăm, gửi yêu cầu dịch vụ và xem lịch sử thanh toán.
+Hướng dẫn này dành cho khách hàng đang thuê, mua hoặc bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh và các sản phẩm xử lý nước gia dụng từ Jake's Home Appliances. Sau khi đăng nhập vào Cổng Khách hàng (`portal.jakeshomeappliances.com.vn`), bạn có thể xem tình trạng thiết bị, lịch sử lượt thăm, gửi yêu cầu dịch vụ và xem lịch sử thanh toán.
 
 Tài khoản Cổng Khách hàng được cấp cho Người ký hợp đồng (CONTRACT_PARTY) hoặc Liên hệ vận hành (OPS_CONTACT). Nếu chưa có tài khoản hoặc quên mật khẩu, hãy liên hệ văn phòng.
 
@@ -28,7 +28,7 @@ Tài khoản Cổng Khách hàng được cấp cho Người ký hợp đồng (
 
 ## 1. Đăng nhập
 
-1. Mở `portal.seoulaqua.com.vn` trên trình duyệt (hoặc ứng dụng đã thêm vào màn hình chính).
+1. Mở `portal.jakeshomeappliances.com.vn` trên trình duyệt (hoặc ứng dụng đã thêm vào màn hình chính).
 2. Nhập **Số điện thoại** và **Mật khẩu**, rồi nhấn **Đăng nhập**.
 
    ![Màn hình đăng nhập cổng khách hàng](../screenshots/vi/customer/01-login.png)
@@ -215,7 +215,7 @@ Tại bất kỳ màn hình nào, nhấn nút ngôn ngữ (KO / VI / EN) ở gó
 |---|---|
 | Người ký hợp đồng | Người ký hợp đồng và nhận hóa đơn GTGT, thông báo pháp lý |
 | Liên hệ vận hành | Người nhận SMS lịch lượt thăm và biên lai |
-| Cổng khách hàng | Cổng khách hàng (`portal.seoulaqua.com.vn`) |
+| Cổng khách hàng | Cổng khách hàng (`portal.jakeshomeappliances.com.vn`) |
 | Mật khẩu tạm thời | Mật khẩu ban đầu 10 ký tự gửi qua SMS khi kích hoạt hợp đồng |
 | Phiếu xác nhận công việc | Tài liệu xác nhận công việc sau khi KTV hoàn thành lượt thăm (PDF) |
 | Số tiền còn nợ | Tổng số tiền chưa thanh toán |

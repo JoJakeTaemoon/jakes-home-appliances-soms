@@ -1,6 +1,6 @@
-# Seoul Aqua SOMS
+# Jake's Home Appliances SOMS
 
-**Service Operation Management System** for **CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)** — a Vietnam-based seller / renter / maintainer of water purifiers, air purifiers, bidets, and household water-treatment products.
+**Service Operation Management System** for **CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)** — a Vietnam-based seller / renter / maintainer of water purifiers, air purifiers, bidets, and household water-treatment products.
 
 Customer-centric ops platform for ~10 office staff + up to 80 field technicians. Multi-language (한국어 / Tiếng Việt / English), B2C + B2B, mobile-first for technicians, desktop-first for office staff.
 
@@ -31,7 +31,7 @@ Most of what's worth knowing lives in dedicated documents rather than this READM
 | [docs/URL_SCHEME.md](docs/URL_SCHEME.md) | Canonical URL structure — `/o/*` office, `/f/*` field, `/` customer, locale optional (defaults to `en` silently) |
 | [docs/DATA_MODEL_NOTES.md](docs/DATA_MODEL_NOTES.md) | Schema rationale derived from client CSV samples |
 | [docs/INFRA.md](docs/INFRA.md) | Self-hosted staging runbook (vhost.vn dry-run) — Docker Compose, systemd cron, pg_dump backup, deploy workflow |
-| [.claude/skills/DESIGN.md](.claude/skills/DESIGN.md) | Design system: Intercom-frame + Seoul Aqua brand-blue |
+| [.claude/skills/DESIGN.md](.claude/skills/DESIGN.md) | Design system: Intercom-frame + Jake's Home Appliances brand-blue |
 | [.claude/skills/tdd-workflow.md](.claude/skills/tdd-workflow.md) | TDD methodology — RED → implement → GREEN gates |
 
 ### 👥 End-user manuals
@@ -59,7 +59,7 @@ Each folder holds five role guides: `admin.md`, `manager.md`, `staff.md`, `techn
 |---|---|
 | Framework | Next.js 16 (App Router) + TypeScript (strict) |
 | UI | Custom components + Tailwind CSS v4 (no shadcn/ui, no native system dialogs) |
-| Design System | Intercom-frame + Seoul Aqua brand-blue — see [DESIGN.md](.claude/skills/DESIGN.md) |
+| Design System | Intercom-frame + Jake's Home Appliances brand-blue — see [DESIGN.md](.claude/skills/DESIGN.md) |
 | Database | PostgreSQL + Prisma 7 ORM (`@prisma/adapter-pg` + `pg.Pool`) |
 | Auth | Custom JWT (jose, Edge Runtime compatible); phone-based staff login |
 | i18n | next-intl (ko / vi / en, switchable on any screen, default `vi`) |
@@ -67,14 +67,10 @@ Each folder holds five role guides: `admin.md`, `manager.md`, `staff.md`, `techn
 | Validation | Zod + react-hook-form |
 | Testing | Vitest + React Testing Library + Playwright |
 | Notifications | SMS + Email mock-first (eSMS + Resend in production) |
-<!-- portfolio:drop-start -->
-| Hosting | Vercel + Supabase (initial); vhost.vn migration deferred |
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-| Hosting | Vercel + Supabase (production) |
-portfolio:add-end -->
 
-The framework, agent team, build pipeline, and conventions are **inherited from MegaDnC PMIS**. Domain code is rebuilt from scratch for Seoul Aqua.
+| Hosting | Vercel + Supabase (production) |
+
+The framework, agent team, build pipeline, and conventions are **inherited from MegaDnC PMIS**. Domain code is rebuilt from scratch for Jake's Home Appliances.
 
 ---
 
@@ -124,7 +120,7 @@ Forgot-password flow at [`/forgot-password`](http://localhost:3000/vi/forgot-pas
 ## Repository Layout
 
 ```
-seoul-aqua-soms/
+jakes-home-appliances-soms/
 ├── .claude/
 │   ├── agents/                  # 11 agents (orchestrator, designer, tdd-guide,
 │   │                            #            frontend, backend, reviewer, git-flow,
@@ -147,7 +143,7 @@ seoul-aqua-soms/
 │   ├── process/                 # Business process PDFs
 │   ├── forms/                   # Paper-form templates
 │   ├── data/                    # CSV samples
-│   └── brand/                   # Seoul Aqua logo
+│   └── brand/                   # Jake's Home Appliances logo
 ├── src/
 │   ├── app/[locale]/            # Next.js App Router (auth, dashboard, mobile, portal, admin)
 │   ├── app/api/                 # Route handlers (REST endpoints)
@@ -168,7 +164,7 @@ seoul-aqua-soms/
 │   ├── components/              # React component tests (jsdom)
 │   └── e2e/                     # Playwright E2E (real browser)
 ├── public/
-│   ├── logo/                    # Seoul Aqua logo (192/512 PNG icons + manifest)
+│   ├── logo/                    # Jake's Home Appliances logo (192/512 PNG icons + manifest)
 │   └── fonts/                   # Pretendard variable font
 ├── scripts/                     # vercel-deploy, db-check, coverage report
 └── .github/workflows/

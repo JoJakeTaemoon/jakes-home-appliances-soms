@@ -79,7 +79,7 @@ export function Bi({
   );
 }
 
-/** Brand header — single-line variant. SEOUL AQUA + legal name inline, contact info on the right. */
+/** Brand header — single-line variant. JAKE'S HOME APPLIANCES + legal name inline, contact info on the right. */
 export function BrandHeader({ hqPhone }: Readonly<{ hqPhone: string }>) {
   return (
     <div
@@ -95,14 +95,14 @@ export function BrandHeader({ hqPhone }: Readonly<{ hqPhone: string }>) {
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: "4pt", flex: 1, minWidth: 0 }}>
         <span style={{ fontSize: "11pt", fontWeight: "bold", color: "#0C6BA8", whiteSpace: "nowrap" }}>
-          SEOUL AQUA
+          JAKE'S HOME APPLIANCES
         </span>
         <span style={{ fontSize: "6.5pt", color: "#666" }}>
-          · CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)
+          · CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)
         </span>
       </div>
       <div style={{ fontSize: "6.5pt", color: "#666", whiteSpace: "nowrap" }}>
-        cs@seoulaqua.com.vn · {hqPhone}
+        cs@jakeshomeappliances.com.vn · {hqPhone}
       </div>
     </div>
   );
@@ -137,7 +137,7 @@ export function Watermark() {
       {/* Public asset — Next.js serves /public verbatim. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo/seoul-aqua-logo.jpg"
+        src="/logo/jakes-home-appliances-logo.jpg"
         alt=""
         style={{ width: "200pt", height: "200pt", objectFit: "contain" }}
       />

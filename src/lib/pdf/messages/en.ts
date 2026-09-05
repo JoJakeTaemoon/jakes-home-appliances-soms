@@ -42,8 +42,8 @@ export const en: PdfMessages = {
     notes: "Notes",
     pageOf: "Page {page} of {total}",
     signatureCustomer: "CUSTOMER (Contract party)",
-    signatureCompany: "SEOUL AQUA (Representative)",
-    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
+    signatureCompany: "JAKE'S HOME APPLIANCES (Representative)",
+    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)",
     generatedAt: "Generated",
     companyBlockTitle: "Issuing company",
     companyLegalName: "Legal entity",
@@ -59,7 +59,7 @@ export const en: PdfMessages = {
   },
   clauses: {
     intro:
-      "This contract is concluded between the parties named above and is governed by Seoul Aqua's standard terms.",
+      "This contract is concluded between the parties named above and is governed by Jake's Home Appliances's standard terms.",
     rentalTerm:
       "Rental term: {term} months. Mandatory-use period: 24 months. Early termination during the mandatory period incurs a fee equal to 50% of the remaining monthly installments.",
     rentalAutoConvert:

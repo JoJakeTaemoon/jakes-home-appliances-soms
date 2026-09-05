@@ -18,11 +18,11 @@ units, compose) should be reflected here in the same PR.
               │                                             │
               │   :443 / :80  ── caddy:2-alpine             │
               │       (self-signed TLS, will swap to LE     │
-              │        when staging.seoulaqua.com.vn lands) │
+              │        when staging.jakeshomeappliances.com.vn lands) │
               │                    │                        │
               │                    ▼ (compose net)          │
               │           app — next.js standalone          │
-              │       (ghcr.io/.../seoulaqua-soms:staging)  │
+              │       (ghcr.io/.../jakeshomeapp-soms:staging)  │
               │                    │                        │
               │                    ▼                        │
               │           postgres:16-alpine                │
@@ -36,7 +36,7 @@ units, compose) should be reflected here in the same PR.
 Host paths:
 
 ```
-/opt/seoul-aqua-soms/
+/opt/jakes-home-appliances-soms/
 ├── .env                 secrets, chmod 600, deploy:deploy
 ├── docker-compose.yml   rsynced from repo on every deploy
 ├── Caddyfile            same
@@ -88,11 +88,11 @@ chmod 600 /home/deploy/.ssh/authorized_keys
 
 ## Phase 3 — first deploy (one-time)
 
-### 1. Fill `/opt/seoul-aqua-soms/.env`
+### 1. Fill `/opt/jakes-home-appliances-soms/.env`
 
 ```bash
 ssh deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+cd /opt/jakes-home-appliances-soms
 
 # Generate the four secrets locally first so you have a copy.
 for k in POSTGRES_PASSWORD JWT_SECRET REFRESH_SECRET CRON_SECRET; do
@@ -106,7 +106,7 @@ NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://103.27.60.70
 SMS_PROVIDER=mock
 EMAIL_PROVIDER=mock
-APP_IMAGE=ghcr.io/jojaketaemoon/seoulaqua-soms:staging
+APP_IMAGE=ghcr.io/jojaketaemoon/jakeshomeapp-soms:staging
 EOF
 
 mv .env.new .env
@@ -124,7 +124,7 @@ The deploy workflow runs `prisma migrate deploy` but not `db seed` — seed
 is destructive and you do it once.
 
 ```bash
-ssh deploy@103.27.60.70 'cd /opt/seoul-aqua-soms && docker compose exec app npx prisma db seed'
+ssh deploy@103.27.60.70 'cd /opt/jakes-home-appliances-soms && docker compose exec app npx prisma db seed'
 ```
 
 ### 4. Verify
@@ -168,7 +168,7 @@ Total time: ~3 min on a warm image cache, ~7 min cold.
 
 ```bash
 ssh deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+cd /opt/jakes-home-appliances-soms
 docker compose logs -f app
 docker compose logs -f postgres
 docker compose logs -f caddy
@@ -177,28 +177,28 @@ docker compose logs -f caddy
 Cron + backup logs are in the systemd journal:
 
 ```bash
-journalctl -u seoul-aqua-cron@filter-due -n 100
-journalctl -u seoul-aqua-backup --since '24 hours ago'
+journalctl -u jakes-home-appliances-cron@filter-due -n 100
+journalctl -u jakes-home-appliances-backup --since '24 hours ago'
 ```
 
 ### List active timers
 
 ```bash
-systemctl list-timers --all | grep seoul-aqua
+systemctl list-timers --all | grep jakes-home-appliances
 ```
 
 ### Restart a single service
 
 ```bash
-sudo docker compose -f /opt/seoul-aqua-soms/docker-compose.yml restart app
+sudo docker compose -f /opt/jakes-home-appliances-soms/docker-compose.yml restart app
 # or any of: postgres, caddy
 ```
 
 ### Restart the whole stack
 
 ```bash
-sudo docker compose -f /opt/seoul-aqua-soms/docker-compose.yml down
-sudo docker compose -f /opt/seoul-aqua-soms/docker-compose.yml up -d
+sudo docker compose -f /opt/jakes-home-appliances-soms/docker-compose.yml down
+sudo docker compose -f /opt/jakes-home-appliances-soms/docker-compose.yml up -d
 ```
 
 ### Apply a Prisma migration manually
@@ -216,10 +216,10 @@ docker compose exec app npm run db:reset
 ### Rotate a secret
 
 ```bash
-# Edit /opt/seoul-aqua-soms/.env with the new value
-vi /opt/seoul-aqua-soms/.env
+# Edit /opt/jakes-home-appliances-soms/.env with the new value
+vi /opt/jakes-home-appliances-soms/.env
 # Restart the app to pick it up
-sudo docker compose -f /opt/seoul-aqua-soms/docker-compose.yml up -d --force-recreate app
+sudo docker compose -f /opt/jakes-home-appliances-soms/docker-compose.yml up -d --force-recreate app
 ```
 
 `POSTGRES_PASSWORD` rotation is more involved — change it in `.env`, then
@@ -229,8 +229,8 @@ and restart.
 ### Trigger a cron job manually
 
 ```bash
-sudo systemctl start seoul-aqua-cron@filter-due.service
-journalctl -u seoul-aqua-cron@filter-due -n 50
+sudo systemctl start jakes-home-appliances-cron@filter-due.service
+journalctl -u jakes-home-appliances-cron@filter-due -n 50
 ```
 
 ---
@@ -239,28 +239,28 @@ journalctl -u seoul-aqua-cron@filter-due -n 50
 
 ### What runs nightly
 
-`seoul-aqua-backup.timer` fires at 02:30 VST. Calls `backup.sh` which:
+`jakes-home-appliances-backup.timer` fires at 02:30 VST. Calls `backup.sh` which:
 
 1. `docker compose exec postgres pg_dump --clean --if-exists ...`
 2. Pipes through `gzip -9`
-3. Writes `/opt/seoul-aqua-soms/backups/seoul-aqua-YYYYmmdd-HHMMSS.sql.gz`
+3. Writes `/opt/jakes-home-appliances-soms/backups/jakes-home-appliances-YYYYmmdd-HHMMSS.sql.gz`
 4. Deletes anything older than 7 days
 
 ### Manual backup
 
 ```bash
-sudo systemctl start seoul-aqua-backup.service
-ls -la /opt/seoul-aqua-soms/backups/
+sudo systemctl start jakes-home-appliances-backup.service
+ls -la /opt/jakes-home-appliances-soms/backups/
 ```
 
 ### Restore (DR drill — restores into a fresh DB, not the live one)
 
 ```bash
 ssh deploy@103.27.60.70
-cd /opt/seoul-aqua-soms
+cd /opt/jakes-home-appliances-soms
 
 # Pick the dump you want to restore
-LATEST=$(ls -t backups/seoul-aqua-*.sql.gz | head -1)
+LATEST=$(ls -t backups/jakes-home-appliances-*.sql.gz | head -1)
 
 # Create a parallel DB to restore into (so you can compare side-by-side)
 docker compose exec postgres psql -U soms -d postgres -c "CREATE DATABASE soms_dr;"
@@ -290,14 +290,14 @@ remote SFTP target. Track in [TODOS.md](../TODOS.md).
 
 | systemd unit | When | Vercel equivalent |
 |---|---|---|
-| `seoul-aqua-cron@overdue-escalation.timer` | 08:00 VST daily | `0 1 * * *` UTC |
-| `seoul-aqua-cron@filter-due.timer`         | 09:00 VST daily | `0 2 * * *` UTC |
-| `seoul-aqua-cron@rental-renewal.timer`     | 10:00 VST daily | `0 3 * * *` UTC |
-| `seoul-aqua-cron@rental-completion.timer`  | 11:00 VST daily | `0 4 * * *` UTC |
-| `seoul-aqua-cron@visit-reminder.timer`     | 16:00 VST daily | `0 9 * * *` UTC |
-| `seoul-aqua-cron@cash-handover-alert.timer`| 01:30 VST daily | `30 18 * * *` UTC |
-| `seoul-aqua-cron@recurring-payments.timer` | 07:00 VST 1st of month | `0 0 1 * *` UTC |
-| `seoul-aqua-backup.timer`                  | 02:30 VST daily | (Vercel had none — added per H.3) |
+| `jakes-home-appliances-cron@overdue-escalation.timer` | 08:00 VST daily | `0 1 * * *` UTC |
+| `jakes-home-appliances-cron@filter-due.timer`         | 09:00 VST daily | `0 2 * * *` UTC |
+| `jakes-home-appliances-cron@rental-renewal.timer`     | 10:00 VST daily | `0 3 * * *` UTC |
+| `jakes-home-appliances-cron@rental-completion.timer`  | 11:00 VST daily | `0 4 * * *` UTC |
+| `jakes-home-appliances-cron@visit-reminder.timer`     | 16:00 VST daily | `0 9 * * *` UTC |
+| `jakes-home-appliances-cron@cash-handover-alert.timer`| 01:30 VST daily | `30 18 * * *` UTC |
+| `jakes-home-appliances-cron@recurring-payments.timer` | 07:00 VST 1st of month | `0 0 1 * *` UTC |
+| `jakes-home-appliances-backup.timer`                  | 02:30 VST daily | (Vercel had none — added per H.3) |
 
 When you change a schedule, edit the matching `.timer` file in
 `deploy/systemd/`, push to `main`, and the next deploy will install the
@@ -308,14 +308,14 @@ daemon-reload && sudo systemctl restart <unit>.timer`).
 
 ## Switching to a real domain + Let's Encrypt
 
-Once `staging.seoulaqua.com.vn` DNS A-record points at this server:
+Once `staging.jakeshomeappliances.com.vn` DNS A-record points at this server:
 
 1. Replace the `:443` block in `Caddyfile` with the domain hostname.
 2. Remove `tls internal`.
-3. Update `NEXT_PUBLIC_APP_URL` in `/opt/seoul-aqua-soms/.env`.
-4. `sudo docker compose -f /opt/seoul-aqua-soms/docker-compose.yml restart caddy`.
+3. Update `NEXT_PUBLIC_APP_URL` in `/opt/jakes-home-appliances-soms/.env`.
+4. `sudo docker compose -f /opt/jakes-home-appliances-soms/docker-compose.yml restart caddy`.
 5. Drop `-k` from the cron service ExecStart in
-   `deploy/systemd/seoul-aqua-cron@.service` (and `daemon-reload`).
+   `deploy/systemd/jakes-home-appliances-cron@.service` (and `daemon-reload`).
 
 Caddy auto-issues from Let's Encrypt on first start. No further config.
 
@@ -329,9 +329,9 @@ docker system prune -af --filter "until=720h"
 
 # Old Postgres WAL — Postgres prunes its own, but `du -sh postgres-data` is
 # worth eyeballing every few weeks.
-du -sh /opt/seoul-aqua-soms/postgres-data
-du -sh /opt/seoul-aqua-soms/uploads
-du -sh /opt/seoul-aqua-soms/backups
+du -sh /opt/jakes-home-appliances-soms/postgres-data
+du -sh /opt/jakes-home-appliances-soms/uploads
+du -sh /opt/jakes-home-appliances-soms/backups
 ```
 
 ---

@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — 현장 기사 매뉴얼
+# Jake's Home Appliances SOMS — 현장 기사 매뉴얼
 
 **대상 사용자**: 기사(TECHNICIAN) — 약 80명, 모바일 전용
 **버전**: 2026-07-02 (다중 유형 방문·소모품 납품·협업 기사 반영)
@@ -47,7 +47,7 @@
 핸드폰 Chrome 또는 Safari에서:
 
 ```
-https://soms.seoulaqua.com.vn/f/ko/login
+https://soms.jakeshomeappliances.com.vn/f/ko/login
 ```
 
 > **앱 다운로드 없음.** 브라우저에서 바로 사용합니다. 자주 접속하려면 "**홈 화면에 바로가기 추가**"를 권장합니다 (브라우저 메뉴 → 홈 화면에 추가).
@@ -57,9 +57,9 @@ https://soms.seoulaqua.com.vn/f/ko/login
 관리자가 계정을 만들면 SMS 한 통이 옵니다:
 
 ```
-Seoul Aqua 기사 계정이 생성되었습니다.
+Jake's Home Appliances 기사 계정이 생성되었습니다.
 임시 비밀번호: ********
-로그인: soms.seoulaqua.com.vn/f/login
+로그인: soms.jakeshomeappliances.com.vn/f/login
 ```
 
 이 SMS는 본인만 보세요. 비밀번호는 절대 남에게 알려주지 마세요.
@@ -448,7 +448,7 @@ Seoul Aqua 기사 계정이 생성되었습니다.
 ### 상황 2: 사진 업로드가 안 돼요
 
 - 인터넷(LTE/Wi-Fi) 연결 확인
-- 핸드폰 카메라 권한 허용 확인 (설정 → 앱 → Seoul Aqua → 카메라 허용)
+- 핸드폰 카메라 권한 허용 확인 (설정 → 앱 → Jake's Home Appliances → 카메라 허용)
 - 사진 용량이 너무 크면 해상도를 낮추거나 다른 각도로 다시 촬영
 
 ### 상황 3: 서명 화면이 안 뜨거나 먹통이에요

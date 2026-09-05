@@ -1,6 +1,6 @@
-# 클라이언트 질문 리스트 — Seoul Aqua SOMS
+# 클라이언트 질문 리스트 — Jake's Home Appliances SOMS
 
-> **For client (Seoul Aqua):** 아래 질문에 답을 주시면 SPEC.md를 확정하고 Phase 1 개발을 시작할 수 있습니다. 시급한 항목(blocker)은 **★** 표시되어 있습니다. 답변이 없을 경우 추천 기본값으로 진행합니다.
+> **For client (Jake's Home Appliances):** 아래 질문에 답을 주시면 SPEC.md를 확정하고 Phase 1 개발을 시작할 수 있습니다. 시급한 항목(blocker)은 **★** 표시되어 있습니다. 답변이 없을 경우 추천 기본값으로 진행합니다.
 >
 > **For developers:** this is the markdown twin of `QUESTIONS.docx`. Keep both in sync — edit here, regenerate the docx via `scripts/generate-questions-docx.py`.
 
@@ -13,8 +13,8 @@
 
 > **2026-05-26 — Client answers received**: All blockers resolved. Notable material changes from default plan:
 > - **A.4 + A.8**: Customer > Site > Equipment 3-level hierarchy (was 2-level) — see `docs/DATA_MODEL_NOTES.md` Site model
-> - **A.10**: Portal at subdomain `portal.seoulaqua.com.vn` (was: root URL) — adds +7 chars per SMS, pushes A.3 VI to 2-seg, +712K VND/mo
-> - **B.2**: Contract code format B2C `HD-YYYYmmDD/SA-KH####`, B2B `HD-YYYYmmDD/SA-{shortcode}` + B2B appendix support
+> - **A.10**: Portal at subdomain `portal.jakeshomeappliances.com.vn` (was: root URL) — adds +7 chars per SMS, pushes A.3 VI to 2-seg, +712K VND/mo
+> - **B.2**: Contract code format B2C `HD-YYYYmmDD/JH-KH####`, B2B `HD-YYYYmmDD/JH-{shortcode}` + B2B appendix support
 > - **K.3**: Multi-tech visits — `leadTechnicianId` + `collaboratorTechnicianIds[]`
 > - **C.2**: `preferredTechnicianId` + `preferredRegion` per customer
 > - **F.1**: Zalo OA + Zalo Mini App TODO in Phase 8+
@@ -221,21 +221,21 @@
 ---
 
 ### A.10 ★ 고객 포털 URL / 도메인 / Portal URL & domain
-**Question (KO):** 회사 도메인은 `seoulaqua.com.vn` 확정. 고객 포털 URL은 어떻게 잡을까요?
-- (a) **루트 URL `seoulaqua.com.vn`** — SMS 글자수 가장 짧음 (16자), 로그인 안된 사용자는 자동으로 `/portal` 리다이렉트 — **현 SMS 템플릿 가정**
-- (b) 별도 서브도메인 `portal.seoulaqua.com.vn` (23자, 4자 길어짐 → 일부 1-seg 템플릿이 2-seg로 늘어남)
-- (c) 동일 도메인 + 경로 `seoulaqua.com.vn/portal/*` (23자, b와 동일 길이)
+**Question (KO):** 회사 도메인은 `jakeshomeappliances.com.vn` 확정. 고객 포털 URL은 어떻게 잡을까요?
+- (a) **루트 URL `jakeshomeappliances.com.vn`** — SMS 글자수 가장 짧음 (16자), 로그인 안된 사용자는 자동으로 `/portal` 리다이렉트 — **현 SMS 템플릿 가정**
+- (b) 별도 서브도메인 `portal.jakeshomeappliances.com.vn` (23자, 4자 길어짐 → 일부 1-seg 템플릿이 2-seg로 늘어남)
+- (c) 동일 도메인 + 경로 `jakeshomeappliances.com.vn/portal/*` (23자, b와 동일 길이)
 - (d) 짧은 도메인 신규 등록 (예: `sa.com.vn` 9자) — 도메인 등록비 + 1~2주 추가 소요
 
 URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 시 재심사가 필요합니다.
 
-**Question (EN):** Company domain confirmed as `seoulaqua.com.vn`. Portal URL choice? (a) root URL `seoulaqua.com.vn` with auto-redirect to `/portal` (shortest, current SMS template assumption), (b) subdomain `portal.seoulaqua.com.vn`, (c) path `seoulaqua.com.vn/portal/*`, (d) separate short domain (`sa.com.vn` etc., extra registration). URL goes into SMS — keep it short and avoid future changes since Brandname re-approval is required after URL changes.
+**Question (EN):** Company domain confirmed as `jakeshomeappliances.com.vn`. Portal URL choice? (a) root URL `jakeshomeappliances.com.vn` with auto-redirect to `/portal` (shortest, current SMS template assumption), (b) subdomain `portal.jakeshomeappliances.com.vn`, (c) path `jakeshomeappliances.com.vn/portal/*`, (d) separate short domain (`sa.com.vn` etc., extra registration). URL goes into SMS — keep it short and avoid future changes since Brandname re-approval is required after URL changes.
 
 **Blocks:** Phase 3.5 (SMS template + DNS 설정 + eSMS Brandname 신청서 확정)
 
-**Default if no answer:** (a) `seoulaqua.com.vn` root with redirect — 이미 모든 SMS 본문 + `docs/SMS_BRANDNAME_APPLICATION.md` 에 반영됨
+**Default if no answer:** (a) `jakeshomeappliances.com.vn` root with redirect — 이미 모든 SMS 본문 + `docs/SMS_BRANDNAME_APPLICATION.md` 에 반영됨
 
-**Status (2026-05-26):** ✅ RESOLVED — **(b) 별도 서브도메인 `portal.seoulaqua.com.vn` 선택**. ⚠️ **비용 영향**: URL이 16자 → 23자 (+7자)로 늘어나 `SMS_VISIT_REMINDER` VI가 70자 → 77자가 되어 1-seg → 2-seg로 증가. 월 ~720 VI 방문 알림 × 989 VND/seg = **+712K VND/월 (≈ ₩38K/월, 8.5M VND/년)** 비용 증가. 모든 SMS 본문 + 비용 추정 재계산 필요. (사용자가 원본 답변에 `portal.seoulaqua.vn`로 표기했으나 회사 도메인 `seoulaqua.com.vn` 기준으로 `portal.seoulaqua.com.vn` 적용.)
+**Status (2026-05-26):** ✅ RESOLVED — **(b) 별도 서브도메인 `portal.jakeshomeappliances.com.vn` 선택**. ⚠️ **비용 영향**: URL이 16자 → 23자 (+7자)로 늘어나 `SMS_VISIT_REMINDER` VI가 70자 → 77자가 되어 1-seg → 2-seg로 증가. 월 ~720 VI 방문 알림 × 989 VND/seg = **+712K VND/월 (≈ ₩38K/월, 8.5M VND/년)** 비용 증가. 모든 SMS 본문 + 비용 추정 재계산 필요. (사용자가 원본 답변에 `portal.jakeshomeapp.vn`로 표기했으나 회사 도메인 `jakeshomeappliances.com.vn` 기준으로 `portal.jakeshomeappliances.com.vn` 적용.)
 
 ---
 
@@ -295,24 +295,24 @@ URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 �
 ---
 
 ### A.14 ★ 이메일 발신 도메인 / Email sender domain & DKIM/SPF
-**Question (KO):** 고객 응대 이메일 (영수증, 작업확인서, 미수금 안내 등)을 `seoulaqua.com.vn`에서 직접 발송하려면 DNS 설정이 필요합니다:
-- (a) `noreply@seoulaqua.com.vn` (시스템 발송) + `cs@seoulaqua.com.vn` (Reply-To, CS팀 인박스) — **권장**
-- (b) `info@seoulaqua.com.vn` 단일 (단순화, 하지만 CS 응대 vs 시스템 자동 발송 구분이 안됨)
-- (c) 별도 도메인 (예: `mail.seoulaqua.com.vn`) — 권장 X (브랜드 분산)
+**Question (KO):** 고객 응대 이메일 (영수증, 작업확인서, 미수금 안내 등)을 `jakeshomeappliances.com.vn`에서 직접 발송하려면 DNS 설정이 필요합니다:
+- (a) `noreply@jakeshomeappliances.com.vn` (시스템 발송) + `cs@jakeshomeappliances.com.vn` (Reply-To, CS팀 인박스) — **권장**
+- (b) `info@jakeshomeappliances.com.vn` 단일 (단순화, 하지만 CS 응대 vs 시스템 자동 발송 구분이 안됨)
+- (c) 별도 도메인 (예: `mail.jakeshomeappliances.com.vn`) — 권장 X (브랜드 분산)
 
 **필수 인프라 설정 (1일 작업):**
 - SPF 레코드: `v=spf1 include:_spf.{provider}.com -all`
 - DKIM 키 등록 (provider별 발급 키를 DNS TXT에 추가)
-- DMARC 정책: `v=DMARC1; p=quarantine; rua=mailto:dmarc@seoulaqua.com.vn`
+- DMARC 정책: `v=DMARC1; p=quarantine; rua=mailto:dmarc@jakeshomeappliances.com.vn`
 - (선택) BIMI 로고 표시 — 마케팅 효과, Gmail/Yahoo 지원
 
-**Question (EN):** Email sender domain setup for `seoulaqua.com.vn`? Recommend (a) `noreply@` for system + `cs@` for Reply-To. DKIM/SPF/DMARC required (1-day infra task).
+**Question (EN):** Email sender domain setup for `jakeshomeappliances.com.vn`? Recommend (a) `noreply@` for system + `cs@` for Reply-To. DKIM/SPF/DMARC required (1-day infra task).
 
 **Blocks:** Production launch only — Phase 3.5 dev proceeds against mock email provider; DKIM/SPF/DMARC setup is a 1-day infra task before flipping `EMAIL_PROVIDER=resend` (2026-05-26 decision)
 
-**Default if no answer:** (a) — `noreply@seoulaqua.com.vn` (system) + `cs@seoulaqua.com.vn` (Reply-To)
+**Default if no answer:** (a) — `noreply@jakeshomeappliances.com.vn` (system) + `cs@jakeshomeappliances.com.vn` (Reply-To)
 
-**Status (2026-05-26):** ✅ RESOLVED — (a) **`noreply@seoulaqua.com.vn` (시스템 발송) + `cs@seoulaqua.com.vn` (Reply-To)** 권장 채택.
+**Status (2026-05-26):** ✅ RESOLVED — (a) **`noreply@jakeshomeappliances.com.vn` (시스템 발송) + `cs@jakeshomeappliances.com.vn` (Reply-To)** 권장 채택.
 
 ---
 
@@ -347,8 +347,8 @@ URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 �
 **Default if no answer:** (a) — 정렬과 검색에 유리
 
 **Status (2026-05-26):** ✅ RESOLVED — **신규 계약 코드 형식**:
-- **B2C 고객**: `HD-YYYYmmDD/SA-KH####` (예: `HD-20260526/SA-KH0001`)
-- **B2B 고객**: `HD-YYYYmmDD/SA-{고객사약어}` (예: `HD-20260526/SA-SHV`)
+- **B2C 고객**: `HD-YYYYmmDD/JH-KH####` (예: `HD-20260526/JH-KH0001`)
+- **B2B 고객**: `HD-YYYYmmDD/JH-{고객사약어}` (예: `HD-20260526/JH-SHV`)
 - **B2B Appendix 지원**: 일부 기업은 신규 설치 시마다 새 계약서 발행, 다른 기업은 기존 계약에 부록서/변경 계약(Appendix)으로 설치 수량만 추가. 시스템에서 `Contract.parentContractId` + `Contract.amendmentRevision` 필드로 양쪽 모두 지원.
 
 ---
@@ -693,9 +693,7 @@ URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 �
 
 ### F.2 이메일 전송 / Email sender
 **Question (KO):** B2B 세금계산서 + 향후 마케팅 이메일 전송용 솔루션은?
-<!-- portfolio:drop-start -->
-- vhost.vn Email Relay (저렴)
-<!-- portfolio:drop-end -->
+
 - SendGrid / Mailgun (글로벌)
 - AWS SES (저렴, 설정 복잡)
 - 기타: ___________
@@ -706,12 +704,8 @@ URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 �
 
 **Default if no answer:** SendGrid — 영문 + 베트남어 모두 안정적
 
-<!-- portfolio:drop-start -->
-**Status (2026-05-26):** ✅ RESOLVED — **vhost.vn Email Relay**. (F.7 Resend와는 별도 — F.7은 거래성 알림용 Resend, F.2는 세금계산서 첨부/마케팅용 vhost.vn Email Relay. 두 채널 분리.)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 **Status:** ✅ RESOLVED — **Resend** (single ESP covers both transactional and operational; no secondary rail).
-portfolio:add-end -->
 
 ---
 
@@ -729,11 +723,11 @@ portfolio:add-end -->
 ---
 
 ### F.4 ★ SMS 발신자 ID / Brand name / SMS Sender ID
-**Question (KO):** 베트남 SMS는 발신자에 brand-name이 등록되어야 합니다 (`Seoul Aqua` 등). 등록 절차:
+**Question (KO):** 베트남 SMS는 발신자에 brand-name이 등록되어야 합니다 (`Jake's Home Appliances` 등). 등록 절차:
 - eSMS.vn 계정 + 사업자등록증 + 서류 → 약 **2-3주 소요**
 - 등록 안 되면 임시로 6자리 숫자 발신번호 사용 가능 (스팸 필터 위험 큼)
 
-확정 발신자 brand 이름은? (예: `SeoulAqua`, `SOMS`, `DAI A`)
+확정 발신자 brand 이름은? (예: `JakeApp`, `SOMS`, `DAI A`)
 **서두르세요** — Phase 3.5 시작 전 등록이 완료되어 있어야 합니다.
 
 **Volume (revised 2026-05-26 with SMS/Email channel split)**: ~1,245 SMS/월 (이전 추정 ~2,695 대비 53% 감소). 비-시급성 알림 (영수증·요약·D+7/D+14 미수금 안내·D-60/D-30 계약갱신)은 이메일로 전환됨. 세부: `docs/DOCUMENT_TEMPLATES.md` §A + §C.
@@ -742,9 +736,9 @@ portfolio:add-end -->
 
 **Blocks:** Production launch only — Phase 3.5 dev proceeds with mock SMS provider (2026-05-26 decision)
 
-**Default if no answer:** `SeoulAqua` (영문, 등록은 production launch 일정에 맞춰 진행)
+**Default if no answer:** `JakeApp` (영문, 등록은 production launch 일정에 맞춰 진행)
 
-**Status (2026-05-26):** ✅ RESOLVED — **`SeoulAqua` 확정** (영문, 등록 진행 즉시 시작 가능).
+**Status (2026-05-26):** ✅ RESOLVED — **`JakeApp` 확정** (영문, 등록 진행 즉시 시작 가능).
 
 ---
 
@@ -786,7 +780,7 @@ portfolio:add-end -->
 
 ### F.7 ★ 이메일 제공자 / Email provider
 **Question (KO):** 거래성 이메일 발송 제공자를 선택해주세요 (영수증, 작업확인서, 미수금 1-2차 안내, 계약갱신 안내 등 — 월 ~1,560건):
-- (a) **Resend** — 권장. 100K msgs/월 무료 (Seoul Aqua 충분), 개발자 친화 API, EU/VN reach 양호, DKIM 자동
+- (a) **Resend** — 권장. 100K msgs/월 무료 (Jake's Home Appliances 충분), 개발자 친화 API, EU/VN reach 양호, DKIM 자동
 - (b) AWS SES — 가장 저렴 ($0.10/1000), 그러나 sandbox 해제 + AWS 계정 필요
 - (c) SendGrid (Twilio) — 100건/일 무료, 그 이상은 유료. SMS 제공사(Twilio)와 동일 vendor 통합 가능
 - (d) Postmark — transactional 전문, $15/월부터. 베트남 도달률 우수
@@ -795,7 +789,7 @@ portfolio:add-end -->
 베트남 통신사 SMS와 다르게 이메일은 통신사 승인이 필요 없습니다. DNS 설정 (DKIM/SPF/DMARC, 1일 작업) + provider 가입 (즉시) → 즉시 발송 가능.
 
 **Question (EN):** Email provider for transactional sends (~1,560 msgs/mo)?
-- (a) **Resend** — recommended (100K/mo free tier covers Seoul Aqua, developer-friendly, good VN reach)
+- (a) **Resend** — recommended (100K/mo free tier covers Jake's Home Appliances, developer-friendly, good VN reach)
 - (b) AWS SES — cheapest but requires sandbox lift
 - (c) SendGrid — Twilio vendor synergy if SMS later switches to Twilio
 - (d) Postmark — transactional specialist
@@ -805,12 +799,8 @@ portfolio:add-end -->
 
 **Default if no answer:** (a) Resend — 가장 적합
 
-<!-- portfolio:drop-start -->
-**Status (2026-05-26):** ✅ RESOLVED — (a) **Resend** 채택 (transactional). F.2 vhost.vn은 별도 (세금계산서/마케팅).
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+
 **Status:** ✅ RESOLVED — (a) **Resend** 채택 (transactional + operational, 단일 ESP).
-portfolio:add-end -->
 
 ---
 
@@ -867,34 +857,22 @@ portfolio:add-end -->
 
 ### H.1 데이터 잔류 요구사항 / Data residency requirement
 **Question (KO):** 베트남 개인정보보호법 또는 회사 정책으로 인해 데이터가 **반드시 베트남 내**에 저장되어야 합니까?
-<!-- portfolio:drop-start -->
-- (a) 베트남 필수 — vhost.vn 호스팅
-<!-- portfolio:drop-end -->
+
 - (b) Singapore / 한국 OK — Vercel + Supabase Singapore region OK
 - (c) 모름 — 추후 확인
 
 **Question (EN):** Data residency requirement (Vietnamese PDP law)?
-<!-- portfolio:drop-start -->
-- (a) Vietnam-only — vhost.vn
-<!-- portfolio:drop-end -->
+
 - (b) Singapore / Korea OK — Vercel + Supabase
 - (c) Unknown — confirm later
 
 **Blocks:** Phase 1
 
-<!-- portfolio:drop-start -->
-**Default if no answer:** (b) — 빠른 출시. 후에 (a) 필요시 vhost.vn migration plan 발동
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-**Default if no answer:** (b) — Vercel + Supabase 단일 production 운영.
-portfolio:add-end -->
 
-<!-- portfolio:drop-start -->
-**Status (2026-05-26):** ✅ RESOLVED — (a) **vhost.vn 호스팅 확정**. v0 Vercel+Supabase 출시 후 vhost.vn migration 계획 발동.
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
+**Default if no answer:** (b) — Vercel + Supabase 단일 production 운영.
+
+
 **Status:** ✅ RESOLVED — Vercel + Supabase production. No migration planned.
-portfolio:add-end -->
 
 ---
 
@@ -927,7 +905,7 @@ portfolio:add-end -->
 ## I. 브랜딩 및 로고 (Logo & branding)
 
 ### I.1 로고 고해상도 / 벡터 파일 / Logo high-res / vector
-**Question (KO):** Seoul Aqua 로고의 벡터 파일(SVG / AI / EPS) 또는 더 큰 해상도 PNG가 있으신가요? 현재 첨부된 .jpg는 2560×706 픽셀입니다.
+**Question (KO):** Jake's Home Appliances 로고의 벡터 파일(SVG / AI / EPS) 또는 더 큰 해상도 PNG가 있으신가요? 현재 첨부된 .jpg는 2560×706 픽셀입니다.
 
 **Question (EN):** Do you have vector (SVG/AI/EPS) or higher-res PNG version of the logo? Current attachment is 2560×706 .jpg.
 
@@ -938,8 +916,8 @@ portfolio:add-end -->
 **Default if no answer:** 현재 .jpg를 1024×283로 트림 + SVG 재구성 (단, 폰트 라이선스 이슈 가능)
 
 **Status (2026-05-26):** ✅ RESOLVED — 파일 전달 완료:
-- 고해상도 PNG (3492 × 817): `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C-01.png`
-- AI 벡터 파일: `reference/brand/SeoulAqua_Logo_0071BD_Pantone 285C.ai`
+- 고해상도 PNG (3492 × 817): `reference/brand/JakeApp_Logo_0071BD_Pantone 285C-01.png`
+- AI 벡터 파일: `reference/brand/JakeApp_Logo_0071BD_Pantone 285C.ai`
 
 ---
 
@@ -1005,9 +983,9 @@ portfolio:add-end -->
 
 **Blocks:** Phase 2
 
-**Default if no answer:** Seoul Aqua 사무실 매니저 1명 + 개발팀 함께 진행
+**Default if no answer:** Jake's Home Appliances 사무실 매니저 1명 + 개발팀 함께 진행
 
-**Status (2026-05-26):** ✅ RESOLVED — **Seoul Aqua 사무실 매니저 1명 + 개발팀** 함께 진행 (default 그대로).
+**Status (2026-05-26):** ✅ RESOLVED — **Jake's Home Appliances 사무실 매니저 1명 + 개발팀** 함께 진행 (default 그대로).
 
 ---
 
@@ -1075,27 +1053,19 @@ A.3: 영구 결번
 
 - **2026-05-26 (v0.5 latest)** — **클라이언트 답변 수신** (`reference/answers.txt`). 50개 질문 전부 답변; A.5만 PARTIAL (2026-05-29 데이터 도착 예정). 주요 material 변경:
   - **A.4 + A.8**: Customer > Site > Equipment 3-level 계층 모델 채택
-  - **A.10**: 포털 URL `portal.seoulaqua.com.vn` 서브도메인 (이전 결정 root URL에서 변경) → SMS 비용 +712K VND/월 영향
-  - **B.2**: 신규 계약 코드 형식 B2C `HD-YYYYmmDD/SA-KH####`, B2B `HD-YYYYmmDD/SA-{shortcode}` + B2B Appendix 지원
+  - **A.10**: 포털 URL `portal.jakeshomeappliances.com.vn` 서브도메인 (이전 결정 root URL에서 변경) → SMS 비용 +712K VND/월 영향
+  - **B.2**: 신규 계약 코드 형식 B2C `HD-YYYYmmDD/JH-KH####`, B2B `HD-YYYYmmDD/JH-{shortcode}` + B2B Appendix 지원
   - **B.5**: B2C 가격 단순 업데이트, B2B amendment revisions
   - **C.2**: `preferredTechnicianId` + `preferredRegion` per customer
   - **K.3**: Multi-tech `leadTechnicianId` + `collaboratorTechnicianIds[]`
   - **F.1**: eSMS.vn + **Zalo OA + Mini App TODO** (Phase 8+)
-<!-- portfolio:drop-start -->
-  - **F.2 vs F.7**: 이메일 dual-rail — F.7 Resend (transactional) + F.2 vhost.vn (세금계산서 첨부/마케팅)
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - **F.7**: 이메일 단일 ESP — Resend (transactional + operational)
-portfolio:add-end -->
+
+- **F.7**: 이메일 단일 ESP — Resend (transactional + operational)
   - **D.5**: 모든 B2B 세금계산서 필요 (이전 변경)
   - **A.13**: 동일 phone1 두 명 모두 로그인 가능 (변경)
   - **J.1**: 전체 9000+ 고객 이력 마이그레이션
-<!-- portfolio:drop-start -->
-  - **H.1**: vhost.vn 호스팅 확정
-<!-- portfolio:drop-end -->
-<!-- portfolio:add-start
-  - **H.1**: Vercel + Supabase production
-portfolio:add-end -->
+
+- **H.1**: Vercel + Supabase production
 - **2026-05-26 (v0.4)** — Mock-first 결정. F.4 / F.7 / A.14 / Q17 (=F.1) 4개 항목을 "Phase 3.5 blocker"에서 "Production-launch blocker"로 강등. Phase 3.5 개발은 `SMS_PROVIDER=mock` + `EMAIL_PROVIDER=mock` 환경에서 진행, 실제 발송 자격증명(eSMS ApiKey, Resend API key, DKIM 키)이 확보된 시점에 env-only 전환. Phase 3.5 dev-start blockers는 A.10 / A.11 / C.6 3건으로 축소.
 - **2026-05-26** — v0.3 고객 포털 / SMS / 비밀번호 정책 추가. A.10 (포털 URL, blocker), A.11 (비밀번호 정책, blocker), A.12 (OTP 옵션), A.13 (공유 번호), C.6 (서비스 요청 유형, blocker), F.4 (SMS 발신자 ID, lead-time blocker), F.5 (세션 처리), F.6 (잠금 정책). Q17 (SMS provider) Phase 7→3.5 이전. 총 49건. **Q11 (역할 권한 매트릭스)는 SPEC §2.1에서 인라인 해결 — 3-tier (`ADMIN/MANAGER/STAFF`) + `TECHNICIAN` 모델 채택.**
 - **2026-05-26** — v0.2 두-컨택트 모델 추가. A.6 (모델 확인, blocker), A.7 (언어 fallback), A.8 (B2B 다중 사이트), A.9 (마이그레이션 시 보조 컨택트). 총 41건.
