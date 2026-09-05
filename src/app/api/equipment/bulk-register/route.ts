@@ -9,7 +9,8 @@
  *   customerId, siteId?, modelId, serviceType, managementType, deposit,
  *   monthlyFee, customInspectionCycleDays?, defaultInstalledAt,
  *   installedByTechnicianId?, installNotes?,
- *   rows: [{ serialNumber?, assetCode?, installedAt, notes? }],
+ *   rows: [{ serialNumber?, installedAt, notes? }],  (assetCode is
+ *     system-issued — see src/lib/equipment/asset-code.ts)
  *   serviceConfig: { inspectionCycleDays?, filters: [{ consumableId? |
  *     customName?, quantity, useCycleDays }] },
  *   contractNumber?, contractDate? (YYYY-MM-DD; defaults to the earliest
@@ -35,6 +36,7 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { bulkRegisterEquipmentSchema } from "@/lib/validators/equipment";
 import { logAudit } from "@/lib/audit";
 import { allocateContractCode } from "@/lib/contracts/code";
+import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 import type { BulkRegisterEquipmentInput } from "@/lib/validators/equipment";
 import type { Prisma } from "@/generated/prisma";
 
@@ -283,6 +285,13 @@ export async function POST(request: NextRequest) {
       if (!site) throw new ValidationError("Site does not belong to customer");
     }
 
+    // modelCode drives the 장비코드 prefix — fetch it before the transaction.
+    const model = await prisma.equipmentModel.findUnique({
+      where: { id: data.modelId },
+      select: { id: true, modelCode: true },
+    });
+    if (!model) throw new ValidationError(`Unknown modelId: ${data.modelId}`);
+
     const lifecycleStage =
       data.serviceType === "RENTAL" ? "IN_RENTAL" : "IN_MAINTENANCE";
 
@@ -291,15 +300,22 @@ export async function POST(request: NextRequest) {
       const visitIds: string[] = [];
       const dateCounts = new Map<string, number>();
 
-      for (const row of data.rows) {
-        // Generate auto-serial when missing.
+      // 장비코드 — system-issued for every row up front. Rows are grouped by
+      // their own installedAt, so a mixed-date batch gets one sequence per day.
+      const assetCodes = await allocateAssetCodes(
+        tx,
+        model.modelCode,
+        data.rows.map((r) => r.installedAt),
+      );
+
+      for (const [rowIndex, row] of data.rows.entries()) {
         const equipment = await tx.equipment.create({
           data: {
             customerId: data.customerId,
             siteId: data.siteId ?? null,
             modelId: data.modelId,
-            serialNumber: row.serialNumber ?? null,
-            assetCode: row.assetCode ?? null,
+            serialNumber: row.serialNumber ?? assetCodes[rowIndex],
+            assetCode: assetCodes[rowIndex],
             installedAt: row.installedAt,
             installedByTechnicianId: data.installedByTechnicianId ?? null,
             status: "ACTIVE",

@@ -104,13 +104,13 @@ test("bulk-register wizard: customer -> model -> RENTAL -> filter edit -> submit
 
     await page.getByRole("button", { name: "다음 단계" }).click();
 
-    // ── Step 2: model + quantity + auto asset code ──────────────────
+    // ── Step 2: model + quantity ────────────────────────────────────
     await page.getByRole("button", { name: "모델 선택" }).click();
     await page.getByRole("option", { name: /PTS-2100/ }).first().click();
 
     await page.getByLabel("설치할 장비 수량").fill("2");
-    // Auto mode is the default — the preview box should now show 2 codes.
-    await expect(page.getByText("생성될 관리번호 미리보기")).toBeVisible();
+    // 장비코드 is server-issued at submit — the step only states the rule.
+    await expect(page.getByText(/등록 시 자동 발행/)).toBeVisible();
 
     await page.getByRole("button", { name: "다음 단계" }).click();
 

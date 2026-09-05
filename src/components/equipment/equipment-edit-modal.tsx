@@ -104,7 +104,8 @@ export function buildEquipmentPatch(
   set("modelId", "modelId", form.modelId);
   set("siteId", "siteId", form.siteId);
   set("serialNumber", "serialNumber", form.serialNumber);
-  set("assetCode", "assetCode", form.assetCode);
+  // assetCode (장비코드) is system-issued and immutable — displayed read-only,
+  // never patched.
   set("ownership", "ownership", form.ownership);
   if (form.installedAt !== initial.installedAt && form.installedAt) {
     body.installedAt = form.installedAt;
@@ -277,7 +278,7 @@ export function EquipmentEditModal({
             <Input value={form.serialNumber} onChange={(e) => patch({ serialNumber: e.target.value })} />
           </FormField>
           <FormField label={t("assetCode")}>
-            <Input value={form.assetCode} onChange={(e) => patch({ assetCode: e.target.value })} />
+            <Input value={form.assetCode} readOnly disabled className="tabular-nums" />
           </FormField>
           <FormField label={t("ownership.label")}>
             <Combobox value={form.ownership} onChange={(v) => patch({ ownership: v ?? "COMPANY" })} options={ownershipOpts} />

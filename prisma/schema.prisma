@@ -748,8 +748,13 @@ model Equipment {
   /// is the field technician who physically installs.
   registeredById            String?
   registeredBy              User?                 @relation("EquipmentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
-  /// Optional asset code (자산 코드) — internal inventory identifier used
-  /// during bulk installation (e.g. WA260501001). Distinct from serial.
+  /// 장비코드 / 관리번호 — system-issued at registration, never typed in:
+  /// `{modelCode}{YY}{MM}{DD}{NNNN}` off the unit's installedAt in VST
+  /// (e.g. PTS21002609040001). Unique across the whole table — the sequence
+  /// is global, never per-customer. See src/lib/equipment/asset-code.ts.
+  /// Stays nullable only so bulk imports and the dev seed can insert first
+  /// and backfill after (scripts/backfill-asset-codes.ts); every registration
+  /// path fills it in. Distinct from serialNumber.
   assetCode                 String?               @unique
 
   createdAt DateTime @default(now())

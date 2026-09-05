@@ -13,6 +13,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { signStaffAccessToken } from "@/lib/auth/jwt";
+import { formatVstDateStamp } from "@/lib/contracts/code";
 
 import { POST as registerPost } from "@/app/api/equipment/register/route";
 
@@ -316,5 +317,58 @@ describe("POST /api/equipment/register — multi-line wizard", () => {
     // Rolled back — no leftover equipment/visit from the failed second attempt.
     const leftoverEquipment = await prisma.equipment.count({ where: { customerId: customerB.id } });
     expect(leftoverEquipment).toBe(0);
+  });
+
+  it("(d) 장비코드 is globally sequenced — two customers, same model, same day never collide", async () => {
+    const customerA = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}CodeA` });
+    const customerB = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}CodeB` });
+    const installedAt = new Date().toISOString();
+    const prefix = `${MODEL_CODE}${formatVstDateStamp(new Date(installedAt)).slice(2)}`;
+
+    const register = async (customerId: string, quantity: number) => {
+      const res = await registerPost(
+        await buildReq("/api/equipment/register", "POST", adminToken, {
+          customerId,
+          defaultInstalledAt: installedAt,
+          createContract: false,
+          lines: [
+            {
+              modelId,
+              serviceType: "SALE",
+              managementType: "SELF_MANAGED",
+              quantity,
+              salePrice: 1_000_000,
+              installedAt,
+            },
+          ],
+        }),
+      );
+      const { status, body } = await readJson(res);
+      expect(status).toBe(201);
+      const ids = (body.data as { equipmentIds: string[] }).equipmentIds;
+      const rows = await prisma.equipment.findMany({
+        where: { id: { in: ids } },
+        select: { assetCode: true },
+      });
+      return rows.map((r) => r.assetCode!);
+    };
+
+    const before = await prisma.equipment.count({
+      where: { assetCode: { startsWith: prefix } },
+    });
+    const codesA = await register(customerA.id, 2);
+    const codesB = await register(customerB.id, 2);
+
+    // Every code carries the {modelCode}{YYMMDD} prefix …
+    for (const code of [...codesA, ...codesB]) {
+      expect(code.startsWith(prefix)).toBe(true);
+    }
+    // … the sequence ignores the customer boundary and just keeps counting …
+    const seq = [...codesA, ...codesB]
+      .map((c) => Number(c.slice(prefix.length)))
+      .sort((x, y) => x - y);
+    expect(seq).toEqual([before + 1, before + 2, before + 3, before + 4]);
+    // … and no two units share a code.
+    expect(new Set([...codesA, ...codesB]).size).toBe(4);
   });
 });

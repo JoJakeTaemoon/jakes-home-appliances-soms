@@ -589,7 +589,6 @@
         "auto": "Tự động tạo",
         "manual": "Nhập tay"
       },
-      "assetCodePreview": "Xem trước mã tài sản sẽ tạo",
       "sections": {
         "customer": "Khách hàng",
         "location": "Địa điểm",
@@ -625,7 +624,6 @@
         "serialMode": "Cách nhập sê-ri",
         "serialNumber": "Sê-ri",
         "assetCode": "Mã tài sản",
-        "assetCodeMode": "Cách nhập mã tài sản",
         "installNotes": "Ghi chú lắp đặt"
       },
       "serviceTypes": {
@@ -694,7 +692,8 @@
         "filterLine": "SL {qty} · Chu kỳ thay {days} ngày",
         "autoAssigned": "Tự động cấp số",
         "none": "—"
-      }
+      },
+      "assetCodeAuto": "Tự động cấp khi đăng ký — mã model + ngày lắp đặt (YYMMDD) + số thứ tự 4 chữ số"
     },
     "installationHistory": {
       "title": "Lịch sử lắp đặt",

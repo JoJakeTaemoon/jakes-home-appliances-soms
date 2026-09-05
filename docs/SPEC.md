@@ -269,11 +269,11 @@ Inferred from `reference/data/정수기등록-26-05-21.csv`:
 
 | Field | Notes |
 |---|---|
-| `code` | `KH00001-1` — auto-generated |
+| `assetCode` | 장비코드 / 관리번호 — system-issued at registration, globally unique (see §4.3.1) |
 | `customerId` | FK → Customer |
 | `siteId` | FK → Site (optional; B2C usually null, B2B usually set — see §3.2.1) |
 | `modelId` | FK → EquipmentModel |
-| `serialNumber` | optional, on the device |
+| `serialNumber` | optional, the number printed on the device — free text, **not** an identifier (§4.3.1) |
 | `installLocation` | "주방", "안방", "회사 1층 휴게실" — free-text room/area within the customer's address |
 | `installedAt` | date |
 | `installedBy` | FK → User (technician) |
@@ -282,7 +282,41 @@ Inferred from `reference/data/정수기등록-26-05-21.csv`:
 | `ownership` | `COMPANY` (default) / `CUSTOMER` (B.3: auto-flipped to CUSTOMER when 36-month rental Contract.status → COMPLETED) |
 | `currentFilters` | derived view: which filters are due, last-replaced when, due in N days |
 
-**Sale → Maintenance transition (B.1, 2026-05-26)**: a customer who originally purchased equipment can later sign a maintenance contract for the **same Equipment row** — the `Equipment.code` is preserved; a new `Contract` row with `type=MAINTENANCE` links to the existing Equipment. Equipment ownership stays with the customer. Adding a **new rental on top** of an existing customer follows the normal flow (new Equipment code).
+**Sale → Maintenance transition (B.1, 2026-05-26)**: a customer who originally purchased equipment can later sign a maintenance contract for the **same Equipment row** — the `Equipment.assetCode` is preserved; a new `Contract` row with `type=MAINTENANCE` links to the existing Equipment. Equipment ownership stays with the customer. Adding a **new rental on top** of an existing customer follows the normal flow (new Equipment row → new 장비코드).
+
+### 4.3.1 Equipment code (장비코드 / 관리번호)
+
+Format: **`{modelCode}{YY}{MM}{DD}{NNNN}`** — e.g. `PTS21002609040001`.
+
+| Segment | Source |
+|---|---|
+| `modelCode` | `EquipmentModel.modelCode`. Off-catalog devices (no model) and models with no code fall back to **`AQS`** |
+| `YYMMDD` | The unit's `installedAt`, in **Vietnam Standard Time** (same convention as the contract code, §5.2) |
+| `NNNN` | 1-based sequence within that `{modelCode}{YYMMDD}` prefix, zero-padded to 4 |
+
+Rules:
+
+- **System-issued, never typed in.** Every registration path allocates through
+  `src/lib/equipment/asset-code.ts`: the single install (`POST /api/equipment`),
+  the multi-line wizard (`POST /api/equipment/register`) and the bulk wizard
+  (`POST /api/equipment/bulk-register`). There is no manual-entry mode and the
+  code is **immutable** — `PATCH /api/equipment/:id` does not accept it.
+- **Globally unique — the sequence is never per-customer.** `Equipment.assetCode`
+  carries a DB `@unique` constraint, so the same code can never reach two units
+  regardless of who owns them. Two customers taking the same model on the same
+  day get `…0001` and `…0002`, not `…0001` twice.
+- **Allocation is race-safe.** The allocator takes a Postgres advisory lock on
+  the prefix for the life of the transaction before reading the current maximum,
+  so concurrent registrations queue instead of both claiming `…0001`.
+- **Never recycled.** Retiring a unit changes `Equipment.status`
+  (`DEACTIVATED` / `TERMINATED`); the code and its history stay (A.3 confirmed
+  2026-05-26).
+- `serialNumber` is a **separate, non-unique** field — the manufacturer number on
+  the device. When no serial is supplied at registration it mirrors the 장비코드.
+- Rows predating the rule are filled in by `scripts/backfill-asset-codes.ts`,
+  which reuses the same allocator so back-filled units join the existing
+  sequence. `assetCode` stays nullable in the schema only to allow that
+  insert-then-backfill flow.
 
 ---
 

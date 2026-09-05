@@ -589,7 +589,6 @@
         "auto": "Auto-generate",
         "manual": "Manual"
       },
-      "assetCodePreview": "Preview of generated asset codes",
       "sections": {
         "customer": "Customer",
         "location": "Location",
@@ -625,7 +624,6 @@
         "serialMode": "Serial entry mode",
         "serialNumber": "Serial",
         "assetCode": "Asset code",
-        "assetCodeMode": "Asset code entry",
         "installNotes": "Install notes"
       },
       "serviceTypes": {
@@ -694,7 +692,8 @@
         "filterLine": "Qty {qty} · Replace every {days} days",
         "autoAssigned": "Auto-assigned",
         "none": "—"
-      }
+      },
+      "assetCodeAuto": "Issued automatically on registration — modelCode + install date (YYMMDD) + 4-digit sequence"
     },
     "installationHistory": {
       "title": "Installation history",

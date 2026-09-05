@@ -61,9 +61,11 @@
 ---
 
 ### A.3 장비 코드 재사용 정책 / Equipment code reuse on retirement
-**Question (KO):** 장비를 폐기/회수한 경우, 해당 장비 코드(예: `KH00001-3`)는 재사용해야 합니까, 아니면 영구 결번 처리합니까?
+**Question (KO):** 장비를 폐기/회수한 경우, 해당 장비 코드는 재사용해야 합니까, 아니면 영구 결번 처리합니까?
+(질문 당시 예시는 고객코드 기반 `KH00001-3` 형식을 가정했으나, 실제 채택된 형식은 A.3.1 참조)
 
-**Question (EN):** When a device is retired or returned, should the equipment code (`KH00001-3`) be reused for a future install, or permanently retired?
+**Question (EN):** When a device is retired or returned, should the equipment code be reused for a future install, or permanently retired?
+(The `KH00001-3` shape assumed when this was asked was superseded — see A.3.1 for the adopted format.)
 
 **Why it matters:** 이력 추적성 vs 코드 간결함의 trade-off.
 
@@ -72,6 +74,30 @@
 **Default if no answer:** 영구 결번 (이력 추적이 더 중요)
 
 **Status (2026-05-26):** ✅ RESOLVED — 삭제(결번) 처리하지 않고 장비 상태를 "해지/비활성화"로 변경. 코드와 모든 이력 보존. Equipment.status에 `DEACTIVATED` 또는 `TERMINATED` 추가.
+
+---
+
+### A.3.1 ★ 장비 코드 형식 / Equipment code format
+**Question (KO):** 장비 코드는 어떤 형식으로, 언제 발행합니까? 고객별 일련번호입니까, 전체 고유번호입니까?
+
+**Question (EN):** What shape does the equipment code take, when is it issued, and is the sequence per-customer or global?
+
+**Why it matters:** 장비 상세·계약서·작업확인서·재고 대사에 모두 노출되는 1차 장비 식별자입니다.
+
+**Blocks:** Phase 2 (장비 등록)
+
+**Status (2026-09-04):** ✅ RESOLVED — **`{modelCode}{YY}{MM}{DD}{NNNN}`** (예: `PTS21002609040001`).
+
+- **발행 시점**: 장비 등록 시 서버가 자동 발행. 대량등록 / 다중라인 / 단건 등록 **구분 없이 동일 규칙**이며, 직접 입력 방식은 제공하지 않습니다.
+- **날짜**: 해당 장비의 **설치일**(`installedAt`) 기준, 베트남 표준시(UTC+7). 설치일이 없으면 등록일.
+- **모델코드**: `EquipmentModel.modelCode`. 비카탈로그(타사) 기기나 코드 없는 모델은 `AQS`로 대체.
+- **순번**: `{modelCode}{YYMMDD}` 접두사 단위 4자리. **고객과 무관한 전역 순번**입니다 — 같은 모델을 같은 날 서로 다른 고객이 설치하면 `…0001`, `…0002`로 이어집니다.
+- **전역 유니크**: `Equipment.assetCode`에 DB `@unique` 제약. 고객이 달라도 같은 코드가 두 대에 붙는 일은 불가능합니다.
+- **수정 불가**: 한 번 발행되면 변경할 수 없습니다 (`PATCH /api/equipment/:id`가 받지 않음). 장비 수정 화면에서는 읽기 전용으로 표시됩니다.
+- **재사용 없음**: A.3에 따라 폐기·회수 시에도 결번 처리하지 않고 상태만 바꿉니다.
+- 시리얼 번호(`serialNumber`)는 기기에 인쇄된 제조사 번호로, 유니크하지 않은 **별도 필드**입니다.
+
+구현: `src/lib/equipment/asset-code.ts` · 규격 상세는 `docs/SPEC.md` §4.3.1.
 
 ---
 
@@ -301,7 +327,7 @@ URL이 SMS에 들어가므로 짧을수록 좋고, Brandname 등록 후 변경 �
 
 **Default if no answer:** 판매 후 별도 유지관리 계약만 가능 (장비 소유권은 고객, 서비스만 회사)
 
-**Status (2026-05-26):** ✅ RESOLVED — 판매 후 별도 유지관리 계약 가능. **추가 임대 시**: 신규 장비 코드 발급. **기존 구매 제품에 유지관리 추가 시**: 기존 장비 관리 코드 그대로 재사용 + `Equipment.status`를 "유지관리" 상태로 추가. 즉 한 장비가 SALE → MAINTENANCE로 전이 가능 (이력 보존).
+**Status (2026-05-26):** ✅ RESOLVED — 판매 후 별도 유지관리 계약 가능. **추가 임대 시**: 신규 장비 코드 발급(A.3.1 규칙). **기존 구매 제품에 유지관리 추가 시**: 기존 장비 관리 코드 그대로 재사용 + `Equipment.status`를 "유지관리" 상태로 추가. 즉 한 장비가 SALE → MAINTENANCE로 전이 가능 (이력 보존).
 
 ---
 

@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       where: { id },
       data: {
         serialNumber: data.serialNumber,
-        assetCode: data.assetCode,
+        // assetCode is immutable — issued once at registration.
         ownership: data.ownership,
         installedAt: data.installedAt,
         installedByTechnicianId: data.installedByTechnicianId ?? undefined,

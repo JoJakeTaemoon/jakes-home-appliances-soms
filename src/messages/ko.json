@@ -589,7 +589,6 @@
         "auto": "자동 생성",
         "manual": "직접 입력"
       },
-      "assetCodePreview": "생성될 관리번호 미리보기",
       "sections": {
         "customer": "고객 정보",
         "location": "설치 장소 정보",
@@ -625,7 +624,6 @@
         "serialMode": "시리얼 번호 입력 방식",
         "serialNumber": "시리얼 번호",
         "assetCode": "자산 코드",
-        "assetCodeMode": "관리번호 입력 방식",
         "installNotes": "설치 메모"
       },
       "serviceTypes": {
@@ -694,7 +692,8 @@
         "filterLine": "수량 {qty} · 교체주기 {days}일",
         "autoAssigned": "자동 발번",
         "none": "—"
-      }
+      },
+      "assetCodeAuto": "등록 시 자동 발행 — 모델코드 + 설치일(YYMMDD) + 순번 4자리"
     },
     "installationHistory": {
       "title": "설치 이력",

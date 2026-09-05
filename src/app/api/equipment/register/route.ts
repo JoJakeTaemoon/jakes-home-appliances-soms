@@ -27,6 +27,7 @@ import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { registerEquipmentSchema } from "@/lib/validators/equipment";
 import { logAudit } from "@/lib/audit";
 import { allocateContractCode } from "@/lib/contracts/code";
+import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 
 function isUniqueViolation(err: unknown): boolean {
   return (
@@ -110,21 +111,29 @@ export async function POST(request: NextRequest) {
         }
         const lifecycleStage =
           line.serviceType === "RENTAL" ? "IN_RENTAL" : "IN_MAINTENANCE";
-        const modelCode = modelByIdMap.get(line.modelId)?.modelCode ?? "AQS";
-        const yy = String(lineInstall.getFullYear()).slice(-2);
-        const mm = String(lineInstall.getMonth() + 1).padStart(2, "0");
-        const dd = String(lineInstall.getDate()).padStart(2, "0");
+        const modelCode = modelByIdMap.get(line.modelId)?.modelCode ?? null;
+        // 장비코드 — allocated for the whole line up front. Rows created by an
+        // earlier line are already visible here, so lines sharing a model +
+        // install date continue the same sequence instead of restarting at 1.
+        const assetCodes = await allocateAssetCodes(
+          tx,
+          modelCode,
+          Array.from({ length: line.quantity }, () => lineInstall),
+        );
 
         for (let i = 0; i < line.quantity; i++) {
+          // Serial number is a separate, operator-facing identifier: manual
+          // prefix when given, otherwise mirror the asset code.
           const serial = line.serialPrefix
             ? `${line.serialPrefix}${String(i + 1).padStart(4, "0")}`
-            : `${modelCode}${yy}${mm}${dd}${String(i + 1).padStart(4, "0")}`;
+            : assetCodes[i];
           const equipment = await tx.equipment.create({
             data: {
               customerId: data.customerId,
               siteId: data.siteId ?? null,
               modelId: line.modelId,
               serialNumber: serial,
+              assetCode: assetCodes[i],
               installedAt: lineInstall,
               installedByTechnicianId: data.installedByTechnicianId ?? null,
               status: "ACTIVE",

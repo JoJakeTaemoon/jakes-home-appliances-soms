@@ -12,6 +12,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { signStaffAccessToken } from "@/lib/auth/jwt";
+import { formatVstDateStamp } from "@/lib/contracts/code";
 
 import { POST as bulkRegisterPost } from "@/app/api/equipment/bulk-register/route";
 
@@ -192,6 +193,22 @@ describe("POST /api/equipment/bulk-register — 4-step wizard", () => {
 
     const linkCount = await prisma.contractEquipment.count({ where: { contractId: data.contractId } });
     expect(linkCount).toBe(3);
+
+    // 장비코드 is system-issued: {modelCode}{YYMMDD}{NNNN}, consecutive within
+    // the batch and globally unique (no per-customer numbering).
+    const stamp = formatVstDateStamp(new Date(installedAt)).slice(2);
+    const codes = (
+      await prisma.equipment.findMany({
+        where: { id: { in: data.equipmentIds } },
+        select: { assetCode: true },
+        orderBy: { assetCode: "asc" },
+      })
+    ).map((e) => e.assetCode);
+    expect(codes.every((c) => c?.startsWith(`${MODEL_CODE}${stamp}`))).toBe(true);
+    expect(new Set(codes).size).toBe(3);
+    const seq = codes.map((c) => Number(c!.slice(`${MODEL_CODE}${stamp}`.length)));
+    expect(seq[1]).toBe(seq[0] + 1);
+    expect(seq[2]).toBe(seq[1] + 1);
   });
 
   it("(b) SALE self-managed + hasContract=false → 0 contracts, equipment salePrice/installFee set", async () => {

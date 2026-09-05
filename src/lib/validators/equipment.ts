@@ -69,7 +69,8 @@ export const createEquipmentSchema = z.object({
    */
   customMaintenanceCycleDays: z.coerce.number().int().min(1).max(3600).optional(),
   serialNumber: optStr(60),
-  assetCode: optStr(60),
+  // assetCode (장비코드) is system-issued at registration — see
+  // src/lib/equipment/asset-code.ts. Never accepted from the caller.
   ownership: z.enum(["COMPANY", "CUSTOMER"]).default("COMPANY"),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
@@ -164,7 +165,7 @@ export function generateSerialSequence(
 export const updateEquipmentSchema = z.object({
   // nullableStr → the edit form can blank these out (empty string clears to null).
   serialNumber: nullableStr(60),
-  assetCode: nullableStr(60),
+  // assetCode is immutable once issued — omitted on purpose.
   ownership: z.enum(["COMPANY", "CUSTOMER"]).optional(),
   installedAt: z.coerce.date().optional(),
   installedByTechnicianId: optStr(60),
@@ -208,7 +209,6 @@ export const updateEquipmentSchema = z.object({
 
 const bulkRegisterRowSchema = z.object({
   serialNumber: optStr(60),
-  assetCode: optStr(60),
   installedAt: z.coerce.date(),
   notes: optStr(500),
 });

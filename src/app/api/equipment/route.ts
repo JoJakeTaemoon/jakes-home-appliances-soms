@@ -12,6 +12,7 @@ import {
 } from "@/lib/validators/equipment";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { applyStockMove } from "@/lib/inventory/moves";
+import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -123,15 +124,22 @@ export const POST = defineMutation({
     // off-catalog (customer-owned) devices skip the model and provide a
     // free-text customDescription instead. Verify the model exists only when
     // it was supplied.
+    let modelCode: string | null = null;
     if (body.modelId) {
       const model = await prisma.equipmentModel.findUnique({
         where: { id: body.modelId },
-        select: { id: true },
+        select: { id: true, modelCode: true },
       });
       if (!model) throw new NotFoundError("Model not found");
+      modelCode = model.modelCode;
     }
 
     return prisma.$transaction(async (tx) => {
+      // 장비코드 is system-issued at registration, never supplied by the
+      // caller. No installedAt (it's optional here) → stamp with today.
+      const [assetCode] = await allocateAssetCodes(tx, modelCode, [
+        body.installedAt ?? new Date(),
+      ]);
       const created = await tx.equipment.create({
         data: {
           customerId: body.customerId,
@@ -140,6 +148,7 @@ export const POST = defineMutation({
           customDescription: body.customDescription ?? null,
           customMaintenanceCycleDays: body.customMaintenanceCycleDays ?? null,
           serialNumber: body.serialNumber ?? null,
+          assetCode,
           ownership: body.ownership,
           installedAt: body.installedAt ?? null,
           installedByTechnicianId: body.installedByTechnicianId ?? null,

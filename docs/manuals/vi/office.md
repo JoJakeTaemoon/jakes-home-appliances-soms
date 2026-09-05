@@ -456,7 +456,7 @@ Người dùng có quyền **MANAGER trở lên** có thể sửa gần như m�
 | Nhóm | Trường |
 |---|---|
 | Mẫu thiết bị | Đổi mẫu bằng lựa chọn liên kết Thương hiệu·Nhóm sản phẩm (xem §7.5 "Liên kết chọn Thương hiệu ↔ Nhóm sản phẩm ↔ Mẫu") |
-| Thông tin lắp đặt | Địa điểm lắp đặt (cơ sở) · Ngày lắp đặt · Số sê-ri · Mã quản lý (tài sản) |
+| Thông tin lắp đặt | Địa điểm lắp đặt (cơ sở) · Ngày lắp đặt · Số sê-ri (Mã quản lý chỉ xem — không sửa được) |
 | Cấu hình dịch vụ | Loại dịch vụ (thuê/bán/bảo trì) · Loại quản lý |
 | Số tiền | Tiền đặt cọc · Phí hàng tháng · Giá bán · Phí lắp đặt |
 | Chu kỳ | Chu kỳ kiểm tra định kỳ (ngày) · Chu kỳ lõi lọc mặc định (ngày) |
@@ -498,7 +498,11 @@ Wizard **5 bước** để đăng ký và lắp đặt nhiều thiết bị cùn
   - **Chọn Nhóm sản phẩm** → chỉ hiện các Mẫu thuộc đúng Thương hiệu + Nhóm sản phẩm đó.
   - Giúp giảm sai sót nhập liệu và chọn nhanh hơn. Cách liên kết này cũng áp dụng đồng nhất ở màn hình §7.4 "Sửa thông tin thiết bị" và wizard đăng ký đơn lẻ ở §7.6.
 - Nhập số lượng, ngày lắp đặt, kỹ thuật viên phụ trách, ghi chú lắp đặt.
-- **Mã quản lý** có thể để hệ thống tự sinh (`WA` + ngày + số thứ tự) hoặc nhập thủ công.
+- **Mã quản lý (mã thiết bị)** được hệ thống tự động cấp ngay khi hoàn tất đăng ký. Không có chế độ nhập thủ công.
+  - Định dạng: **mã model + ngày lắp đặt (YYMMDD) + số thứ tự 4 chữ số** — ví dụ: `PTS21002609040001`
+  - Số thứ tự là **số toàn hệ thống, không theo từng khách hàng**. Cùng một mẫu lắp cùng ngày cho hai khách hàng khác nhau vẫn không bị trùng mã.
+  - Mã đã cấp thì không đổi được, và khi thiết bị bị chấm dứt/thu hồi cũng không xóa mã.
+  - Đăng ký hàng loạt · đăng ký đơn lẻ · "Lắp thiết bị mới" trong màn hình hợp đồng đều dùng chung quy tắc này.
 
 #### Bước 3: Hình thức bán
 
@@ -517,7 +521,7 @@ Thiết lập chu kỳ kiểm tra định kỳ và danh sách **lõi lọc/vật
 
 #### Bước 5: Xác nhận cuối cùng (mới)
 
-Hiển thị **tóm tắt toàn bộ thông tin** đã nhập ở các bước trước trên một màn hình — khách hàng và địa điểm lắp đặt, thiết bị/số lượng/mã quản lý, hình thức bán/số tiền/**số hợp đồng sẽ được tạo**, và cấu hình dịch vụ. Kiểm tra xong, nhấn "**Hoàn tất**" để đăng ký. Nếu có sai sót, có thể quay lại bước trước để sửa ngay.
+Hiển thị **tóm tắt toàn bộ thông tin** đã nhập ở các bước trước trên một màn hình — khách hàng và địa điểm lắp đặt, thiết bị/số lượng, hình thức bán/số tiền/**số hợp đồng sẽ được tạo**, và cấu hình dịch vụ. Kiểm tra xong, nhấn "**Hoàn tất**" để đăng ký. Nếu có sai sót, có thể quay lại bước trước để sửa ngay.
 
 > Sau khi đăng ký, dữ liệu được ghi vào Lịch sử lắp đặt và phản ánh trong tab [Thiết bị] của hợp đồng tương ứng.
 
@@ -1063,7 +1067,7 @@ Giá trị mặc định:
 
 1. Thanh bên → Thiết bị → "**Đăng ký hàng loạt**"
 2. Bước 1: Chọn khách hàng (chưa có thì đăng ký mới ngay)
-3. Bước 2: Nhập mẫu, số lượng, ngày lắp đặt, mã quản lý
+3. Bước 2: Nhập mẫu, số lượng, ngày lắp đặt (mã quản lý được tự động cấp khi hoàn tất)
 4. Bước 3: Chọn hình thức bán (thuê/bán/bảo trì) → nhập số tiền hợp đồng
 5. Bước 4: Nhập cấu hình dịch vụ (kiểm tra định kỳ, lõi lọc...)
 6. Bước 5: Xem màn hình xác nhận cuối cùng (kể cả số hợp đồng sẽ tạo) rồi nhấn "**Hoàn tất**"

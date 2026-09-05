@@ -13,12 +13,12 @@
  *   - ServiceConfigEditor   (Step 4)
  */
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { NumberInput } from "@/components/ui/number-input";
@@ -41,7 +41,6 @@ import { pickModelName } from "@/lib/products/name";
 
 type WizardStep = "customer" | "equipment" | "method" | "service" | "confirm";
 const STEPS: WizardStep[] = ["customer", "equipment", "method", "service", "confirm"];
-type AssetCodeMode = "auto" | "manual";
 type Loc = "ko" | "vi" | "en";
 
 interface CustomerSite {
@@ -63,37 +62,9 @@ interface TechnicianLite {
   username: string;
 }
 
-interface RowState {
-  id: string;
-  assetCode: string;
-}
-
 function todayYmd(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** The wizard's asset-code ("관리번호") generator — unchanged from the
- *  previous 3-step page's `buildRows` helper. */
-function buildAutoAssetCodes(quantity: number, dateYmd: string): string[] {
-  const d = new Date(dateYmd);
-  const yy = String(d.getFullYear()).slice(-2);
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return Array.from(
-    { length: quantity },
-    (_, i) => `WA${yy}${mm}${dd}${String(i + 1).padStart(3, "0")}`,
-  );
-}
-
-function resizeRows(rows: RowState[], quantity: number): RowState[] {
-  if (rows.length === quantity) return rows;
-  if (rows.length > quantity) return rows.slice(0, quantity);
-  const extra = Array.from({ length: quantity - rows.length }, (_, i) => ({
-    id: `r${rows.length + i}-${Math.random().toString(36).slice(2, 7)}`,
-    assetCode: "",
-  }));
-  return [...rows, ...extra];
 }
 
 function deriveCreateContract(v: ServiceMethodValue): boolean {
@@ -144,27 +115,9 @@ function BulkRegisterInner() {
   const [defaultInstalledAt, setDefaultInstalledAt] = useState<string>(todayYmd());
   const [installedByTechnicianId, setInstalledByTechnicianId] = useState<string | null>(null);
   const [installNotes, setInstallNotes] = useState("");
-  const [assetCodeMode, setAssetCodeMode] = useState<AssetCodeMode>("auto");
-  const [rows, setRows] = useState<RowState[]>([]);
 
   const techsQuery = useApiQuery<TechnicianLite[]>("/api/users?role=TECHNICIAN&pageSize=100");
   const techs = techsQuery.data ?? [];
-
-  // Regenerate the row list whenever quantity / date / mode changes. Auto
-  // mode always rebuilds from scratch; manual mode preserves what the
-  // operator already typed and only pads/truncates to match quantity.
-  useEffect(() => {
-    if (assetCodeMode === "manual") {
-      setRows((prev) => resizeRows(prev, quantity));
-      return;
-    }
-    setRows(
-      buildAutoAssetCodes(quantity, defaultInstalledAt).map((code, i) => ({
-        id: `r${i}`,
-        assetCode: code,
-      })),
-    );
-  }, [quantity, defaultInstalledAt, assetCodeMode]);
 
   // ─── Step 3: service method ──────────────────────────────────────────
   const [serviceMethod, setServiceMethod] = useState<ServiceMethodValue>({
@@ -213,8 +166,9 @@ function BulkRegisterInner() {
         customerId,
         siteId,
         modelId,
-        rows: rows.map((r) => ({
-          assetCode: r.assetCode || undefined,
+        // 장비코드 is issued server-side at registration, so a row carries
+        // nothing but its install date — one row per unit.
+        rows: Array.from({ length: quantity }, () => ({
           installedAt: defaultInstalledAt,
         })),
         defaultInstalledAt,
@@ -344,10 +298,6 @@ function BulkRegisterInner() {
           installedByTechnicianId={installedByTechnicianId}
           setInstalledByTechnicianId={setInstalledByTechnicianId}
           techs={techs}
-          assetCodeMode={assetCodeMode}
-          setAssetCodeMode={setAssetCodeMode}
-          rows={rows}
-          setRows={setRows}
           siteId={siteId}
           setSiteId={setSiteId}
           siteOptions={siteOptions}
@@ -383,7 +333,6 @@ function BulkRegisterInner() {
           installedAt={defaultInstalledAt}
           technician={techs.find((u) => u.id === installedByTechnicianId) ?? null}
           installNotes={installNotes}
-          rows={rows}
           serviceMethod={serviceMethod}
           serviceConfig={serviceConfig}
         />
@@ -417,10 +366,6 @@ interface EquipmentStepProps {
   installedByTechnicianId: string | null;
   setInstalledByTechnicianId: (v: string | null) => void;
   techs: TechnicianLite[];
-  assetCodeMode: AssetCodeMode;
-  setAssetCodeMode: (m: AssetCodeMode) => void;
-  rows: RowState[];
-  setRows: (r: RowState[]) => void;
   siteId: string | null;
   setSiteId: (v: string | null) => void;
   siteOptions: { value: string; label: string }[];
@@ -492,72 +437,11 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg border-2 border-gray-200 bg-white p-4">
-        <FormField label={t("fields.assetCodeMode")}>
-          <div className="grid grid-cols-2 gap-2">
-            {(["auto", "manual"] as const).map((m) => (
-              <label
-                key={m}
-                className={`flex cursor-pointer items-center gap-1 rounded-md border-2 px-2 py-2 text-xs ${
-                  props.assetCodeMode === m ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="assetCodeMode"
-                  checked={props.assetCodeMode === m}
-                  onChange={() => props.setAssetCodeMode(m)}
-                />
-                {t(`assetCodeModes.${m}`)}
-              </label>
-            ))}
-          </div>
+        <FormField label={t("fields.assetCode")}>
+          <p className="rounded-md border-2 border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            {t("assetCodeAuto")}
+          </p>
         </FormField>
-
-        {props.assetCodeMode === "auto" ? (
-          <div>
-            <p className="mb-1 text-xs text-gray-500">{t("assetCodePreview")}</p>
-            <div className="flex flex-wrap gap-1.5 rounded-md border-2 border-gray-100 bg-gray-50 p-2">
-              {props.rows.map((r) => (
-                <span
-                  key={r.id}
-                  className="rounded bg-white px-2 py-1 text-xs tabular-nums text-gray-700 ring-1 ring-gray-200"
-                >
-                  {r.assetCode}
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-md border-2 border-gray-100">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="px-2 py-1.5">No.</th>
-                  <th className="px-2 py-1.5">{t("fields.assetCode")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {props.rows.map((r, i) => (
-                  <tr key={r.id}>
-                    <td className="px-2 py-1.5 text-gray-500">{i + 1}</td>
-                    <td className="px-2 py-1.5">
-                      <Input
-                        aria-label={`${t("fields.assetCode")} ${i + 1}`}
-                        value={r.assetCode}
-                        onChange={(e) => {
-                          const next = props.rows.map((row, j) =>
-                            j === i ? { ...row, assetCode: e.target.value } : row,
-                          );
-                          props.setRows(next);
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -602,7 +486,6 @@ interface ConfirmStepProps {
   installedAt: string;
   technician: TechnicianLite | null;
   installNotes: string;
-  rows: RowState[];
   serviceMethod: ServiceMethodValue;
   serviceConfig: ServiceConfigValue;
 }
@@ -655,19 +538,7 @@ function ConfirmStep(props: Readonly<ConfirmStepProps>) {
           {props.installNotes.trim() && (
             <Row label={t("fields.installNotes")} value={props.installNotes} />
           )}
-          <div>
-            <p className="mb-1 text-xs text-gray-500">{t("confirm.assetCodes")}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {props.rows.map((r) => (
-                <span
-                  key={r.id}
-                  className="rounded bg-gray-50 px-2 py-1 text-xs tabular-nums text-gray-700 ring-1 ring-gray-200"
-                >
-                  {r.assetCode || none}
-                </span>
-              ))}
-            </div>
-          </div>
+          <Row label={t("confirm.assetCodes")} value={t("assetCodeAuto")} />
         </Section>
 
         {/* Method + contract */}

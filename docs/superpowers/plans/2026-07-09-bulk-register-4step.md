@@ -1,5 +1,7 @@
 # 대량/단일 장비 등록 4단계 재설계 — Implementation Plan
 
+> **부분 폐기 (2026-09-04)**: 아래 계획 중 관리번호(`assetCode`) "자동/직접" 선택 항목은 폐기되었습니다. 장비코드는 모든 등록 경로에서 서버가 `{modelCode}{YY}{MM}{DD}{NNNN}`로 자동 발행합니다 — `docs/SPEC.md` §4.3.1 참고.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 장비 등록(`bulk-register` 동일모델×N, `register` 멀티라인)을 4단계 위저드(고객→장비→판매방식→서비스구성)로 재설계하고, 주기를 일 단위로 전환하며, 수동 계약서 업로드를 추가한다.

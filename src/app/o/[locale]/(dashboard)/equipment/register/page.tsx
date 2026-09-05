@@ -46,7 +46,7 @@ import { pickModelName } from "@/lib/products/name";
 
 type WizardStep = "customer" | "equipment" | "method" | "service";
 const STEPS: WizardStep[] = ["customer", "equipment", "method", "service"];
-type AssetCodeMode = "auto" | "manual";
+type SerialMode = "auto" | "manual";
 
 interface CustomerSite {
   id: string;
@@ -78,7 +78,7 @@ interface LineState {
   categoryFilter: string | null;
   modelId: string | null;
   quantity: number;
-  assetCodeMode: AssetCodeMode;
+  serialMode: SerialMode;
   serialPrefix: string;
   serviceMethod: ServiceMethodValue;
   serviceConfig: ServiceConfigValue;
@@ -96,7 +96,7 @@ function newLine(): LineState {
     categoryFilter: null,
     modelId: null,
     quantity: 1,
-    assetCodeMode: "auto",
+    serialMode: "auto",
     serialPrefix: "",
     serviceMethod: { method: "RENTAL", contractDate: todayYmd(), deposit: 0, monthlyRent: 0 },
     serviceConfig: { inspectionCycleDays: null, filters: [] },
@@ -236,7 +236,7 @@ function RegisterEquipmentInner() {
             monthlyFee: pickMonthlyFee(l.serviceMethod),
             salePrice: l.serviceMethod.salePrice ?? undefined,
             installFee: l.serviceMethod.installFee ?? undefined,
-            serialPrefix: l.assetCodeMode === "manual" ? (l.serialPrefix || undefined) : undefined,
+            serialPrefix: l.serialMode === "manual" ? (l.serialPrefix || undefined) : undefined,
             serviceConfig: {
               inspectionCycleDays: l.serviceConfig.inspectionCycleDays ?? undefined,
               // Drop incomplete custom rows (addFilter() seeds customName:"" —
@@ -502,29 +502,29 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
                   max={500}
                 />
               </FormField>
-              <FormField label={tb("fields.assetCodeMode")}>
+              <FormField label={tb("fields.serialMode")}>
                 <div className="grid grid-cols-2 gap-2">
                   {(["auto", "manual"] as const).map((m) => (
                     <label
                       key={m}
                       className={`flex cursor-pointer items-center gap-1 rounded-md border-2 px-2 py-2 text-xs ${
-                        line.assetCodeMode === m
+                        line.serialMode === m
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white"
                       }`}
                     >
                       <input
                         type="radio"
-                        name={`assetCodeMode-${line.id}`}
-                        checked={line.assetCodeMode === m}
-                        onChange={() => props.updateLine(line.id, { assetCodeMode: m })}
+                        name={`serialMode-${line.id}`}
+                        checked={line.serialMode === m}
+                        onChange={() => props.updateLine(line.id, { serialMode: m })}
                       />
                       {tb(`assetCodeModes.${m}`)}
                     </label>
                   ))}
                 </div>
               </FormField>
-              {line.assetCodeMode === "manual" && (
+              {line.serialMode === "manual" && (
                 <FormField label={t("fields.serialPrefix")}>
                   <Input
                     aria-label={t("fields.serialPrefix")}
