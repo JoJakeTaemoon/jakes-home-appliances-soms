@@ -693,7 +693,7 @@
         "autoAssigned": "Auto-assigned",
         "none": "—"
       },
-      "assetCodeAuto": "Issued automatically on registration — modelCode + install date (YYMMDD) + 4-digit sequence"
+      "assetCodeAuto": "Issued automatically on registration — MAY-000001 onward, sequential per model (the same number exists on other models)"
     },
     "installationHistory": {
       "title": "Installation history",

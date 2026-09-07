@@ -693,7 +693,7 @@
         "autoAssigned": "자동 발번",
         "none": "—"
       },
-      "assetCodeAuto": "등록 시 자동 발행 — 모델코드 + 설치일(YYMMDD) + 순번 4자리"
+      "assetCodeAuto": "등록 시 자동 발행 — MAY-000001 부터 모델별 순차 (모델이 다르면 같은 번호가 존재)"
     },
     "installationHistory": {
       "title": "설치 이력",

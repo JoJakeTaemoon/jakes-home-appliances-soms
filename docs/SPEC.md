@@ -286,43 +286,61 @@ Inferred from `reference/data/정수기등록-26-05-21.csv`:
 
 ### 4.3.1 Equipment code (장비코드 / 관리번호)
 
-Format: **`{modelCode}{YY}{MM}{DD}{NNNN}`** — e.g. `PTS21002609040001`.
+Format: **`MAY-{NNNNNN}`** — e.g. `MAY-000001`.
 
 | Segment | Source |
 |---|---|
-| `modelCode` | `EquipmentModel.modelCode`. Off-catalog devices (no model) and models with no code fall back to **`AQS`** |
-| `YYMMDD` | The unit's `installedAt`, in **Vietnam Standard Time** (same convention as the contract code, §5.2) |
-| `NNNN` | 1-based sequence within that `{modelCode}{YYMMDD}` prefix, zero-padded to 4 |
+| `MAY-` | Fixed literal prefix on every device, regardless of model (máy = 기기) |
+| `NNNNNN` | 6-digit sequence **scoped to `modelId`** — each model counts up from `MAY-000001` on its own |
 
 Rules:
 
-- **System-issued, never typed in.** Every registration path allocates through
+- **Unique within a model, not across models.** This is the point of the rule:
+  model A and model B each have a `MAY-000001`. The code string alone is
+  therefore **not** a table-wide identifier — the unique thing is the pair
+  `(modelId, assetCode)`, enforced by `@@unique([modelId, assetCode])`. Any
+  lookup by code must also carry the model.
+- **The customer boundary is irrelevant.** Two customers taking the same model
+  get consecutive numbers off that model's single sequence; the sequence never
+  restarts per customer, per site, or per date.
+- **Issued on assignment to a customer.** `Equipment.customerId` is required,
+  so registration *is* assignment. Every registration path allocates through
   `src/lib/equipment/asset-code.ts`: the single install (`POST /api/equipment`),
   the multi-line wizard (`POST /api/equipment/register`) and the bulk wizard
   (`POST /api/equipment/bulk-register`). There is no manual-entry mode and the
   code is **immutable** — `PATCH /api/equipment/:id` does not accept it.
-- **Globally unique — the sequence is never per-customer.** `Equipment.assetCode`
-  carries a DB `@unique` constraint, so the same code can never reach two units
-  regardless of who owns them. Two customers taking the same model on the same
-  day get `…0001` and `…0002`, not `…0001` twice.
-- **Allocation is race-safe.** The allocator takes a Postgres advisory lock on
-  the prefix for the life of the transaction before reading the current maximum,
-  so concurrent registrations queue instead of both claiming `…0001`.
+- **Allocation is race-safe.** The allocator takes a Postgres advisory lock
+  keyed on the model for the life of the transaction before reading that
+  model's current maximum, so concurrent registrations of the same model queue
+  instead of both claiming `MAY-000001`.
+- **Off-catalog devices** (`modelId = null` — a customer's own third-party unit
+  under a MAINTENANCE contract) share one sequence. Postgres treats NULLs as
+  distinct, so `@@unique([modelId, assetCode])` does **not** constrain that
+  bucket; the advisory lock is what keeps it unique, and `assetCode` is not
+  writable from the API, so nothing else can introduce a duplicate.
 - **Never recycled.** Retiring a unit changes `Equipment.status`
   (`DEACTIVATED` / `TERMINATED`); the code and its history stay (A.3 confirmed
   2026-05-26).
-- `serialNumber` is a **separate, non-unique** field — the manufacturer number on
-  the device. When no serial is supplied at registration it mirrors the 장비코드.
+- `serialNumber` is a **separate, non-unique** field — the number printed on the
+  device. It no longer mirrors the 장비코드: the multi-line wizard still derives
+  a `{modelCode}{YYMMDD}{NNNN}` serial so that value stays distinctive, and the
+  bulk wizard leaves it null unless the operator types one.
 - **Rows that bypass the API get swept.** `backfillMissingAssetCodes()` in the
   same module fills in any row still missing a code, reusing the allocator so
-  back-filled units join the existing sequence. The dev seed calls it at the
-  end of `prisma/seed.ts` (fixtures are inserted straight through Prisma), and
-  `scripts/backfill-asset-codes.ts` exposes it as a CLI for databases you do
+  back-filled units continue their model's sequence. The dev seed calls it at
+  the end of `prisma/seed.ts` (fixtures are inserted straight through Prisma),
+  and `scripts/backfill-asset-codes.ts` exposes it as a CLI for databases you do
   **not** reseed — the production / vhost.vn migration, or a staging box fixed
   in place. Run the CLI from a workstation against `DATABASE_URL`: the app
   container image ships neither `scripts/` nor the CLI's entrypoint.
   `assetCode` stays nullable in the schema only to allow that
   insert-then-sweep flow.
+
+> **Format history.** Codes were `{modelCode}{YY}{MM}{DD}{NNNN}` and table-wide
+> unique until 2026-09-07. Migration
+> `20260907000000_equipment_asset_code_per_model` drops the old `@unique`,
+> re-issues every existing row per model (ordered by installedAt → createdAt →
+> id), and creates the composite unique index.
 
 ---
 

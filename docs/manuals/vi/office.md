@@ -498,9 +498,11 @@ Wizard **5 bước** để đăng ký và lắp đặt nhiều thiết bị cùn
   - **Chọn Nhóm sản phẩm** → chỉ hiện các Mẫu thuộc đúng Thương hiệu + Nhóm sản phẩm đó.
   - Giúp giảm sai sót nhập liệu và chọn nhanh hơn. Cách liên kết này cũng áp dụng đồng nhất ở màn hình §7.4 "Sửa thông tin thiết bị" và wizard đăng ký đơn lẻ ở §7.6.
 - Nhập số lượng, ngày lắp đặt, kỹ thuật viên phụ trách, ghi chú lắp đặt.
-- **Mã quản lý (mã thiết bị)** được hệ thống tự động cấp ngay khi hoàn tất đăng ký. Không có chế độ nhập thủ công.
-  - Định dạng: **mã model + ngày lắp đặt (YYMMDD) + số thứ tự 4 chữ số** — ví dụ: `PTS21002609040001`
-  - Số thứ tự là **số toàn hệ thống, không theo từng khách hàng**. Cùng một mẫu lắp cùng ngày cho hai khách hàng khác nhau vẫn không bị trùng mã.
+- **Mã quản lý (mã thiết bị)** được hệ thống tự động cấp ngay khi thiết bị được gán cho khách hàng (= hoàn tất đăng ký). Không có chế độ nhập thủ công.
+  - Định dạng: **`MAY-` + số thứ tự 6 chữ số** — ví dụ: `MAY-000001`
+  - Số thứ tự được đánh **theo từng model**. Mỗi model đếm riêng từ `MAY-000001`.
+  - Vì vậy **model khác nhau có thể trùng số.** `MAY-000001` của model máy lọc nước A và `MAY-000001` của model bồn cầu B là hai thiết bị khác nhau. Khi tra thiết bị theo mã quản lý, **phải xem kèm model**.
+  - Trong cùng một model thì số không bao giờ trùng. Khách hàng khác nhau nhưng cùng model thì vẫn tiếp nối số thứ tự của model đó.
   - Mã đã cấp thì không đổi được, và khi thiết bị bị chấm dứt/thu hồi cũng không xóa mã.
   - Đăng ký hàng loạt · đăng ký đơn lẻ · "Lắp thiết bị mới" trong màn hình hợp đồng đều dùng chung quy tắc này.
 

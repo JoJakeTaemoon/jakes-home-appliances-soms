@@ -1,107 +1,101 @@
 /**
  * Equipment asset-code (장비코드 / 관리번호) allocator.
  *
- * Format (confirmed 2026-09-04):
+ * Format (confirmed 2026-09-07):
  *
- *     {modelCode}{YY}{MM}{DD}{NNNN}      e.g. PTS2100 26 09 04 0001
+ *     MAY-{NNNNNN}        e.g. MAY-000001 … MAY-999999
  *
- *   - `modelCode`  — `EquipmentModel.modelCode`. Off-catalog devices (no
- *     model) and legacy models with a null code fall back to `AQS`.
- *   - `YYMMDD`     — the unit's **설치일** (`installedAt`) in Vietnam Standard
- *     Time, the same convention `src/lib/contracts/code.ts` uses.
- *   - `NNNN`       — 1-based sequence within that `{modelCode}{YYMMDD}` prefix.
+ *   - `MAY-` is a fixed literal prefix on every device (máy = 기기).
+ *   - `NNNNNN` is a 6-digit sequence **scoped to the EquipmentModel**, so each
+ *     model counts up from MAY-000001 independently.
  *
- * The sequence is **global**, never per-customer: `Equipment.assetCode` is
- * `@unique` across the whole table, so the same code can never be issued to
- * two units regardless of who owns them.
+ * Consequence — and this is the point of the rule: the code string alone is
+ * **not** globally unique. Two different models each have a MAY-000001. What
+ * must be unique is the PAIR `(modelId, assetCode)`, enforced by
+ * `@@unique([modelId, assetCode])` on the model.
  *
- * Every registration path (single install, multi-line wizard, bulk wizard)
- * allocates through this module — the code is system-issued, never typed in.
+ * Issued when the unit is assigned to a customer. `Equipment.customerId` is
+ * required, so registration *is* assignment: every registration path allocates
+ * through this module and nothing else writes `assetCode`.
  */
 
 import type { Prisma } from "@/generated/prisma";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { formatVstDateStamp } from "@/lib/contracts/code";
 
-/** Prefix used when the device has no catalog model / the model has no code. */
-export const ASSET_CODE_FALLBACK_MODEL_CODE = "AQS";
+/** Fixed literal prefix shared by every device, regardless of model. */
+export const ASSET_CODE_PREFIX = "MAY-";
 
-const SEQ_WIDTH = 4;
+const SEQ_WIDTH = 6;
 
-/** `{modelCode}{YYMMDD}` — everything left of the per-day sequence. */
-export function assetCodePrefix(
-  modelCode: string | null | undefined,
-  installedAt: Date,
-): string {
-  const code = modelCode?.trim() || ASSET_CODE_FALLBACK_MODEL_CODE;
-  // formatVstDateStamp → YYYYmmDD; drop the century to get YYmmDD.
-  return `${code}${formatVstDateStamp(installedAt).slice(2)}`;
+/**
+ * Lock / grouping key for off-catalog devices (`modelId = null` — a customer's
+ * own third-party unit under a MAINTENANCE contract). They share one sequence.
+ *
+ * ponytail: `@@unique([modelId, assetCode])` does NOT cover this bucket —
+ * Postgres treats NULLs as distinct, so the DB would accept a duplicate there.
+ * The advisory lock below is what actually keeps it unique, and `assetCode` is
+ * never writable from the API, so nothing else can introduce one. If Prisma
+ * ever supports `nullsNotDistinct`, add it and delete this note.
+ */
+const NO_MODEL_BUCKET = "__no_model__";
+
+/** `MAY-000042` for sequence 42. */
+export function formatAssetCode(sequence: number): string {
+  return `${ASSET_CODE_PREFIX}${String(sequence).padStart(SEQ_WIDTH, "0")}`;
 }
 
 async function nextSequence(
   tx: Prisma.TransactionClient,
-  prefix: string,
+  modelId: string | null,
 ): Promise<number> {
-  // Serialize allocations for this prefix until the transaction commits.
-  // Without it two parallel registrations read the same max and both INSERT
-  // `…0001`; Postgres aborts the entire interactive transaction on the
-  // resulting P2002, so catch-and-retry inside the tx is not an option
-  // (same constraint the contract-number allocator documents).
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${prefix}))`;
+  // Serialize allocations for this model until the transaction commits.
+  // Without it two parallel registrations of the same model read the same max
+  // and both INSERT `MAY-000001`; Postgres aborts the entire interactive
+  // transaction on the resulting unique violation, so catch-and-retry inside
+  // the tx is not an option (same constraint the contract-number allocator
+  // documents).
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${modelId ?? NO_MODEL_BUCKET}))`;
   const taken = await tx.equipment.findMany({
-    where: { assetCode: { startsWith: prefix } },
+    where: { modelId, assetCode: { startsWith: ASSET_CODE_PREFIX } },
     select: { assetCode: true },
   });
-  // ponytail: scan the prefix group and take the numeric max rather than
-  // ORDER BY assetCode DESC LIMIT 1 — lexical ordering breaks past 9999 and
-  // on any legacy non-numeric suffix. The group is one model on one day, so
-  // it stays tiny; swap in a counter table only if that ever stops being true.
+  // ponytail: scan this model's codes and take the numeric max rather than
+  // ORDER BY assetCode DESC LIMIT 1 — lexical ordering breaks past 999999 and
+  // on any legacy non-conforming suffix. One model's fleet stays small enough
+  // to scan; swap in a counter table only if that stops being true.
   let max = 0;
   for (const row of taken) {
-    const n = Number(row.assetCode?.slice(prefix.length));
+    const n = Number(row.assetCode?.slice(ASSET_CODE_PREFIX.length));
     if (Number.isInteger(n) && n > max) max = n;
   }
   return max + 1;
 }
 
 /**
- * Allocates one asset code per entry in `installedAts`, in order.
+ * Allocates `count` consecutive codes for one model, continuing that model's
+ * own sequence.
  *
- * Entries sharing a `{modelCode}{YYMMDD}` prefix get consecutive sequence
- * numbers. Rows written earlier in the same transaction are visible to later
- * calls (read-your-own-writes), so a multi-line wizard can call this once per
- * line without codes colliding across lines.
+ * Rows written earlier in the same transaction are visible to later calls
+ * (read-your-own-writes), so a multi-line wizard can call this once per line
+ * and two lines sharing a model still get a continuous run.
  */
 export async function allocateAssetCodes(
   tx: Prisma.TransactionClient,
-  modelCode: string | null | undefined,
-  installedAts: Date[],
+  modelId: string | null,
+  count: number,
 ): Promise<string[]> {
-  const byPrefix = new Map<string, number[]>();
-  installedAts.forEach((at, i) => {
-    const prefix = assetCodePrefix(modelCode, at);
-    const bucket = byPrefix.get(prefix);
-    if (bucket) bucket.push(i);
-    else byPrefix.set(prefix, [i]);
-  });
-
-  const codes: string[] = new Array(installedAts.length);
-  for (const [prefix, indices] of byPrefix) {
-    const start = await nextSequence(tx, prefix);
-    indices.forEach((target, offset) => {
-      codes[target] = `${prefix}${String(start + offset).padStart(SEQ_WIDTH, "0")}`;
-    });
-  }
-  return codes;
+  if (count <= 0) return [];
+  const start = await nextSequence(tx, modelId);
+  return Array.from({ length: count }, (_, i) => formatAssetCode(start + i));
 }
 
 /**
- * Fills in 장비코드 for rows that predate the system-issued rule (legacy
- * imports, and the dev seed, which inserts equipment directly).
+ * Fills in 장비코드 for rows inserted outside the API — the dev seed's
+ * fixtures, or a legacy import.
  *
- * Reuses the same allocator as every registration path, so back-filled units
- * join the existing per-prefix sequence instead of starting a parallel one.
- * Idempotent — rows that already have a code are untouched.
+ * Reuses the same allocator, so back-filled units continue their model's
+ * sequence instead of starting a parallel one. Idempotent: rows that already
+ * have a code are untouched.
  *
  * Returns the number of rows written.
  */
@@ -111,44 +105,28 @@ export async function backfillMissingAssetCodes(
 ): Promise<number> {
   const pending = await client.equipment.findMany({
     where: { assetCode: null },
-    select: {
-      id: true,
-      modelId: true,
-      installedAt: true,
-      createdAt: true,
-      model: { select: { modelCode: true } },
-    },
+    select: { id: true, modelId: true },
     orderBy: [{ installedAt: "asc" }, { createdAt: "asc" }],
   });
   if (pending.length === 0) return 0;
 
-  // Group by model — the allocator takes one modelCode per call, and grouping
-  // keeps each model's sequence contiguous.
-  const byModel = new Map<string, typeof pending>();
+  // One transaction per model — the sequence is per-model, and grouping keeps
+  // each model's run contiguous.
+  const byModel = new Map<string | null, string[]>();
   for (const eq of pending) {
-    const key = eq.modelId ?? "__none__";
-    const bucket = byModel.get(key);
-    if (bucket) bucket.push(eq);
-    else byModel.set(key, [eq]);
+    const bucket = byModel.get(eq.modelId);
+    if (bucket) bucket.push(eq.id);
+    else byModel.set(eq.modelId, [eq.id]);
   }
 
   let written = 0;
-  for (const [, rows] of byModel) {
+  for (const [modelId, ids] of byModel) {
     await client.$transaction(async (tx) => {
-      const codes = await allocateAssetCodes(
-        tx,
-        rows[0].model?.modelCode ?? null,
-        // Never installed (legacy import / fixture) → stamp with the row's
-        // creation date so the code still says when it entered the system.
-        rows.map((r) => r.installedAt ?? r.createdAt),
-      );
-      for (const [i, row] of rows.entries()) {
-        opts.onAssign?.(row.id, codes[i]);
+      const codes = await allocateAssetCodes(tx, modelId, ids.length);
+      for (const [i, id] of ids.entries()) {
+        opts.onAssign?.(id, codes[i]);
         if (opts.dryRun) continue;
-        await tx.equipment.update({
-          where: { id: row.id },
-          data: { assetCode: codes[i] },
-        });
+        await tx.equipment.update({ where: { id }, data: { assetCode: codes[i] } });
         written += 1;
       }
     });

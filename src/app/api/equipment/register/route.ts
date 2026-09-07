@@ -111,22 +111,24 @@ export async function POST(request: NextRequest) {
         }
         const lifecycleStage =
           line.serviceType === "RENTAL" ? "IN_RENTAL" : "IN_MAINTENANCE";
-        const modelCode = modelByIdMap.get(line.modelId)?.modelCode ?? null;
-        // 장비코드 — allocated for the whole line up front. Rows created by an
-        // earlier line are already visible here, so lines sharing a model +
-        // install date continue the same sequence instead of restarting at 1.
-        const assetCodes = await allocateAssetCodes(
-          tx,
-          modelCode,
-          Array.from({ length: line.quantity }, () => lineInstall),
-        );
+        // 장비코드 — allocated for the whole line up front, continuing this
+        // model's own sequence. Rows created by an earlier line are already
+        // visible here, so two lines sharing a model get a continuous run
+        // instead of both restarting at MAY-000001.
+        const assetCodes = await allocateAssetCodes(tx, line.modelId, line.quantity);
+
+        // Serial number is an independent, non-unique identifier — the number
+        // on the device. Keep it model+date shaped so it stays distinctive;
+        // the 장비코드 no longer encodes either.
+        const modelCode = modelByIdMap.get(line.modelId)?.modelCode ?? "AQS";
+        const yy = String(lineInstall.getFullYear()).slice(-2);
+        const mm = String(lineInstall.getMonth() + 1).padStart(2, "0");
+        const dd = String(lineInstall.getDate()).padStart(2, "0");
 
         for (let i = 0; i < line.quantity; i++) {
-          // Serial number is a separate, operator-facing identifier: manual
-          // prefix when given, otherwise mirror the asset code.
           const serial = line.serialPrefix
             ? `${line.serialPrefix}${String(i + 1).padStart(4, "0")}`
-            : assetCodes[i];
+            : `${modelCode}${yy}${mm}${dd}${String(i + 1).padStart(4, "0")}`;
           const equipment = await tx.equipment.create({
             data: {
               customerId: data.customerId,

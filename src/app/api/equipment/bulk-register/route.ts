@@ -285,10 +285,9 @@ export async function POST(request: NextRequest) {
       if (!site) throw new ValidationError("Site does not belong to customer");
     }
 
-    // modelCode drives the 장비코드 prefix — fetch it before the transaction.
     const model = await prisma.equipmentModel.findUnique({
       where: { id: data.modelId },
-      select: { id: true, modelCode: true },
+      select: { id: true },
     });
     if (!model) throw new ValidationError(`Unknown modelId: ${data.modelId}`);
 
@@ -300,13 +299,9 @@ export async function POST(request: NextRequest) {
       const visitIds: string[] = [];
       const dateCounts = new Map<string, number>();
 
-      // 장비코드 — system-issued for every row up front. Rows are grouped by
-      // their own installedAt, so a mixed-date batch gets one sequence per day.
-      const assetCodes = await allocateAssetCodes(
-        tx,
-        model.modelCode,
-        data.rows.map((r) => r.installedAt),
-      );
+      // 장비코드 — system-issued for the whole batch up front, continuing this
+      // model's own sequence. Install dates don't affect it.
+      const assetCodes = await allocateAssetCodes(tx, data.modelId, data.rows.length);
 
       for (const [rowIndex, row] of data.rows.entries()) {
         const equipment = await tx.equipment.create({
@@ -314,7 +309,7 @@ export async function POST(request: NextRequest) {
             customerId: data.customerId,
             siteId: data.siteId ?? null,
             modelId: data.modelId,
-            serialNumber: row.serialNumber ?? assetCodes[rowIndex],
+            serialNumber: row.serialNumber ?? null,
             assetCode: assetCodes[rowIndex],
             installedAt: row.installedAt,
             installedByTechnicianId: data.installedByTechnicianId ?? null,

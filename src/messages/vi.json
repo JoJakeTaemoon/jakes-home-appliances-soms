@@ -693,7 +693,7 @@
         "autoAssigned": "Tự động cấp số",
         "none": "—"
       },
-      "assetCodeAuto": "Tự động cấp khi đăng ký — mã model + ngày lắp đặt (YYMMDD) + số thứ tự 4 chữ số"
+      "assetCodeAuto": "Tự động cấp khi đăng ký — từ MAY-000001, tuần tự theo từng model (model khác có thể trùng số)"
     },
     "installationHistory": {
       "title": "Lịch sử lắp đặt",

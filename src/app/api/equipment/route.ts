@@ -124,22 +124,18 @@ export const POST = defineMutation({
     // off-catalog (customer-owned) devices skip the model and provide a
     // free-text customDescription instead. Verify the model exists only when
     // it was supplied.
-    let modelCode: string | null = null;
     if (body.modelId) {
       const model = await prisma.equipmentModel.findUnique({
         where: { id: body.modelId },
-        select: { id: true, modelCode: true },
+        select: { id: true },
       });
       if (!model) throw new NotFoundError("Model not found");
-      modelCode = model.modelCode;
     }
 
     return prisma.$transaction(async (tx) => {
-      // 장비코드 is system-issued at registration, never supplied by the
-      // caller. No installedAt (it's optional here) → stamp with today.
-      const [assetCode] = await allocateAssetCodes(tx, modelCode, [
-        body.installedAt ?? new Date(),
-      ]);
+      // 장비코드 is system-issued when the unit is assigned to a customer,
+      // never supplied by the caller. Sequence is per-model.
+      const [assetCode] = await allocateAssetCodes(tx, body.modelId ?? null, 1);
       const created = await tx.equipment.create({
         data: {
           customerId: body.customerId,

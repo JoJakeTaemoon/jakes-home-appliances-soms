@@ -748,14 +748,17 @@ model Equipment {
   /// is the field technician who physically installs.
   registeredById            String?
   registeredBy              User?                 @relation("EquipmentRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
-  /// 장비코드 / 관리번호 — system-issued at registration, never typed in:
-  /// `{modelCode}{YY}{MM}{DD}{NNNN}` off the unit's installedAt in VST
-  /// (e.g. PTS21002609040001). Unique across the whole table — the sequence
-  /// is global, never per-customer. See src/lib/equipment/asset-code.ts.
-  /// Stays nullable only so bulk imports and the dev seed can insert first
-  /// and backfill after (scripts/backfill-asset-codes.ts); every registration
-  /// path fills it in. Distinct from serialNumber.
-  assetCode                 String?               @unique
+  /// 장비코드 / 관리번호 — system-issued when the unit is assigned to a
+  /// customer, never typed in: `MAY-{NNNNNN}` (e.g. MAY-000001), where the
+  /// 6-digit sequence is scoped to `modelId` — each model counts up from
+  /// MAY-000001 on its own. So the string alone is NOT globally unique (two
+  /// models both have a MAY-000001); the unique thing is the pair
+  /// (modelId, assetCode) — see @@unique below and
+  /// src/lib/equipment/asset-code.ts.
+  /// Stays nullable only so bulk imports and the dev seed can insert first and
+  /// have the codes swept in after; every registration path fills it in.
+  /// Distinct from serialNumber, which is the number printed on the device.
+  assetCode                 String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -771,6 +774,11 @@ model Equipment {
   /// (which is the whole-order link via `Order.equipmentId`).
   orderItems      OrderItem[]           @relation("OrderItemEquipment")
 
+  /// 장비코드는 모델 안에서만 유니크 — 모델이 다르면 같은 번호가 존재한다.
+  /// NOTE: Postgres treats NULLs as distinct, so this does not constrain
+  /// off-catalog rows (modelId = null). Their sequence is kept unique by the
+  /// allocator's advisory lock instead — see src/lib/equipment/asset-code.ts.
+  @@unique([modelId, assetCode])
   @@index([customerId, status])
   @@index([siteId])
   @@index([modelId])

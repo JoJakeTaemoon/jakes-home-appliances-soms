@@ -20,12 +20,15 @@ import { POST as registerPost } from "@/app/api/equipment/register/route";
 const ADMIN_USERNAME = "test_task14_admin";
 const ADMIN_PHONE = "9322214001";
 const MODEL_CODE = "TEST-TASK14-MODEL";
+// Second model — proves the 장비코드 sequence is per-model.
+const MODEL_CODE_B = "TEST-TASK14-MODEL-B";
 const CONSUMABLE_SKU = "TEST-TASK14-FILTER";
 const CUSTOMER_NAME_PREFIX = "TEST_TASK14_";
 const CUSTOMER_CODE_PREFIX = "TESTKH14-";
 
 let adminToken = "";
 let modelId = "";
+let modelIdB = "";
 let consumableId = "";
 
 async function buildReq(url: string, method: string, token: string, body?: unknown) {
@@ -76,9 +79,13 @@ async function cleanup() {
     await prisma.customerContact.deleteMany({ where: { customerId: c.id } });
     await prisma.customer.delete({ where: { id: c.id } });
   }
-  await prisma.consumableOnModel.deleteMany({ where: { model: { modelCode: MODEL_CODE } } });
+  await prisma.consumableOnModel.deleteMany({
+    where: { model: { modelCode: { in: [MODEL_CODE, MODEL_CODE_B] } } },
+  });
   await prisma.consumable.deleteMany({ where: { sku: CONSUMABLE_SKU } });
-  await prisma.equipmentModel.deleteMany({ where: { modelCode: MODEL_CODE } });
+  await prisma.equipmentModel.deleteMany({
+    where: { modelCode: { in: [MODEL_CODE, MODEL_CODE_B] } },
+  });
   const user = await prisma.user.findUnique({ where: { phone: ADMIN_PHONE }, select: { id: true } });
   if (user) {
     await prisma.session.deleteMany({ where: { userId: user.id } });
@@ -115,6 +122,17 @@ beforeAll(async () => {
     },
   });
   modelId = model.id;
+
+  const modelB = await prisma.equipmentModel.create({
+    data: {
+      modelCode: MODEL_CODE_B,
+      nameKo: "Task 1.4 test model B",
+      nameVi: "Task 1.4 test model B",
+      nameEn: "Task 1.4 test model B",
+      category: "WATER_PURIFIER",
+    },
+  });
+  modelIdB = modelB.id;
 
   const consumable = await prisma.consumable.create({
     data: {
@@ -319,13 +337,12 @@ describe("POST /api/equipment/register — multi-line wizard", () => {
     expect(leftoverEquipment).toBe(0);
   });
 
-  it("(d) 장비코드 is globally sequenced — two customers, same model, same day never collide", async () => {
+  it("(d) 장비코드 is sequenced per model — same number reused across models, never within one", async () => {
     const customerA = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}CodeA` });
     const customerB = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}CodeB` });
     const installedAt = new Date().toISOString();
-    const prefix = `${MODEL_CODE}${formatVstDateStamp(new Date(installedAt)).slice(2)}`;
 
-    const register = async (customerId: string, quantity: number) => {
+    const register = async (customerId: string, lineModelId: string, quantity: number) => {
       const res = await registerPost(
         await buildReq("/api/equipment/register", "POST", adminToken, {
           customerId,
@@ -333,7 +350,7 @@ describe("POST /api/equipment/register — multi-line wizard", () => {
           createContract: false,
           lines: [
             {
-              modelId,
+              modelId: lineModelId,
               serviceType: "SALE",
               managementType: "SELF_MANAGED",
               quantity,
@@ -349,26 +366,47 @@ describe("POST /api/equipment/register — multi-line wizard", () => {
       const rows = await prisma.equipment.findMany({
         where: { id: { in: ids } },
         select: { assetCode: true },
+        orderBy: { assetCode: "asc" },
       });
       return rows.map((r) => r.assetCode!);
     };
 
-    const before = await prisma.equipment.count({
-      where: { assetCode: { startsWith: prefix } },
-    });
-    const codesA = await register(customerA.id, 2);
-    const codesB = await register(customerB.id, 2);
+    const seqOf = (codes: string[]) => codes.map((c) => Number(c.slice("MAY-".length)));
 
-    // Every code carries the {modelCode}{YYMMDD} prefix …
-    for (const code of [...codesA, ...codesB]) {
-      expect(code.startsWith(prefix)).toBe(true);
-    }
-    // … the sequence ignores the customer boundary and just keeps counting …
-    const seq = [...codesA, ...codesB]
-      .map((c) => Number(c.slice(prefix.length)))
-      .sort((x, y) => x - y);
-    expect(seq).toEqual([before + 1, before + 2, before + 3, before + 4]);
-    // … and no two units share a code.
-    expect(new Set([...codesA, ...codesB]).size).toBe(4);
+    // Earlier cases in this file already put units on model A, so pick up
+    // wherever its sequence currently stands.
+    const a1 = await register(customerA.id, modelId, 2);
+    const [firstSeq] = seqOf(a1);
+    expect(seqOf(a1)).toEqual([firstSeq, firstSeq + 1]);
+
+    // A different customer, same model → the sequence keeps counting; the
+    // customer boundary is irrelevant.
+    const a2 = await register(customerB.id, modelId, 2);
+    expect(seqOf(a2)).toEqual([firstSeq + 2, firstSeq + 3]);
+
+    // Model B has never been used → it starts over at MAY-000001, a string
+    // model A already holds. That cross-model duplication is the rule.
+    const b1 = await register(customerA.id, modelIdB, 2);
+    expect(b1).toEqual(["MAY-000001", "MAY-000002"]);
+
+    // Within a model, no repeats and no gaps.
+    const modelACodes = [...a1, ...a2];
+    expect(new Set(modelACodes).size).toBe(modelACodes.length);
+    expect(seqOf(modelACodes)).toEqual([
+      firstSeq,
+      firstSeq + 1,
+      firstSeq + 2,
+      firstSeq + 3,
+    ]);
+
+    // The (modelId, assetCode) pair is what stays unique table-wide.
+    const pairs = await prisma.equipment.findMany({
+      where: { modelId: { in: [modelId, modelIdB] } },
+      select: { modelId: true, assetCode: true },
+    });
+    const asPairs = pairs.map((p) => `${p.modelId}|${p.assetCode}`);
+    expect(new Set(asPairs).size).toBe(asPairs.length);
+    // …while the bare code string is not: MAY-000001 belongs to both models.
+    expect(pairs.filter((p) => p.assetCode === "MAY-000001")).toHaveLength(2);
   });
 });
