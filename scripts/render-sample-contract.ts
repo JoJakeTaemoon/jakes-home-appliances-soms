@@ -32,7 +32,7 @@ async function main() {
   registerFonts();
 
   // Default — first arg overrides the contract number.
-  const wanted = process.argv[2] ?? "HD-20250615/SA-KH0001";
+  const wanted = process.argv[2] ?? "HD-20250615/JH-KH0001";
   const contract = await prisma.contract.findFirst({
     where: { contractNumber: wanted },
     include: {

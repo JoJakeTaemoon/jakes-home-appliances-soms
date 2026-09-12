@@ -13,7 +13,7 @@ vi.mock("@/lib/api/hooks", () => ({
   useApiPageQuery: (...args: unknown[]) => mockUseApiPageQuery(...args),
 }));
 
-const brands = [{ id: "brand-1", name: "Seoul Aqua" }];
+const brands = [{ id: "brand-1", name: "Jake's Home Appliances" }];
 const categories = [{ id: "cat-1", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier" }];
 const models = [
   {
@@ -22,7 +22,7 @@ const models = [
     nameKo: "AQ-500 정수기",
     nameVi: "Máy lọc nước AQ-500",
     nameEn: "AQ-500 Purifier",
-    brand: { id: "brand-1", name: "Seoul Aqua" },
+    brand: { id: "brand-1", name: "Jake's Home Appliances" },
     productCategory: { id: "cat-1", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier" },
   },
 ];
@@ -90,14 +90,14 @@ describe("ModelPicker", () => {
     renderPicker();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
     await waitFor(() =>
-      expect(screen.getByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)")).toBeInTheDocument(),
+      expect(screen.getByText("Máy lọc nước AQ-500 (Jake's Home Appliances · Máy lọc nước)")).toBeInTheDocument(),
     );
   });
 
   it("calls onModel with the id when a model option is selected", async () => {
     const { onModel } = renderPicker();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
-    const option = await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)");
+    const option = await screen.findByText("Máy lọc nước AQ-500 (Jake's Home Appliances · Máy lọc nước)");
     fireEvent.click(option);
     // Model select back-fills brand + category via the meta argument.
     expect(onModel).toHaveBeenCalledWith("model-1", {
@@ -109,7 +109,7 @@ describe("ModelPicker", () => {
   it("calls onBrand when a brand is selected", async () => {
     const { onBrand } = renderPicker();
     fireEvent.click(screen.getByText("fields.brandPlaceholder"));
-    const option = await screen.findByText("Seoul Aqua");
+    const option = await screen.findByText("Jake's Home Appliances");
     fireEvent.click(option);
     expect(onBrand).toHaveBeenCalledWith("brand-1");
   });
@@ -128,7 +128,7 @@ describe("ModelPicker", () => {
     expect(await screen.findByText("Water purifier")).toBeInTheDocument();
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
     expect(
-      await screen.findByText("AQ-500 Purifier (Seoul Aqua · Water purifier)"),
+      await screen.findByText("AQ-500 Purifier (Jake's Home Appliances · Water purifier)"),
     ).toBeInTheDocument();
   });
 
@@ -170,7 +170,7 @@ describe("ModelPicker", () => {
     expect(screen.getByTestId("state")).toHaveTextContent("null|null|null");
     fireEvent.click(screen.getByText("fields.modelPlaceholder"));
     fireEvent.click(
-      await screen.findByText("Máy lọc nước AQ-500 (Seoul Aqua · Máy lọc nước)"),
+      await screen.findByText("Máy lọc nước AQ-500 (Jake's Home Appliances · Máy lọc nước)"),
     );
     expect(screen.getByTestId("state")).toHaveTextContent("brand-1|cat-1|model-1");
   });

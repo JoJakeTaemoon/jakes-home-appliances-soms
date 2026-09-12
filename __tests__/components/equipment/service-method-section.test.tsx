@@ -205,11 +205,11 @@ describe("ServiceMethodSection", () => {
     renderSection({ method: "MAINTENANCE", monthlyMaintenanceFee: 0 }, onChange);
 
     fireEvent.change(screen.getByLabelText("contractNumber"), {
-      target: { value: "HD-20260710/SA-KH0001" },
+      target: { value: "HD-20260710/JH-KH0001" },
     });
 
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ contractNumber: "HD-20260710/SA-KH0001" }),
+      expect.objectContaining({ contractNumber: "HD-20260710/JH-KH0001" }),
     );
   });
 });

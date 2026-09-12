@@ -43,7 +43,7 @@ export const vi: PdfMessages = {
     pageOf: "Trang {page} / {total}",
     signatureCustomer: "KHÁCH HÀNG (Bên ký HĐ)",
     signatureCompany: "CÔNG TY (Đại diện)",
-    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)",
+    seoulAquaLegalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)",
     generatedAt: "Ngày xuất",
     companyBlockTitle: "Thông tin công ty phát hành",
     companyLegalName: "Tên pháp nhân",
@@ -59,7 +59,7 @@ export const vi: PdfMessages = {
   },
   clauses: {
     intro:
-      "Hợp đồng này được ký kết giữa hai bên nêu trên, theo các điều khoản và Quy chế chuẩn của Seoul Aqua.",
+      "Hợp đồng này được ký kết giữa hai bên nêu trên, theo các điều khoản và Quy chế chuẩn của Jake's Home Appliances.",
     rentalTerm:
       "Thời hạn thuê là {term} tháng; thời gian sử dụng bắt buộc 24 tháng. Hủy hợp đồng trong giai đoạn bắt buộc chịu phí phạt 50% số tháng còn lại.",
     rentalAutoConvert:

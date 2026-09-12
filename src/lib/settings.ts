@@ -148,7 +148,7 @@ export interface CompanyTaxInfo {
 
 export const COMPANY_TAX_INFO_DEFAULT: CompanyTaxInfo = {
   legalName:
-    "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ ĐẠI Á",
+    "CÔNG TY TNHH MỘT THÀNH VIÊN THƯƠNG MẠI VÀ DỊCH VỤ JAKE'S HA",
   address:
     "Số 47 Đường Hoàng Trọng Mậu, Khu dân cư Him Lam, Phường Tân Hưng, TP Hồ Chí Minh, Việt Nam",
   representativeName: "CHOI ONE HO",

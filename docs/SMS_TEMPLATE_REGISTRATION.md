@@ -1,4 +1,4 @@
-# SMS 문안 등록 현황 — eSMS Brandname `SEOUL AQUA`
+# SMS 문안 등록 현황 — eSMS Brandname `JAKE'S HOME APPLIANCES`
 
 > 실측 기준 2026-09-12. 테스트 번호 `0961122564`, 실제 발송(LIVE) 24건.
 > 재현 명령: `ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts <번호>`
@@ -40,9 +40,9 @@
 
 | 언어 | 결과 | 본문 | 패턴 길이 | 세그먼트 |
 |---|:-:|---|---:|---:|
-| 베트남어 (VI) | ✅ | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
-| 영어 (EN) | ✅ | `MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.` | 128 | 1 |
-| 한국어 (KO) | ✅ | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
+| 베트남어 (VI) | ✅ | `TB BAO TRI DINH KY: KTV cua JAKE'S HOME APPLIANCES du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
+| 영어 (EN) | ✅ | `MAINTENANCE NOTICE: JAKE'S HOME APPLIANCES technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.` | 128 | 1 |
+| 한국어 (KO) | ✅ | `TB BAO TRI DINH KY: KTV cua JAKE'S HOME APPLIANCES du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
 
 한국어 칸은 베트남어와 같은 본문입니다. 한국어 문안은 등록돼 있지 않아, 한국어 고객에게도 승인된 베트남어 문안을 보내고 있습니다. 통과한 것은 한국어가 아니라 베트남어 본문입니다.
 
@@ -57,49 +57,49 @@
 **고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
 
 - 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.`
+- 본문: `[JakeApp] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.`
 - 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
 - 길이: 96자 · 2세그먼트 (유니코드)
 
 **고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
 
 - 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}`
+- 본문: `[JakeApp] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}`
 - 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 90자 · 2세그먼트 (유니코드)
 
 **직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
 
 - 발송 시점: 직원이 비밀번호 찾기 요청 시
-- 본문: `[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.`
+- 본문: `[JakeApp] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.`
 - 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
 - 길이: 117자 · 2세그먼트 (유니코드)
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
 - 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}`
+- 본문: `[JakeApp] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}`
 - 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
 - 길이: 75자 · 2세그먼트 (유니코드)
 
 **서비스 요청 반려** · `SMS_SR_REJECTED`
 
 - 발송 시점: 사무실이 반려할 때
-- 본문: `[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}`
+- 본문: `[JakeApp] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}`
 - 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
 - 길이: 64자 · 1세그먼트 (유니코드)
 
 **임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
 
 - 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}`
+- 본문: `[JakeApp] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}`
 - 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 81자 · 2세그먼트 (유니코드)
 
 **임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
 
 - 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}`
+- 본문: `[JakeApp] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}`
 - 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 99자 · 2세그먼트 (유니코드)
 
@@ -108,49 +108,49 @@
 **고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
 
 - 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.`
+- 본문: `[JakeApp] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.`
 - 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
 - 길이: 99자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
 
 **고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
 
 - 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}`
+- 본문: `[JakeApp] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}`
 - 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 81자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
 
 **직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
 
 - 발송 시점: 직원이 비밀번호 찾기 요청 시
-- 본문: `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.`
+- 본문: `[JakeApp] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.`
 - 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
 - 길이: 115자 · 1세그먼트 (GSM-7)
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
 - 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}`
+- 본문: `[JakeApp] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}`
 - 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
 - 길이: 90자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
 
 **서비스 요청 반려** · `SMS_SR_REJECTED`
 
 - 발송 시점: 사무실이 반려할 때
-- 본문: `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}`
+- 본문: `[JakeApp] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}`
 - 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
 - 길이: 76자 · 1세그먼트 (GSM-7)
 
 **임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
 
 - 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}`
+- 본문: `[JakeApp] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}`
 - 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 80자 · 1세그먼트 (GSM-7)
 
 **임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
 
 - 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}`
+- 본문: `[JakeApp] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}`
 - 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 99자 · 1세그먼트 (GSM-7)
 
@@ -159,49 +159,49 @@
 **고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
 
 - 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.`
+- 본문: `[JakeApp] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.`
 - 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
 - 길이: 86자 · 2세그먼트 (유니코드)
 
 **고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
 
 - 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}`
+- 본문: `[JakeApp] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}`
 - 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 77자 · 2세그먼트 (유니코드)
 
 **직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
 
 - 발송 시점: 직원이 비밀번호 찾기 요청 시
-- 본문: `[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.`
+- 본문: `[JakeApp] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.`
 - 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
 - 길이: 75자 · 2세그먼트 (유니코드)
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
 - 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}`
+- 본문: `[JakeApp] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}`
 - 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
 - 길이: 63자 · 1세그먼트 (유니코드)
 
 **서비스 요청 반려** · `SMS_SR_REJECTED`
 
 - 발송 시점: 사무실이 반려할 때
-- 본문: `[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}`
+- 본문: `[JakeApp] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}`
 - 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
 - 길이: 56자 · 1세그먼트 (유니코드)
 
 **임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
 
 - 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}`
+- 본문: `[JakeApp] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}`
 - 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 68자 · 1세그먼트 (유니코드)
 
 **임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
 
 - 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}`
+- 본문: `[JakeApp] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}`
 - 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
 - 길이: 80자 · 2세그먼트 (유니코드)
 
@@ -209,7 +209,7 @@
 
 §5의 본문은 현재 코드에 들어 있는 그대로입니다. 등록을 요청하기 전에 세 가지를 정하는 편이 좋습니다. 한번 등록하면 문구를 바꿀 때마다 재심사를 받아야 하기 때문입니다.
 
-**첫째, `[SeoulAqua] ` 프리픽스를 뺄지.** 브랜드네임이 이미 발신자명으로 표시되므로 본문에 회사명을 반복할 이유가 없습니다. 승인된 정기점검 문안에도 이 프리픽스가 없습니다. 빼면 문안마다 12자를 아낍니다. **빼는 것을 권합니다.**
+**첫째, `[JakeApp] ` 프리픽스를 뺄지.** 브랜드네임이 이미 발신자명으로 표시되므로 본문에 회사명을 반복할 이유가 없습니다. 승인된 정기점검 문안에도 이 프리픽스가 없습니다. 빼면 문안마다 12자를 아낍니다. **빼는 것을 권합니다.**
 
 **둘째, 영어 본문의 가운뎃점을 바꿀지.** 영어 문안 몇 개가 `·` 하나 때문에 유니코드로 분류돼 세그먼트가 두 배입니다. `-`로 바꾸면 GSM-7로 돌아가 절반 비용이 됩니다. **바꾸는 것을 권합니다.**
 
@@ -237,39 +237,39 @@
 
 ---
 
-**Đăng ký thêm mẫu tin CSKH cho Brandname `SEOUL AQUA`**
+**Đăng ký thêm mẫu tin CSKH cho Brandname `JAKE'S HOME APPLIANCES`**
 
 Kính gửi anh/chị,
 
-Hệ thống của Seoul Aqua đã gửi thử toàn bộ mẫu tin qua API eSMS. Hiện chỉ có mẫu «Nhắc lịch bảo trì định kỳ» được duyệt; các mẫu còn lại trả về `CodeResult 146 — Sai template Brandname CSKH`.
+Hệ thống của Jake's Home Appliances đã gửi thử toàn bộ mẫu tin qua API eSMS. Hiện chỉ có mẫu «Nhắc lịch bảo trì định kỳ» được duyệt; các mẫu còn lại trả về `CodeResult 146 — Sai template Brandname CSKH`.
 
 Chúng tôi xin đăng ký thêm các mẫu tin dưới đây. Mỗi ngôn ngữ là một nội dung riêng nên cần duyệt riêng. Phần trong dấu `{ }` là tham số thay đổi theo từng tin, kèm độ dài tối đa.
 
 | # | Tình huống | Ngôn ngữ | Nội dung |
 |---:|---|---|---|
-| 1 | Cấp tài khoản cổng khách hàng | Tiếng Việt | `[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.` |
-| 2 | Cấp tài khoản cổng khách hàng | Tiếng Anh | `[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.` |
-| 3 | Cấp tài khoản cổng khách hàng | Tiếng Hàn | `[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.` |
-| 4 | Đặt lại mật khẩu cổng khách hàng | Tiếng Việt | `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` |
-| 5 | Đặt lại mật khẩu cổng khách hàng | Tiếng Anh | `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` |
-| 6 | Đặt lại mật khẩu cổng khách hàng | Tiếng Hàn | `[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}` |
-| 7 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Việt | `[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.` |
-| 8 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Anh | `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.` |
-| 9 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Hàn | `[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.` |
-| 10 | Duyệt yêu cầu dịch vụ có phí | Tiếng Việt | `[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}` |
-| 11 | Duyệt yêu cầu dịch vụ có phí | Tiếng Anh | `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}` |
-| 12 | Duyệt yêu cầu dịch vụ có phí | Tiếng Hàn | `[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}` |
-| 13 | Từ chối yêu cầu dịch vụ | Tiếng Việt | `[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}` |
-| 14 | Từ chối yêu cầu dịch vụ | Tiếng Anh | `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` |
-| 15 | Từ chối yêu cầu dịch vụ | Tiếng Hàn | `[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}` |
-| 16 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Việt | `[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}` |
-| 17 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Anh | `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}` |
-| 18 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Hàn | `[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}` |
-| 19 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Việt | `[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}` |
-| 20 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Anh | `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}` |
-| 21 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Hàn | `[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}` |
+| 1 | Cấp tài khoản cổng khách hàng | Tiếng Việt | `[JakeApp] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.` |
+| 2 | Cấp tài khoản cổng khách hàng | Tiếng Anh | `[JakeApp] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.` |
+| 3 | Cấp tài khoản cổng khách hàng | Tiếng Hàn | `[JakeApp] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.` |
+| 4 | Đặt lại mật khẩu cổng khách hàng | Tiếng Việt | `[JakeApp] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` |
+| 5 | Đặt lại mật khẩu cổng khách hàng | Tiếng Anh | `[JakeApp] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` |
+| 6 | Đặt lại mật khẩu cổng khách hàng | Tiếng Hàn | `[JakeApp] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}` |
+| 7 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Việt | `[JakeApp] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.` |
+| 8 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Anh | `[JakeApp] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.` |
+| 9 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Hàn | `[JakeApp] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.` |
+| 10 | Duyệt yêu cầu dịch vụ có phí | Tiếng Việt | `[JakeApp] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}` |
+| 11 | Duyệt yêu cầu dịch vụ có phí | Tiếng Anh | `[JakeApp] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}` |
+| 12 | Duyệt yêu cầu dịch vụ có phí | Tiếng Hàn | `[JakeApp] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}` |
+| 13 | Từ chối yêu cầu dịch vụ | Tiếng Việt | `[JakeApp] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}` |
+| 14 | Từ chối yêu cầu dịch vụ | Tiếng Anh | `[JakeApp] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` |
+| 15 | Từ chối yêu cầu dịch vụ | Tiếng Hàn | `[JakeApp] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}` |
+| 16 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Việt | `[JakeApp] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}` |
+| 17 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Anh | `[JakeApp] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}` |
+| 18 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Hàn | `[JakeApp] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}` |
+| 19 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Việt | `[JakeApp] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}` |
+| 20 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Anh | `[JakeApp] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}` |
+| 21 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Hàn | `[JakeApp] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}` |
 
-Tần suất dự kiến và mục đích sử dụng của từng mẫu giống hồ sơ Brandname đã nộp: tin chăm sóc khách hàng (CSKH), gửi tới khách hàng đang có hợp đồng thuê hoặc bảo trì với Seoul Aqua.
+Tần suất dự kiến và mục đích sử dụng của từng mẫu giống hồ sơ Brandname đã nộp: tin chăm sóc khách hàng (CSKH), gửi tới khách hàng đang có hợp đồng thuê hoặc bảo trì với Jake's Home Appliances.
 
 Nhờ anh/chị cho biết mẫu nào cần chỉnh sửa để được duyệt, và thời gian dự kiến hoàn tất. Xin cảm ơn.
 

@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 /**
- * Seoul Aqua SOMS — minimal service worker for the technician mobile PWA.
+ * Jake's Home Appliances SOMS — minimal service worker for the technician mobile PWA.
  *
  * Strategy:
  *   - Cache the mobile shell on install (best-effort; missing assets are OK).

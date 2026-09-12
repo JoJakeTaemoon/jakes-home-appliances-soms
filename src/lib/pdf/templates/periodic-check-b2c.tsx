@@ -15,7 +15,7 @@ const WATERMARK_LOGO_PATH = path.join(
   process.cwd(),
   "public",
   "logo",
-  "seoul-aqua-logo.jpg",
+  "jakes-home-appliances-logo.jpg",
 );
 
 const HANGUL_RE = /[가-힯ᄀ-ᇿ㄰-㆏ꥠ-꥿]/;
@@ -384,10 +384,10 @@ function CopyBlock({
       </View>
       <View style={styles.brand}>
         <View style={{ flexDirection: "row", alignItems: "baseline", flex: 1 }}>
-          <Text style={styles.brandTitle}>SEOUL AQUA </Text>
-          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)</Text>
+          <Text style={styles.brandTitle}>JAKE'S HOME APPLIANCES </Text>
+          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)</Text>
         </View>
-        <Text style={styles.brandLegal}>cs@seoulaqua.com.vn · {payload.hqPhone}</Text>
+        <Text style={styles.brandLegal}>cs@jakeshomeappliances.com.vn · {payload.hqPhone}</Text>
       </View>
 
       <Text style={[styles.docTitle, autoFont(P.title)]}>{P.title}</Text>

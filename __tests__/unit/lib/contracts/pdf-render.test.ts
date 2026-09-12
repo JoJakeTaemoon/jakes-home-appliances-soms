@@ -73,7 +73,7 @@ const customerB2B: PdfCustomerSummary = {
 
 const baseContract: PdfContractView = {
   id: "k1",
-  contractNumber: "HD-20260526/SA-KH00001",
+  contractNumber: "HD-20260526/JH-KH00001",
   type: "RENTAL",
   state: "ACTIVE",
   startDate: new Date("2026-05-26"),
@@ -111,7 +111,7 @@ function makeProps(langPair: PdfLangPair, overrides: Partial<{ contract: PdfCont
     equipment,
     generatedAt: new Date("2026-05-27T00:00:00.000Z"),
     company: {
-      legalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á",
+      legalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA",
       address: "Số 47 Đường Hoàng Trọng Mậu, TP Hồ Chí Minh",
       representativeName: "CHOI ONE HO",
       taxCode: "0309395579",
@@ -186,8 +186,8 @@ describe("PDF templates → renderToBuffer", () => {
         customer: customerB2B,
         contract: {
           ...baseContract,
-          contractNumber: "HD-20260526/SA-SHV-A1",
-          parentContractNumber: "HD-20260526/SA-SHV",
+          contractNumber: "HD-20260526/JH-SHV-A1",
+          parentContractNumber: "HD-20260526/JH-SHV",
           amendmentRevision: 1,
           amendmentReason: "Added 2 units on floor 5",
         },

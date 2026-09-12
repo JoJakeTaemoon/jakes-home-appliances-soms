@@ -126,7 +126,7 @@ export function determineIsPaid(input: PricingInputs): PricingDecision {
         return { isPaid: false, reason: "under-warranty" };
       }
       // A maintenance contract covers periodic but not arbitrary repair work,
-      // unless the equipment is rental (where Seoul Aqua still owns the unit).
+      // unless the equipment is rental (where Jake's Home Appliances still owns the unit).
       if (underRental) {
         return { isPaid: false, reason: "covered-by-maintenance" };
       }

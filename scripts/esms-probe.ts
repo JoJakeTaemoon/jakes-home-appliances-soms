@@ -5,7 +5,7 @@
  * (`sendNotification()` → provider factory), so every attempt lands in
  * `NotificationLog` and shows up at /o/admin/notification-logs exactly like a
  * production send. That is how we find out which CSKH bodies ViHAT has
- * registered for brandname `SEOUL AQUA`: `CodeResult 146` means that body
+ * registered for brandname `JAKE'S HOME APPLIANCES`: `CodeResult 146` means that body
  * still needs registering, `104` means the brandname, `101` the credentials.
  *
  * Defaults to sandbox: eSMS validates the request but delivers nothing and
@@ -98,7 +98,7 @@ function varsFor(seq: number): Record<string, string> {
     time: "09:00",
     technician: "Tran B",
     service: "INSPECTION",
-    url: "portal.seoulaqua.com.vn",
+    url: "portal.jakeshomeappliances.com.vn",
     pwd: `Ab12Cd${String(n).padStart(5, "0").slice(-5)}`,
     phone,
     code: String(100000 + (n % 900000)).slice(-6),

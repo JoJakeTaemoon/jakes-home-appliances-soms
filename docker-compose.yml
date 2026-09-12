@@ -1,7 +1,7 @@
-# Seoul Aqua SOMS — staging stack (Ubuntu 22.04, 103.27.60.70).
+# Jake's Home Appliances SOMS — staging stack (Ubuntu 22.04, 103.27.60.70).
 #
 # Host layout:
-#   /opt/seoul-aqua-soms/
+#   /opt/jakes-home-appliances-soms/
 #     ├── .env                 # secrets, chmod 600, deploy:deploy
 #     ├── docker-compose.yml   # this file (rsynced from repo by deploy script)
 #     ├── Caddyfile            # reverse-proxy config
@@ -18,9 +18,9 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-soms}
       POSTGRES_DB: ${POSTGRES_DB:-soms}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in /opt/seoul-aqua-soms/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in /opt/jakes-home-appliances-soms/.env}
     volumes:
-      - /opt/seoul-aqua-soms/postgres-data:/var/lib/postgresql/data
+      - /opt/jakes-home-appliances-soms/postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soms} -d ${POSTGRES_DB:-soms}"]
       interval: 10s
@@ -33,14 +33,14 @@ services:
       - "5432"
 
   app:
-    image: ${APP_IMAGE:-ghcr.io/jojaketaemoon/seoulaqua-soms:staging}
+    image: ${APP_IMAGE:-ghcr.io/jojaketaemoon/jakeshomeapp-soms:staging}
     pull_policy: always
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     env_file:
-      - /opt/seoul-aqua-soms/.env
+      - /opt/jakes-home-appliances-soms/.env
     environment:
       # Override `localhost` Postgres URLs from .env.example — inside the
       # compose network Prisma talks to the service hostname `postgres`.
@@ -50,7 +50,7 @@ services:
       PORT: "3000"
       HOSTNAME: "0.0.0.0"
     volumes:
-      - /opt/seoul-aqua-soms/uploads:/app/uploads
+      - /opt/jakes-home-appliances-soms/uploads:/app/uploads
     expose:
       - "3000"
     healthcheck:
@@ -71,6 +71,6 @@ services:
       - "443:443"
       - "443:443/udp"  # HTTP/3
     volumes:
-      - /opt/seoul-aqua-soms/Caddyfile:/etc/caddy/Caddyfile:ro
-      - /opt/seoul-aqua-soms/caddy-data:/data
-      - /opt/seoul-aqua-soms/caddy-config:/config
+      - /opt/jakes-home-appliances-soms/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/jakes-home-appliances-soms/caddy-data:/data
+      - /opt/jakes-home-appliances-soms/caddy-config:/config

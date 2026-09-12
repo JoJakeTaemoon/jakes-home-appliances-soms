@@ -1,11 +1,11 @@
-# Product Requirements Document — Seoul Aqua SOMS
+# Product Requirements Document — Jake's Home Appliances SOMS
 
 > **Status:** Draft v1.0 — 2026-05-27
-> **Owner:** Product (Seoul Aqua) · Engineering (this repo)
+> **Owner:** Product (Jake's Home Appliances) · Engineering (this repo)
 > **Audience:** product, engineering, design, ops, client stakeholders
 > **Source documents:** [`SPEC.md`](./SPEC.md) (canonical), [`PROCESS_NOTES.md`](./PROCESS_NOTES.md), [`DATA_MODEL_NOTES.md`](./DATA_MODEL_NOTES.md), [`DOCUMENT_TEMPLATES.md`](./DOCUMENT_TEMPLATES.md), [`PROJECT_PLAN.md`](./PROJECT_PLAN.md)
 
-This PRD enumerates **every expected use case** of the Seoul Aqua Service Operation Management System (SOMS) along with the actors, preconditions, main + alternate flows, postconditions, and acceptance criteria for each. It uses tables and Mermaid diagrams throughout for visual reference.
+This PRD enumerates **every expected use case** of the Jake's Home Appliances Service Operation Management System (SOMS) along with the actors, preconditions, main + alternate flows, postconditions, and acceptance criteria for each. It uses tables and Mermaid diagrams throughout for visual reference.
 
 ---
 
@@ -43,7 +43,7 @@ This PRD enumerates **every expected use case** of the Seoul Aqua Service Operat
 
 ## 1. Executive Summary
 
-Seoul Aqua SOMS is a **multi-tenant customer + service-operation management system** for Seoul Aqua — a Vietnam-based seller, renter, and maintainer of water purifiers, bidets, air purifiers, and household water-treatment products. It replaces a patchwork of paper forms, spreadsheets, and KakaoTalk messages with a single source of truth for customers, contracts, equipment, scheduled visits, payments, and tax invoices.
+Jake's Home Appliances SOMS is a **multi-tenant customer + service-operation management system** for Jake's Home Appliances — a Vietnam-based seller, renter, and maintainer of water purifiers, bidets, air purifiers, and household water-treatment products. It replaces a patchwork of paper forms, spreadsheets, and KakaoTalk messages with a single source of truth for customers, contracts, equipment, scheduled visits, payments, and tax invoices.
 
 ### Why it exists
 
@@ -115,7 +115,7 @@ graph TD
 
 | System | Role | When called |
 |---|---|---|
-| **eSMS.vn** | SMS provider (Brandname `SeoulAqua`) | Phase 3.5+ — visit reminders, OTP-like flows, payment escalation |
+| **eSMS.vn** | SMS provider (Brandname `JakeApp`) | Phase 3.5+ — visit reminders, OTP-like flows, payment escalation |
 | **Resend** | Transactional email | Phase 3.5+ — receipts, portal welcomes, early-stage reminders |
 | **Viettel SInvoice** | Vietnamese e-tax invoice issuance (Phase 8+) | When B2B tax invoice issued |
 | **Supabase Postgres** | Primary database | All read/write |
@@ -141,7 +141,7 @@ graph TD
 |---|---|
 | Replacing accounting / general-ledger system | SOMS exports to accountant; full GL is out of scope |
 | Inventory / warehouse management (full stock control) | v1 tracks Equipment lifecycle but not warehouse SKUs / reorder points |
-| Manufacturing / production planning | Seoul Aqua doesn't manufacture — products are sourced |
+| Manufacturing / production planning | Jake's Home Appliances doesn't manufacture — products are sourced |
 | HR / payroll | Staff records are for permissions only, not HR |
 | Marketing campaigns (CRM features) | v1 has opt-out flags + segmentation hooks but no campaign builder |
 | Public-facing storefront / e-commerce | Sales originate from office staff or technician referrals |
@@ -160,7 +160,7 @@ graph LR
         T[Technicians<br/>mobile PWA]
         C[Customers<br/>mobile PWA portal]
     end
-    subgraph soms[Seoul Aqua SOMS]
+    subgraph soms[Jake's Home Appliances SOMS]
         APP[Next.js 16 App<br/>+ API routes]
         DB[(PostgreSQL<br/>via Prisma)]
         OBJ[(Object Storage<br/>uploads/PDFs)]
@@ -283,7 +283,7 @@ erDiagram
 | **CustomerContact** | Person tied to a customer or site | `role` (CONTRACT_PARTY / OPS_CONTACT), `scope` (CUSTOMER / SITE), `siteId?`, `phone1`, `email`, `language`, `portalEnabled`, `smsOptOut`, `emailOptOut`, `mustChangePassword` | — |
 | **EquipmentModel** | Catalog of products company sells/rents | `modelCode`, `name`, `category`, `filterPolicy`, `currentRetailPrice` | modelCode |
 | **Equipment** | Installed unit at a customer/site | `customerId`, `siteId?`, `modelCode`, `serialNumber`, `installedAt`, `status`, `ownership` | — |
-| **Contract** | Rental/sale/maintenance agreement | `contractNumber`, `customerId`, `type` (SALE/RENTAL/MAINTENANCE), `state`, `monthlyMaintenanceFee`, `parentContractId`, `amendmentRevision`, `filterPolicy`, `legacyContractNumber` | HD-YYYYmmDD/SA-KH#### or HD-YYYYmmDD/SA-{shortcode} |
+| **Contract** | Rental/sale/maintenance agreement | `contractNumber`, `customerId`, `type` (SALE/RENTAL/MAINTENANCE), `state`, `monthlyMaintenanceFee`, `parentContractId`, `amendmentRevision`, `filterPolicy`, `legacyContractNumber` | HD-YYYYmmDD/JH-KH#### or HD-YYYYmmDD/JH-{shortcode} |
 | **ServiceRequest** | Customer-submitted request | `customerId`, `type` (INSPECTION/REPAIR/PART_REPLACEMENT/RELOCATION), `isPaid`, `state`, `requestedAt` | SR-### |
 | **Visit** | Single technician field call | `customerId`, `leadTechnicianId`, `collaboratorTechnicianIds[]`, `scheduledFor`, `state`, `serviceRequestId?` | — |
 | **Payment** | Cash or bank-transfer collection | `visitId?`, `contractId?`, `method`, `expectedAmount`, `actualAmount`, `collectedAt`, `handedOverAt`, `state` | — |
@@ -387,7 +387,7 @@ erDiagram
 | **Actor** | CustomerContact (any role with `portalEnabled=true`) |
 | **Status** | 🟢 v1 (Phase 3.5) |
 | **Preconditions** | Contact has portal account (auto-created on contract activation) |
-| **Main flow** | 1. Open portal at `portal.seoulaqua.com.vn`. 2. Enter phone + password. 3. System verifies, mints JWT with `aud='customer'`. 4. **If `mustChangePassword=true`** → force password change screen. 5. Else → dashboard. |
+| **Main flow** | 1. Open portal at `portal.jakeshomeappliances.com.vn`. 2. Enter phone + password. 3. System verifies, mints JWT with `aud='customer'`. 4. **If `mustChangePassword=true`** → force password change screen. 5. Else → dashboard. |
 | **Alternate: shared phone (A.13 b)** | If two contacts share `phone1`, both can log in independently. Disambiguation by entering full name OR by selecting from a list after phone is entered. |
 | **Postconditions** | CustomerSession row; AuditLog `CUSTOMER_LOGIN_SUCCESS`. |
 
@@ -609,7 +609,7 @@ See [UC-ST-04](#uc-st-04--move-equipment-between-sites).
 |---|---|
 | **Actor** | STAFF+ |
 | **Status** | 🟢 v1 (Phase 3) |
-| **Main flow** | 1. Customer detail → "+ Contract". 2. Type = SALE. 3. Pick equipment model + serial. 4. Price, delivery date. 5. System generates code `HD-YYYYmmDD/SA-KH####`. 6. PDF rendered using `docs/DOCUMENT_TEMPLATES.md` template #1. 7. Customer signs (paper today; tablet e-sig Phase 8+). 8. State → `ACTIVE`. 9. Equipment created with `ownership='CUSTOMER'`. |
+| **Main flow** | 1. Customer detail → "+ Contract". 2. Type = SALE. 3. Pick equipment model + serial. 4. Price, delivery date. 5. System generates code `HD-YYYYmmDD/JH-KH####`. 6. PDF rendered using `docs/DOCUMENT_TEMPLATES.md` template #1. 7. Customer signs (paper today; tablet e-sig Phase 8+). 8. State → `ACTIVE`. 9. Equipment created with `ownership='CUSTOMER'`. |
 | **Receipt** | Triggers payment flow → see [UC-PY-02](#uc-py-02--bank-transfer-recording). |
 
 #### UC-CT-02 — Create B2C rental contract
@@ -635,7 +635,7 @@ See [UC-ST-04](#uc-st-04--move-equipment-between-sites).
 |---|---|
 | **Actor** | STAFF+ |
 | **Status** | 🟢 v1 |
-| **Main flow** | 1. B2B customer → "+ Contract". 2. Type SALE or RENTAL. 3. Add 1..N equipment lines (each linked to a Site if B2B). 4. Per-line price. 5. Contract code `HD-YYYYmmDD/SA-{shortcode}` (e.g. `HD-20260526/SA-SHV`). 6. Generate B2B PDF (DOCUMENT_TEMPLATES.md #2). |
+| **Main flow** | 1. B2B customer → "+ Contract". 2. Type SALE or RENTAL. 3. Add 1..N equipment lines (each linked to a Site if B2B). 4. Per-line price. 5. Contract code `HD-YYYYmmDD/JH-{shortcode}` (e.g. `HD-20260526/JH-SHV`). 6. Generate B2B PDF (DOCUMENT_TEMPLATES.md #2). |
 | **Tax invoice** | All B2B contracts trigger tax invoice flow (D.5 confirmed). |
 
 #### UC-CT-05 — Issue B2B Appendix (amendment)
@@ -1312,7 +1312,7 @@ sequenceDiagram
     SF->>SYS: Add Site B (HN branch)
     SF->>SYS: Add Site C (DN branch)
     SF->>SYS: Add Ops contact per site (scope=SITE)
-    SF->>SYS: Create B2B Contract HD-20260526/SA-SHV
+    SF->>SYS: Create B2B Contract HD-20260526/JH-SHV
     Note over SYS: Contract covers 12 equipment across 3 sites
     SF->>SYS: Set tax invoice as required (D.5)
     CP-->>SF: Signed contract

@@ -183,14 +183,14 @@ describe("bulkRegisterEquipmentSchema — 4-step wizard fields", () => {
       ...base,
       serviceType: "SALE",
       salePrice: 3000000,
-      contractNumber: "HD-20260710/SA-KH0001",
+      contractNumber: "HD-20260710/JH-KH0001",
       serviceConfig: {
         inspectionCycleDays: 180,
         filters: [{ consumableId: "c1", quantity: 1, useCycleDays: 90 }],
       },
     });
     expect(res.success).toBe(true);
-    expect(res.data?.contractNumber).toBe("HD-20260710/SA-KH0001");
+    expect(res.data?.contractNumber).toBe("HD-20260710/JH-KH0001");
     expect(res.data?.serviceConfig?.inspectionCycleDays).toBe(180);
     expect(res.data?.serviceConfig?.filters).toHaveLength(1);
     expect(res.data?.serviceConfig?.filters[0]).toMatchObject({

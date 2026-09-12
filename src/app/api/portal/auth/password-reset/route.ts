@@ -26,7 +26,7 @@ import { sendNotification } from "@/lib/notifications/send";
 import type { NotificationLocale } from "@/lib/notifications/types";
 import { HQ_PHONE } from "@/lib/config/company";
 
-const PORTAL_URL = "portal.seoulaqua.com.vn";
+const PORTAL_URL = "portal.jakeshomeappliances.com.vn";
 
 export async function POST(request: NextRequest) {
   try {

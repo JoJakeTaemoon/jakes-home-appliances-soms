@@ -152,8 +152,8 @@ const LABELS: Record<"ko" | "vi" | "en", LabelDict> = {
 };
 
 const COMPANY = {
-  legalName: "CÔNG TY TNHH MTV TM&DV ĐẠI Á",
-  brandName: "SEOUL AQUA",
+  legalName: "CÔNG TY TNHH MTV TM&DV JAKE'S HA",
+  brandName: "JAKE'S HOME APPLIANCES",
   address: "TP. HCM, Việt Nam",
   taxCode: "0316XXXXXX",
 };

@@ -21,11 +21,11 @@
 | Item | Default | Status | Notes / TODO |
 |---|---|---|---|
 | Production hosting | (Source repo) vhost.vn target / (Portfolio) Vercel+Supabase | ⚪ Deferred | Local-first; deployment deferred per 2026-05-27 user decision |
-| Local Postgres | **Existing Homebrew Postgres 18.3** on `/tmp:5432`, db `seoul_aqua_soms` (already created), user `jake` (socket auth) | 🟢 | Connection: `postgresql://jake@localhost:5432/seoul_aqua_soms` |
+| Local Postgres | **Existing Homebrew Postgres 18.3** on `/tmp:5432`, db `jakes_home_appliances_soms` (already created), user `jake` (socket auth) | 🟢 | Connection: `postgresql://jake@localhost:5432/jakes_home_appliances_soms` |
 | Local object storage | **Local filesystem** under `./uploads/` (already in .gitignore) | 🟢 | TODO: swap to Supabase Storage on prod cutover |
 | Environment file | `.env` (gitignored) with `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `REFRESH_SECRET`, `SMS_PROVIDER=mock`, `EMAIL_PROVIDER=mock` | 🟢 | `.env.example` committed as reference |
-| Domain `seoulaqua.com.vn` | **NOT purchased yet** — local uses `http://localhost:3000` | 🟡 | TODO: purchase before any client demo |
-| `portal.seoulaqua.com.vn` subdomain | Local uses `http://localhost:3000/portal` path (no subdomain split in local) | 🟡 | TODO: DNS + middleware host routing on prod cutover |
+| Domain `jakeshomeappliances.com.vn` | **NOT purchased yet** — local uses `http://localhost:3000` | 🟡 | TODO: purchase before any client demo |
+| `portal.jakeshomeappliances.com.vn` subdomain | Local uses `http://localhost:3000/portal` path (no subdomain split in local) | 🟡 | TODO: DNS + middleware host routing on prod cutover |
 | Email DKIM/SPF/DMARC | n/a (mock provider) | ⚪ Deferred | TODO: set up before prod email cutover |
 
 ## B. Authentication
@@ -107,7 +107,7 @@
 | Channel routing | `src/lib/notifications/router.ts` — SMS for urgent, Email for non-urgent, Hybrid for credentials | 🟢 | Matrix in DOCUMENT_TEMPLATES.md §C |
 | Template structure | Per-template TSX (email) or string template (SMS), keyed by template code, with locale variants | 🟢 | |
 | Opt-out flags | `CustomerContact.smsOptOut` / `emailOptOut`; system messages ignore opt-out | 🟢 | F.3 confirmed |
-| eSMS Brandname | `SeoulAqua` (7 chars) | 🟢 | Application form in `docs/SMS_BRANDNAME_APPLICATION.md`; TODO submit to eSMS |
+| eSMS Brandname | `JakeApp` (7 chars) | 🟢 | Application form in `docs/SMS_BRANDNAME_APPLICATION.md`; TODO submit to eSMS |
 
 ## I. Mobile / PWA
 
@@ -179,8 +179,8 @@
 When local implementation reaches Phase 7 completion, this list must be cleared before any deployment:
 
 1. **eSMS.vn Brandname registration** — submit application, await 2-3 week approval
-2. **Resend account** + `seoulaqua.com.vn` domain verification + DKIM/SPF/DMARC
-3. **Domain purchase** `seoulaqua.com.vn` + DNS A/CNAME records
+2. **Resend account** + `jakeshomeappliances.com.vn` domain verification + DKIM/SPF/DMARC
+3. **Domain purchase** `jakeshomeappliances.com.vn` + DNS A/CNAME records
 4. **Supabase production project** + connection strings
 5. **Vercel project** (source + portfolio) + env vars + preview deploys
 6. **Object storage** swap from local FS to Supabase Storage
@@ -191,7 +191,7 @@ When local implementation reaches Phase 7 completion, this list must be cleared 
 11. **Branch protection rules** on `main` (currently can push directly)
 12. **CI workflow** for source repo (build + test gates on PR)
 13. **Backup verification** — run a Supabase restore drill before launch
-14. **DNS propagation** for `portal.seoulaqua.com.vn` subdomain + middleware host-routing
+14. **DNS propagation** for `portal.jakeshomeappliances.com.vn` subdomain + middleware host-routing
 15. **Viettel SInvoice** account (Phase 8+ — not needed for v1 launch but plan ahead)
 16. **Tablet e-signature hardware** decision (Phase 8+ TODO)
 17. **Zalo OA + Zalo Mini App** scoping (Phase 8+ TODO, F.1)

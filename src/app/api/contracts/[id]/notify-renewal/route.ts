@@ -106,7 +106,7 @@ export const POST = defineMutation({
         contract_no: contract.contractNumber,
         end_date: contract.endDate.toISOString().slice(0, 10),
         days_remaining: String(daysRemaining),
-        url: "https://portal.seoulaqua.com.vn",
+        url: "https://portal.jakeshomeappliances.com.vn",
         hq_phone: "028-1234-5678",
       },
       actorType: "USER",

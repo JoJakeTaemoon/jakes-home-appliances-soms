@@ -38,8 +38,8 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#e5e5e5] bg-white">
             <Image
-              src="/logo/seoul-aqua-logo.jpg"
-              alt="Seoul Aqua"
+              src="/logo/jakes-home-appliances-logo.jpg"
+              alt="Jake's Home Appliances"
               width={36}
               height={36}
               priority
@@ -47,7 +47,7 @@ export function PortalShell({ children }: Readonly<{ children: ReactNode }>) {
           </div>
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold text-[#002A4D]">
-              {contact?.customerName ?? "Seoul Aqua"}
+              {contact?.customerName ?? "Jake's Home Appliances"}
             </div>
             <div className="truncate text-xs text-[#737373]">
               {contact?.name ?? ""}

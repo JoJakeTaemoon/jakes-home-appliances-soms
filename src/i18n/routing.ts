@@ -1,7 +1,7 @@
 import { defineRouting } from "next-intl/routing";
 
 /**
- * Seoul Aqua SOMS supported locales.
+ * Jake's Home Appliances SOMS supported locales.
  *
  * Default is `en` and `localePrefix: "as-needed"` per docs/URL_SCHEME.md §3:
  * a URL with no locale segment is served as `en` in place, with no

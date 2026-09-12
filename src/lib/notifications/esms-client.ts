@@ -5,7 +5,7 @@
  *   https://developers.esms.vn/esms-api/ham-gui-tin/tin-nhan-sms-otp-cskh
  *
  * Account facts confirmed 2026-09-12 (ViHAT deployment sheet "ZBS Seoul"):
- *   - Brandname `SEOUL AQUA` — approved, prepaid balance funded.
+ *   - Brandname `JAKE'S HOME APPLIANCES` — approved, prepaid balance funded.
  *   - `SmsType=2` (CSKH / customer care).
  *   - Only the periodic-inspection body is registered with eSMS so far. Every
  *     other template comes back as `CodeResult=146` until ViHAT registers it;
