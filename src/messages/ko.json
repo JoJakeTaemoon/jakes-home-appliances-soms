@@ -143,7 +143,8 @@
     "reportsChurn": "이탈 분석",
     "reportsDailyVisits": "일일 방문",
     "reportsRevenue": "매출",
-    "reportsTechnicianProductivity": "기사 생산성"
+    "reportsTechnicianProductivity": "기사 생산성",
+    "notificationLogs": "알림 발송 내역"
   },
   "visitsPrint": {
     "title": "일괄 인쇄 (지참 서류)",
@@ -2450,6 +2451,63 @@
       "errorManagerOnAdmin": "매니저는 관리자 사용자를 수정/비활성화할 수 없습니다.",
       "notAllowed": "이 페이지는 관리자 또는 매니저만 접근할 수 있습니다.",
       "noUsersInRole": "이 역할에 사용자가 없습니다."
+    },
+    "notificationLogs": {
+      "title": "알림 발송 내역",
+      "subtitle": "SMS와 이메일 발송 기록입니다. 실패한 건은 사유를 확인하고 다시 보낼 수 있습니다.",
+      "searchPlaceholder": "수신번호, 고객, 서식코드, 오류 내용 검색",
+      "filterStatus": "상태",
+      "filterChannel": "채널",
+      "filterPeriod": "기간",
+      "empty": "발송 내역이 없습니다.",
+      "resend": "재발송",
+      "resending": "발송 중...",
+      "resendQueued": "재발송했습니다.",
+      "resendFailed": "재발송 실패: {reason}",
+      "colSentAt": "발송 시각",
+      "colChannel": "채널",
+      "colTemplate": "서식",
+      "colRecipient": "수신자",
+      "colStatus": "상태",
+      "colResult": "결과",
+      "colProvider": "발송사",
+      "colSegments": "세그먼트",
+      "colSubject": "제목",
+      "bodyRedacted": "비밀번호가 포함된 본문이라 표시하지 않습니다.",
+      "bodyUnavailable": "본문 기록이 없습니다.",
+      "status": {
+        "SENT": "성공",
+        "FAILED": "실패",
+        "MOCKED": "모의발송",
+        "SKIPPED": "건너뜀",
+        "QUEUED": "대기"
+      },
+      "period": {
+        "TODAY": "오늘",
+        "D7": "최근 7일",
+        "D30": "최근 30일"
+      },
+      "compose": "문안 발송",
+      "composeTitle": "문안 선택 발송",
+      "modeCustomer": "고객 선택",
+      "modePhone": "번호 직접 입력",
+      "searchCustomer": "고객명, 고객코드, 전화번호로 검색",
+      "noCustomer": "검색 결과가 없습니다.",
+      "phonePlaceholder": "예: 0961122564",
+      "segments": "{chars}자 · {segments}세그먼트",
+      "cancel": "취소",
+      "sendAction": "발송",
+      "sendDone": "{sent}건 발송했습니다.",
+      "sendFailed": "발송 실패: {reason}",
+      "sending": "발송 중...",
+      "sendPartial": "{sent}건 발송, {failed}건 실패. 아래 목록에서 사유를 확인하세요.",
+      "removeRecipient": "수신자 제외",
+      "pickedCount": "수신자 {count}명 선택됨",
+      "searchHint": "고객을 검색해 수신자를 추가하세요. 여러 명 선택할 수 있습니다.",
+      "pickTemplate": "발송할 문안을 고르세요",
+      "previewLocale": "미리보기 언어",
+      "localeNotice": "고객마다 본인의 언어로 발송됩니다. 위 미리보기 언어는 화면 확인용입니다.",
+      "registeredOnly": "통신사에 등록된 문안만 발송됩니다. 미등록 문안은 코드 146으로 거부되며 사유가 아래 목록에 남습니다."
     }
   },
   "merge": {

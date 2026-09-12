@@ -119,14 +119,29 @@ const SMS_STAFF_RESET_CODE: TemplateDef = {
   },
 };
 
+/**
+ * The one body eSMS has registered for brandname `SEOUL AQUA` (ViHAT sheet
+ * "ZBS Seoul", confirmed 2026-09-12). Three constraints come with that:
+ *
+ *   - The text is fixed. Rewording it — including swapping the hotline for
+ *     `{hq_phone}` — puts the message out of step with what the carrier
+ *     approved, so the number is hardcoded here on purpose.
+ *   - No `[SeoulAqua]` prefix: the brandname is already the sender ID.
+ *   - Vietnamese is written without accents so the message stays a single
+ *     GSM-7 segment. Call sites fold their variables with `toAsciiVi()`.
+ *
+ * No Korean body was registered, so Korean-speaking contacts receive the
+ * Vietnamese one (decision 2026-09-12). The `{equipment}` slot accepts 50
+ * characters and `{datetime}` 40 — call sites truncate.
+ */
 const SMS_VISIT_REMINDER: TemplateDef = {
   code: "SMS_VISIT_REMINDER",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
   bodies: {
-    ko: "[SeoulAqua] {date} {time}, {technician} 기사 방문({service}). 변경 {url}",
-    vi: "[SeoulAqua] {date} {time}, {technician} đến ({service}). Đổi {url}",
-    en: "[SeoulAqua] {date} {time}, {technician} visit ({service}). {url}",
+    ko: "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.",
+    vi: "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.",
+    en: "MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.",
   },
 };
 
@@ -940,3 +955,15 @@ export const TEMPLATES: Record<string, TemplateDef> = {
 };
 
 export const TEMPLATE_CODES = Object.keys(TEMPLATES);
+
+/**
+ * Templates whose rendered body contains a credential. Anything that surfaces
+ * a stored body — the mock provider's console output, the admin delivery-log
+ * screen — must redact these, otherwise a temporary password is readable long
+ * after it was issued.
+ */
+export const CREDENTIAL_TEMPLATE_CODES = new Set([
+  "SMS_PORTAL_WELCOME",
+  "SMS_PASSWORD_RESET",
+  "EMAIL_PORTAL_WELCOME",
+]);

@@ -9,6 +9,7 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
+import { formatDateOrDash as formatDate } from "@/lib/format";
 
 interface RepDetail {
   id: string;
@@ -256,16 +257,6 @@ export default function SalesRepDetailPage() {
       </Tabs>
     </div>
   );
-}
-
-function formatDate(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  if (locale === "vi") {
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  }
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function formatMoney(v: number): string {

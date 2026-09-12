@@ -30,9 +30,19 @@ export function daysBetween(a: Date, b: Date): number {
   return Math.floor((b.getTime() - a.getTime()) / MS_PER_DAY);
 }
 
+/**
+ * Add whole days to an instant, in UTC.
+ *
+ * Every date this touches is a domain due-date persisted as a UTC instant
+ * (contract end, filter next-due, inspection next-due). The local-time
+ * `setDate()` this used to call shifted the resulting calendar day by one on
+ * any machine west of UTC, so a developer in New York and the server in
+ * Vietnam computed different due dates from the same row. Vietnam has no DST,
+ * so UTC day arithmetic and VST day arithmetic agree by construction.
+ */
 export function addDays(base: Date, days: number): Date {
   const d = new Date(base);
-  d.setDate(d.getDate() + days);
+  d.setUTCDate(d.getUTCDate() + days);
   return d;
 }
 

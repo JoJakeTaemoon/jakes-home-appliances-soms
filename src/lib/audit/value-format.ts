@@ -7,6 +7,11 @@
  * entity-resolver map), and small objects/arrays.
  */
 
+import {
+  formatDate as formatDateVst,
+  formatDateTime as formatDateTimeVst,
+} from "@/lib/format";
+
 export type AuditLocale = "ko" | "en" | "vi";
 
 export interface ReferenceIdHint {
@@ -50,26 +55,16 @@ const BOOL_FALSE: Record<AuditLocale, string> = {
 const ISO_FULL = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Audit timestamps render on the VST wall clock like the rest of the app.
+ * The previous implementation used `getDate()` / `getHours()`, so the same
+ * audit row read differently depending on the viewer's machine timezone.
+ */
 function formatDate(iso: string, locale: AuditLocale): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  if (locale === "vi") {
-    const dd = String(d.getDate()).padStart(2, "0");
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    if (ISO_DATE_ONLY.test(iso)) return `${dd}/${mm}/${yyyy}`;
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
-  }
-  // ko + en both use ISO-ish date display
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  if (ISO_DATE_ONLY.test(iso)) return `${yyyy}-${mm}-${dd}`;
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mi = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  if (ISO_DATE_ONLY.test(iso)) return formatDateVst(d, locale);
+  return formatDateTimeVst(d, locale);
 }
 
 function formatNumber(n: number, locale: AuditLocale, money: boolean): string {

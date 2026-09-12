@@ -143,7 +143,8 @@
     "reportsChurn": "Churn",
     "reportsDailyVisits": "Daily visits",
     "reportsRevenue": "Revenue",
-    "reportsTechnicianProductivity": "Tech productivity"
+    "reportsTechnicianProductivity": "Tech productivity",
+    "notificationLogs": "Message log"
   },
   "visitsPrint": {
     "title": "Bulk print (carry documents)",
@@ -2450,6 +2451,63 @@
       "errorManagerOnAdmin": "MANAGER cannot edit or deactivate an ADMIN user.",
       "notAllowed": "This page is only available to ADMIN or MANAGER.",
       "noUsersInRole": "No users in this role."
+    },
+    "notificationLogs": {
+      "title": "Message delivery log",
+      "subtitle": "Every SMS and email the system sent. Failed messages show the reason and can be resent.",
+      "searchPlaceholder": "Search recipient, customer, template code, error",
+      "filterStatus": "Status",
+      "filterChannel": "Channel",
+      "filterPeriod": "Period",
+      "empty": "No messages sent yet.",
+      "resend": "Resend",
+      "resending": "Sending...",
+      "resendQueued": "Resent.",
+      "resendFailed": "Resend failed: {reason}",
+      "colSentAt": "Sent at",
+      "colChannel": "Channel",
+      "colTemplate": "Template",
+      "colRecipient": "Recipient",
+      "colStatus": "Status",
+      "colResult": "Result",
+      "colProvider": "Provider",
+      "colSegments": "Segments",
+      "colSubject": "Subject",
+      "bodyRedacted": "Body withheld — it contains a password.",
+      "bodyUnavailable": "No body stored.",
+      "status": {
+        "SENT": "Sent",
+        "FAILED": "Failed",
+        "MOCKED": "Mocked",
+        "SKIPPED": "Skipped",
+        "QUEUED": "Queued"
+      },
+      "period": {
+        "TODAY": "Today",
+        "D7": "Last 7 days",
+        "D30": "Last 30 days"
+      },
+      "compose": "Send template",
+      "composeTitle": "Send a template",
+      "modeCustomer": "Pick a customer",
+      "modePhone": "Type a number",
+      "searchCustomer": "Search by name, customer code, phone",
+      "noCustomer": "No matches.",
+      "phonePlaceholder": "e.g. 0961122564",
+      "segments": "{chars} chars · {segments} segments",
+      "cancel": "Cancel",
+      "sendAction": "Send",
+      "sendDone": "Sent {sent}.",
+      "sendFailed": "Send failed: {reason}",
+      "sending": "Sending...",
+      "sendPartial": "{sent} sent, {failed} failed. The reasons are in the list below.",
+      "removeRecipient": "Remove recipient",
+      "pickedCount": "{count} recipients selected",
+      "searchHint": "Search for a customer to add recipients. You can pick several.",
+      "pickTemplate": "Pick the template to send",
+      "previewLocale": "Preview language",
+      "localeNotice": "Each customer receives the template in their own language. The preview language is for checking on screen.",
+      "registeredOnly": "Only bodies registered with the carrier can be delivered. An unregistered one is refused with code 146 and the reason is recorded below."
     }
   },
   "merge": {

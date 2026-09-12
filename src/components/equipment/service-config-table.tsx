@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApiQuery } from "@/lib/api/hooks";
 import { useApi, ApiClientError } from "@/lib/api/client";
+import { formatDateOrDash as formatDate } from "@/lib/format";
 
 interface Row {
   kind: "INSPECTION" | "FILTER";
@@ -306,12 +307,3 @@ function DateCell({
   );
 }
 
-function formatDate(iso: string | null | undefined, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  if (locale === "vi") {
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  }
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}

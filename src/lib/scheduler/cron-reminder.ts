@@ -20,6 +20,8 @@
 
 import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
+import { formatDateTime, toAsciiVi } from "@/lib/format";
+import { pickEquipmentLabel } from "@/lib/products/name";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -142,6 +144,20 @@ export async function runVisitReminderD1(
       leadTechnicianId: true,
       scheduledFor: true,
       type: true,
+      equipment: {
+        select: {
+          customDescription: true,
+          serialNumber: true,
+          model: {
+            select: {
+              nameKo: true,
+              nameVi: true,
+              nameEn: true,
+              modelCode: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -165,6 +181,17 @@ export async function runVisitReminderD1(
     try {
       const dateStr = v.scheduledFor.toISOString().slice(0, 10);
       const timeStr = v.scheduledFor.toISOString().slice(11, 16);
+      // The eSMS-approved body has two slots: equipment (50 chars) and the
+      // appointment moment (40). Only Vietnamese and English bodies are
+      // registered, so Korean contacts get the Vietnamese wording — and with
+      // it the Vietnamese date format. Accents are folded because the
+      // approved text is plain GSM-7.
+      const smsLocale = pick.language === "en" ? "en" : "vi";
+      const equipment = v.equipment
+        ? pickEquipmentLabel(v.equipment, smsLocale)
+        : smsLocale === "en"
+          ? "equipment"
+          : "thiet bi";
       const results = await sendNotification({
         templateCode: "SMS_VISIT_REMINDER",
         customerContactId: pick.contactId,
@@ -174,6 +201,8 @@ export async function runVisitReminderD1(
           time: timeStr,
           technician: pick.technician,
           service: v.type,
+          equipment: toAsciiVi(equipment).slice(0, 50),
+          datetime: formatDateTime(v.scheduledFor, smsLocale).slice(0, 40),
           url: `/portal/visits/${v.id}`,
           visit_id: v.id,
         },

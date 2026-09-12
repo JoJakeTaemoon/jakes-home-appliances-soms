@@ -143,7 +143,8 @@
     "reportsChurn": "Phân tích khách rời",
     "reportsDailyVisits": "Lượt thăm hàng ngày",
     "reportsRevenue": "Doanh thu",
-    "reportsTechnicianProductivity": "Năng suất KTV"
+    "reportsTechnicianProductivity": "Năng suất KTV",
+    "notificationLogs": "Lịch sử gửi tin"
   },
   "visitsPrint": {
     "title": "In hàng loạt (Tài liệu mang theo)",
@@ -2450,6 +2451,63 @@
       "errorManagerOnAdmin": "MANAGER không thể sửa hoặc vô hiệu hóa ADMIN.",
       "notAllowed": "Trang này chỉ dành cho ADMIN hoặc MANAGER.",
       "noUsersInRole": "Không có người dùng cho vai trò này."
+    },
+    "notificationLogs": {
+      "title": "Lịch sử gửi tin",
+      "subtitle": "Nhật ký gửi SMS và email. Tin thất bại có thể xem lý do và gửi lại.",
+      "searchPlaceholder": "Tìm theo số nhận, khách hàng, mã mẫu, lỗi",
+      "filterStatus": "Trạng thái",
+      "filterChannel": "Kênh",
+      "filterPeriod": "Thời gian",
+      "empty": "Chưa có tin nào được gửi.",
+      "resend": "Gửi lại",
+      "resending": "Đang gửi...",
+      "resendQueued": "Đã gửi lại.",
+      "resendFailed": "Gửi lại thất bại: {reason}",
+      "colSentAt": "Thời điểm gửi",
+      "colChannel": "Kênh",
+      "colTemplate": "Mẫu tin",
+      "colRecipient": "Người nhận",
+      "colStatus": "Trạng thái",
+      "colResult": "Kết quả",
+      "colProvider": "Nhà cung cấp",
+      "colSegments": "Segment",
+      "colSubject": "Tiêu đề",
+      "bodyRedacted": "Nội dung chứa mật khẩu nên không hiển thị.",
+      "bodyUnavailable": "Không có nội dung được lưu.",
+      "status": {
+        "SENT": "Thành công",
+        "FAILED": "Thất bại",
+        "MOCKED": "Giả lập",
+        "SKIPPED": "Bỏ qua",
+        "QUEUED": "Chờ gửi"
+      },
+      "period": {
+        "TODAY": "Hôm nay",
+        "D7": "7 ngày qua",
+        "D30": "30 ngày qua"
+      },
+      "compose": "Gửi mẫu tin",
+      "composeTitle": "Gửi theo mẫu tin",
+      "modeCustomer": "Chọn khách hàng",
+      "modePhone": "Nhập số trực tiếp",
+      "searchCustomer": "Tìm theo tên, mã khách hàng, số điện thoại",
+      "noCustomer": "Không tìm thấy kết quả.",
+      "phonePlaceholder": "Ví dụ: 0961122564",
+      "segments": "{chars} ký tự · {segments} segment",
+      "cancel": "Hủy",
+      "sendAction": "Gửi",
+      "sendDone": "Đã gửi {sent} tin.",
+      "sendFailed": "Gửi thất bại: {reason}",
+      "sending": "Đang gửi...",
+      "sendPartial": "Gửi {sent} tin, {failed} tin thất bại. Xem lý do trong danh sách bên dưới.",
+      "removeRecipient": "Bỏ người nhận",
+      "pickedCount": "Đã chọn {count} người nhận",
+      "searchHint": "Tìm khách hàng để thêm người nhận. Có thể chọn nhiều người.",
+      "pickTemplate": "Chọn mẫu tin cần gửi",
+      "previewLocale": "Ngôn ngữ xem trước",
+      "localeNotice": "Mỗi khách hàng nhận tin theo ngôn ngữ của họ. Ngôn ngữ xem trước chỉ dùng để kiểm tra trên màn hình.",
+      "registeredOnly": "Chỉ gửi được nội dung đã đăng ký với nhà mạng. Mẫu chưa đăng ký bị từ chối với mã 146 và lý do được ghi lại bên dưới."
     }
   },
   "merge": {

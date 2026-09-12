@@ -1039,6 +1039,36 @@ Giá trị mặc định:
 
 ---
 
+### 15.4 Lịch sử gửi tin (ADMIN · MANAGER)
+
+Màn hình kiểm tra xem SMS và email gửi cho khách hàng có đến nơi hay không. Mở từ thanh bên: «Cài đặt → Lịch sử gửi tin».
+
+Danh sách hiển thị:
+- Thời điểm gửi, kênh (SMS / email), mã mẫu tin, số nhận và tên khách hàng
+- Trạng thái — Thành công / Thất bại / Giả lập / Bỏ qua / Chờ gửi
+- Kết quả — mã tin của nhà cung cấp khi thành công, nguyên văn lý do khi thất bại
+
+Ý nghĩa từng trạng thái:
+- **Thành công**: eSMS đã nhận tin. Việc nhà mạng giao đến máy khách là bước riêng.
+- **Giả lập**: tin không hề được gửi đi — môi trường thử nghiệm hoặc chế độ sandbox.
+- **Bỏ qua**: khách đã từ chối nhận, hoặc liên hệ không có số điện thoại / email.
+- **Thất bại**: nhà cung cấp từ chối. Lý do kèm mã số: `146` nghĩa là nội dung chưa đăng ký với nhà mạng, `104` là vấn đề brandname, `101` là sai khóa API.
+
+Tin thất bại có nút «Gửi lại» ở cuối dòng. Lần gửi lại được dựng lại từ mẫu tin và liên hệ hiện tại chứ không phát lại nội dung đã lưu, nên sau khi sửa số điện thoại hoặc sau khi nội dung được duyệt thì chỉ cần bấm nút. Bản ghi thất bại cũ vẫn giữ nguyên, lần gửi lại được ghi thành một dòng mới.
+
+Tin chứa mật khẩu tạm (mời vào cổng khách hàng, đặt lại mật khẩu) không hiển thị nội dung, để mật khẩu không nằm đọc được trong nhật ký.
+
+Màn hình này cũng cho phép gửi tin thủ công. Nút «Gửi mẫu tin» ở góc trên bên phải mở ô soạn: chọn một mẫu tin đã đăng ký rồi điền các tham số. Không có ô nhập nội dung tự do, vì nhà mạng chỉ nhận nội dung đã đăng ký nên tin tự soạn sẽ không đến được máy khách.
+
+Sau khi chọn mẫu, các ô tham số của mẫu đó hiện ra. Điền xong sẽ thấy ngay nội dung thật sẽ gửi kèm số ký tự và số segment. Nút ngôn ngữ xem trước chỉ để kiểm tra trên màn hình; khách hàng luôn nhận theo ngôn ngữ của họ. Số điện thoại tổng đài lấy tự động từ phần Thông tin công ty nên không có ô nhập.
+
+Người nhận có thể chọn bằng cách tìm khách hàng, hoặc nhập thẳng số điện thoại. Khi chọn khách hàng có thể chọn nhiều người cùng lúc, mỗi người hiện thành một thẻ. Hệ thống gửi riêng từng người, nên một tin thất bại không ảnh hưởng những tin còn lại. Khi chọn khách hàng, tin sẽ theo đúng ngôn ngữ và thiết lập từ chối nhận tin của liên hệ đó.
+
+Lưu ý: eSMS chỉ gửi nội dung đã đăng ký với nhà mạng. Nội dung chưa đăng ký bị từ chối với mã 146 và lý do được ghi lại trong danh sách. Nếu cần gửi một nội dung mới thường xuyên, phải yêu cầu eSMS đăng ký mẫu tin đó.
+
+
+---
+
 ## Chương 16. Các tình huống thường gặp
 
 ### Tình huống 1: Khách hàng "Ngày mai không đón được"
@@ -1114,6 +1144,7 @@ Giá trị mặc định:
 | Tải lên hóa đơn GTGT | Hóa đơn GTGT (MANAGER+) |
 | Báo cáo / Nhật ký kiểm toán | Báo cáo |
 | Quản lý người dùng / Danh mục | Quản lý hệ thống (ADMIN) |
+| Lịch sử gửi tin · gửi lại | Cài đặt → Lịch sử gửi tin (MANAGER+) |
 
 ---
 

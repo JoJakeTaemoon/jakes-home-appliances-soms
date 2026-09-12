@@ -195,3 +195,41 @@ export function parseVnd(raw: string | number | null | undefined): number | null
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
+
+/**
+ * Fold Vietnamese diacritics to plain ASCII ("Máy lọc nước" → "May loc nuoc").
+ *
+ * Used when interpolating names into eSMS brandname SMS bodies: the bodies
+ * eSMS approved are written without accents, and a single accented character
+ * forces the whole message from GSM-7 (160 chars/segment) to UCS-2 (70),
+ * tripling the per-message cost. Display surfaces keep the accents.
+ */
+export function toAsciiVi(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+}
+
+/**
+ * `formatDate` / `formatDateTime` with an em-dash fallback for empty values.
+ *
+ * Table cells want "—" rather than a blank gap. These exist so components stop
+ * hand-rolling their own formatter: every local copy used `getDate()` and
+ * friends, which read the viewer's machine timezone and shifted the calendar
+ * day for anyone outside Vietnam.
+ */
+export function formatDateOrDash(
+  value: Date | string | null | undefined,
+  locale: AppLocale | (string & {}) = "vi",
+): string {
+  return formatDate(value, locale) || "—";
+}
+
+export function formatDateTimeOrDash(
+  value: Date | string | null | undefined,
+  locale: AppLocale | (string & {}) = "vi",
+): string {
+  return formatDateTime(value, locale) || "—";
+}

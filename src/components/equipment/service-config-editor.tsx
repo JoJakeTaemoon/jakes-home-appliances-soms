@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { useApiQuery } from "@/lib/api/hooks";
 import { addDays } from "@/lib/equipment/cycle";
+import { formatDateOrDash as formatDate } from "@/lib/format";
 
 export type ServiceConfigFilter = {
   consumableId?: string;
@@ -213,17 +214,6 @@ export function ServiceConfigEditor({
       </button>
     </div>
   );
-}
-
-// Mirrors service-config-table.tsx's formatDate — VI = DD/MM/YYYY, KO/EN = ISO.
-function formatDate(iso: string | null | undefined, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  if (locale === "vi") {
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  }
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function pickName(

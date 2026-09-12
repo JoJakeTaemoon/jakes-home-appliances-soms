@@ -99,6 +99,7 @@ const TREE: RouteNode = {
         products: { labelKey: "products" },
         "company-contact": { labelKey: "companyContact" },
         "notification-templates": { labelKey: "notificationTemplates" },
+        "notification-logs": { labelKey: "notificationLogs" },
         "scheduler-weights": { labelKey: "schedulerWeights" },
       },
     },

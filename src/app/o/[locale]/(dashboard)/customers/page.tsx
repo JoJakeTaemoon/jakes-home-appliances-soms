@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/status-badge";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Avatar } from "@/components/ui/avatar";
+import { formatDateOrDash as formatDate } from "@/lib/format";
 
 interface SalesRepLite {
   id: string;
@@ -73,16 +74,6 @@ function daysFromNow(iso: string | null): number | null {
   const target = new Date(iso).getTime();
   const now = Date.now();
   return Math.ceil((target - now) / (24 * 60 * 60 * 1000));
-}
-
-function formatDate(iso: string | null, locale: string): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  if (locale === "vi") {
-    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-  }
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function CustomersPage() {

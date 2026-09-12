@@ -373,17 +373,23 @@ Sent when MANAGER+ clicks "비밀번호 초기화" on customer detail screen. Ge
 | VI | `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` | **122** |
 | EN | `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` | ~107 |
 
-### A.3. `SMS_VISIT_REMINDER` — D-1 visit alert (KO: 1-seg, VI: 2-seg ⚠️ after A.10)
+### A.3. `SMS_VISIT_REMINDER` — D-1 visit alert (**carrier-approved body, 2026-09-12**)
 
-Cron at 19:00 the day before any scheduled visit. Sent to primary OPS_CONTACT (or CONTRACT_PARTY if no OPS).
+Cron the day before any scheduled visit. Sent to primary OPS_CONTACT (or CONTRACT_PARTY if no OPS).
 
-| Lang | Template body | Sample char count |
+> **This body is fixed by the carrier.** It is the one CSKH content eSMS has registered for brandname `SEOUL AQUA` (ViHAT sheet "ZBS Seoul"). The draft below it — the `[SeoulAqua] {date} {time} ...` wording this section used to carry — was never registered and must not be sent. Rewording anything here, including replacing the hotline with `{hq_phone}`, puts the message out of step with the approval.
+
+| Lang | Template body | Char count |
 |---|---|---:|
-| KO | `[SeoulAqua] {date} {time}, {technician} 기사 방문({service}). 변경 {url}` | **69** ✅ (still 1-seg) |
-| VI | `[SeoulAqua] {date} {time}, {technician} đến ({service}). Đổi {url}` | **77** ⚠️ (now 2-seg, was 70) |
-| EN | `[SeoulAqua] {date} {time}, {technician} visit ({service}). {url}` | ~82 (GSM-7, 1-seg) |
+| VI | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 130 + vars (GSM-7) |
+| EN | `MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.` | 107 + vars (GSM-7) |
+| KO | — not registered; Korean-speaking contacts receive the VI body (decision 2026-09-12) | — |
 
-> ⚠️ **A.10 cost regression**: switching `{url}` from root `seoulaqua.com.vn` (16 chars) → subdomain `portal.seoulaqua.com.vn` (23 chars) added 7 chars and pushed VI body across the 70-char 1-seg boundary. KO body remains under the limit (69 chars). This single template change accounts for ~+712K VND/mo in SMS cost. See §A § Routing rule recap monthly cost block for the revised total.
+Three consequences of the approved wording:
+
+- **No `[SeoulAqua]` prefix.** The brandname is already the sender ID on the handset, so repeating it in the body wastes characters.
+- **Accent-free Vietnamese.** One accented character flips the message from GSM-7 (160 chars/segment) to UCS-2 (70), so `src/lib/scheduler/cron-reminder.ts` folds interpolated values through `toAsciiVi()`.
+- **Segment budget is 30 characters.** Fixed text is 130 chars, so `{equipment}` + `{datetime}` together must stay within 30 to hold at one segment. A full model name does not fit: `May loc nuoc PTS-2100` + a `DD/MM/YYYY HH:mm` stamp lands at 167 chars, i.e. 2 segments. The carrier slots allow `{equipment}` ≤ 50 and `{datetime}` ≤ 40, so 2 segments is the expected steady state for most models.
 
 ### A.6. `SMS_SR_APPROVED` — paid request approved + visit scheduled (2-seg)
 

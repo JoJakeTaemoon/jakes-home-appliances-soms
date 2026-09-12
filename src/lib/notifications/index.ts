@@ -7,9 +7,10 @@
  *   SMS_PROVIDER=mock | esms
  *   EMAIL_PROVIDER=mock | resend
  *
- * Default for both is `mock`. Real providers throw when invoked (stubs) until
- * the F.4 (eSMS) and F.7 (Resend) credentials land — at which point we just
- * flip the env vars and ship; no code rewrite.
+ * Default for both is `mock`. eSMS is live as of 2026-09-12 (brandname
+ * `SEOUL AQUA`, credentials in `ESMS_API_KEY` / `ESMS_SECRET_KEY` /
+ * `ESMS_BRAND_NAME`); it sends in sandbox unless `ESMS_SANDBOX=0`. Resend is
+ * still a stub that throws until the F.7 credentials land.
  *
  * Centralising the lookup also makes test injection easy: a single
  * `setNotificationProviderOverride()` helper lets tests swap in a fake without

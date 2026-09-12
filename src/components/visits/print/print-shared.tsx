@@ -12,6 +12,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import type { PdfLangPair } from "@/lib/pdf/types";
+import { formatDateOrDash, formatDateTimeOrDash } from "@/lib/format";
 
 export type PrintLocale = "ko" | "vi" | "en";
 
@@ -43,19 +44,11 @@ export function formatVnd(n: number | null | undefined): string {
 }
 
 export function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return "—";
-  const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
-  return `${pad(x.getDate())}/${pad(x.getMonth() + 1)}/${x.getFullYear()}`;
+  return formatDateOrDash(d, "vi");
 }
 
 export function formatDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return "—";
-  const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
-  return `${pad(x.getDate())}/${pad(x.getMonth() + 1)}/${x.getFullYear()} ${pad(x.getHours())}:${pad(x.getMinutes())}`;
+  return formatDateTimeOrDash(d, "vi");
 }
 
 /** Bilingual stacked label: primary on top, secondary beneath in smaller muted text. */

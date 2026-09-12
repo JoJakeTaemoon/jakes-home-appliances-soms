@@ -27,6 +27,8 @@ import type {
   SendPayload,
 } from "@/lib/notifications/types";
 import { publishMockDispatch } from "@/lib/notifications/mock-bus";
+import { approximateSmsSegments } from "@/lib/notifications/sms-segments";
+import { CREDENTIAL_TEMPLATE_CODES } from "@/lib/notifications/templates";
 
 function tag(channel: SendPayload["channel"]): string {
   return channel === "SMS" ? "[MOCK SMS]" : "[MOCK EMAIL]";
@@ -40,29 +42,13 @@ function box(title: string, lines: string[]): string {
 }
 
 /**
- * Approximate SMS segment count for log accuracy. GSM-7 = 160 chars/seg;
- * Unicode = 70 chars/seg. Switches based on whether the body contains any
- * non-ASCII character (a good-enough proxy for the GSM-7 set in dev).
+ * The mock provider redacts credential bodies in production logs so a
+ * misconfigured `SMS_PROVIDER=mock` in prod doesn't leak passwords to the
+ * terminal / log aggregator.
  */
-function approximateSmsSegments(body: string): number {
-  const isUnicode = /[^\x00-\x7F]/.test(body);
-  const limit = isUnicode ? 70 : 160;
-  return Math.max(1, Math.ceil(body.length / limit));
-}
-
-/**
- * Templates whose body contains credentials. The mock provider redacts the
- * body in production logs so a misconfigured `SMS_PROVIDER=mock` in prod
- * doesn't leak passwords to terminal / log aggregator.
- */
-const CREDENTIAL_TEMPLATES = new Set([
-  "SMS_PORTAL_WELCOME",
-  "SMS_PASSWORD_RESET",
-]);
-
 function shouldRedactBody(templateCode: string): boolean {
   if (process.env.NODE_ENV !== "production") return false;
-  return CREDENTIAL_TEMPLATES.has(templateCode);
+  return CREDENTIAL_TEMPLATE_CODES.has(templateCode);
 }
 
 export class MockNotificationProvider implements NotificationProvider {

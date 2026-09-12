@@ -32,6 +32,7 @@ import {
   type VisitDocumentKind,
   type VisitTypeForSuggest,
 } from "@/lib/visits/document-suggest";
+import { formatDateTimeOrDash } from "@/lib/format";
 
 interface IssuedDocument {
   id: string;
@@ -59,11 +60,9 @@ interface Props {
   onIssued: () => void | Promise<void>;
 }
 
+/** Issue timestamps always render in the VI style, VST wall clock. */
 function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (v: number) => (v < 10 ? `0${v}` : String(v));
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return formatDateTimeOrDash(iso, "vi");
 }
 
 export function DocumentIssueCard({
