@@ -84,3 +84,6 @@ change_log.pdf
 
 # Playwright MCP scratch artifacts
 .playwright-mcp/
+
+# Word lock files created when a .docx in docs/ is open
+~$*
