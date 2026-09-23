@@ -1,239 +1,164 @@
 # SMS 문안 등록 현황 — eSMS Brandname `SEOUL AQUA`
 
-> 실측 기준 2026-09-12. 테스트 번호 `0961122564`, 실제 발송(LIVE) 24건.
+> 최종 갱신 2026-09-23. 실측은 2026-09-12 기준, 문안은 ViHAT 회신을 반영해 재작성했습니다.
 > 재현 명령: `ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts <번호>`
 
-## 1. 결론
+## 1. 현재 상태
 
-문안 8종 × 3개 언어 = 24개 조합을 실제로 발송했습니다. **3개가 통과하고 21개가 거부**됐습니다.
+문안 8종 × 3개 언어를 실제로 발송해 통신사 판정을 받은 결과, 정기점검 알림 하나만 통과하고 나머지는 전부 코드 146으로 거부됐습니다. 이후 ViHAT 회신을 받아 문안을 다시 작성했습니다.
 
-통과한 것은 정기점검 방문 알림 하나뿐입니다. 나머지 7종은 언어를 불문하고 전부 미등록입니다.
+| 상황 | 문안 코드 | 베트남어 | 영어 |
+|---|---|:-:|:-:|
+| 고객 포털 계정 발급 | `SMS_PORTAL_WELCOME` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 고객 포털 비밀번호 초기화 | `SMS_PASSWORD_RESET` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 직원 비밀번호 복구 인증코드 | `SMS_STAFF_RESET_CODE` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 정기점검 방문 D-1 알림 | `SMS_VISIT_REMINDER` | ✅ 등록 완료 | ✅ 등록 완료 |
+| 유상 서비스 요청 승인 | `SMS_SR_APPROVED` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 서비스 요청 반려 | `SMS_SR_REJECTED` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 임대료 미납 최종 독촉 D+30 | `SMS_PAYMENT_OVERDUE_FINAL` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
+| 임대 만료 최종 안내 D-7 | `SMS_CONTRACT_RENEWAL_FINAL` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
 
-**등록은 본문 단위입니다.** 같은 상황의 알림이라도 언어가 다르면 본문이 다르므로 각각 등록해야 합니다. 실제로 정기점검 알림은 베트남어와 영어가 각각 등록돼 있어 둘 다 통과했습니다.
+## 2. 확정된 규칙
 
-## 2. 판정 코드
+**한국어는 등록하지 않습니다.** ViHAT이 한국어 7건 전부에 `Không hỗ trợ tiếng Hàn`으로 회신했습니다. 한국어를 쓰는 고객에게는 **영어 문안**을 발송합니다. 코드에서도 SMS 문안의 한국어 자리가 영어 본문을 그대로 가리키도록 했습니다.
 
-| 코드 | 의미 | 과금 |
-|---|---|---|
-| `100` | eSMS가 접수함. 통신사로 전달됨 | 세그먼트당 과금 |
-| `146` | 이 브랜드네임에 등록되지 않은 본문 (`Sai template Brandname CSKH`) | 없음 |
-| `124` | 24시간 내 동일 내용 중복 발송 차단 | 없음 |
+**베트남어는 성조 없이 등록합니다.** 성조가 있으면 한 통에 70자, 없으면 160자입니다. 무성조로 바꾸면서 가운뎃점과 통화기호도 아스키로 정리해, **16개 본문이 모두 1세그먼트에 들어갑니다.** 이전에는 대부분 2세그먼트였으므로 발송 단가가 절반이 됩니다.
 
-`124`는 테스트 과정에서만 나타납니다. 같은 문구를 같은 번호로 반복 발송할 때 eSMS가 막는 것이며, 샌드박스 요청도 이 기록을 남깁니다.
+**링크는 고정 주소를 본문에 직접 씁니다.** 통신사가 고정 링크 등록을 요구했습니다. 주소는 `soms.seoulaqua.com.vn` 하나로 통일했습니다. 문안에 `{url}` 변수는 더 이상 없습니다.
 
-## 3. 전체 결과
+**변수 값도 성조를 제거해 발송합니다.** 고객 이름에 성조가 하나라도 들어가면 무성조로 등록한 문안이라도 유니코드로 바뀝니다. 발송 공통 경로에서 아스키 본문일 때 변수 값을 자동으로 변환합니다.
 
-| 상황 | 문안 코드 | 한국어 | 베트남어 | 영어 |
-|---|---|:-:|:-:|:-:|
-| 고객 포털 계정 발급 | `SMS_PORTAL_WELCOME` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 고객 포털 비밀번호 초기화 | `SMS_PASSWORD_RESET` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 직원 비밀번호 복구 인증코드 | `SMS_STAFF_RESET_CODE` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 정기점검 방문 D-1 알림 | `SMS_VISIT_REMINDER` | ✅ 통과 | ✅ 통과 | ✅ 통과 |
-| 유상 서비스 요청 승인 | `SMS_SR_APPROVED` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 서비스 요청 반려 | `SMS_SR_REJECTED` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 임대료 미납 최종 독촉 (D+30) | `SMS_PAYMENT_OVERDUE_FINAL` | ❌ 146 | ❌ 146 | ❌ 146 |
-| 임대 만료 최종 안내 (D-7) | `SMS_CONTRACT_RENEWAL_FINAL` | ❌ 146 | ❌ 146 | ❌ 146 |
-
-## 4. 통과 — 추가 작업 없음
+## 3. 등록 완료 — 추가 작업 없음
 
 ### 정기점검 방문 D-1 알림 (`SMS_VISIT_REMINDER`)
 
-| 언어 | 결과 | 본문 | 패턴 길이 | 세그먼트 |
-|---|:-:|---|---:|---:|
-| 베트남어 (VI) | ✅ | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
-| 영어 (EN) | ✅ | `MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.` | 128 | 1 |
-| 한국어 (KO) | ✅ | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
+| 언어 | 본문 | 길이 | 세그먼트 |
+|---|---|---:|---:|
+| 베트남어 | `TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.` | 151 | 1 |
+| 영어 | `MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.` | 128 | 1 |
 
-한국어 칸은 베트남어와 같은 본문입니다. 한국어 문안은 등록돼 있지 않아, 한국어 고객에게도 승인된 베트남어 문안을 보내고 있습니다. 통과한 것은 한국어가 아니라 베트남어 본문입니다.
+`{equipment}`는 50자, `{datetime}`은 40자까지입니다. 고정 문구가 130자라 두 값의 합이 30자를 넘으면 2세그먼트가 됩니다.
 
-변수 슬롯은 `{equipment}` 최대 50자, `{datetime}` 최대 40자입니다. 고정 문구가 130자여서 두 값의 합이 30자를 넘으면 2세그먼트가 됩니다. 실제 모델명을 넣으면 대부분 2세그먼트입니다.
+## 4. 등록 요청 대상 — 14건
 
-## 5. 신규 등록 요청 목록
+언어별로 나눴습니다. `{변수}` 자리는 슬롯으로 등록하고, 옆 숫자는 요청할 최대 길이입니다.
 
-언어별로 나눴습니다. 각 본문의 `{변수}` 자리는 eSMS 등록 시 슬롯으로 지정하고, 옆의 숫자는 요청할 최대 길이입니다.
-
-### 5.1 베트남어 (VI) — 7건
+### 4.1 베트남어 — 7건
 
 **고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
 
-- 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.`
-- 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
-- 길이: 96자 · 2세그먼트 (유니코드)
+- 본문: `[SeoulAqua] Chao {name}. Cong KH: soms.seoulaqua.com.vn - ID: {phone} - MK tam: {pwd}. Doi MK khi dang nhap dau.`
+- 실제 예시: `[SeoulAqua] Chao Nguyen Van An. Cong KH: soms.seoulaqua.com.vn - ID: 0901234567 - MK tam: Ab12Cd34Ef. Doi MK khi dang nhap dau.`
+- 변수: `{name}` ≤ 50, `{phone}` ≤ 15, `{pwd}` ≤ 10
+- 길이: 112자 · 1세그먼트
 
 **고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
 
-- 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}`
-- 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 90자 · 2세그먼트 (유니코드)
+- 본문: `[SeoulAqua] MK cua {name} da dat lai. MK moi: {pwd} - soms.seoulaqua.com.vn. Khong phai ban? LH {hq_phone}`
+- 실제 예시: `[SeoulAqua] MK cua Nguyen Van An da dat lai. MK moi: Ab12Cd34Ef - soms.seoulaqua.com.vn. Khong phai ban? LH 0768902009`
+- 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{hq_phone}` ≤ 15
+- 길이: 106자 · 1세그먼트
 
 **직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
 
-- 발송 시점: 직원이 비밀번호 찾기 요청 시
-- 본문: `[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.`
+- 본문: `[SeoulAqua] Ma xac thuc khoi phuc mat khau: {code} (hieu luc {minutes} phut). Khong phai ban? Bao quan tri vien ngay.`
+- 실제 예시: `[SeoulAqua] Ma xac thuc khoi phuc mat khau: 123456 (hieu luc 10 phut). Khong phai ban? Bao quan tri vien ngay.`
 - 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
-- 길이: 117자 · 2세그먼트 (유니코드)
+- 길이: 117자 · 1세그먼트
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
-- 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}`
-- 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
-- 길이: 75자 · 2세그먼트 (유니코드)
+- 본문: `[SeoulAqua] YC #{req_no} duyet. Chi phi: {amount}d - Hen: {date}. XN: soms.seoulaqua.com.vn`
+- 실제 예시: `[SeoulAqua] YC #12345 duyet. Chi phi: 500.000d - Hen: 30/09/2026. XN: soms.seoulaqua.com.vn`
+- 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20
+- 길이: 91자 · 1세그먼트
 
 **서비스 요청 반려** · `SMS_SR_REJECTED`
 
-- 발송 시점: 사무실이 반려할 때
-- 본문: `[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}`
+- 본문: `[SeoulAqua] YC #{req_no} tu choi. Ly do: {reason}. LH {hq_phone}`
+- 실제 예시: `[SeoulAqua] YC #12345 tu choi. Ly do: Het thoi han bao hanh. LH 0768902009`
 - 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
-- 길이: 64자 · 1세그먼트 (유니코드)
+- 길이: 64자 · 1세그먼트
 
-**임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
+**임대료 미납 최종 독촉 D+30** · `SMS_PAYMENT_OVERDUE_FINAL`
 
-- 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}`
-- 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 81자 · 2세그먼트 (유니코드)
+- 본문: `[SeoulAqua] {name}, phi thue {month} {amount}d chua TT. TT: soms.seoulaqua.com.vn hoac {hq_phone}`
+- 실제 예시: `[SeoulAqua] Nguyen Van An, phi thue 09/2026 500.000d chua TT. TT: soms.seoulaqua.com.vn hoac 0768902009`
+- 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{hq_phone}` ≤ 15
+- 길이: 97자 · 1세그먼트
 
-**임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
+**임대 만료 최종 안내 D-7** · `SMS_CONTRACT_RENEWAL_FINAL`
 
-- 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}`
-- 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 99자 · 2세그먼트 (유니코드)
+- 본문: `[SeoulAqua] {name}, HD thue het han {date} (con {days} ngay). Chuyen SH/bao tri: soms.seoulaqua.com.vn / {hq_phone}`
+- 실제 예시: `[SeoulAqua] Nguyen Van An, HD thue het han 30/09/2026 (con 7 ngay). Chuyen SH/bao tri: soms.seoulaqua.com.vn / 0768902009`
+- 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{hq_phone}` ≤ 15
+- 길이: 115자 · 1세그먼트
 
-### 5.2 영어 (EN) — 7건
+### 4.2 영어 — 7건
 
 **고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
 
-- 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.`
-- 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
-- 길이: 99자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
+- 본문: `[SeoulAqua] Welcome {name}. Portal: soms.seoulaqua.com.vn - ID: {phone} - Temp PW: {pwd}. Change PW on first login.`
+- 실제 예시: `[SeoulAqua] Welcome Nguyen Van An. Portal: soms.seoulaqua.com.vn - ID: 0901234567 - Temp PW: Ab12Cd34Ef. Change PW on first login.`
+- 변수: `{name}` ≤ 50, `{phone}` ≤ 15, `{pwd}` ≤ 10
+- 길이: 115자 · 1세그먼트
 
 **고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
 
-- 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}`
-- 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 81자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
+- 본문: `[SeoulAqua] {name}, password reset. New PW: {pwd} - soms.seoulaqua.com.vn. If not you: {hq_phone}`
+- 실제 예시: `[SeoulAqua] Nguyen Van An, password reset. New PW: Ab12Cd34Ef - soms.seoulaqua.com.vn. If not you: 0768902009`
+- 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{hq_phone}` ≤ 15
+- 길이: 97자 · 1세그먼트
 
 **직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
 
-- 발송 시점: 직원이 비밀번호 찾기 요청 시
 - 본문: `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.`
+- 실제 예시: `[SeoulAqua] Password recovery code: 123456 (valid 10 min). If this wasn't you, alert your admin immediately.`
 - 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
-- 길이: 115자 · 1세그먼트 (GSM-7)
+- 길이: 115자 · 1세그먼트
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
-- 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}`
-- 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
-- 길이: 90자 · 2세그먼트 (유니코드) — 가운뎃점(`·`)과 통화기호를 아스키로 바꾸면 1세그먼트로 줄어듭니다
+- 본문: `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND - Visit: {date}. Confirm: soms.seoulaqua.com.vn`
+- 실제 예시: `[SeoulAqua] Request #12345 approved. Cost: 500.000 VND - Visit: 30/09/2026. Confirm: soms.seoulaqua.com.vn`
+- 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20
+- 길이: 106자 · 1세그먼트
 
 **서비스 요청 반려** · `SMS_SR_REJECTED`
 
-- 발송 시점: 사무실이 반려할 때
 - 본문: `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}`
+- 실제 예시: `[SeoulAqua] Request #12345 declined. Reason: Het thoi han bao hanh. Contact 0768902009`
 - 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
-- 길이: 76자 · 1세그먼트 (GSM-7)
+- 길이: 76자 · 1세그먼트
 
-**임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
+**임대료 미납 최종 독촉 D+30** · `SMS_PAYMENT_OVERDUE_FINAL`
 
-- 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}`
-- 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 80자 · 1세그먼트 (GSM-7)
+- 본문: `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay soms.seoulaqua.com.vn or {hq_phone}`
+- 실제 예시: `[SeoulAqua] Nguyen Van An, 09/2026 rental 500.000 VND overdue. Pay soms.seoulaqua.com.vn or 0768902009`
+- 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{hq_phone}` ≤ 15
+- 길이: 96자 · 1세그먼트
 
-**임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
+**임대 만료 최종 안내 D-7** · `SMS_CONTRACT_RENEWAL_FINAL`
 
-- 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}`
-- 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 99자 · 1세그먼트 (GSM-7)
+- 본문: `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: soms.seoulaqua.com.vn / {hq_phone}`
+- 실제 예시: `[SeoulAqua] Nguyen Van An, rental ends 30/09/2026 (7 days left). Transfer/maintenance: soms.seoulaqua.com.vn / 0768902009`
+- 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{hq_phone}` ≤ 15
+- 길이: 115자 · 1세그먼트
 
-### 5.3 한국어 (KO) — 7건
+## 5. ViHAT 회신 반영 내역
 
-**고객 포털 계정 발급** · `SMS_PORTAL_WELCOME`
+2026-09-19 회신에서 요구한 네 가지를 모두 반영했습니다.
 
-- 발송 시점: 계약 확정 또는 판매 완료 시 1회
-- 본문: `[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.`
-- 변수: `{name}` ≤ 50, `{url}` ≤ 30, `{phone}` ≤ 15, `{pwd}` ≤ 10
-- 길이: 86자 · 2세그먼트 (유니코드)
+| ViHAT 요구 | 반영 |
+|---|---|
+| 변수를 채운 실제 발송 문안 추가 | §6 표의 「Nội dung thực tế」 칸에 예시 값을 넣었습니다 |
+| 링크는 고정 링크로 등록 | `{url}` 변수를 없애고 `soms.seoulaqua.com.vn`을 본문에 직접 썼습니다 |
+| 성조 유무 확정 | 무성조로 등록합니다 |
+| 한국어 미지원 | 한국어 7건을 요청에서 뺐습니다. 한국어 고객은 영어로 받습니다 |
 
-**고객 포털 비밀번호 초기화** · `SMS_PASSWORD_RESET`
+## 6. ViHAT 제출용 요청서 (베트남어)
 
-- 발송 시점: 매니저가 초기화할 때마다
-- 본문: `[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}`
-- 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 77자 · 2세그먼트 (유니코드)
-
-**직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
-
-- 발송 시점: 직원이 비밀번호 찾기 요청 시
-- 본문: `[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.`
-- 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
-- 길이: 75자 · 2세그먼트 (유니코드)
-
-**유상 서비스 요청 승인** · `SMS_SR_APPROVED`
-
-- 발송 시점: 사무실이 승인할 때
-- 본문: `[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}`
-- 변수: `{req_no}` ≤ 10, `{amount}` ≤ 15, `{date}` ≤ 20, `{url}` ≤ 30
-- 길이: 63자 · 1세그먼트 (유니코드)
-
-**서비스 요청 반려** · `SMS_SR_REJECTED`
-
-- 발송 시점: 사무실이 반려할 때
-- 본문: `[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}`
-- 변수: `{req_no}` ≤ 10, `{reason}` ≤ 60, `{hq_phone}` ≤ 15
-- 길이: 56자 · 1세그먼트 (유니코드)
-
-**임대료 미납 최종 독촉 (D+30)** · `SMS_PAYMENT_OVERDUE_FINAL`
-
-- 발송 시점: 미납 30일 경과 시
-- 본문: `[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}`
-- 변수: `{name}` ≤ 50, `{month}` ≤ 10, `{amount}` ≤ 15, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 68자 · 1세그먼트 (유니코드)
-
-**임대 만료 최종 안내 (D-7)** · `SMS_CONTRACT_RENEWAL_FINAL`
-
-- 발송 시점: 만료 7일 전
-- 본문: `[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}`
-- 변수: `{name}` ≤ 50, `{date}` ≤ 20, `{days}` ≤ 4, `{url}` ≤ 30, `{hq_phone}` ≤ 15
-- 길이: 80자 · 2세그먼트 (유니코드)
-
-## 6. 등록 요청 전에 정할 것
-
-§5의 본문은 현재 코드에 들어 있는 그대로입니다. 등록을 요청하기 전에 세 가지를 정하는 편이 좋습니다. 한번 등록하면 문구를 바꿀 때마다 재심사를 받아야 하기 때문입니다.
-
-**첫째, `[SeoulAqua] ` 프리픽스를 뺄지.** 브랜드네임이 이미 발신자명으로 표시되므로 본문에 회사명을 반복할 이유가 없습니다. 승인된 정기점검 문안에도 이 프리픽스가 없습니다. 빼면 문안마다 12자를 아낍니다. **빼는 것을 권합니다.**
-
-**둘째, 영어 본문의 가운뎃점을 바꿀지.** 영어 문안 몇 개가 `·` 하나 때문에 유니코드로 분류돼 세그먼트가 두 배입니다. `-`로 바꾸면 GSM-7로 돌아가 절반 비용이 됩니다. **바꾸는 것을 권합니다.**
-
-**셋째, 한국어를 등록할지.** 한글은 무조건 유니코드라 70자마다 세그먼트가 늘고, 한국어 문안 7건을 추가로 심사받아야 합니다. 지금은 한국어 고객에게도 베트남어 본문이 나갑니다. 한국인 고객 비중이 낮다면 한국어는 등록하지 않고 베트남어나 영어로 보내는 편이 실용적입니다. 등록한다면 §5.3 목록을 함께 제출하면 됩니다.
-
-세 가지를 반영하면 §5의 본문이 바뀌므로, 결정 후 문안을 확정해 제출하는 순서를 권합니다.
-
-## 6.5 임의 문구 발송에 대한 결정 (2026-09-12)
-
-자유 입력 발송 기능은 **제거했습니다.** 통신사가 등록된 문안만 받으므로 직원이 타이핑한 문장은 어떤 경우에도 고객 휴대폰에 닿지 않습니다.
-
-대신 관리자 화면의 발송 기능은 **등록된 문안을 고르고 변수만 채우는 방식**으로 바꿨습니다. 지금은 정기점검 알림 하나만 실제로 나가고, 이 목록의 문안이 등록되는 대로 나머지도 같은 화면에서 바로 쓸 수 있습니다.
-
-자유 문구가 꼭 필요한 상황이 생기면 Zalo OA 상담 메시지가 대안입니다. 고객이 OA에 먼저 말을 건 경우에 한해 사전 등록 없이 답할 수 있습니다. 현재는 SMS만 쓰기로 한 상태라 보류입니다.
-
-## 7. 비용
-
-거부된 건은 접수 자체가 안 되므로 과금되지 않습니다. 이번 실측 24건 중 과금 대상은 통과한 3건뿐입니다.
-
-등록이 끝난 뒤의 발송 단가는 세그먼트당 830 VND입니다. 베트남어와 한국어 본문은 성조와 한글 때문에 대부분 2세그먼트, 영어는 가운뎃점만 정리하면 대부분 1세그먼트입니다.
-
-## 8. ViHAT 제출용 요청서 (베트남어)
-
-아래 내용을 그대로 담당자(`thaoltt@vihatgroup.com`)에게 보내면 됩니다. §6의 결정이 끝난 뒤 본문을 확정해 보내세요.
+담당자 `thaoltt@vihatgroup.com`에게 보내면 됩니다. 같은 내용을 `docs/SMS_TEMPLATE_REGISTRATION_REQUEST.docx`로도 만들어 두었습니다.
 
 ---
 
@@ -241,58 +166,48 @@
 
 Kính gửi anh/chị,
 
-Hệ thống của Seoul Aqua đã gửi thử toàn bộ mẫu tin qua API eSMS. Hiện chỉ có mẫu «Nhắc lịch bảo trì định kỳ» được duyệt; các mẫu còn lại trả về `CodeResult 146 — Sai template Brandname CSKH`.
+Cảm ơn anh/chị đã phản hồi. Chúng tôi đã chỉnh sửa theo đúng bốn yêu cầu: bổ sung nội dung thực tế đã gồm biến, dùng link cố định thay cho biến, đăng ký nội dung **không dấu**, và bỏ toàn bộ mẫu tiếng Hàn.
 
-Chúng tôi xin đăng ký thêm các mẫu tin dưới đây. Mỗi ngôn ngữ là một nội dung riêng nên cần duyệt riêng. Phần trong dấu `{ }` là tham số thay đổi theo từng tin, kèm độ dài tối đa.
+Link cố định dùng chung cho mọi mẫu: **soms.seoulaqua.com.vn**
 
-| # | Tình huống | Ngôn ngữ | Nội dung |
-|---:|---|---|---|
-| 1 | Cấp tài khoản cổng khách hàng | Tiếng Việt | `[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.` |
-| 2 | Cấp tài khoản cổng khách hàng | Tiếng Anh | `[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.` |
-| 3 | Cấp tài khoản cổng khách hàng | Tiếng Hàn | `[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.` |
-| 4 | Đặt lại mật khẩu cổng khách hàng | Tiếng Việt | `[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}` |
-| 5 | Đặt lại mật khẩu cổng khách hàng | Tiếng Anh | `[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}` |
-| 6 | Đặt lại mật khẩu cổng khách hàng | Tiếng Hàn | `[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}` |
-| 7 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Việt | `[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.` |
-| 8 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Anh | `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.` |
-| 9 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Hàn | `[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.` |
-| 10 | Duyệt yêu cầu dịch vụ có phí | Tiếng Việt | `[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}` |
-| 11 | Duyệt yêu cầu dịch vụ có phí | Tiếng Anh | `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}` |
-| 12 | Duyệt yêu cầu dịch vụ có phí | Tiếng Hàn | `[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}` |
-| 13 | Từ chối yêu cầu dịch vụ | Tiếng Việt | `[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}` |
-| 14 | Từ chối yêu cầu dịch vụ | Tiếng Anh | `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` |
-| 15 | Từ chối yêu cầu dịch vụ | Tiếng Hàn | `[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}` |
-| 16 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Việt | `[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}` |
-| 17 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Anh | `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}` |
-| 18 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Hàn | `[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}` |
-| 19 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Việt | `[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}` |
-| 20 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Anh | `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}` |
-| 21 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Hàn | `[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}` |
+Tất cả nội dung dưới đây đều không dấu và nằm gọn trong 1 segment (≤160 ký tự).
 
-Tần suất dự kiến và mục đích sử dụng của từng mẫu giống hồ sơ Brandname đã nộp: tin chăm sóc khách hàng (CSKH), gửi tới khách hàng đang có hợp đồng thuê hoặc bảo trì với Seoul Aqua.
+| # | Tình huống | Ngôn ngữ | Nội dung đăng ký | Nội dung thực tế |
+|---:|---|---|---|---|
+| 1 | Cấp tài khoản cổng khách hàng | Tiếng Việt | `[SeoulAqua] Chao {name}. Cong KH: soms.seoulaqua.com.vn - ID: {phone} - MK tam: {pwd}. Doi MK khi dang nhap dau.` | `[SeoulAqua] Chao Nguyen Van An. Cong KH: soms.seoulaqua.com.vn - ID: 0901234567 - MK tam: Ab12Cd34Ef. Doi MK khi dang nhap dau.` |
+| 2 | Cấp tài khoản cổng khách hàng | Tiếng Anh | `[SeoulAqua] Welcome {name}. Portal: soms.seoulaqua.com.vn - ID: {phone} - Temp PW: {pwd}. Change PW on first login.` | `[SeoulAqua] Welcome Nguyen Van An. Portal: soms.seoulaqua.com.vn - ID: 0901234567 - Temp PW: Ab12Cd34Ef. Change PW on first login.` |
+| 3 | Đặt lại mật khẩu cổng khách hàng | Tiếng Việt | `[SeoulAqua] MK cua {name} da dat lai. MK moi: {pwd} - soms.seoulaqua.com.vn. Khong phai ban? LH {hq_phone}` | `[SeoulAqua] MK cua Nguyen Van An da dat lai. MK moi: Ab12Cd34Ef - soms.seoulaqua.com.vn. Khong phai ban? LH 0768902009` |
+| 4 | Đặt lại mật khẩu cổng khách hàng | Tiếng Anh | `[SeoulAqua] {name}, password reset. New PW: {pwd} - soms.seoulaqua.com.vn. If not you: {hq_phone}` | `[SeoulAqua] Nguyen Van An, password reset. New PW: Ab12Cd34Ef - soms.seoulaqua.com.vn. If not you: 0768902009` |
+| 5 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Việt | `[SeoulAqua] Ma xac thuc khoi phuc mat khau: {code} (hieu luc {minutes} phut). Khong phai ban? Bao quan tri vien ngay.` | `[SeoulAqua] Ma xac thuc khoi phuc mat khau: 123456 (hieu luc 10 phut). Khong phai ban? Bao quan tri vien ngay.` |
+| 6 | Mã xác thực khôi phục mật khẩu nhân viên | Tiếng Anh | `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.` | `[SeoulAqua] Password recovery code: 123456 (valid 10 min). If this wasn't you, alert your admin immediately.` |
+| 7 | Duyệt yêu cầu dịch vụ có phí | Tiếng Việt | `[SeoulAqua] YC #{req_no} duyet. Chi phi: {amount}d - Hen: {date}. XN: soms.seoulaqua.com.vn` | `[SeoulAqua] YC #12345 duyet. Chi phi: 500.000d - Hen: 30/09/2026. XN: soms.seoulaqua.com.vn` |
+| 8 | Duyệt yêu cầu dịch vụ có phí | Tiếng Anh | `[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND - Visit: {date}. Confirm: soms.seoulaqua.com.vn` | `[SeoulAqua] Request #12345 approved. Cost: 500.000 VND - Visit: 30/09/2026. Confirm: soms.seoulaqua.com.vn` |
+| 9 | Từ chối yêu cầu dịch vụ | Tiếng Việt | `[SeoulAqua] YC #{req_no} tu choi. Ly do: {reason}. LH {hq_phone}` | `[SeoulAqua] YC #12345 tu choi. Ly do: Het thoi han bao hanh. LH 0768902009` |
+| 10 | Từ chối yêu cầu dịch vụ | Tiếng Anh | `[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}` | `[SeoulAqua] Request #12345 declined. Reason: Het thoi han bao hanh. Contact 0768902009` |
+| 11 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Việt | `[SeoulAqua] {name}, phi thue {month} {amount}d chua TT. TT: soms.seoulaqua.com.vn hoac {hq_phone}` | `[SeoulAqua] Nguyen Van An, phi thue 09/2026 500.000d chua TT. TT: soms.seoulaqua.com.vn hoac 0768902009` |
+| 12 | Nhắc nợ phí thuê lần cuối (D+30) | Tiếng Anh | `[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay soms.seoulaqua.com.vn or {hq_phone}` | `[SeoulAqua] Nguyen Van An, 09/2026 rental 500.000 VND overdue. Pay soms.seoulaqua.com.vn or 0768902009` |
+| 13 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Việt | `[SeoulAqua] {name}, HD thue het han {date} (con {days} ngay). Chuyen SH/bao tri: soms.seoulaqua.com.vn / {hq_phone}` | `[SeoulAqua] Nguyen Van An, HD thue het han 30/09/2026 (con 7 ngay). Chuyen SH/bao tri: soms.seoulaqua.com.vn / 0768902009` |
+| 14 | Thông báo hết hạn hợp đồng thuê (D-7) | Tiếng Anh | `[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: soms.seoulaqua.com.vn / {hq_phone}` | `[SeoulAqua] Nguyen Van An, rental ends 30/09/2026 (7 days left). Transfer/maintenance: soms.seoulaqua.com.vn / 0768902009` |
 
-Nhờ anh/chị cho biết mẫu nào cần chỉnh sửa để được duyệt, và thời gian dự kiến hoàn tất. Xin cảm ơn.
+Phần trong dấu `{ }` là tham số thay đổi theo từng tin. Độ dài tối đa của từng tham số có trong phụ lục kỹ thuật, và hệ thống của chúng tôi tự động loại bỏ dấu tiếng Việt khỏi giá trị tham số trước khi gửi, nên nội dung thực tế luôn không dấu.
+
+Mục đích sử dụng giống hồ sơ Brandname đã nộp: tin chăm sóc khách hàng (CSKH) gửi tới khách hàng đang có hợp đồng thuê hoặc bảo trì với Seoul Aqua.
+
+Nhờ anh/chị cho biết mẫu nào cần chỉnh sửa thêm và thời gian dự kiến hoàn tất. Xin cảm ơn.
 
 ---
 
-## 9. 재검증
+## 7. 재검증
 
-등록 완료 회신을 받으면 같은 명령으로 다시 확인합니다. 실제 발송이므로 본인 번호를 쓰세요.
+등록 완료 회신을 받으면 같은 명령으로 확인합니다. 실제 발송이므로 본인 번호를 쓰세요.
 
 ```bash
 ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts 0961122564
 ```
 
-한 문안만 볼 때는 코드와 언어를 덧붙입니다.
-
-```bash
-ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts 0961122564 SMS_PASSWORD_RESET vi
-```
-
-결과는 관리자 화면 「설정 → 알림 발송 내역」에도 그대로 쌓입니다. 실패한 줄에는 거부 사유가 코드와 함께 남고, 재발송 버튼으로 다시 시도할 수 있습니다.
-
-같은 문구를 같은 번호로 24시간 안에 다시 보내면 eSMS가 `124`로 막습니다. 프로브는 실행할 때마다 변수 값을 바꿔 이 충돌을 피합니다.
+결과는 관리자 화면 「설정 → 알림 발송 내역」에도 그대로 쌓입니다. 실패한 줄에는 거부 사유가 코드와 함께 남습니다.
 
 ## 변경 이력
 
-- **2026-09-12** — 최초 작성. 8종 × 3개 언어 실제 발송 결과 기록. 통과 3건(정기점검 알림 VI/EN/KO), 미등록 21건.
+- **2026-09-23** — ViHAT 회신 반영. 한국어 7건 제외, 베트남어 무성조 전환, 고정 링크를 본문에 직접 기재. 16개 본문 모두 1세그먼트. 한국어 고객은 영어 문안 수신.
+- **2026-09-12** — 최초 작성. 8종 × 3개 언어 실제 발송 결과 기록. 통과 3건, 미등록 21건.

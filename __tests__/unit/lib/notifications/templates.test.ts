@@ -69,8 +69,10 @@ describe("notifications/templates", () => {
 
   it("pickLocaleBody returns locale body, falls back to vi", () => {
     const t = getTemplate("SMS_PASSWORD_RESET");
-    expect(pickLocaleBody(t, "ko")).toContain("비밀번호 초기화");
-    expect(pickLocaleBody(t, "vi")).toContain("đặt lại");
+    // SMS has no Korean body to return — the carrier does not register
+    // Korean, so `ko` carries the English wording.
+    expect(pickLocaleBody(t, "ko")).toContain("password reset");
+    expect(pickLocaleBody(t, "vi")).toContain("dat lai");
     expect(pickLocaleBody(t, "en")).toContain("password reset");
   });
 
@@ -96,8 +98,40 @@ describe("notifications/templates", () => {
 
   it("SMS_PORTAL_WELCOME body matches the canonical doc bodies (key phrases)", () => {
     const t = getTemplate("SMS_PORTAL_WELCOME");
-    expect(t.bodies.ko).toContain("환영합니다");
-    expect(t.bodies.vi).toContain("Cổng KH");
+    expect(t.bodies.ko).toContain("Welcome");
+    expect(t.bodies.vi).toContain("Cong KH");
     expect(t.bodies.en).toContain("Welcome");
+  });
+});
+
+describe("SMS bodies are registrable as filed", () => {
+  const smsCodes = Object.keys(TEMPLATES).filter((c) => c.startsWith("SMS_"));
+
+  it("every SMS body is plain GSM-7 — one segment, no UCS-2", () => {
+    for (const code of smsCodes) {
+      for (const locale of ["vi", "en", "ko"] as const) {
+        const body = TEMPLATES[code].bodies[locale];
+        expect(
+          /[^\x00-\x7F]/.test(body),
+          `${code}/${locale} carries a non-ASCII character: ${body}`,
+        ).toBe(false);
+        expect(body.length, `${code}/${locale} exceeds one segment`).toBeLessThanOrEqual(160);
+      }
+    }
+  });
+
+  it("Korean SMS mirrors English — the carrier does not register Korean", () => {
+    for (const code of smsCodes) {
+      expect(TEMPLATES[code].bodies.ko, code).toBe(TEMPLATES[code].bodies.en);
+    }
+  });
+
+  it("carries the registered link literally, never as a variable", () => {
+    for (const code of smsCodes) {
+      for (const locale of ["vi", "en"] as const) {
+        const body = TEMPLATES[code].bodies[locale];
+        expect(body, `${code}/${locale} still templates the URL`).not.toContain("{url}");
+      }
+    }
   });
 });

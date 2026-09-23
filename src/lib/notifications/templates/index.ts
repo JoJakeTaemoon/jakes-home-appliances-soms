@@ -78,28 +78,44 @@ export function pickLocaleSubject(
   return template.subjects[locale] ?? template.subjects.vi;
 }
 
+
+/**
+ * Bodies for an SMS template.
+ *
+ * Korean is not registrable: ViHAT answered `Không hỗ trợ tiếng Hàn` to all
+ * seven Korean rows of our registration request (2026-09-23), so Korean-
+ * speaking contacts receive the English body. Pointing `ko` at `en` here
+ * states that once, instead of a fallback branch in the send path that every
+ * caller has to remember.
+ *
+ * Vietnamese is written without diacritics and the bodies avoid `·` and `₫`
+ * so the whole message stays GSM-7 at 160 characters per segment rather than
+ * UCS-2 at 70. The registration was filed accent-free on that basis.
+ */
+function smsBodies(vi: string, en: string): Record<NotificationLocale, string> {
+  return { vi, en, ko: en };
+}
+
 // ── SMS templates (DOCUMENT_TEMPLATES §A) ───────────────────────────────
 
 const SMS_PORTAL_WELCOME: TemplateDef = {
   code: "SMS_PORTAL_WELCOME",
   channels: ["SMS"],
   category: "SYSTEM",
-  bodies: {
-    ko: "[SeoulAqua] {name}님 환영합니다. 포털: {url} · ID: {phone} · 임시PW: {pwd}. 첫 로그인 시 비밀번호를 변경하세요.",
-    vi: "[SeoulAqua] Chào {name}. Cổng KH: {url} · ID: {phone} · MK tạm: {pwd}. Đổi MK khi đăng nhập đầu.",
-    en: "[SeoulAqua] Welcome {name}. Portal: {url} · ID: {phone} · Temp PW: {pwd}. Change PW on first login.",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] Chao {name}. Cong KH: soms.seoulaqua.com.vn - ID: {phone} - MK tam: {pwd}. Doi MK khi dang nhap dau.",
+    "[SeoulAqua] Welcome {name}. Portal: soms.seoulaqua.com.vn - ID: {phone} - Temp PW: {pwd}. Change PW on first login.",
+  ),
 };
 
 const SMS_PASSWORD_RESET: TemplateDef = {
   code: "SMS_PASSWORD_RESET",
   channels: ["SMS"],
   category: "SYSTEM",
-  bodies: {
-    ko: "[SeoulAqua] {name}님 비밀번호 초기화. 새 PW: {pwd} · 접속 {url}. 본인 요청이 아닌 경우 {hq_phone}",
-    vi: "[SeoulAqua] MK của {name} đã đặt lại. MK mới: {pwd} · {url}. Không phải bạn? LH {hq_phone}",
-    en: "[SeoulAqua] {name}, password reset. New PW: {pwd} · {url}. If not you: {hq_phone}",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] MK cua {name} da dat lai. MK moi: {pwd} - soms.seoulaqua.com.vn. Khong phai ban? LH {hq_phone}",
+    "[SeoulAqua] {name}, password reset. New PW: {pwd} - soms.seoulaqua.com.vn. If not you: {hq_phone}",
+  ),
 };
 
 /**
@@ -112,11 +128,10 @@ const SMS_STAFF_RESET_CODE: TemplateDef = {
   code: "SMS_STAFF_RESET_CODE",
   channels: ["SMS"],
   category: "SYSTEM",
-  bodies: {
-    ko: "[SeoulAqua] 비밀번호 복구 인증코드: {code} ({minutes}분 유효). 본인 요청이 아니면 즉시 관리자에게 알리세요.",
-    vi: "[SeoulAqua] Mã xác thực khôi phục mật khẩu: {code} (hiệu lực {minutes} phút). Không phải bạn? Báo quản trị viên ngay.",
-    en: "[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] Ma xac thuc khoi phuc mat khau: {code} (hieu luc {minutes} phut). Khong phai ban? Bao quan tri vien ngay.",
+    "[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.",
+  ),
 };
 
 /**
@@ -138,55 +153,50 @@ const SMS_VISIT_REMINDER: TemplateDef = {
   code: "SMS_VISIT_REMINDER",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
-  bodies: {
-    ko: "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.",
-    vi: "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.",
-    en: "MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.",
-  },
+  bodies: smsBodies(
+    "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri {equipment} cua QK vao {datetime}. Neu QK can doi khung gio khac vui long LH: 0768902009.",
+    "MAINTENANCE NOTICE: SEOUL AQUA technician will service your {equipment} on {datetime}. To reschedule, please contact 0768902009.",
+  ),
 };
 
 const SMS_SR_APPROVED: TemplateDef = {
   code: "SMS_SR_APPROVED",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
-  bodies: {
-    ko: "[SeoulAqua] 요청 #{req_no} 승인. 비용 {amount}₫ · 방문 {date}. 동의 {url}",
-    vi: "[SeoulAqua] YC #{req_no} duyệt. Chi phí: {amount}đ · Hẹn: {date}. XN: {url}",
-    en: "[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND · Visit: {date}. Confirm: {url}",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] YC #{req_no} duyet. Chi phi: {amount}d - Hen: {date}. XN: soms.seoulaqua.com.vn",
+    "[SeoulAqua] Request #{req_no} approved. Cost: {amount} VND - Visit: {date}. Confirm: soms.seoulaqua.com.vn",
+  ),
 };
 
 const SMS_SR_REJECTED: TemplateDef = {
   code: "SMS_SR_REJECTED",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
-  bodies: {
-    ko: "[SeoulAqua] 요청 #{req_no} 반려. 사유: {reason}. 문의 {hq_phone}",
-    vi: "[SeoulAqua] YC #{req_no} từ chối. Lý do: {reason}. LH {hq_phone}",
-    en: "[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] YC #{req_no} tu choi. Ly do: {reason}. LH {hq_phone}",
+    "[SeoulAqua] Request #{req_no} declined. Reason: {reason}. Contact {hq_phone}",
+  ),
 };
 
 const SMS_PAYMENT_OVERDUE_FINAL: TemplateDef = {
   code: "SMS_PAYMENT_OVERDUE_FINAL",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
-  bodies: {
-    ko: "[SeoulAqua] {name}님 {month} 임대료 {amount}₫ 미납. 결제 {url} 또는 {hq_phone}",
-    vi: "[SeoulAqua] {name}, phí thuê {month} {amount}đ chưa TT. TT: {url} hoặc {hq_phone}",
-    en: "[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay {url} or {hq_phone}",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] {name}, phi thue {month} {amount}d chua TT. TT: soms.seoulaqua.com.vn hoac {hq_phone}",
+    "[SeoulAqua] {name}, {month} rental {amount} VND overdue. Pay soms.seoulaqua.com.vn or {hq_phone}",
+  ),
 };
 
 const SMS_CONTRACT_RENEWAL_FINAL: TemplateDef = {
   code: "SMS_CONTRACT_RENEWAL_FINAL",
   channels: ["SMS"],
   category: "TRANSACTIONAL",
-  bodies: {
-    ko: "[SeoulAqua] {name}님 임대 만료 {date} (잔여 {days}일). 소유권 이전 또는 유지관리 {url} / {hq_phone}",
-    vi: "[SeoulAqua] {name}, HĐ thuê hết hạn {date} (còn {days} ngày). Chuyển SH/bảo trì: {url} / {hq_phone}",
-    en: "[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: {url} / {hq_phone}",
-  },
+  bodies: smsBodies(
+    "[SeoulAqua] {name}, HD thue het han {date} (con {days} ngay). Chuyen SH/bao tri: soms.seoulaqua.com.vn / {hq_phone}",
+    "[SeoulAqua] {name}, rental ends {date} ({days} days left). Transfer/maintenance: soms.seoulaqua.com.vn / {hq_phone}",
+  ),
 };
 
 // ── Email templates (DOCUMENT_TEMPLATES §B) ─────────────────────────────

@@ -41,6 +41,7 @@ import {
 } from "@/lib/notifications/templates";
 import { getOverride } from "@/lib/notifications/template-overrides";
 import { getHqPhone } from "@/lib/settings";
+import { toAsciiVi } from "@/lib/format";
 import type {
   NotificationChannel,
   NotificationLocale,
@@ -254,10 +255,23 @@ export async function sendNotification(
 
   for (const r of routing) {
     const baseBody = override?.body ?? pickLocaleBody(tmpl, locale);
-    const body = renderTemplate(baseBody, vars);
+    // The registered SMS bodies are accent-free so each message stays GSM-7 at
+    // 160 characters. A single accented character in a value — and Vietnamese
+    // customer names nearly always carry one — would flip the whole message to
+    // UCS-2 at 70, and drift from the wording the carrier approved. Fold the
+    // values whenever the body itself is plain ASCII; an accented body (email,
+    // or an admin override written with accents) is left alone.
+    const foldValues =
+      r.channel === "SMS" && !/[^\x00-\x7F]/.test(baseBody);
+    const renderVars: TemplateVars = foldValues
+      ? Object.fromEntries(
+          Object.entries(vars).map(([k, v]) => [k, toAsciiVi(v)]),
+        )
+      : vars;
+    const body = renderTemplate(baseBody, renderVars);
     const subjectRaw = override?.subject ?? pickLocaleSubject(tmpl, locale);
     const subject = subjectRaw
-      ? renderTemplate(subjectRaw, vars)
+      ? renderTemplate(subjectRaw, renderVars)
       : undefined;
 
     const provider = getNotificationProvider(r.channel);

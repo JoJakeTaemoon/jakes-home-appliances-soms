@@ -81,7 +81,29 @@ function pickSamplePhotos(
   ];
 }
 
+/**
+ * Production guard.
+ *
+ * The staging box became the production box (decision 2026-09-23), so the
+ * seed now points at real customer data. `NODE_ENV=production` is set for the
+ * app container in docker-compose, which is exactly where the reseed workflow
+ * execs, so this refuses there while leaving local development untouched.
+ *
+ * `ALLOW_PROD_SEED=1` is the deliberate escape hatch for a genuine restore.
+ */
+function assertNotProduction(action: string): void {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "1") {
+    console.error(
+      `[${action}] REFUSED: this database is production. ` +
+        "Set ALLOW_PROD_SEED=1 only if you intend to write fixture data into real records.",
+    );
+    process.exit(1);
+  }
+}
+
 async function main() {
+  assertNotProduction("seed");
+
   console.log("Seeding...");
 
   // ─── Staff users ────────────────────────────────────────────────────
