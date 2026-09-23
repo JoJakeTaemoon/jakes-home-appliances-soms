@@ -26,6 +26,7 @@ import {
 import { sendNotification } from "@/lib/notifications/send";
 import { logAudit } from "@/lib/audit";
 import type { NotificationLocale } from "@/lib/notifications/types";
+import { PORTAL_URL_HTTPS } from "@/lib/config/company";
 
 const paramsSchema = z.object({ id: z.string() });
 // Empty body — the action is implicit. We accept (and ignore) any body
@@ -106,8 +107,7 @@ export const POST = defineMutation({
         contract_no: contract.contractNumber,
         end_date: contract.endDate.toISOString().slice(0, 10),
         days_remaining: String(daysRemaining),
-        url: "https://portal.seoulaqua.com.vn",
-        hq_phone: "028-1234-5678",
+        url: PORTAL_URL_HTTPS,
       },
       actorType: "USER",
       actorId: auth.userId,

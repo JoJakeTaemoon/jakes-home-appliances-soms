@@ -30,6 +30,7 @@ import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import type { NotificationLocale } from "@/lib/notifications/types";
 import { effectiveEndDate } from "@/lib/contracts/pause-period";
+import { PORTAL_URL_HTTPS } from "@/lib/config/company";
 
 export interface RentalCompletionSummary {
   contractsScanned: number;
@@ -244,8 +245,7 @@ export async function runRentalCompletionCheck(
               contract_no: c.contractNumber,
               completed_at: now.toISOString().slice(0, 10),
               equipment_count: String(flippedThisContract),
-              url: "https://portal.seoulaqua.com.vn",
-              hq_phone: "028-1234-5678",
+              url: PORTAL_URL_HTTPS,
             },
             actorType: "SYSTEM",
           });

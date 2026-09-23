@@ -24,9 +24,7 @@ import { sendNotification } from "@/lib/notifications/send";
 import { ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 import type { NotificationLocale } from "@/lib/notifications/types";
-import { HQ_PHONE } from "@/lib/config/company";
-
-const PORTAL_URL = "portal.seoulaqua.com.vn";
+import { HQ_PHONE, PORTAL_URL } from "@/lib/config/company";
 
 interface PortalEnableResult {
   contactId: string;

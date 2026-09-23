@@ -45,6 +45,12 @@ docker compose pull
 echo "[deploy] Bringing up app + postgres + caddy"
 docker compose up -d --remove-orphans
 
+# The Caddyfile is bind-mounted, so `up -d` leaves caddy untouched when only
+# that file changed. Reload it explicitly; a config error fails the deploy
+# here rather than silently serving the old routing.
+echo "[deploy] Reloading Caddy config"
+docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+
 echo "[deploy] Post-up prune of images the new tag replaced (best-effort)"
 docker image prune -af || true
 

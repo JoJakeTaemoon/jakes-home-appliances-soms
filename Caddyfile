@@ -1,41 +1,20 @@
-# Seoul Aqua SOMS — staging reverse proxy.
+# Seoul Aqua SOMS — reverse proxy.
 #
-# Current: IP-only HTTPS with a Caddy-managed self-signed cert (`tls internal`).
-# The browser will warn on first visit; accept once and the cert sticks.
+# One host serves every realm: the customer portal at `/`, the office app at
+# `/o` and the field app at `/f`. There is no separate portal deployment, so
+# `soms.seoulaqua.com.vn` is the only name this server answers for.
 #
-# When staging.seoulaqua.com.vn DNS is ready:
-#   1. Point an A record at this server's public IP.
-#   2. Replace the `:443` block below with the domain hostname.
-#   3. Drop the `tls internal` directive — Caddy will auto-issue from
-#      Let's Encrypt on first start.
-#   4. `docker compose restart caddy`.
+# Caddy issues and renews the certificate from Let's Encrypt on its own. That
+# needs port 80 reachable from the internet for the challenge, and the A
+# record already pointing here — a swap done in the other order burns failed
+# issuance attempts against the rate limit.
 
 {
 	admin off
-
-	# Force every site here to use Caddy's local CA. Without this, when a
-	# site is declared with no explicit hostname (`:443`) Caddy's
-	# auto-https policy reaches for public ACME and fails for raw-IP
-	# staging — the TLS handshake then aborts with `internal_error`.
-	local_certs
-
-	# Browsers + libraries don't send SNI when the URL is a raw IP literal
-	# (per RFC 6066). Without a hint, Caddy can't pick which cert to serve
-	# and the handshake fails with `internal_error`. Default unknown SNI
-	# to the staging IP so direct `https://103.27.60.70/...` works.
-	default_sni 103.27.60.70
 }
 
-# IP-bound HTTPS. Caddy issues + stores a local cert under /data on first run.
-# Sites must list every name the server should answer for so the local CA
-# can mint a cert whose SAN matches the connecting host.
-103.27.60.70, localhost {
-	tls internal
-
-	# Trust forwarded-for / proto headers from this proxy itself only.
-	# Nothing upstream of caddy — direct client traffic.
-
-	# Larger body limit so visit photos and SR attachments (~5–10 MB) succeed.
+soms.seoulaqua.com.vn {
+	# Larger body limit so visit photos and SR attachments (~5-10 MB) succeed.
 	request_body {
 		max_size 20MB
 	}
@@ -45,8 +24,6 @@
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		# Self-signed cert means HSTS preload is not appropriate yet; revisit
-		# after the domain swap.
 		-Server
 	}
 
@@ -59,8 +36,6 @@
 	}
 }
 
-# Force HTTP → HTTPS redirect. Hits :80 only when something speaks plain
-# HTTP to the IP; production clients should always use https://.
-:80 {
-	redir https://{host}{uri} permanent
-}
+# No `:80` site block here on purpose. Caddy adds the HTTP-to-HTTPS redirect
+# for a named site by itself, and a catch-all `:80` would sit in front of the
+# ACME challenge it serves on that port.

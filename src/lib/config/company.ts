@@ -17,3 +17,20 @@ export const HQ_PHONE_TEL = "02812345678";
 
 /** Customer-service mailbox. */
 export const HQ_EMAIL = "cs@seoulaqua.com.vn";
+
+/**
+ * The one host the whole system is served from (decision 2026-09-23).
+ *
+ * Office, field and customer-portal realms are paths on a single Next app
+ * (`/o`, `/f`, `/`), so they share this host — there is no separate portal
+ * deployment. Notifications that link a customer somewhere use
+ * `PORTAL_URL`; it is written without a scheme because SMS bodies are
+ * character-budgeted and the carrier registers the literal string.
+ */
+export const APP_HOST = "soms.seoulaqua.com.vn";
+
+/** Customer-facing entry point, as it appears in SMS bodies. */
+export const PORTAL_URL = APP_HOST;
+
+/** Same target with a scheme, for email bodies and anchor hrefs. */
+export const PORTAL_URL_HTTPS = `https://${APP_HOST}`;
