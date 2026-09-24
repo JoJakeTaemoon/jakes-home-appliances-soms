@@ -109,7 +109,6 @@ beforeAll(async () => {
       nameKo: "Task 1.3 test model",
       nameVi: "Task 1.3 test model",
       nameEn: "Task 1.3 test model",
-      category: "WATER_PURIFIER",
     },
   });
   modelId = model.id;

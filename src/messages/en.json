@@ -767,13 +767,6 @@
     "site": "Site",
     "model": "Model",
     "category": "Category",
-    "categoryValues": {
-      "WATER_PURIFIER": "Water purifier",
-      "BIDET": "Bidet",
-      "AIR_PURIFIER": "Air purifier",
-      "FILTER": "Filter",
-      "OTHER": "Other"
-    },
     "serial": "Serial #",
     "installDate": "Installed",
     "status": "Status",
@@ -965,13 +958,6 @@
     "replaceEveryDays": "Replace every (days)",
     "addFilter": "+ Add filter row",
     "isActive": "Active",
-    "categoryValues": {
-      "WATER_PURIFIER": "Water purifier",
-      "BIDET": "Bidet",
-      "AIR_PURIFIER": "Air purifier",
-      "FILTER": "Filter",
-      "OTHER": "Other"
-    },
     "saved": "Model saved",
     "noModels": "No equipment models yet",
     "filterConfig": "Filter configuration",
@@ -2388,7 +2374,10 @@
       "retailPriceHelp": "Suggested retail price shown to the end consumer.",
       "salePriceHelp": "Actual selling (transaction) price; may differ from retail after negotiation/discount.",
       "purchasePriceHelp": "Inbound/cost unit price at receiving; used for stock value & margin.",
-      "fixedPriceHelp": "Fixed supply price set for dealers/agencies."
+      "fixedPriceHelp": "Fixed supply price set for dealers/agencies.",
+      "searchOrAdd": "Search or add new…",
+      "quickCreateCategory": "Add category “{name}”",
+      "quickCreateBrand": "Add brand “{name}”"
     },
     "notificationTemplates": {
       "title": "Notification templates",

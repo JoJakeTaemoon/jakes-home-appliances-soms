@@ -21,7 +21,6 @@ interface ModelInfo {
   nameKo: string | null;
   nameVi: string | null;
   nameEn: string | null;
-  category: string;
   filterPolicy: { filters?: FilterEntry[] } | null;
 }
 interface EquipmentDetail {

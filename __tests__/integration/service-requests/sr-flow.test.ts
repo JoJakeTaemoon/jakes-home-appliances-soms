@@ -252,7 +252,6 @@ async function setupCustomer(opts: {
       nameKo: "Phase5 Test Model",
       nameVi: "Phase5 Test Model",
       nameEn: "Phase5 Test Model",
-      category: "WATER_PURIFIER",
     },
   });
 

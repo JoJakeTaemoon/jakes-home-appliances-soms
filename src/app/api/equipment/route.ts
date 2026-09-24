@@ -82,7 +82,6 @@ export const GET = defineQuery({
               nameKo: true,
               nameVi: true,
               nameEn: true,
-              category: true,
               categoryId: true,
               brandId: true,
               brand: { select: { id: true, name: true } },

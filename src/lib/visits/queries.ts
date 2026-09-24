@@ -59,7 +59,7 @@ export async function getVisitOr404(visitId: string) {
               nameKo: true,
               nameVi: true,
               nameEn: true,
-              category: true,
+              productCategory: { select: { nameKo: true, nameVi: true, nameEn: true } },
               // Filters / consumables compatible with this model — drives
               // the technician-facing "scope of work" section so the field
               // visit detail can show "replace pre-filter / clean post

@@ -72,7 +72,7 @@ interface SrDetail {
     id: string;
     serialNumber: string | null;
     installedAt: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
     site: { id: string; name: string } | null;
     contracts: {
       contract: { id: string; contractNumber: string; type: string; state: string };

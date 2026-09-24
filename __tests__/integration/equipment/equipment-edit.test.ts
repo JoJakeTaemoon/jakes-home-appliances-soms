@@ -84,10 +84,10 @@ beforeAll(async () => {
   token = await signStaffAccessToken({ userId: admin.id, username: admin.username, role: admin.role });
 
   const modelA = await prisma.equipmentModel.create({
-    data: { modelCode: MODEL_CODE_A, nameKo: "A", nameVi: "A", nameEn: "A", category: "WATER_PURIFIER", inspectionEveryDays: 90 },
+    data: { modelCode: MODEL_CODE_A, nameKo: "A", nameVi: "A", nameEn: "A", inspectionEveryDays: 90 },
   });
   const modelB = await prisma.equipmentModel.create({
-    data: { modelCode: MODEL_CODE_B, nameKo: "B", nameVi: "B", nameEn: "B", category: "WATER_PURIFIER" },
+    data: { modelCode: MODEL_CODE_B, nameKo: "B", nameVi: "B", nameEn: "B" },
   });
   modelBId = modelB.id;
 

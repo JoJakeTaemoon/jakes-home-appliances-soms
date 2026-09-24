@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
-import { pickModelName } from "@/lib/products/name";
+import { pickModelName, pickCategoryName, categoryAltNames } from "@/lib/products/name";
 import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
@@ -35,6 +35,10 @@ import { ModeField } from "@/components/ui/mode-field";
 import { useRecordMode, type RecordMode } from "@/lib/hooks/use-record-mode";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import { EquipmentModelForm } from "@/components/forms/equipment-model-form";
+import {
+  BrandQuickCreateModal,
+  CategoryQuickCreateModal,
+} from "@/components/products/catalog-quick-create";
 
 type Tab = "brands" | "categories" | "models" | "consumables" | "accessories" | "charges";
 
@@ -72,7 +76,8 @@ interface ModelRow {
   nameKo: string | null;
   nameVi: string | null;
   nameEn: string | null;
-  category: string | null;
+  categoryId: string | null;
+  productCategory: { id: string; nameKo: string; nameVi: string; nameEn: string } | null;
   isActive: boolean;
   brand: { id: string; name: string } | null;
   stockOnHand?: number;
@@ -761,6 +766,7 @@ function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiCl
 // ───────────────────────────────────────────────────────────────────────────
 
 function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const locale = useLocale();
   const [rows, setRows] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -768,7 +774,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [deleting, setDeleting] = useState<CategoryRow | null>(null);
   const [form, setForm] = useState({ code: "", nameKo: "", nameVi: "", nameEn: "", sortOrder: 0 });
   const [error, setError] = useState<string | null>(null);
-  const { sort, onClick } = useSort<"code" | "nameKo" | "nameVi" | "nameEn" | "sortOrder" | "isActive">("code");
+  const { sort, onClick } = useSort<"code" | "name" | "sortOrder" | "isActive">("code");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -799,13 +805,11 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
     () =>
       sortRows(rows, sort, {
         code: (r) => r.code,
-        nameKo: (r) => r.nameKo,
-        nameVi: (r) => r.nameVi,
-        nameEn: (r) => r.nameEn,
+        name: (r) => pickLocaleName(r, locale),
         sortOrder: (r) => r.sortOrder,
         isActive: (r) => r.isActive,
       }),
-    [rows, sort],
+    [rows, sort, locale],
   );
 
   return (
@@ -838,23 +842,19 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         <thead className="bg-muted">
           <tr>
             <SortableTh column="code" sort={sort} onClick={onClick}>{t("colCode")}</SortableTh>
-            <SortableTh column="nameKo" sort={sort} onClick={onClick}>{t("colNameKo")}</SortableTh>
-            <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameVi")}</SortableTh>
-            <SortableTh column="nameEn" sort={sort} onClick={onClick}>{t("colNameEn")}</SortableTh>
+            <SortableTh column="name" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
             <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
             <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={6} className="p-4 text-center">...</td></tr>
+            <tr><td colSpan={4} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.code}</td>
-                <td className="p-2">{r.nameKo}</td>
-                <td className="p-2">{r.nameVi}</td>
-                <td className="p-2">{r.nameEn}</td>
+                <td className="p-2">{pickLocaleName(r, locale)}</td>
                 <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
                 <td className="p-2 text-right">
                   <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
@@ -877,7 +877,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         <ConfirmDialog
           open
           title={t("deactivate")}
-          message={t("deactivateConfirm", { name: deleting.nameVi || deleting.code })}
+          message={t("deactivateConfirm", { name: pickLocaleName(deleting, locale) || deleting.code })}
           confirmLabel={t("deactivate")}
           cancelLabel={t("cancel")}
           variant="danger"
@@ -967,12 +967,6 @@ function ModelsTab({
   onExportExcel,
 }: Readonly<{ api: ApiClient; t: Translate; canManage: boolean; onExportExcel: () => void }>) {
   const locale = useLocale();
-  const tem = useTranslations("equipmentModels");
-  // Localize the category enum for the list column (matches the form's combobox
-  // labels); unknown values fall through to the raw string.
-  const CATEGORY_KEYS = new Set(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]);
-  const catLabel = (c: string | null | undefined) =>
-    c && CATEGORY_KEYS.has(c) ? tem(`categoryValues.${c}`) : (c ?? "—");
   const [rows, setRows] = useState<ModelRow[]>([]);
   const [loading, setLoading] = useState(true);
   // Master-detail record machine (조회/수정/신규 등록): selecting a row → 조회,
@@ -1009,16 +1003,18 @@ function ModelsTab({
     const q = foldDiacritics(search.trim());
     if (!q) return rows;
     return rows.filter((r) =>
-      foldDiacritics(`${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${r.category ?? ""}`).includes(q),
+      foldDiacritics(
+        `${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${pickCategoryName(r.productCategory, locale)}`,
+      ).includes(q),
     );
-  }, [rows, search]);
+  }, [rows, search, locale]);
 
   const sorted = useMemo(
     () =>
       sortRows(filtered, sort, {
         name: (r) => pickModelName(r, locale),
         brand: (r) => r.brand?.name ?? "",
-        category: (r) => r.category ?? "",
+        category: (r) => pickCategoryName(r.productCategory, locale),
         isActive: (r) => r.isActive,
       }),
     [filtered, sort, locale],
@@ -1096,8 +1092,7 @@ function ModelsTab({
               nameVi: selected.nameVi ?? "",
               nameEn: selected.nameEn ?? "",
               brandId: selected.brand?.id ?? null,
-              category: (selected.category ?? null) as
-                | "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER" | null,
+              categoryId: selected.categoryId ?? null,
               isActive: selected.isActive,
               stockOnHand: selected.stockOnHand ?? 0,
               safetyStock: s(selected.safetyStock),
@@ -1190,7 +1185,7 @@ function ModelsTab({
                     </td>
                     <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
                     <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
-                    <td className="px-2 py-1.5 text-[#586a7c]">{catLabel(r.category)}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{pickCategoryName(r.productCategory, locale)}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
                     <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                       {(r.stockOnHand ?? 0).toLocaleString()}
@@ -1278,7 +1273,7 @@ function useModelOptions(api: ApiClient): ModelRow[] {
 }
 
 /** Active brands, used to populate brand filter dropdowns. */
-function useBrandOptions(api: ApiClient): BrandRow[] {
+function useBrandOptions(api: ApiClient): [BrandRow[], (row: BrandRow) => void] {
   const [brands, setBrands] = useState<BrandRow[]>([]);
   useEffect(() => {
     void (async () => {
@@ -1286,7 +1281,8 @@ function useBrandOptions(api: ApiClient): BrandRow[] {
       setBrands(res.data);
     })();
   }, [api]);
-  return brands;
+  const add = useCallback((row: BrandRow) => setBrands((prev) => [...prev, row]), []);
+  return [brands, add];
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -1301,7 +1297,7 @@ function ConsumablesTab({
 }: Readonly<{ api: ApiClient; t: Translate; canManage: boolean; onExportExcel: () => void }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
-  const brands = useBrandOptions(api);
+  const [brands, addBrand] = useBrandOptions(api);
   const [rows, setRows] = useState<ConsumableRow[]>([]);
   const [loading, setLoading] = useState(true);
   // Master-detail record machine (조회/수정/신규 등록) — same convention as the
@@ -1396,6 +1392,7 @@ function ConsumablesTab({
       row={selected}
       models={models}
       brands={brands}
+      onBrandCreated={addBrand}
       submitRef={submitRef}
       focusRef={focusRef}
       headerActions={detailActions}
@@ -1452,9 +1449,7 @@ function ConsumablesTab({
               sorted.map((r, i) => {
                 const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
                 const isSel = selected?.id === r.id;
-                const catName = r.productCategory
-                  ? (locale === "vi" ? r.productCategory.nameVi : locale === "en" ? r.productCategory.nameEn : r.productCategory.nameKo)
-                  : "—";
+                const catName = r.productCategory ? pickLocaleName(r.productCategory, locale) : "—";
                 return (
                   <tr
                     key={r.id}
@@ -1531,7 +1526,7 @@ let appliedRowCounter = 0;
  *  model links) + stock adjust. Renders read-only in 조회(view); the detail-panel
  *  DetailActions drives Save via submitRef. */
 function ConsumableForm({
-  api, t, mode, row, models, brands, onDone, submitRef, focusRef, onStockChanged, headerActions, onSavingChange,
+  api, t, mode, row, models, brands, onBrandCreated, onDone, submitRef, focusRef, onStockChanged, headerActions, onSavingChange,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
@@ -1539,6 +1534,8 @@ function ConsumableForm({
   row: ConsumableRow | null;
   models: ModelRow[];
   brands: { id: string; name: string }[];
+  /** Pushes an inline-created brand into the tab-level option list. */
+  onBrandCreated: (row: BrandRow) => void;
   onDone: () => void;
   submitRef: RefObject<(() => void) | null>;
   focusRef: RefObject<(() => void) | null>;
@@ -1577,6 +1574,9 @@ function ConsumableForm({
   const [pendingModel, setPendingModel] = useState<string | null>(null);
   const [stockOpen, setStockOpen] = useState(false);
   const [categories, setCategories] = useState<{ id: string; nameKo: string; nameVi: string; nameEn: string }[]>([]);
+  // Non-null while the inline 제품군 / 브랜드 popup is open (see the model form).
+  const [newCategoryName, setNewCategoryName] = useState<string | null>(null);
+  const [newBrandName, setNewBrandName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -1602,11 +1602,8 @@ function ConsumableForm({
     })();
   }, [api]);
 
-  const categoryName = (() => {
-    const c = categories.find((x) => x.id === categoryId);
-    if (!c) return "";
-    return locale === "vi" ? c.nameVi : locale === "en" ? c.nameEn : c.nameKo;
-  })();
+  const category = categories.find((x) => x.id === categoryId);
+  const categoryName = category ? pickLocaleName(category, locale) : "";
   const brandName = brands.find((b) => b.id === brandId)?.name ?? "";
   const replaceView = replaceEveryDays
     ? `${replaceEveryDays} ${replaceCycleUnit === "DAY" ? t("cycleUnitDay") : t("cycleUnitMonth")}`
@@ -1711,8 +1708,16 @@ function ConsumableForm({
               <Combobox
                 value={categoryId}
                 onChange={(v) => setCategoryId(v || null)}
-                options={categories.map((c) => ({ value: c.id, label: locale === "vi" ? c.nameVi : locale === "en" ? c.nameEn : c.nameKo }))}
-                searchable allowClear ariaLabel={t("colCategory")}
+                options={categories.map((c) => ({
+                  value: c.id,
+                  label: pickLocaleName(c, locale),
+                  description: categoryAltNames(c, locale),
+                }))}
+                searchable searchPlaceholder={t("searchOrAdd")}
+                allowCreate
+                createLabel={(q) => t("quickCreateCategory", { name: q })}
+                onCreate={setNewCategoryName}
+                allowClear ariaLabel={t("colCategory")}
               />
             </ModeField>
             <ModeField label={t("colBrand")} mode={mode} value={brandName}>
@@ -1720,7 +1725,11 @@ function ConsumableForm({
                 value={brandId}
                 onChange={(v) => setBrandId(v || null)}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
-                searchable allowClear ariaLabel={t("colBrand")}
+                searchable searchPlaceholder={t("searchOrAdd")}
+                allowCreate
+                createLabel={(q) => t("quickCreateBrand", { name: q })}
+                onCreate={setNewBrandName}
+                allowClear ariaLabel={t("colBrand")}
               />
             </ModeField>
             <ModeField label={t("spec")} mode={mode} value={spec}>
@@ -1843,7 +1852,7 @@ function ConsumableForm({
                     <tr key={a.uid}>
                       <td className="px-2 py-1.5 text-[#737373]">{idx + 1}</td>
                       <td className="px-2 py-1.5 font-medium text-[#111]">{m ? pickModelName(m, locale) : "—"}</td>
-                      <td className="px-2 py-1.5 text-[#586a7c]">{m?.category ?? "—"}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{pickCategoryName(m?.productCategory, locale)}</td>
                       <td className="px-2 py-1.5 text-[#586a7c]">{m?.brand?.name ?? "—"}</td>
                       {isView ? (
                         <td className="px-2 py-1.5 text-right tabular-nums text-[#111]">{a.quantity || "1"}</td>
@@ -1883,6 +1892,28 @@ function ConsumableForm({
           currentStock={stockOnHand} onDone={onStockChanged}
         />
       )}
+      {newCategoryName !== null && (
+        <CategoryQuickCreateModal
+          initialName={newCategoryName}
+          onClose={() => setNewCategoryName(null)}
+          onCreated={(created) => {
+            setCategories((prev) => [...prev, created]);
+            setCategoryId(created.id);
+            setNewCategoryName(null);
+          }}
+        />
+      )}
+      {newBrandName !== null && (
+        <BrandQuickCreateModal
+          initialName={newBrandName}
+          onClose={() => setNewBrandName(null)}
+          onCreated={(created) => {
+            onBrandCreated({ ...created, sortOrder: 0, isActive: true });
+            setBrandId(created.id);
+            setNewBrandName(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1894,7 +1925,7 @@ function ConsumableForm({
 function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const locale = useLocale();
   const models = useModelOptions(api);
-  const brands = useBrandOptions(api);
+  const [brands] = useBrandOptions(api);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1999,6 +2030,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
                 }}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
                 placeholder={t("filterAll")}
+                searchable searchPlaceholder={t("searchOrAdd")}
                 allowClear
                 ariaLabel={t("filterByBrand")}
               />
@@ -2011,6 +2043,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
                 onChange={setModelFilter}
                 options={modelDropdownOptions}
                 placeholder={t("filterAll")}
+                searchable
                 allowClear
                 ariaLabel={t("filterByModel")}
               />

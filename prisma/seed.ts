@@ -275,8 +275,9 @@ async function main() {
   console.log(`  ✓ brands (${brandSeed.length})`);
 
   // ─── Product categories (multilingual) ──────────────────────────────
-  // Mirror the legacy EquipmentCategory enum during the rollout — both the
-  // enum column and the FK get populated so list filters keep working.
+  // The 제품군 master is a model's only classifier (the legacy
+  // EquipmentCategory enum was dropped in migration
+  // 20260924000000_drop_equipment_category_enum).
   // Categories from the attached "브랜드+제품군+모델명…" PDF.
   const catSeed = [
     { code: "WATER_PURIFIER", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier", sortOrder: 10 },
@@ -325,19 +326,6 @@ async function main() {
     monthlyRentalPrice?: number;
     monthlyMaintenancePrice?: number;
   };
-  // EquipmentCategory enum mirror — legacy column. Anything not in the enum
-  // (DEHUMIDIFIER, ICE_MAKER, MICROBUBBLE_CLEANER, etc.) falls back to
-  // "OTHER" so existing filters don't break.
-  const legacyCategoryByCode: Record<string, "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "OTHER"> = {
-    WATER_PURIFIER: "WATER_PURIFIER",
-    HOT_COLD_PURIFIER: "WATER_PURIFIER",
-    RO_HOT_COLD_PURIFIER: "WATER_PURIFIER",
-    POWERLESS_PURIFIER: "WATER_PURIFIER",
-    BIDET: "BIDET",
-    MANUAL_BIDET: "BIDET",
-    AIR_PURIFIER: "AIR_PURIFIER",
-  };
-
   const modelSeed: ModelSeed[] = [
     // ── Air purifier — Seoul Aqua ────────────────────────────────────
     { code: "CA-5000W", name: "CA-5000W Air Purifier", brand: "Seoul Aqua", category: "AIR_PURIFIER", inspectionEveryDays: 30, retailPrice: 7_200_000, monthlyRentalPrice: 320_000, monthlyMaintenancePrice: 110_000 },
@@ -448,7 +436,6 @@ async function main() {
   const modelCategoryCodeByCode = new Map<string, string>();
   for (const [mIdx, m] of modelSeed.entries()) {
     modelCategoryCodeByCode.set(m.code, m.category);
-    const legacy = legacyCategoryByCode[m.category] ?? "OTHER";
     // Deterministic stock so the 재고 UI has real numbers to test against.
     // A couple of models sit below safetyStock to exercise the low-stock alert.
     const stockOnHand = mIdx % 6 === 0 ? 2 : 8 + ((mIdx * 13) % 55);
@@ -471,7 +458,6 @@ async function main() {
         nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
         categoryId: categoriesByCode.get(m.category)?.id,
-        category: legacy,
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
         ...stockField,
@@ -488,7 +474,6 @@ async function main() {
         nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
         categoryId: categoriesByCode.get(m.category)?.id,
-        category: legacy,
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
         ...stockField,

@@ -67,13 +67,23 @@ describe("filterPolicySchema", () => {
 });
 
 describe("createEquipmentModelSchema", () => {
-  it("requires at least one localized name (category + brand are optional)", () => {
+  it("requires at least one localized name (categoryId + brand are optional)", () => {
     expect(
       createEquipmentModelSchema.safeParse({
         nameVi: "Test",
-        category: "WATER_PURIFIER",
+        categoryId: "cat_water_purifier",
       }).success,
     ).toBe(true);
+  });
+
+  it("drops the retired `category` enum instead of forwarding it", () => {
+    const parsed = createEquipmentModelSchema.safeParse({
+      nameVi: "Test",
+      category: "WATER_PURIFIER",
+    });
+    // 제품군 (categoryId) is the only classifier now; the legacy key is
+    // stripped by Zod so it can never reach Prisma.
+    expect(parsed.success && "category" in parsed.data).toBe(false);
   });
 
   it("accepts a model with no category or brand", () => {
@@ -87,7 +97,7 @@ describe("createEquipmentModelSchema", () => {
   it("rejects a model with no localized name in any locale", () => {
     expect(
       createEquipmentModelSchema.safeParse({
-        category: "WATER_PURIFIER",
+        categoryId: "cat_water_purifier",
       }).success,
     ).toBe(false);
   });

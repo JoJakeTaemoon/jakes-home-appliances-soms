@@ -72,7 +72,7 @@ beforeAll(async () => {
   staffToken = await signStaffAccessToken({ userId: staff.id, username: staff.username, role: staff.role });
 
   const model = await prisma.equipmentModel.create({
-    data: { modelCode: MODEL_CODE, nameKo: "Task 1.1 test model", nameVi: "Task 1.1 test model", nameEn: "Task 1.1 test model", category: "WATER_PURIFIER" },
+    data: { modelCode: MODEL_CODE, nameKo: "Task 1.1 test model", nameVi: "Task 1.1 test model", nameEn: "Task 1.1 test model" },
   });
   modelId = model.id;
 

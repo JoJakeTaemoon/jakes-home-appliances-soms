@@ -118,7 +118,6 @@ beforeAll(async () => {
       nameKo: "Task 1.4 test model",
       nameVi: "Task 1.4 test model",
       nameEn: "Task 1.4 test model",
-      category: "WATER_PURIFIER",
     },
   });
   modelId = model.id;
@@ -129,7 +128,6 @@ beforeAll(async () => {
       nameKo: "Task 1.4 test model B",
       nameVi: "Task 1.4 test model B",
       nameEn: "Task 1.4 test model B",
-      category: "WATER_PURIFIER",
     },
   });
   modelIdB = modelB.id;

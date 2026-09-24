@@ -112,7 +112,7 @@ Sample shows 22 customers but the legacy `관리번호` reaches **8918** — tha
 
 | Field | Source |
 |---|---|
-| `category` | Inferred from `modelCode` prefix or assigned manually: `PTS-*` / `KJ-*` / `KH-*` → `WATER_PURIFIER`; `SA-J*` → `BIDET`; `AC-*` → `AIR_PURIFIER`; `FSM-*` → `INDUSTRIAL_SYSTEM`; `JBS*` / `CS-CF*` → `LIFESTYLE_FILTER`; `CHESSY*` / `CHP-*` → `RO_SYSTEM` |
+| `categoryId` (was `category` enum — see the SUPERSEDED note below) | Inferred from `modelCode` prefix or assigned manually: `PTS-*` / `KJ-*` / `KH-*` → `WATER_PURIFIER`; `SA-J*` → `BIDET`; `AC-*` → `AIR_PURIFIER`; `FSM-*` → `INDUSTRIAL_SYSTEM`; `JBS*` / `CS-CF*` → `LIFESTYLE_FILTER`; `CHESSY*` / `CHP-*` → `RO_SYSTEM` |
 | `defaultRentPrice` | VND/month — not in CSV; populated by office (typical rental rates from sample contracts: 500K-650K VND/month) |
 | `manufacturer` | optional |
 | `displayName` | Human-readable customer-facing name |
@@ -574,6 +574,10 @@ model CustomerContact {
 ///         ON "CustomerContact" ("customerId")
 ///         WHERE role = 'OPS_CONTACT' AND "isPrimary" = true;
 
+// SUPERSEDED (2026-09-24) — this enum was dropped in migration
+// 20260924000000_drop_equipment_category_enum. 제품군 is now a row in the
+// `ProductCategory` master table (code + nameKo/nameVi/nameEn, office-editable)
+// and `EquipmentModel.categoryId` is the model's only classifier.
 enum EquipmentCategory {
   WATER_PURIFIER BIDET AIR_PURIFIER DEHUMIDIFIER
   INDUSTRIAL_SYSTEM RO_SYSTEM LIFESTYLE_FILTER OTHER

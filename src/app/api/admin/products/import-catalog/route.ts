@@ -20,6 +20,7 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
+import { categoryCodeFromName } from "@/lib/products/category-code";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError, ValidationError } from "@/lib/api/error";
@@ -90,12 +91,6 @@ function parseCsv(input: string): string[][] {
     row.push(cur); rows.push(row);
   }
   return rows;
-}
-
-/** Generate an A-Z_0-9 category code from the English category name. */
-function categoryCodeFromName(nameEn: string): string {
-  const slug = nameEn.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-  return slug || "CATEGORY";
 }
 
 function toInt(raw: string | undefined): number | null {

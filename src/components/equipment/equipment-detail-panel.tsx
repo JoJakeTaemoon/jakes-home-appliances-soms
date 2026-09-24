@@ -14,7 +14,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { pickModelName } from "@/lib/products/name";
+import { pickModelName, pickCategoryName } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
 import { Tabs, TabsList, Tab, TabPanel } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ interface EquipmentDetail {
     nameKo: string | null;
     nameVi: string | null;
     nameEn: string | null;
-    category: string;
+    productCategory: { nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
     filterPolicy: { filters?: { type: string; replaceEveryDays: number }[] } | null;
   };
   serialNumber: string | null;
@@ -133,14 +133,7 @@ export function EquipmentDetailPanel({
               <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
               <Row label={t("detail.assetCode")} value={data.assetCode ?? "—"} mono />
               <Row label={t("model")} value={pickModelName(data.model, locale)} />
-              <Row
-                label={t("category")}
-                value={
-                  data.model.category
-                    ? t(`categoryValues.${data.model.category}` as never)
-                    : "—"
-                }
-              />
+              <Row label={t("category")} value={pickCategoryName(data.model.productCategory, locale)} />
               <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
               <Row label={t("ownership")} value={data.ownership} />
               {data.deactivatedAt && (

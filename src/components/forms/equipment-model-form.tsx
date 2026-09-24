@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,13 @@ import { ModeField } from "@/components/ui/mode-field";
 import { SectionBadge } from "@/components/ui/section-badge";
 import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
+import {
+  BrandQuickCreateModal,
+  CategoryQuickCreateModal,
+  type CreatedBrand,
+  type CreatedCategory,
+} from "@/components/products/catalog-quick-create";
+import { categoryAltNames, pickCategoryName } from "@/lib/products/name";
 import type { RecordMode } from "@/lib/hooks/use-record-mode";
 import { cn } from "@/lib/cn";
 
@@ -31,14 +38,12 @@ function newRowUid() {
   return `f${rowCounter}`;
 }
 
-type CategoryValue = "WATER_PURIFIER" | "BIDET" | "AIR_PURIFIER" | "FILTER" | "OTHER";
-
 interface ModelInput {
   nameKo: string;
   nameVi: string;
   nameEn: string;
   brandId: string | null;
-  category: CategoryValue | null;
+  categoryId: string | null;
   description: string;
   retailPrice: string;
   salePrice: string;
@@ -74,6 +79,13 @@ interface BrandOpt {
   name: string;
 }
 
+interface CategoryOpt {
+  id: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+}
+
 interface ConsumableOpt {
   id: string;
   sku: string;
@@ -88,7 +100,7 @@ const EMPTY: ModelInput = {
   nameVi: "",
   nameEn: "",
   brandId: null,
-  category: null,
+  categoryId: null,
   description: "",
   retailPrice: "",
   salePrice: "",
@@ -113,6 +125,7 @@ export function EquipmentModelForm({
   onSavingChange,
 }: Readonly<Props>) {
   const t = useTranslations("equipmentModels");
+  const locale = useLocale();
   const tp = useTranslations("admin.products");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -129,6 +142,11 @@ export function EquipmentModelForm({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
+  const [categories, setCategories] = useState<CategoryOpt[]>([]);
+  // Non-null while the inline "add a 제품군 / 브랜드" popup is open; holds
+  // the text the user typed into the combobox so the popup can prefill it.
+  const [newCategoryName, setNewCategoryName] = useState<string | null>(null);
+  const [newBrandName, setNewBrandName] = useState<string | null>(null);
   const [consumables, setConsumables] = useState<ConsumableOpt[]>([]);
   const [stockOpen, setStockOpen] = useState(false);
   const nameRef = useRef<HTMLInputElement | null>(null);
@@ -138,7 +156,8 @@ export function EquipmentModelForm({
   const lowStock = mode !== "create" && stockOnHand < safetyNum;
   const fmtMoney = (v: string) => (v ? Number(v).toLocaleString() : "");
   const brandName = brands.find((b) => b.id === data.brandId)?.name ?? "";
-  const categoryLabel = data.category ? t(`categoryValues.${data.category}`) : "";
+  const category = categories.find((c) => c.id === data.categoryId);
+  const categoryLabel = category ? pickCategoryName(category, locale) : "";
   const nameView = (
     <span className="flex flex-col leading-tight">
       <span>{data.nameKo || "—"}</span>
@@ -155,12 +174,14 @@ export function EquipmentModelForm({
   useEffect(() => {
     void (async () => {
       try {
-        const [b, c] = await Promise.all([
+        const [b, c, cat] = await Promise.all([
           api.get<BrandOpt[]>("/api/admin/products/brands?pageSize=100&isActive=true"),
           api.get<ConsumableOpt[]>("/api/admin/products/consumables?pageSize=500&isActive=true"),
+          api.get<CategoryOpt[]>("/api/admin/products/categories?pageSize=200&isActive=true"),
         ]);
         setBrands(b.data ?? []);
         setConsumables(c.data ?? []);
+        setCategories(cat.data ?? []);
       } catch (e) {
         if (e instanceof ApiClientError && e.status === 403) return;
         console.warn("[equipment-model-form] catalog load failed", e);
@@ -253,7 +274,7 @@ export function EquipmentModelForm({
         nameVi: data.nameVi || undefined,
         nameEn: data.nameEn || undefined,
         brandId: data.brandId,
-        category: data.category ?? null,
+        categoryId: data.categoryId ?? null,
         description: data.description || undefined,
         retailPrice: num(data.retailPrice),
         salePrice: num(data.salePrice),
@@ -308,14 +329,20 @@ export function EquipmentModelForm({
             </ModeField>
             <ModeField label={t("category")} mode={mode} required value={categoryLabel}>
               <Combobox
-                value={data.category}
-                onChange={(v) => setField("category", (v as CategoryValue | null) ?? null)}
-                options={(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"] as const).map((c) => ({
-                  value: c,
-                  label: t(`categoryValues.${c}`),
+                value={data.categoryId}
+                onChange={(v) => setField("categoryId", v || null)}
+                options={categories.map((c) => ({
+                  value: c.id,
+                  label: pickCategoryName(c, locale),
+                  description: categoryAltNames(c, locale),
                 }))}
-                searchable={false}
+                searchable
+                searchPlaceholder={tp("searchOrAdd")}
+                allowCreate
+                createLabel={(q) => tp("quickCreateCategory", { name: q })}
+                onCreate={setNewCategoryName}
                 allowClear
+                ariaLabel={t("category")}
               />
             </ModeField>
             <ModeField label={t("brand")} mode={mode} required value={brandName}>
@@ -324,7 +351,12 @@ export function EquipmentModelForm({
                 onChange={(v) => setField("brandId", v || null)}
                 options={brands.map((b) => ({ value: b.id, label: b.name }))}
                 searchable
+                searchPlaceholder={tp("searchOrAdd")}
+                allowCreate
+                createLabel={(q) => tp("quickCreateBrand", { name: q })}
+                onCreate={setNewBrandName}
                 allowClear
+                ariaLabel={t("brand")}
               />
             </ModeField>
             <ModeField label={t("description")} mode={mode} value={data.description}>
@@ -488,6 +520,28 @@ export function EquipmentModelForm({
           itemLabel={data.nameKo || data.nameVi || data.nameEn || ""}
           currentStock={stockOnHand}
           onDone={() => onStockChanged?.()}
+        />
+      )}
+      {newCategoryName !== null && (
+        <CategoryQuickCreateModal
+          initialName={newCategoryName}
+          onClose={() => setNewCategoryName(null)}
+          onCreated={(row: CreatedCategory) => {
+            setCategories((prev) => [...prev, row]);
+            setField("categoryId", row.id);
+            setNewCategoryName(null);
+          }}
+        />
+      )}
+      {newBrandName !== null && (
+        <BrandQuickCreateModal
+          initialName={newBrandName}
+          onClose={() => setNewBrandName(null)}
+          onCreated={(row: CreatedBrand) => {
+            setBrands((prev) => [...prev, row]);
+            setField("brandId", row.id);
+            setNewBrandName(null);
+          }}
         />
       )}
     </div>

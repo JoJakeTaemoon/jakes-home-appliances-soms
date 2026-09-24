@@ -19,9 +19,8 @@ export const GET = defineQuery({
   query: equipmentModelListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, category, brandId, categoryId, isActive, page, pageSize } = query;
+    const { q, brandId, categoryId, isActive, page, pageSize } = query;
     const where: Prisma.EquipmentModelWhereInput = {};
-    if (category) where.category = category;
     if (brandId) where.brandId = brandId;
     if (categoryId) where.categoryId = categoryId;
     if (typeof isActive === "boolean") where.isActive = isActive;
@@ -68,7 +67,6 @@ export const POST = defineMutation({
           nameVi: body.nameVi ?? null,
           nameEn: body.nameEn ?? null,
           brandId: body.brandId ?? null,
-          category: body.category ?? null,
           categoryId: body.categoryId ?? null,
           description: body.description ?? null,
           retailPrice: body.retailPrice ?? null,

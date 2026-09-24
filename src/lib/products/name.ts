@@ -77,3 +77,23 @@ export function pickEquipmentLabel(
   if (eq.model) return pickModelName(eq.model, locale);
   return eq.customDescription || eq.serialNumber || "—";
 }
+
+/**
+ * The category's *other* locale names, for a Combobox option's `description`.
+ *
+ * Catalog masters carry ko/vi/en names but a dropdown only shows the current
+ * locale's. Office staff routinely know a 제품군 by its Vietnamese name while
+ * running the Korean UI, so the alternates ride along as the option subtitle —
+ * which `Combobox` also searches, making the list findable in any of the three
+ * languages (diacritics folded).
+ */
+export function categoryAltNames(
+  cat: { nameKo?: string | null; nameVi?: string | null; nameEn?: string | null },
+  locale: string | undefined,
+): string | undefined {
+  const primary = pickCategoryName(cat, locale);
+  const alts = [cat.nameKo, cat.nameVi, cat.nameEn].filter(
+    (n): n is string => !!n && n !== primary,
+  );
+  return alts.length > 0 ? [...new Set(alts)].join(" · ") : undefined;
+}

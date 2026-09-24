@@ -60,7 +60,6 @@ export const GET = defineQuery({
                     nameKo: true,
                     nameVi: true,
                     nameEn: true,
-                    category: true,
                   },
                 },
                 site: { select: { id: true, name: true } },

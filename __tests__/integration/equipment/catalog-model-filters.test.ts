@@ -79,7 +79,6 @@ describe("model filter config (WS-A1)", () => {
     const res = await modelPost(
       req("/api/equipment-models", "POST", {
         nameEn: MODEL_NAME,
-        category: "WATER_PURIFIER",
         compatibleConsumables: [
           { consumableId: c2Id, quantity: 2, sortOrder: 0 }, // no override → 90
           { consumableId: c1Id, quantity: 1, sortOrder: 1, replaceEveryDaysOverride: 45 }, // override 45 (< 180)

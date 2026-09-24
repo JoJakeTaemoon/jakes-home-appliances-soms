@@ -75,7 +75,7 @@ interface ContractDetail {
       id: string;
       serialNumber: string | null;
       status: string;
-      model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null; category: string };
+      model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
       site: { id: string; name: string } | null;
     };
   }>;

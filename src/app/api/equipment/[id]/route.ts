@@ -32,7 +32,7 @@ export const GET = defineQuery({
       include: {
         customer: { select: { id: true, code: true, name: true, type: true } },
         site: { select: { id: true, name: true, address: true } },
-        model: true,
+        model: { include: { productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } } } },
         contracts: { include: { contract: true } },
         registeredBy: { select: { id: true, username: true } },
       },

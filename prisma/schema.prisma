@@ -345,14 +345,6 @@ model CustomerSession {
 // EQUIPMENT (Phase 2-3)
 // ─────────────────────────────────────────────────────────────────────────
 
-enum EquipmentCategory {
-  WATER_PURIFIER
-  BIDET
-  AIR_PURIFIER
-  FILTER
-  OTHER
-}
-
 enum EquipmentStatus {
   ACTIVE
   REPLACED // replaced by another unit (legacy retained)
@@ -447,9 +439,9 @@ model EquipmentModel {
   nameEn                  String?
   brandId                 String?
   brand                   Brand?             @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  // Legacy enum classification — kept during the ProductCategory rollout so
-  // existing list filters & seeded code paths keep working. Prefer `categoryId`.
-  category                EquipmentCategory?
+  // Sole classifier — the 제품군 master (ProductCategory). The legacy
+  // `EquipmentCategory` enum was dropped in migration
+  // 20260924000000_drop_equipment_category_enum.
   categoryId              String?
   productCategory         ProductCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   description             String?
@@ -482,7 +474,6 @@ model EquipmentModel {
   orderItems  OrderItem[]
   stockMoves  StockMove[]         @relation("StockMoveModel")
 
-  @@index([category, isActive])
   @@index([categoryId, isActive])
   @@index([brandId, isActive])
 }

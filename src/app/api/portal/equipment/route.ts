@@ -27,7 +27,7 @@ export const GET = defineQuery({
             nameKo: true,
             nameVi: true,
             nameEn: true,
-            category: true,
+            productCategory: { select: { nameKo: true, nameVi: true, nameEn: true } },
             filterPolicy: true,
             // ConsumableOnModel join — needed so the customer dashboard
             // can compute the next filter-replacement due date when no

@@ -41,9 +41,9 @@ export const createEquipmentModelSchema = z.object({
   nameVi: optStr(180),
   nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
-  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).nullable().optional(),
-  // Reference to ProductCategory. Optional during rollout — when null, the
-  // legacy `category` enum is the only classifier. New models should set both.
+  // 제품군 — the model's only classifier (the legacy `category` enum was
+  // dropped). Nullable so a category deletion can SetNull; the office form
+  // requires it on entry.
   categoryId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
@@ -85,7 +85,6 @@ export const updateEquipmentModelSchema = z.object({
   nameVi: optStr(180),
   nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
-  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
   categoryId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
@@ -108,7 +107,6 @@ export const updateEquipmentModelSchema = z.object({
 
 export const equipmentModelListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
-  category: z.enum(["WATER_PURIFIER", "BIDET", "AIR_PURIFIER", "FILTER", "OTHER"]).optional(),
   // Server-side filters used by the bulk-register wizard's model picker.
   brandId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),

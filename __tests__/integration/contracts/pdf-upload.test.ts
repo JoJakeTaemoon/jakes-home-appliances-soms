@@ -112,7 +112,7 @@ beforeAll(async () => {
   const model = await prisma.equipmentModel.upsert({
     where: { modelCode: "TEST-PDFUPLOAD-MODEL" },
     update: {},
-    create: { modelCode: "TEST-PDFUPLOAD-MODEL", nameKo: "PDF upload test model", nameVi: "PDF upload test model", nameEn: "PDF upload test model", category: "WATER_PURIFIER" },
+    create: { modelCode: "TEST-PDFUPLOAD-MODEL", nameKo: "PDF upload test model", nameVi: "PDF upload test model", nameEn: "PDF upload test model" },
   });
   modelId = model.id;
 });

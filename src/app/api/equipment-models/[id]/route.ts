@@ -85,7 +85,6 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           nameVi: data.nameVi,
           nameEn: data.nameEn,
           brandId: data.brandId,
-          category: data.category,
           categoryId: data.categoryId,
           description: data.description,
           retailPrice: data.retailPrice,

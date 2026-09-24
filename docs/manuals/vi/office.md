@@ -983,6 +983,16 @@ Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự đ�
 >
 > **Form Lõi lọc cũng chia 2 cột**: cột trái — Tên lõi · Nhóm sản phẩm · Thương hiệu · Quy cách · Công dụng chính; cột phải — Chu kỳ thay · Tồn kho hiện tại · Tồn kho tối thiểu · Giá bán lẻ · Giá đại lý · Giá nhập. Ô **Ghi chú** ở cuối form chiếm toàn bộ chiều rộng.
 >
+> **Chọn Nhóm sản phẩm · Thương hiệu — tìm kiếm + thêm ngay tại chỗ** (mới): ô **Nhóm sản phẩm** và **Thương hiệu** trong form Model và form Lõi lọc cho phép **gõ để tìm** thay vì cuộn danh sách (gõ không dấu `may loc` vẫn tìm ra `Máy lọc nước`). Nếu giá trị cần chưa có trong danh sách, dòng **"Thêm nhóm sản phẩm 〈tên vừa gõ〉"** (thương hiệu tương tự) hiện ở cuối danh sách; nhấn vào đó sẽ mở **popup nhập nhanh** — không cần rời sang tab khác của Danh mục sản phẩm.
+> - **Popup nhóm sản phẩm**: 3 ô tên (Hàn · Việt · Anh) + **Mã**. Tên vừa gõ được điền sẵn vào cả 3 ô, mã tự sinh từ tên tiếng Anh (hoặc tiếng Việt) theo dạng `MAY_LOC_NUOC`. Sửa mã bằng tay thì hệ thống ngừng tự sinh.
+> - **Popup thương hiệu**: chỉ một ô tên.
+> - Sau khi lưu, mục mới **được chọn ngay** vào ô đó. Nếu mã đã tồn tại, popup giữ nguyên và hiện lỗi trùng mã.
+> - Quyền tạo nhóm sản phẩm / thương hiệu: **từ MANAGER trở lên**.
+>
+> **"Nhóm sản phẩm" của model giờ dùng chung một danh mục duy nhất** (thay đổi): trước đây form Model có **5 phân loại cố định** riêng (Máy lọc nước · Bồn cầu thông minh · Máy lọc không khí · Lõi lọc · Khác), còn 14 nhóm tạo ở tab Nhóm sản phẩm chỉ dùng cho lõi lọc. Nay model cũng chọn từ **danh sách của tab Nhóm sản phẩm** (máy lọc nước nóng lạnh · RO · không dùng điện · máy hút ẩm · máy làm đá…). 5 phân loại cũ của các model hiện có đã được chuyển sang nhóm sản phẩm cùng tên.
+>
+> **Danh sách tab Nhóm sản phẩm** chỉ hiển thị **một cột tên theo ngôn ngữ đang dùng** (trước đây có 3 cột KO · VI · EN). Đổi ngôn ngữ thì tên đổi theo; phần nhập 3 ngôn ngữ vẫn nằm trong form thêm/sửa.
+>
 > **Bảng Model (danh sách bên phải)** có các cột STT · Tên model · Nhóm SP · Thương hiệu · Tồn kho · Giá bán lẻ · Giá đại lý · Giá nhập, mỗi dòng có **ô tích chọn** và tiêu đề bảng có ô **chọn tất cả**. Tích chọn nhiều model rồi nhấn **Xóa (F4)** ở khu vực chi tiết để vô hiệu hóa hàng loạt cùng lúc; nếu không tích chọn dòng nào, thao tác chỉ áp dụng cho model đang hiển thị ở khu vực chi tiết. **Bảng Lõi lọc**: STT · Tên lõi · Nhóm SP · Thương hiệu · Quy cách · Chu kỳ thay · Tồn kho · Giá bán lẻ, trong đó **Nhóm SP** được điền tự động theo nhóm sản phẩm của thiết bị đang dùng lõi lọc đó. Tồn kho dưới mức an toàn hiện **màu đỏ**.
 
 ![Danh mục sản phẩm — Đăng ký Model](../screenshots/vi/office/14-admin-products.png)

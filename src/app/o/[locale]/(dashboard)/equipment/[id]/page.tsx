@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { pickModelName } from "@/lib/products/name";
+import { pickModelName, pickCategoryName } from "@/lib/products/name";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
@@ -45,7 +45,7 @@ interface EquipmentDetail {
     nameKo: string | null;
     nameVi: string | null;
     nameEn: string | null;
-    category: string;
+    productCategory: { nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
     description: string | null;
     retailPrice: string | null;
     monthlyRentalPrice: string | null;
@@ -216,14 +216,7 @@ export default function EquipmentDetailPage() {
           <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
           <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
           <Row label={t("model")} value={`${pickModelName(data.model, locale)} — ${pickModelName(data.model, locale)}`} />
-          <Row
-            label={t("category")}
-            value={
-              data.model.category
-                ? t(`categoryValues.${data.model.category}` as never)
-                : "—"
-            }
-          />
+          <Row label={t("category")} value={pickCategoryName(data.model.productCategory, locale)} />
           <Row label={t("ownership")} value={data.ownership} />
           {data.deactivatedAt && (
             <Row

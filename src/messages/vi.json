@@ -767,13 +767,6 @@
     "site": "Cơ sở",
     "model": "Mẫu",
     "category": "Nhóm sản phẩm",
-    "categoryValues": {
-      "WATER_PURIFIER": "Máy lọc nước",
-      "BIDET": "Bồn cầu thông minh",
-      "AIR_PURIFIER": "Máy lọc không khí",
-      "FILTER": "Lõi lọc",
-      "OTHER": "Khác"
-    },
     "serial": "Số sê-ri",
     "installDate": "Ngày lắp đặt",
     "status": "Trạng thái",
@@ -955,7 +948,7 @@
     "displayNameEn": "Tên hiển thị (EN)",
     "inspectionEveryMonths": "Chu kỳ kiểm tra (ngày)",
     "warrantyMonths": "Bảo hành (tháng)",
-    "category": "Danh mục",
+    "category": "Nhóm sản phẩm",
     "description": "Mô tả",
     "retailPrice": "Giá bán (₫)",
     "monthlyRentalPrice": "Phí thuê/tháng (₫)",
@@ -965,13 +958,6 @@
     "replaceEveryDays": "Thay sau (ngày)",
     "addFilter": "+ Thêm lõi lọc",
     "isActive": "Đang sử dụng",
-    "categoryValues": {
-      "WATER_PURIFIER": "Máy lọc nước",
-      "BIDET": "Bồn cầu thông minh",
-      "AIR_PURIFIER": "Máy lọc không khí",
-      "FILTER": "Lõi lọc",
-      "OTHER": "Khác"
-    },
     "saved": "Đã lưu mẫu",
     "noModels": "Chưa có mẫu thiết bị",
     "filterConfig": "Cấu hình lõi lọc",
@@ -2246,7 +2232,7 @@
       "colNameEn": "Tên (EN)",
       "colName": "Tên",
       "colSortOrder": "Thứ tự",
-      "colCategory": "Loại sản phẩm",
+      "colCategory": "Nhóm sản phẩm",
       "colReplaceCycle": "Chu kỳ thay",
       "colCleanCycle": "Chu kỳ vệ sinh (ngày)",
       "colCleanOnVisit": "Vệ sinh mỗi lần thăm",
@@ -2388,7 +2374,10 @@
       "retailPriceHelp": "Giá bán lẻ đề xuất cho người tiêu dùng cuối.",
       "salePriceHelp": "Giá bán (giao dịch) thực tế; có thể khác giá bán lẻ khi thương lượng/giảm giá.",
       "purchasePriceHelp": "Đơn giá nhập/vốn khi nhập kho; dùng để tính giá trị tồn kho & biên lợi nhuận.",
-      "fixedPriceHelp": "Giá cung cấp ấn định cho đại lý/điểm bán."
+      "fixedPriceHelp": "Giá cung cấp ấn định cho đại lý/điểm bán.",
+      "searchOrAdd": "Tìm hoặc thêm mới…",
+      "quickCreateCategory": "Thêm nhóm sản phẩm “{name}”",
+      "quickCreateBrand": "Thêm thương hiệu “{name}”"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

@@ -767,13 +767,6 @@
     "site": "사업장",
     "model": "모델",
     "category": "제품군",
-    "categoryValues": {
-      "WATER_PURIFIER": "정수기",
-      "BIDET": "비데",
-      "AIR_PURIFIER": "공기청정기",
-      "FILTER": "필터",
-      "OTHER": "기타"
-    },
     "serial": "시리얼 번호",
     "installDate": "설치일",
     "status": "상태",
@@ -955,7 +948,7 @@
     "displayNameEn": "제품명 (EN)",
     "inspectionEveryMonths": "점검 주기 (일)",
     "warrantyMonths": "보증기간 (월)",
-    "category": "카테고리",
+    "category": "제품군",
     "description": "설명",
     "retailPrice": "판매가 (₫)",
     "monthlyRentalPrice": "월 임대료 (₫)",
@@ -965,13 +958,6 @@
     "replaceEveryDays": "교체 주기 (일)",
     "addFilter": "+ 필터 추가",
     "isActive": "사용",
-    "categoryValues": {
-      "WATER_PURIFIER": "정수기",
-      "BIDET": "비데",
-      "AIR_PURIFIER": "공기청정기",
-      "FILTER": "필터",
-      "OTHER": "기타"
-    },
     "saved": "모델이 저장되었습니다",
     "noModels": "등록된 장비 모델이 없습니다",
     "filterConfig": "필터 구성",
@@ -2411,7 +2397,10 @@
       "retailPriceHelp": "최종 소비자에게 안내하는 권장 소매가입니다.",
       "salePriceHelp": "실제 판매(거래) 가격입니다. 협상·할인으로 소비자가와 달라질 수 있습니다.",
       "purchasePriceHelp": "매입·입고 시 단가(원가)입니다. 재고 가치·마진 계산에 사용됩니다.",
-      "fixedPriceHelp": "대리점·판매점에 지정하는 공급가입니다."
+      "fixedPriceHelp": "대리점·판매점에 지정하는 공급가입니다.",
+      "searchOrAdd": "검색 또는 새로 추가…",
+      "quickCreateCategory": "제품군 “{name}” 추가",
+      "quickCreateBrand": "브랜드 “{name}” 추가"
     },
     "users": {
       "title": "사용자 관리",

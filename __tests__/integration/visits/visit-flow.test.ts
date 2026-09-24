@@ -297,7 +297,6 @@ describe("POST /api/visits", () => {
         nameKo: "Test",
         nameVi: "Test",
         nameEn: "Test",
-        category: "WATER_PURIFIER",
       },
     });
     const equipment = await prisma.equipment.create({
