@@ -46,10 +46,17 @@ echo "[deploy] Bringing up app + postgres + caddy"
 docker compose up -d --remove-orphans
 
 # The Caddyfile is bind-mounted, so `up -d` leaves caddy untouched when only
-# that file changed. Reload it explicitly; a config error fails the deploy
-# here rather than silently serving the old routing.
-echo "[deploy] Reloading Caddy config"
-docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+# that file changed — it has to be told to pick the file up.
+#
+# `caddy reload` is not the way to do it here: the Caddyfile sets `admin off`,
+# so there is no admin API on :2019 for reload to POST to, and it exits 1.
+# Validate the config first (that works without the admin API) so a bad file
+# fails the deploy before the proxy is touched, then bounce the container.
+echo "[deploy] Validating Caddy config"
+docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile
+
+echo "[deploy] Restarting Caddy to pick up the config"
+docker compose restart caddy
 
 echo "[deploy] Post-up prune of images the new tag replaced (best-effort)"
 docker image prune -af || true
