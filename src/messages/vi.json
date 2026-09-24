@@ -2209,7 +2209,10 @@
         "NotificationTemplate": "Mẫu thông báo",
         "NotificationLog": "Nhật ký thông báo",
         "ScheduledJob": "Tác vụ định kỳ",
-        "SystemSetting": "Cấu hình hệ thống"
+        "SystemSetting": "Cấu hình hệ thống",
+        "CatalogImport": "Nhập CSV danh mục",
+        "Order": "Đơn hàng",
+        "StockMove": "Chuyển kho"
       }
     }
   },

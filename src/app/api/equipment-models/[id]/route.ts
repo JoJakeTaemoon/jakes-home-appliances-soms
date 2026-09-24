@@ -51,6 +51,13 @@ export const GET = defineQuery({
   },
 });
 
+/** UPDATE unless this PATCH flipped `isActive` — then DEACTIVATE / REACTIVATE. */
+function activationAction(before: boolean, after: boolean): string {
+  if (before && !after) return "EQUIPMENT_MODEL_DEACTIVATE";
+  if (!before && after) return "EQUIPMENT_MODEL_REACTIVATE";
+  return "EQUIPMENT_MODEL_UPDATE";
+}
+
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
     const auth = await requireAuth(request);
@@ -126,10 +133,15 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       }
       return row;
     });
+    // The catalog UI "deletes" a model by PATCHing isActive=false (there is no
+    // DELETE route — models are never hard-deleted). Logging that as a plain
+    // UPDATE hid every retirement from an audit search filtered on 삭제, so the
+    // isActive transition picks its own action, matching BRAND_DEACTIVATE and
+    // friends.
     await logAudit({
       actorType: "USER",
       actorId: auth.userId,
-      action: "EQUIPMENT_MODEL_UPDATE",
+      action: activationAction(before.isActive, updated.isActive),
       entityType: "EquipmentModel",
       entityId: id,
       before,

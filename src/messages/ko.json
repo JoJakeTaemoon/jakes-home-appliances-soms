@@ -2209,7 +2209,10 @@
         "NotificationTemplate": "알림 서식",
         "NotificationLog": "알림 로그",
         "ScheduledJob": "예약 작업",
-        "SystemSetting": "시스템 설정"
+        "SystemSetting": "시스템 설정",
+        "CatalogImport": "카탈로그 CSV 업로드",
+        "Order": "주문",
+        "StockMove": "재고 이동"
       }
     }
   },

@@ -25,6 +25,7 @@ import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError, ValidationError } from "@/lib/api/error";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
+import { logAudit } from "@/lib/audit";
 
 interface ImportSummary {
   rowsProcessed: number;
@@ -392,6 +393,45 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+
+    // Every row above is written straight through Prisma, so without this the
+    // whole upload — dozens of brands / 제품군 / models — lands in the database
+    // with no audit trail at all. One row per upload, flattened because the
+    // diff table is a shallow key/value view: nested objects would render as
+    // raw JSON. Names (not just counts) so "where did this brand come from?"
+    // is answerable from the log alone.
+    const names = (items: string[]) => (items.length > 0 ? items.join(", ") : null);
+    await logAudit({
+      actorType: "USER",
+      actorId: auth.userId,
+      action: "CATALOG_IMPORT",
+      entityType: "CatalogImport",
+      entityId: null,
+      after: {
+        fileName: file.name,
+        rowsProcessed: summary.rowsProcessed,
+        brandsCreated: summary.brandsCreated,
+        categoriesCreated: summary.categoriesCreated,
+        modelsCreated: summary.modelsCreated,
+        consumablesCreated: summary.consumablesCreated,
+        accessoriesCreated: summary.accessoriesCreated,
+        linksCreated: summary.linksCreated,
+        duplicatesSkipped:
+          summary.duplicates.brands +
+          summary.duplicates.categories +
+          summary.duplicates.models +
+          summary.duplicates.consumables +
+          summary.duplicates.accessories +
+          summary.duplicates.links,
+        newBrands: names(summary.newItems.brands),
+        newCategories: names(summary.newItems.categories),
+        newModels: names(summary.newItems.models),
+        newConsumables: names(summary.newItems.consumables),
+        newAccessories: names(summary.newItems.accessories),
+        warnings: summary.warnings.length > 0 ? summary.warnings.join(" | ") : null,
+      },
+      request,
+    });
 
     return successResponse(summary);
   } catch (err) {

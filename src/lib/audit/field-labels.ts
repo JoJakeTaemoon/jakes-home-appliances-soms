@@ -210,6 +210,23 @@ const FIELD_LABELS: Record<string, Triplet> = {
     vi: "Thời gian vô hiệu",
   },
 
+  // ── Catalog CSV import (one audit row per upload) ───────
+  "CatalogImport.fileName": { ko: "파일명", en: "File name", vi: "Tên tệp" },
+  "CatalogImport.rowsProcessed": { ko: "처리한 행", en: "Rows processed", vi: "Số dòng xử lý" },
+  "CatalogImport.brandsCreated": { ko: "신규 브랜드 수", en: "Brands created", vi: "Thương hiệu mới" },
+  "CatalogImport.categoriesCreated": { ko: "신규 제품군 수", en: "Categories created", vi: "Nhóm SP mới" },
+  "CatalogImport.modelsCreated": { ko: "신규 모델 수", en: "Models created", vi: "Model mới" },
+  "CatalogImport.consumablesCreated": { ko: "신규 소모품 수", en: "Consumables created", vi: "Lõi lọc mới" },
+  "CatalogImport.accessoriesCreated": { ko: "신규 부속품 수", en: "Accessories created", vi: "Phụ kiện mới" },
+  "CatalogImport.linksCreated": { ko: "신규 호환 연결 수", en: "Compatibility links created", vi: "Liên kết tương thích mới" },
+  "CatalogImport.duplicatesSkipped": { ko: "중복 건너뜀", en: "Duplicates skipped", vi: "Bỏ qua trùng lặp" },
+  "CatalogImport.newBrands": { ko: "신규 브랜드", en: "New brands", vi: "Thương hiệu mới" },
+  "CatalogImport.newCategories": { ko: "신규 제품군", en: "New categories", vi: "Nhóm sản phẩm mới" },
+  "CatalogImport.newModels": { ko: "신규 모델", en: "New models", vi: "Model mới" },
+  "CatalogImport.newConsumables": { ko: "신규 소모품", en: "New consumables", vi: "Lõi lọc mới" },
+  "CatalogImport.newAccessories": { ko: "신규 부속품", en: "New accessories", vi: "Phụ kiện mới" },
+  "CatalogImport.warnings": { ko: "경고", en: "Warnings", vi: "Cảnh báo" },
+
   // ── Equipment ───────────────────────────────────────────
   "Equipment.serialNo": {
     ko: "시리얼 번호",

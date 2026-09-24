@@ -922,9 +922,18 @@ Phiên bản v1 sử dụng hệ thống hóa đơn điện tử bên ngoài (Vi
 MANAGER trở lên: Thanh bên → Báo cáo → Nhật ký kiểm toán
 
 - Ghi lại mọi thao tác hệ thống (thêm người dùng, kích hoạt HĐ, miễn phí thanh toán v.v.)
-- Nhấp vào dòng → Xem JSON trước/sau thay đổi
-- Xuất CSV (chỉ ADMIN)
+- Mỗi dòng đọc như **một câu "ai đã làm gì"** — ví dụ: `admin (Quản trị viên) đã tải lên tệp CSV danh mục`
+- **[Chi tiết]** → ngăn bên phải hiện **bảng so sánh trước/sau theo từng trường** (chỉ những trường thay đổi). Mở mục "Thông tin kỹ thuật" để xem JSON gốc, IP và trình duyệt
+- Lọc theo loại đối tượng · hành động · người thực hiện · khoảng thời gian · từ khóa; xuất CSV (chỉ ADMIN)
 - Thời gian lưu trữ: 24 tháng
+
+> **Nhãn cam "(chưa đăng ký)" cạnh tên hành động** nghĩa là hành động đó chưa có câu mô tả dịch sẵn — bản thân bản ghi vẫn bình thường. Ngày 2026-09-24 đã dịch bổ sung 20 hành động (hợp đồng tự hoàn tất, lắp đặt thiết bị, điều chỉnh tồn kho, tạo đơn hàng…) nên nhãn này không còn xuất hiện.
+
+#### Những gì được ghi / không được ghi (bổ sung 2026-09-24)
+
+- **Tải lên CSV danh mục** trước đây không để lại bất kỳ dấu vết nào. Nay mỗi lần tải lên tạo 1 bản ghi kèm tên tệp, số dòng xử lý, **tên các thương hiệu · nhóm sản phẩm · model · lõi lọc · phụ kiện mới được tạo** và số bản trùng đã bỏ qua. Câu hỏi "thương hiệu này ai tạo?" trả lời được chỉ bằng nhật ký
+- **Xóa (vô hiệu hóa) model** trước đây chỉ ghi là "cập nhật" nên lọc theo thao tác xóa sẽ không thấy. Nay ghi thành hành động riêng: **Vô hiệu hóa model / Kích hoạt lại model**
+- Vẫn không được ghi: **seed dữ liệu ban đầu · khởi tạo lại CSDL · migration** — các thao tác ghi thẳng vào cơ sở dữ liệu, không đi qua màn hình hệ thống
 
 ---
 

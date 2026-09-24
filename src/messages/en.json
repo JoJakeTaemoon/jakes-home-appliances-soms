@@ -2209,7 +2209,10 @@
         "NotificationTemplate": "Notification template",
         "NotificationLog": "Notification log",
         "ScheduledJob": "Scheduled job",
-        "SystemSetting": "System setting"
+        "SystemSetting": "System setting",
+        "CatalogImport": "Catalog CSV import",
+        "Order": "Order",
+        "StockMove": "Stock move"
       }
     }
   },
