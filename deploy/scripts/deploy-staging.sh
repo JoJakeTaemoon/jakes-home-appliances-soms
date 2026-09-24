@@ -30,14 +30,21 @@ else
   echo "APP_IMAGE=${APP_IMAGE}" >> .env
 fi
 
-echo "[deploy] Reclaiming disk before pull (old main-<sha> images accumulate)"
-# Old tagged images (main-<sha>) are not dangling, so -a is required to
-# remove them. Docker protects images referenced by running containers, so
-# the currently-live image survives. Pruning BEFORE pull frees space first,
-# which is what auto-recovers a box that is already full. || true keeps a
-# prune miss from aborting the deploy under `set -euo pipefail`.
-docker image prune -af || true
-docker builder prune -af || true
+# Pruning before the pull used to be unconditional, and it is why deploys
+# started timing out: `-a` drops every image not currently running, including
+# the base layers the incoming image shares with the outgoing one, so each
+# deploy re-downloaded the whole thing over the link to the server. The
+# post-deploy prune below reclaims the same space without costing a full
+# download. Keep the pre-pull prune only for the case it was written for —
+# a box already too full to receive an image.
+AVAIL_GB=$(df -BG --output=avail / 2>/dev/null | tail -1 | tr -dc '0-9')
+if [ "${AVAIL_GB:-99}" -lt 10 ]; then
+  echo "[deploy] Only ${AVAIL_GB}GB free — pruning before pull to make room"
+  docker image prune -af || true
+  docker builder prune -af || true
+else
+  echo "[deploy] ${AVAIL_GB}GB free — keeping the layer cache for a faster pull"
+fi
 
 echo "[deploy] Pulling images"
 docker compose pull
