@@ -89,8 +89,8 @@ export class MockNotificationProvider implements NotificationProvider {
 
     console.log(`${tag(payload.channel)}\n${box("Mock dispatch", lines)}`);
 
-    // Fan-out to the dev-only browser bus so the forgotten-password / SMS
-    // test flows surface the rendered body in the developer-tools console.
+    // Fan-out to the dev-only browser bus so the portal-welcome / password-
+    // reset SMS flows surface the rendered body in the dev-tools console.
     // Production safety: skipped when NODE_ENV === 'production' so a
     // misconfigured mock provider in prod doesn't leak credential bodies to
     // any SSE listener.

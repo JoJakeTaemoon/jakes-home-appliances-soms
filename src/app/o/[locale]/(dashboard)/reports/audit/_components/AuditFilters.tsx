@@ -109,7 +109,13 @@ const ACTIONS_BY_ENTITY: Record<string, string[]> = {
     "PAYMENT_UPDATED",
   ],
   TaxInvoice: ["TAX_INVOICE_REISSUE"],
-  User: ["USER_CREATE", "USER_UPDATE", "USER_DISABLE", "USER_PHONE_UPDATE"],
+  User: [
+    "USER_CREATE",
+    "USER_UPDATE",
+    "USER_DISABLE",
+    "USER_PHONE_UPDATE",
+    "PASSWORD_RESET_BY_STAFF",
+  ],
   Equipment: [
     "EQUIPMENT_INSTALL",
     "EQUIPMENT_BULK_CREATE",

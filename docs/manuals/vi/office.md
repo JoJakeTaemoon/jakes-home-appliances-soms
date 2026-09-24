@@ -59,7 +59,7 @@ Lợi ích so với sổ giấy và bảng tính Excel:
 
 - Máy tính có kết nối Internet (Chrome · Edge · Firefox · Safari phiên bản mới nhất)
 - Số điện thoại di động cá nhân (ID đăng nhập)
-- Mật khẩu tạm thời nhận qua SMS từ quản trị viên
+- Mật khẩu tạm thời do quản trị viên đọc trực tiếp cho bạn (không gửi qua SMS)
 
 ---
 
@@ -134,7 +134,7 @@ Trang đăng nhập nhân viên văn phòng: `/o/vi/login`
 | Trường | Mô tả |
 |---|---|
 | **Số điện thoại** | Số di động cá nhân (ví dụ: `0901234567`) |
-| **Mật khẩu** | Mật khẩu của bạn (lần đầu: mật khẩu tạm thời nhận qua SMS) |
+| **Mật khẩu** | Mật khẩu của bạn (lần đầu: mật khẩu tạm thời do quản trị viên cấp) |
 
 **Bảo mật**:
 - 3 lần đăng nhập sai → khóa tự động 1 giờ
@@ -143,7 +143,9 @@ Trang đăng nhập nhân viên văn phòng: `/o/vi/login`
 
 ### 4.2 Đổi mật khẩu lần đầu
 
-Sau khi quản trị viên tạo tài khoản, bạn nhận SMS mật khẩu tạm thời. Đăng nhập lần đầu sẽ hiển thị màn hình đổi mật khẩu ngay. Tối thiểu 8 ký tự, khuyến nghị kết hợp chữ và số.
+Khi tạo tài khoản, quản trị viên đặt mật khẩu tạm thời và đọc trực tiếp cho bạn. Đăng nhập lần đầu sẽ hiển thị màn hình đổi mật khẩu ngay. Tối thiểu 8 ký tự, khuyến nghị kết hợp chữ và số.
+
+**Không có chức năng tự khôi phục mật khẩu.** Nếu quên mật khẩu, hãy liên hệ ADMIN hoặc MANAGER — họ cấp mật khẩu tạm thời mới tại «Quản trị → Quản lý người dùng → Đặt lại mật khẩu».
 
 ### 4.3 Bảng điều khiển
 
@@ -959,8 +961,8 @@ Bảng người dùng được **nhóm theo vai trò**. Mỗi nhóm có tiêu đ
 #### Đăng ký người dùng mới
 
 1. Nút "**Người dùng mới**"
-2. Nhập tên, số điện thoại, email, vai trò (ADMIN/MANAGER/STAFF/TECHNICIAN)
-3. Lưu → Tự động gửi SMS mật khẩu tạm thời
+2. Nhập tên, số điện thoại, vai trò (ADMIN/MANAGER/STAFF/TECHNICIAN), mật khẩu tạm thời (tối thiểu 8 ký tự)
+3. Lưu → Đọc trực tiếp mật khẩu tạm thời đó cho người dùng (không gửi SMS)
 
 #### Bật/tắt vai trò Đại lý (mới)
 
@@ -968,7 +970,14 @@ Trong chi tiết người dùng, bật công tắc "**Gán làm Đại lý**" đ
 
 #### Đặt lại mật khẩu
 
-Nhấp vào người dùng → nút "**Đặt lại mật khẩu**" → Tự động gửi SMS mật khẩu tạm thời → Toàn bộ phiên đăng nhập hiện tại bị kết thúc
+Khi nhân viên quên mật khẩu, họ **gọi điện cho bạn và bạn đặt lại tại đây**. Không có màn hình tự khôi phục cho nhân viên.
+
+Nút "**Đặt lại mật khẩu**" trên dòng người dùng → Xác nhận → Mật khẩu tạm thời mới **hiển thị trên màn hình đúng một lần**. Đóng cửa sổ sẽ không xem lại được, vì vậy hãy đọc ngay cho người dùng.
+
+- Mật khẩu tạm thời **không được gửi qua SMS** — cố ý như vậy để mật khẩu không nằm lại trong nhật ký tin nhắn
+- Toàn bộ phiên đăng nhập của người đó kết thúc ngay, và lần đăng nhập kế tiếp họ phải đặt mật khẩu mới
+- MANAGER không thể đặt lại mật khẩu của tài khoản ADMIN (chỉ ADMIN mới được)
+- Lịch sử đặt lại được ghi vào nhật ký kiểm toán (`PASSWORD_RESET_BY_STAFF`)
 
 ### 15.2 Danh mục sản phẩm
 

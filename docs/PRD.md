@@ -391,15 +391,13 @@ erDiagram
 | **Alternate: shared phone (A.13 b)** | If two contacts share `phone1`, both can log in independently. Disambiguation by entering full name OR by selecting from a list after phone is entered. |
 | **Postconditions** | CustomerSession row; AuditLog `CUSTOMER_LOGIN_SUCCESS`. |
 
-#### UC-AU-05 — Customer requests password reset
+#### UC-AU-05 — ~~Customer requests password reset~~ (removed 2026-09-24)
 
 | Field | Value |
 |---|---|
-| **Actor** | Customer (any portal-enabled contact) |
-| **Status** | 🟢 v1 (Phase 3.5) |
-| **Main flow** | 1. On login screen, click "Reset password". 2. Enter phone + name. 3. System verifies match. 4. Generates 10-char password. 5. bcrypt-hashes + stores. 6. Sends `SMS_PASSWORD_RESET` containing new password. 7. Sets `mustChangePassword=true`. |
-| **Constraints** | Email-only contacts CANNOT use this — password reset is intentionally SMS-only (security: an attacker with email-only access mustn't receive new credentials). System messages ignore opt-out. |
-| **Alternate: phone not found** | Generic "if account exists, SMS will be sent" message (no enumeration). |
+| **Status** | ⛔ Removed — self-service reset is no longer offered on any realm |
+| **Replaced by** | UC-AU-06 (customer) and UC-AU-08 (staff). A locked-out user phones the office; the office resets on their behalf. |
+| **Rationale** | Both self-service paths handed out credentials to whoever held the handset, with no human check. Removing them also drops `SMS_STAFF_RESET_CODE` from the eSMS registration queue. |
 
 #### UC-AU-06 — Manager resets customer password
 
@@ -416,6 +414,17 @@ erDiagram
 | **Actor** | Customer (any portal-enabled contact) |
 | **Status** | 🟢 v1 (Phase 3.5) |
 | **Main flow** | 1. Settings → Change password. 2. Enter old + new + confirm. 3. System validates strength (≥8 chars). 4. bcrypt-hashes new. 5. Clears `mustChangePassword`. 6. AuditLog. |
+
+#### UC-AU-08 — Admin resets a staff password
+
+| Field | Value |
+|---|---|
+| **Actor** | ADMIN, MANAGER |
+| **Status** | 🟢 v1 (2026-09-24) |
+| **Preconditions** | Staff user phoned the office and was identified by a human. Target is ACTIVE and not the caller themselves. |
+| **Main flow** | 1. Admin → Users. 2. Click "Reset password" on the row. 3. Confirm. 4. System generates a 10-char password, bcrypt-hashes it, sets `mustChangePassword=true`, clears the lockout counters, revokes every active Session. 5. The plaintext is returned once and shown on screen; the admin reads it out. 6. AuditLog `PASSWORD_RESET_BY_STAFF`. |
+| **Constraints** | The temp password is **never sent by SMS or email** — it exists only in that one response. A MANAGER cannot reset an ADMIN (privilege escalation). |
+| **Acceptance** | Target's old sessions are dead immediately; the next login lands on the change-password screen. |
 
 ---
 
@@ -956,7 +965,7 @@ Channel selection rule lives in `src/lib/notifications/router.ts`. Full matrix i
 | Code | Channel | Trigger | Recipient |
 |---|---|---|---|
 | `SMS_PORTAL_WELCOME` | SMS | UC-CM-03 portal enabled | New CustomerContact |
-| `SMS_PASSWORD_RESET` | SMS | UC-AU-05 / UC-AU-06 | Contact whose pw was reset |
+| `SMS_PASSWORD_RESET` | SMS | UC-AU-06 | Contact whose pw was reset |
 | `SMS_VISIT_REMINDER` | SMS | UC-VS-10 (D-1) | Primary OPS contact |
 | `SMS_SR_APPROVED` | SMS | UC-SR-02 | SR submitter |
 | `SMS_SR_REJECTED` | SMS | UC-SR-03 | SR submitter |

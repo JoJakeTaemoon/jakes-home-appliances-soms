@@ -71,7 +71,7 @@ flowchart LR
 | `/o/...` | office | `/{locale}/o/login` |
 | `/f/login` | field (public) | — |
 | `/f/...` | field | `/{locale}/f/login` |
-| `/login`, `/forgot-password`, `/change-password` | customer (public) | — |
+| `/login`, `/change-password` | customer (public) | — |
 | Other root paths | customer | `/{locale}/login` |
 
 ---

@@ -39,6 +39,13 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     vi: "đăng nhập thất bại",
   },
   LOGOUT: { ko: "로그아웃했습니다", en: "logged out", vi: "đã đăng xuất" },
+  PASSWORD_RESET_BY_STAFF: {
+    ko: "의 비밀번호를 초기화했습니다",
+    en: "reset the password of",
+    vi: "đã đặt lại mật khẩu của",
+  },
+  // The three below are retired — staff self-service recovery was removed on
+  // 2026-09-24. Labels stay so audit rows from before that date still read.
   PASSWORD_RESET_REQUEST: {
     ko: "비밀번호 재설정을 요청했습니다",
     en: "requested a password reset",

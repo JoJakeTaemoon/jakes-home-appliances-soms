@@ -223,7 +223,7 @@ export function CustomerAuthProvider({ children }: Readonly<{ children: ReactNod
       globalThis.window === undefined
         ? ""
         : globalThis.window.location.pathname;
-    const onPublicPage = /^\/[^/]+\/(login|forgot-password|change-password)(?:\/|$)/.test(path);
+    const onPublicPage = /^\/[^/]+\/(login|change-password)(?:\/|$)/.test(path);
     if (onPublicPage) {
       setCached(null, null);
       setIsLoading(false);

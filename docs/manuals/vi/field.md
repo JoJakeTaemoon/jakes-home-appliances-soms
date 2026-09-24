@@ -54,15 +54,13 @@ https://soms.seoulaqua.com.vn/f/vi/login
 
 ### 1.3 Thông tin cần nhận lúc đầu
 
-Khi quản trị viên tạo tài khoản, bạn nhận được một SMS:
+Khi quản trị viên tạo tài khoản, họ **đọc trực tiếp mật khẩu tạm thời** cho bạn. Thông tin này không gửi qua SMS, vì vậy hãy hỏi quản trị viên.
 
-```
-Tài khoản kỹ thuật viên Seoul Aqua đã được tạo.
-Mật khẩu tạm thời: ********
-Đăng nhập: soms.seoulaqua.com.vn/f/login
-```
+- ID đăng nhập: số điện thoại di động của bạn
+- Mật khẩu tạm thời: quản trị viên đọc trực tiếp
+- Địa chỉ đăng nhập: `soms.seoulaqua.com.vn/f/login`
 
-Giữ SMS này cho bản thân. Tuyệt đối không chia sẻ mật khẩu với người khác.
+Tuyệt đối không chia sẻ mật khẩu với người khác.
 
 ---
 
@@ -98,7 +96,7 @@ Trang đăng nhập KTV: `/f/vi/login`
 
 **Lần đầu đăng nhập**: Sau khi đăng nhập bằng mật khẩu tạm thời, màn hình đổi mật khẩu sẽ hiện ra ngay. Đặt mật khẩu mới tối thiểu 8 ký tự.
 
-**Quên mật khẩu**: Liên hệ văn phòng. Quản trị viên sẽ gửi mật khẩu tạm thời mới qua SMS.
+**Quên mật khẩu**: Gọi cho văn phòng. Quản trị viên sẽ cấp mật khẩu tạm thời mới ngay và đọc trực tiếp cho bạn. Không có màn hình tự lấy lại mật khẩu.
 
 > Nếu dùng tài khoản KTV để đăng nhập vào ứng dụng văn phòng (`/o/login`), hệ thống sẽ tự hướng dẫn bạn đến đúng ứng dụng KTV.
 

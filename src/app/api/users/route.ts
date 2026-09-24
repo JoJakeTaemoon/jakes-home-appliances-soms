@@ -9,7 +9,7 @@ import prisma from "@/lib/prisma";
 import { defineMutation, defineQuery } from "@/lib/api/mutation";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
-import { normalizePhone } from "@/lib/auth/recovery";
+import { normalizePhone } from "@/lib/auth/phone";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({

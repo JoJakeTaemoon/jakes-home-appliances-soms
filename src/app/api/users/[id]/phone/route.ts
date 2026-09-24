@@ -27,7 +27,7 @@ import {
   ValidationError,
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
-import { normalizePhone } from "@/lib/auth/recovery";
+import { normalizePhone } from "@/lib/auth/phone";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
 

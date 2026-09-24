@@ -22,11 +22,6 @@ export const TEMPLATE_DESCRIPTIONS: Record<string, TemplateDescription> = {
     vi: "Gửi khi MANAGER+ đặt lại mật khẩu cổng của KH. Luôn gửi, không phụ thuộc opt-out (tin bảo mật).",
     en: "Sent when MANAGER+ resets a customer's portal password. Always delivered regardless of opt-out (security message).",
   },
-  SMS_STAFF_RESET_CODE: {
-    ko: "직원 본인 비밀번호 찾기 (전화번호 인증) 시 6자리 인증코드 발송. 10분 유효, 재시도 제한 있음.",
-    vi: "Gửi mã 6 chữ số khi nhân viên dùng tự khôi phục mật khẩu (xác thực SĐT). Hiệu lực 10 phút, có giới hạn thử lại.",
-    en: "Sends the 6-digit verification code during staff self-service password recovery (phone-based). Valid 10 minutes; retry-limited.",
-  },
   SMS_VISIT_REMINDER: {
     ko: "방문 예정일 하루 전 (D-1) 자동 발송. 16:00 VST cron이 다음 날 SCHEDULED 방문을 스캔해 고객에게 알림.",
     vi: "Tự động gửi 1 ngày trước lượt thăm (D-1). Cron 16:00 VST quét các Visit SCHEDULED ngày hôm sau và gửi nhắc cho KH.",

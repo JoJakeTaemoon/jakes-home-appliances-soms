@@ -41,7 +41,7 @@ Ngay sau khi kích hoạt hợp đồng, bạn sẽ nhận được mật khẩu
 
 ### Quên mật khẩu?
 
-Nhấn vào liên kết **Quên mật khẩu?** ở cuối màn hình đăng nhập. Nhập số điện thoại và tên, hệ thống sẽ gửi mật khẩu tạm thời qua SMS đến số điện thoại đã đăng ký.
+**Vui lòng liên hệ văn phòng Seoul Aqua.** Màn hình đăng nhập không còn chức năng tự lấy lại mật khẩu. Sau khi văn phòng xác minh và đặt lại, hệ thống sẽ gửi mật khẩu tạm thời qua SMS đến số điện thoại đã đăng ký.
 
 ---
 
@@ -228,7 +228,7 @@ Tại bất kỳ màn hình nào, nhấn nút ngôn ngữ (KO / VI / EN) ở gó
 
 | Triệu chứng | Giải pháp |
 |---|---|
-| Không thể đăng nhập | Kiểm tra lại số điện thoại và mật khẩu. Nếu đăng nhập sai 5 lần liên tiếp, tài khoản sẽ bị khóa. Dùng **Quên mật khẩu** hoặc liên hệ văn phòng. |
+| Không thể đăng nhập | Kiểm tra lại số điện thoại và mật khẩu. Nếu đăng nhập sai 5 lần liên tiếp, tài khoản sẽ bị khóa. Hãy liên hệ văn phòng để được đặt lại mật khẩu. |
 | Không nhận được SMS mật khẩu tạm thời | Hợp đồng có thể chưa được xử lý xong. Liên hệ văn phòng để xác nhận. |
 | Không thấy thiết bị trong danh sách | Hợp đồng chưa được kích hoạt. Vui lòng xác nhận với văn phòng. |
 | Không thấy menu Hóa đơn GTGT | Chức năng này chỉ dành cho khách hàng B2B. Khách hàng hộ gia đình (B2C) không thấy menu này. |

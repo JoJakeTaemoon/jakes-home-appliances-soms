@@ -3,7 +3,6 @@
  *
  * Exercises the route handlers directly with hand-built NextRequests:
  *   - login (success, wrong pw, lockout, mustChangePassword, multi-candidate)
- *   - password-reset (rotates pw + sends mock SMS + revokes sessions)
  *   - change-password (clears mustChangePassword flag)
  *   - portal-enable provisions credentials via mock SMS
  *
@@ -19,7 +18,6 @@ import prisma from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
 
 import { POST as portalLogin } from "@/app/api/portal/auth/login/route";
-import { POST as portalPasswordReset } from "@/app/api/portal/auth/password-reset/route";
 import { POST as portalChangePassword } from "@/app/api/portal/auth/change-password/route";
 import { GET as portalMe } from "@/app/api/portal/auth/me/route";
 import { enablePortalAccount } from "@/lib/auth/portal-enable";
@@ -284,119 +282,6 @@ describe("POST /api/portal/auth/login", () => {
 
     // cleanup
     await prisma.customer.delete({ where: { id: cust2.id } });
-  });
-});
-
-describe("POST /api/portal/auth/password-reset", () => {
-  it("rotates password + sends mock SMS + revokes sessions", async () => {
-    const pwHash = await hashPassword("OldPW1234");
-    const contact = await prisma.customerContact.create({
-      data: {
-        customerId,
-        role: "CONTRACT_PARTY",
-        scope: "CUSTOMER",
-        name: NAME_A,
-        phone1: PHONE_A,
-        email: "a@test.local",
-        language: "vi",
-        portalEnabled: true,
-        passwordHash: pwHash,
-      },
-    });
-    // Pre-existing session to be revoked.
-    await prisma.customerSession.create({
-      data: {
-        contactId: contact.id,
-        refreshToken: "test-refresh-" + Date.now(),
-        expiresAt: new Date(Date.now() + 86400000),
-      },
-    });
-
-    const before = await prisma.customerContact.findUnique({
-      where: { id: contact.id },
-      select: { passwordHash: true },
-    });
-
-    const res = await readJson(
-      await portalPasswordReset(
-        await buildReq("/api/portal/auth/password-reset", "POST", {
-          phone: PHONE_A,
-          name: NAME_A,
-        }),
-      ),
-    );
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-
-    const after = await prisma.customerContact.findUnique({
-      where: { id: contact.id },
-      select: { passwordHash: true, mustChangePassword: true },
-    });
-    expect(after?.passwordHash).not.toBe(before?.passwordHash);
-    expect(after?.mustChangePassword).toBe(true);
-
-    // Sessions revoked.
-    const sessions = await prisma.customerSession.findMany({
-      where: { contactId: contact.id, revokedAt: null },
-    });
-    expect(sessions).toHaveLength(0);
-
-    // Mock SMS log written.
-    const log = await prisma.notificationLog.findFirst({
-      where: { contactId: contact.id, templateCode: "SMS_PASSWORD_RESET" },
-    });
-    expect(log).not.toBeNull();
-    expect(log?.status).toBe("MOCKED");
-    expect(log?.provider).toBe("mock");
-  });
-
-  it("returns 200 generic even on no match (no enumeration)", async () => {
-    const res = await readJson(
-      await portalPasswordReset(
-        await buildReq("/api/portal/auth/password-reset", "POST", {
-          phone: "0999000999",
-          name: "Nobody",
-        }),
-      ),
-    );
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it("requires name match (mismatched name returns 200 but does nothing)", async () => {
-    const pwHash = await hashPassword("OldPW1234");
-    const contact = await prisma.customerContact.create({
-      data: {
-        customerId,
-        role: "CONTRACT_PARTY",
-        scope: "CUSTOMER",
-        name: NAME_A,
-        phone1: PHONE_A,
-        language: "vi",
-        portalEnabled: true,
-        passwordHash: pwHash,
-      },
-    });
-    const before = await prisma.customerContact.findUnique({
-      where: { id: contact.id },
-      select: { passwordHash: true },
-    });
-
-    const res = await readJson(
-      await portalPasswordReset(
-        await buildReq("/api/portal/auth/password-reset", "POST", {
-          phone: PHONE_A,
-          name: "Wrong Name",
-        }),
-      ),
-    );
-    expect(res.status).toBe(200);
-
-    const after = await prisma.customerContact.findUnique({
-      where: { id: contact.id },
-      select: { passwordHash: true },
-    });
-    expect(after?.passwordHash).toBe(before?.passwordHash);
   });
 });
 

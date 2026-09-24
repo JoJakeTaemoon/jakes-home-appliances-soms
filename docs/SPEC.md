@@ -94,6 +94,7 @@ The full capability matrix is now closed (was Q11 — replaced by this section):
 | Price change / contract pricing edit | ● | ● | — | — |
 | Tax invoice issuance / monthly close | ● | ● | — | — |
 | Customer password reset | ● | ● | — | — |
+| Staff password reset (ADMIN targets: ADMIN only) | ● | ● | — | — |
 | Service request approval (paid types) | ● | ● | ● | — |
 | Customer / contract / equipment CRUD | ● | ● | ● | — |
 | Visit create / reschedule | ● | ● | ● | — |
@@ -233,6 +234,8 @@ For each `CustomerContact` of that Customer with `phone1` set and `portalEnabled
 4. On first login, portal forces password change before any other page renders.
 
 **Office password reset** — Single `Reset password` action on customer-detail per contact (MANAGER+). Generates new random password, sets `mustChangePassword=true`, queues `SMS_PASSWORD_RESET`, writes to audit log. Other active sessions: behavior `[TBC — Q F.5]`.
+
+**No self-service reset on any realm (2026-09-24)** — neither staff nor customers can reset their own password from a login screen. Customers phone the office, which runs the action above. Staff phone an ADMIN/MANAGER, who runs `POST /api/users/[id]/password-reset` from 관리자 → 사용자 관리; that one returns the temp password in its response for one-time on-screen display and **sends no SMS at all**, so the credential never lands in a delivery log. It also revokes every active `Session` and sets `mustChangePassword=true`. A MANAGER cannot target an ADMIN. This retired the staff SMS code flow and its `SMS_STAFF_RESET_CODE` template.
 
 **Multi-contact with same phone** — if two contacts share `phone1` (e.g., company switchboard), v1 treats them as a single portal account (only one of them gets `portalEnabled=true`; office resolves manually). Long-term handling `[TBC — Q A.13]`.
 

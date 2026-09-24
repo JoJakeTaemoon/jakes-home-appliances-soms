@@ -8,6 +8,9 @@
  * (separate endpoint with session-revoke semantics); username, role and
  * preferred region change through PATCH /api/users/[id]. Soft-delete is
  * DELETE /api/users/[id] which sets status=DISABLED + revokes sessions.
+ * Password resets go through POST /api/users/[id]/password-reset — staff have
+ * no self-service recovery, so this screen is the only way back in for a
+ * locked-out user, and the temp password is read out over the phone.
  *
  * Every destructive action (deactivate) routes through a ConfirmDialog —
  * single-click delete is intentionally not exposed.
@@ -51,6 +54,7 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [resetting, setResetting] = useState<UserRow | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
 
   const allowed = user?.role === "ADMIN" || user?.role === "MANAGER";
@@ -102,7 +106,9 @@ export default function AdminUsersPage() {
     if (user?.role === "MANAGER" && row.role === "ADMIN") return false;
     return true;
   };
-  const canDeleteRow = (row: UserRow) => {
+  // Same rule for deactivate + password reset: never yourself, never a
+  // disabled row, and a MANAGER never reaches an ADMIN.
+  const canActOnRow = (row: UserRow) => {
     if (row.id === user?.id) return false;
     if (row.status === "DISABLED") return false;
     if (user?.role === "MANAGER" && row.role === "ADMIN") return false;
@@ -223,9 +229,17 @@ export default function AdminUsersPage() {
                               </Button>
                               <Button
                                 size="sm"
+                                variant="secondary"
+                                onClick={() => setResetting(row)}
+                                disabled={!canActOnRow(row)}
+                              >
+                                {t("resetPassword")}
+                              </Button>
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => setDeleting(row)}
-                                disabled={!canDeleteRow(row)}
+                                disabled={!canActOnRow(row)}
                               >
                                 {t("deactivate")}
                               </Button>
@@ -262,6 +276,13 @@ export default function AdminUsersPage() {
             setFlashOk(t("updateSuccess", { name }));
             void load();
           }}
+        />
+      )}
+
+      {resetting && (
+        <ResetPasswordModal
+          row={resetting}
+          onClose={() => setResetting(null)}
         />
       )}
 
@@ -483,6 +504,85 @@ function EditUserModal({
         </FormField>
       </div>
       {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Reset password modal — confirm, then show the temp password exactly once
+// ─────────────────────────────────────────────────────────────────────────
+
+function ResetPasswordModal({
+  row,
+  onClose,
+}: Readonly<{ row: UserRow; onClose: () => void }>) {
+  const t = useTranslations("admin.users");
+  const api = useApi();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await api.post<{ tempPassword: string }>(
+        `/api/users/${row.id}/password-reset`,
+      );
+      setTempPassword(res.data.tempPassword);
+    } catch (e) {
+      if (e instanceof ApiClientError) {
+        if (e.status === 403) setErr(t("errorManagerOnAdmin"));
+        else setErr(e.message);
+      } else {
+        setErr(e instanceof Error ? e.message : t("errorGeneric"));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("resetPasswordTitle")}
+      size="sm"
+      footer={
+        tempPassword ? (
+          <Button onClick={onClose}>{t("resetDone")}</Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              {t("cancel")}
+            </Button>
+            <Button onClick={submit} isLoading={busy}>
+              {t("resetPasswordConfirm")}
+            </Button>
+          </>
+        )
+      }
+    >
+      {tempPassword ? (
+        <div>
+          <p className="text-sm text-[#525252]">
+            {t("resetSuccess", { name: row.username })}
+          </p>
+          <p className="mt-3 select-all rounded-md border border-[#e5e5e5] bg-[#fafafa] px-3 py-2 text-center font-mono text-lg tracking-widest text-[#262626]">
+            {tempPassword}
+          </p>
+          <p className="mt-3 text-sm font-medium text-[#b45309]">
+            {t("resetOnceWarning")}
+          </p>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-[#525252]">
+            {t("resetPasswordConfirmBody", { name: row.username })}
+          </p>
+          {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+        </div>
+      )}
     </Modal>
   );
 }

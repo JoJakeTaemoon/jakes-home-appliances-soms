@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   useFieldAuth,
   FieldLoginError,
@@ -149,14 +149,9 @@ export default function MobileLoginPage() {
           <Button type="submit" fullWidth disabled={submitting}>
             {submitting ? t("loginSubmitting") : t("loginSubmit")}
           </Button>
-          <div className="mt-1 text-center">
-            <Link
-              href="/o/forgot-password"
-              className="text-xs font-medium text-[var(--brand-blue-700)] hover:underline"
-            >
-              {t("forgotPassword")}
-            </Link>
-          </div>
+          <p className="mt-1 text-center text-xs text-[var(--text-muted)]">
+            {t("loginForgotHint")}
+          </p>
         </form>
         </div>
       </div>

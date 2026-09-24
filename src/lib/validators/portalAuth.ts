@@ -16,13 +16,6 @@ export const portalLoginSchema = z.object({
 });
 export type PortalLoginInput = z.infer<typeof portalLoginSchema>;
 
-export const portalForgotPasswordSchema = z.object({
-  phone: z.string().trim().regex(phoneRegex).min(6).max(20),
-  /** Name match guards against random phone enumeration. */
-  name: z.string().trim().min(1).max(120),
-});
-export type PortalForgotPasswordInput = z.infer<typeof portalForgotPasswordSchema>;
-
 export const portalChangePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(256),
   newPassword: z.string().min(8, "Password must be at least 8 characters").max(256),

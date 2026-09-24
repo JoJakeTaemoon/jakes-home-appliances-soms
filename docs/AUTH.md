@@ -37,7 +37,7 @@ Seoul Aqua SOMS 사용자는 3개 그룹으로 분리되며 각자 **별도 인�
 
 | `pathAfterLocale` | Realm | 요구 쿠키 | 누락 시 redirect |
 |---|---|---|---|
-| `/portal/login`, `/portal/forgot-password` | (public) | — | — |
+| `/portal/login` | (public) | — | — |
 | `/portal/*` | customer | `customerRefreshToken` | `/{locale}/portal/login` |
 | `/mobile/login` | (public) | — | — |
 | `/mobile/*` | field | `fieldRefreshToken` | `/{locale}/mobile/login` |

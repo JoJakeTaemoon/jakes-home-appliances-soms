@@ -28,9 +28,9 @@ import { routing } from "./i18n/routing";
 const LOCALES = routing.locales as readonly string[];
 
 // Public sub-paths (no auth) — after group prefix and locale are stripped.
-const OFFICE_PUBLIC = ["/login", "/forgot-password"];
+const OFFICE_PUBLIC = ["/login"];
 const FIELD_PUBLIC = ["/login"];
-const CUSTOMER_PUBLIC = ["/login", "/forgot-password", "/change-password"];
+const CUSTOMER_PUBLIC = ["/login", "/change-password"];
 
 type Group = "office" | "field" | "customer";
 type GroupPrefix = "" | "/o" | "/f";

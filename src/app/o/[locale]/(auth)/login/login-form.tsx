@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 import { useAuth } from "@/providers/auth-provider";
-import { useRouter, Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 const AUTH_KEYS = ["soms_user", "soms_access", "soms_auth"];
 /**
@@ -212,14 +212,9 @@ export function LoginForm() {
         {submitting ? t("submitting") : t("submit")}
       </button>
 
-      <div className="mt-4 text-center">
-        <Link
-          href="/o/forgot-password"
-          className="text-xs font-medium text-[var(--brand-blue-700)] hover:underline"
-        >
-          {t("forgotPassword")}
-        </Link>
-      </div>
+      <p className="mt-4 text-center text-xs text-[var(--text-muted)]">
+        {t("forgotHint")}
+      </p>
     </form>
   );
 }

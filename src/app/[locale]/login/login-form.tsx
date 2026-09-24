@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useRouter, Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   useCustomerAuth,
   type PortalLoginCandidate,
@@ -182,12 +182,9 @@ export function PortalLoginForm() {
         {submitting ? t("submitting") : t("submit")}
       </button>
 
-      <Link
-        href="/forgot-password"
-        className="mt-4 block text-center text-sm text-[var(--brand-blue-600)] hover:underline"
-      >
-        {t("forgot")}
-      </Link>
+      <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
+        {t("forgotHint")}
+      </p>
     </form>
   );
 }

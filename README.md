@@ -117,7 +117,7 @@ Phone is the staff login key. Uniform dev password `12341234`.
 
 Customer portal (`/portal/login`): `0901234567` / `portal1234` (mustChangePassword = true).
 
-Forgot-password flow at [`/forgot-password`](http://localhost:3000/vi/forgot-password) sends a mock SMS code — when `SMS_PROVIDER=mock`, dispatches stream to your browser dev-tools console via `/api/dev/mock-sms/stream`.
+There is no self-service password recovery. A locked-out staff user phones the office and an ADMIN/MANAGER issues a temp password from **Admin → Users → Reset password**; it is shown on screen once and never sent by SMS. Customer portal passwords are reset the same way, from the customer's contact row, and the customer receives `SMS_PASSWORD_RESET`. When `SMS_PROVIDER=mock`, dispatches stream to your browser dev-tools console via `/api/dev/mock-sms/stream`.
 
 ---
 

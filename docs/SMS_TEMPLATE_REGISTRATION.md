@@ -1,17 +1,16 @@
 # SMS 문안 등록 현황 — eSMS Brandname `SEOUL AQUA`
 
-> 최종 갱신 2026-09-23. 실측은 2026-09-12 기준, 문안은 ViHAT 회신을 반영해 재작성했습니다.
+> 최종 갱신 2026-09-24. 실측은 2026-09-12 기준, 문안은 ViHAT 회신을 반영해 재작성했습니다.
 > 재현 명령: `ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts <번호>`
 
 ## 1. 현재 상태
 
-문안 8종 × 3개 언어를 실제로 발송해 통신사 판정을 받은 결과, 정기점검 알림 하나만 통과하고 나머지는 전부 코드 146으로 거부됐습니다. 이후 ViHAT 회신을 받아 문안을 다시 작성했습니다.
+2026-09-12에 당시 문안 8종 × 3개 언어를 실제로 발송해 통신사 판정을 받은 결과, 정기점검 알림 하나만 통과하고 나머지는 전부 코드 146으로 거부됐습니다. 이후 ViHAT 회신을 받아 문안을 다시 작성했습니다. 직원 비밀번호 복구 인증코드는 2026-09-24에 기능 자체가 폐지되어 등록 대상에서 빠졌고, 남은 문안은 7종입니다.
 
 | 상황 | 문안 코드 | 베트남어 | 영어 |
 |---|---|:-:|:-:|
 | 고객 포털 계정 발급 | `SMS_PORTAL_WELCOME` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
 | 고객 포털 비밀번호 초기화 | `SMS_PASSWORD_RESET` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
-| 직원 비밀번호 복구 인증코드 | `SMS_STAFF_RESET_CODE` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
 | 정기점검 방문 D-1 알림 | `SMS_VISIT_REMINDER` | ✅ 등록 완료 | ✅ 등록 완료 |
 | 유상 서비스 요청 승인 | `SMS_SR_APPROVED` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
 | 서비스 요청 반려 | `SMS_SR_REJECTED` | ⏳ 등록 요청 대상 | ⏳ 등록 요청 대상 |
@@ -22,7 +21,7 @@
 
 **한국어는 등록하지 않습니다.** ViHAT이 한국어 7건 전부에 `Không hỗ trợ tiếng Hàn`으로 회신했습니다. 한국어를 쓰는 고객에게는 **영어 문안**을 발송합니다. 코드에서도 SMS 문안의 한국어 자리가 영어 본문을 그대로 가리키도록 했습니다.
 
-**베트남어는 성조 없이 등록합니다.** 성조가 있으면 한 통에 70자, 없으면 160자입니다. 무성조로 바꾸면서 가운뎃점과 통화기호도 아스키로 정리해, **16개 본문이 모두 1세그먼트에 들어갑니다.** 이전에는 대부분 2세그먼트였으므로 발송 단가가 절반이 됩니다.
+**베트남어는 성조 없이 등록합니다.** 성조가 있으면 한 통에 70자, 없으면 160자입니다. 무성조로 바꾸면서 가운뎃점과 통화기호도 아스키로 정리해, **14개 본문이 모두 1세그먼트에 들어갑니다.** 이전에는 대부분 2세그먼트였으므로 발송 단가가 절반이 됩니다.
 
 **링크는 고정 주소를 본문에 직접 씁니다.** 통신사가 고정 링크 등록을 요구했습니다. 주소는 `soms.seoulaqua.com.vn` 하나로 통일했습니다. 문안에 `{url}` 변수는 더 이상 없습니다.
 
@@ -58,13 +57,6 @@
 - 실제 예시: `[SeoulAqua] MK cua Nguyen Van An da dat lai. MK moi: Ab12Cd34Ef - soms.seoulaqua.com.vn. Khong phai ban? LH 0768902009`
 - 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{hq_phone}` ≤ 15
 - 길이: 106자 · 1세그먼트
-
-**직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
-
-- 본문: `[SeoulAqua] Ma xac thuc khoi phuc mat khau: {code} (hieu luc {minutes} phut). Khong phai ban? Bao quan tri vien ngay.`
-- 실제 예시: `[SeoulAqua] Ma xac thuc khoi phuc mat khau: 123456 (hieu luc 10 phut). Khong phai ban? Bao quan tri vien ngay.`
-- 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
-- 길이: 117자 · 1세그먼트
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
@@ -109,13 +101,6 @@
 - 실제 예시: `[SeoulAqua] Nguyen Van An, password reset. New PW: Ab12Cd34Ef - soms.seoulaqua.com.vn. If not you: 0768902009`
 - 변수: `{name}` ≤ 50, `{pwd}` ≤ 10, `{hq_phone}` ≤ 15
 - 길이: 97자 · 1세그먼트
-
-**직원 비밀번호 복구 인증코드** · `SMS_STAFF_RESET_CODE`
-
-- 본문: `[SeoulAqua] Password recovery code: {code} (valid {minutes} min). If this wasn't you, alert your admin immediately.`
-- 실제 예시: `[SeoulAqua] Password recovery code: 123456 (valid 10 min). If this wasn't you, alert your admin immediately.`
-- 변수: `{code}` ≤ 6, `{minutes}` ≤ 3
-- 길이: 115자 · 1세그먼트
 
 **유상 서비스 요청 승인** · `SMS_SR_APPROVED`
 
@@ -209,5 +194,6 @@ ESMS_PROBE_LIVE=1 npx tsx scripts/esms-probe.ts 0961122564
 
 ## 변경 이력
 
+- **2026-09-24** — 직원 셀프 비밀번호 복구 기능 폐지. `SMS_STAFF_RESET_CODE` 등록 요청 목록에서 삭제. 직원은 관리자에게 전화로 연락하고, 관리자가 「관리자 → 사용자 관리」에서 임시 비밀번호를 발급해 구두로 전달합니다 — 임시 비밀번호는 SMS로 나가지 않습니다. 남은 문안 7종 · 본문 14개.
 - **2026-09-23** — ViHAT 회신 반영. 한국어 7건 제외, 베트남어 무성조 전환, 고정 링크를 본문에 직접 기재. 16개 본문 모두 1세그먼트. 한국어 고객은 영어 문안 수신.
 - **2026-09-12** — 최초 작성. 8종 × 3개 언어 실제 발송 결과 기록. 통과 3건, 미등록 21건.

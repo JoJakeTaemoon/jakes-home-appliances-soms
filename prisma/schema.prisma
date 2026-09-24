@@ -51,11 +51,6 @@ model User {
   lastLoginAt                DateTime?
   failedLoginCount           Int        @default(0)
   lockedUntil                DateTime?
-  // Self-service password recovery (SMS verification → temp password).
-  passwordResetCodeHash      String?
-  passwordResetCodeExpiresAt DateTime?
-  passwordResetAttempts      Int        @default(0)
-  passwordResetLastRequestAt DateTime?
   createdAt                  DateTime   @default(now())
   updatedAt                  DateTime   @updatedAt
 

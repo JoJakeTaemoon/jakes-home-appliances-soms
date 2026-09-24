@@ -22,22 +22,3 @@ export const loginSchema = z
     path: ["phone"],
   });
 export type LoginInput = z.infer<typeof loginSchema>;
-
-/** POST /api/auth/password-reset/request — { phone, locale }. */
-export const passwordResetRequestSchema = z.object({
-  phone: z.string().trim().min(4).max(40),
-  /** UI locale of the requester — drives the SMS body's language. */
-  locale: z.enum(["vi", "ko", "en"]).optional(),
-});
-export type PasswordResetRequestInput = z.infer<
-  typeof passwordResetRequestSchema
->;
-
-/** POST /api/auth/password-reset/verify — { phone, code }. */
-export const passwordResetVerifySchema = z.object({
-  phone: z.string().trim().min(4).max(40),
-  code: z.string().trim().regex(/^\d{6}$/, "Code must be 6 digits"),
-});
-export type PasswordResetVerifyInput = z.infer<
-  typeof passwordResetVerifySchema
->;
