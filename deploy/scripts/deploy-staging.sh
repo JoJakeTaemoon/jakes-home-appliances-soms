@@ -80,6 +80,12 @@ done
 echo "[deploy] Applying Prisma migrations"
 docker compose exec -T app npx prisma migrate deploy
 
+# Ask the app container directly rather than going through Caddy. Since the
+# domain switch dropped `local_certs`, Caddy only holds a certificate for
+# soms.seoulaqua.com.vn, so `curl -k https://localhost` gets a TLS alert
+# (no policy matches that SNI) and `-f` takes the whole deploy down *after*
+# the migrations already ran. The public TLS path is covered by the
+# workflow's own smoke-check step, which retries against the real name.
 echo "[deploy] Done — current /api/health:"
-curl -fsS -k https://localhost/api/health | head -c 500
+docker compose exec -T app curl -fsS --max-time 10 http://127.0.0.1:3000/api/health | head -c 500
 echo
