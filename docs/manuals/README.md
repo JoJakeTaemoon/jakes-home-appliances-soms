@@ -9,6 +9,7 @@ End-user manuals organized by **user group** and language.
 | **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1020 lines) | ✅ [`vi/office.md`](vi/office.md) (1020 lines) | — (not in v1 scope) |
 | **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) | ✅ [`vi/field.md`](vi/field.md) | — |
 | **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) | ✅ [`vi/customer.md`](vi/customer.md) | — |
+| **Catalog upload** (MANAGER+ data prep) | ✅ [`ko/catalog-upload.md`](ko/catalog-upload.md) | ✅ [`vi/catalog-upload.md`](vi/catalog-upload.md) | — |
 
 **2026-07-11 update** — Equipment-registration redesign (step wizards) + Vietnam 2025 administrative reform. Only `office.md` (ko + vi) changed; `field.md` / `customer.md` were unaffected (visit/read workflows only). Updated sections:
 
@@ -27,6 +28,7 @@ Same content rendered as pageless PDFs (single long page per document, optimized
 - `pdf/office-ko.pdf` / `pdf/office-vi.pdf`
 - `pdf/field-ko.pdf` / `pdf/field-vi.pdf`
 - `pdf/customer-ko.pdf` / `pdf/customer-vi.pdf`
+- `pdf/catalog-upload-ko.pdf` / `pdf/catalog-upload-vi.pdf`
 
 ## Screenshots
 

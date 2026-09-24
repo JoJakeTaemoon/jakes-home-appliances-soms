@@ -23,6 +23,7 @@ import {
   ScrollText,
   MessageSquareDot,
   Send,
+  Upload,
 } from "lucide-react";
 
 type LabelKey =
@@ -42,6 +43,7 @@ type LabelKey =
   | "settings"
   | "notificationTemplates"
   | "notificationLogs"
+  | "dataMigration"
   | "companyContact"
   | "products"
   | "equipmentBulkRegister"
@@ -112,6 +114,7 @@ const adminNavItems: NavItem[] = [
 const adminSettingsItems: NavItem[] = [
   { href: "/o/admin/notification-templates", labelKey: "notificationTemplates", Icon: Settings, roles: ADMIN_MANAGER },
   { href: "/o/admin/notification-logs", labelKey: "notificationLogs", Icon: Send, roles: ADMIN_MANAGER },
+  { href: "/o/admin/migration", labelKey: "dataMigration", Icon: Upload, roles: ADMIN_MANAGER },
 ];
 
 function visibleFor(items: readonly NavItem[], role: RoleKey | undefined): NavItem[] {

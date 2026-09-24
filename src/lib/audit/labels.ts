@@ -515,6 +515,18 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     vi: "đã thay đổi quyết định tính phí của lượt thăm",
     entityHint: "Visit",
   },
+  MIGRATION_IMPORTED: {
+    ko: "데이터 이관 파일을 적용했습니다",
+    en: "applied a data-migration workbook",
+    vi: "đã áp dụng tệp chuyển dữ liệu",
+    entityHint: "Customer",
+  },
+  MIGRATION_EXPORTED: {
+    ko: "데이터 이관 파일을 내려받았습니다",
+    en: "downloaded a data-migration workbook",
+    vi: "đã tải xuống tệp chuyển dữ liệu",
+    entityHint: "Customer",
+  },
   CATALOG_IMPORT: {
     ko: "카탈로그 CSV를 업로드했습니다",
     en: "uploaded a catalog CSV",

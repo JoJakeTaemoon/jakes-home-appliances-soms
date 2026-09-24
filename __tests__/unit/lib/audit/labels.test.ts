@@ -146,6 +146,8 @@ describe("getActionLabel — every emitted action code is registered", () => {
     "EQUIPMENT_CONSUMABLE_UPDATE",
     "EQUIPMENT_INSTALL",
     "EQUIPMENT_RETRIEVAL_LOGGED",
+    "MIGRATION_EXPORTED",
+    "MIGRATION_IMPORTED",
     "ORDER_CREATE",
     "PAYMENT_UPDATED",
     "SITE_CREATE",

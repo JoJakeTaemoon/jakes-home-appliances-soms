@@ -100,6 +100,7 @@ const TREE: RouteNode = {
         "company-contact": { labelKey: "companyContact" },
         "notification-templates": { labelKey: "notificationTemplates" },
         "notification-logs": { labelKey: "notificationLogs" },
+        migration: { labelKey: "dataMigration" },
         "scheduler-weights": { labelKey: "schedulerWeights" },
       },
     },

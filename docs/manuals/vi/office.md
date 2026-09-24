@@ -1097,6 +1097,32 @@ Lưu ý: eSMS chỉ gửi nội dung đã đăng ký với nhà mạng. Nội du
 
 ---
 
+### 15.5 Nhập dữ liệu (ADMIN · MANAGER)
+
+Màn hình đưa toàn bộ khách hàng đang có từ hệ thống cũ hoặc sổ sách vào phần mềm. Mở từ thanh bên: «Cài đặt → Nhập dữ liệu». Tải lên một file Excel gồm khách hàng, hợp đồng, thiết bị và vật tư là có thể bắt đầu vận hành ngay.
+
+Ba bước:
+
+**Tải mẫu.** File Excel có năm sheet. Sheet đầu hướng dẫn từng cột bằng tiếng Hàn và tiếng Việt; bốn sheet còn lại có dòng ví dụ. Mọi dòng ví dụ bắt đầu bằng SAMPLE- — hãy xóa trước khi điền. Nếu để nguyên, hệ thống sẽ báo lỗi.
+
+**Kiểm tra file.** Bước này không ghi gì vào dữ liệu. Hệ thống cho biết bao nhiêu dòng sẽ tạo mới, bao nhiêu dòng bỏ qua vì đã có, và chỉ rõ sheet nào dòng nào cột nào sai.
+
+**Xác nhận.** Nút xác nhận chỉ hiện khi không còn lỗi. Toàn bộ file được ghi trong một lần; nếu có sự cố giữa chừng thì không dòng nào được ghi.
+
+Một vài lưu ý khi điền:
+
+- Mã model và SKU vật tư **phải có sẵn trong danh mục sản phẩm**. Chưa có thì đăng ký trong danh mục trước.
+- Mã khách hàng và số hợp đồng cứ ghi theo hệ thống cũ. Mã mới do phần mềm tự cấp.
+- Cột «Equipment Key» ở sheet Equipment là khóa tạm chỉ dùng trong file, để sheet Consumables tìm đúng thiết bị.
+- Tải nhầm cùng một file hai lần cũng không tạo trùng: mã khách hàng và số hợp đồng đã có sẽ được bỏ qua.
+- **Trong quá trình nhập, hệ thống không gửi SMS hay email cho khách hàng** và không tạo tài khoản cổng khách hàng. Muốn mở cổng thì làm riêng ở màn hình khách hàng.
+
+Hợp đồng được tạo ở trạng thái đang hiệu lực, kèm một lượt thăm lắp đặt đã hoàn tất theo đúng ngày lắp. Lịch bảo trì kế tiếp tính từ ngày lắp thật.
+
+**Tải dữ liệu hiện có** cũng nằm ở màn hình này: khách hàng, hợp đồng, thiết bị và vật tư đang có, theo đúng mẫu dùng để tải lên. Có thể sửa rồi tải lên lại, hoặc giữ làm bản sao lưu trước khi nhập. Dòng đã có sẽ được bỏ qua nên không tạo trùng.
+
+---
+
 ## Chương 16. Các tình huống thường gặp
 
 ### Tình huống 1: Khách hàng "Ngày mai không đón được"

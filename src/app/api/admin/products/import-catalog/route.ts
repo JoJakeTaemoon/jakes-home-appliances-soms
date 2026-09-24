@@ -15,6 +15,11 @@
  *   - Accessory           → `Accessory.sku`; same-row model becomes an
  *                            AccessoryOnModel compatibility link
  *
+ * Prices / stock / cycles on a row are applied only when the entity is
+ * CREATED by that row — an existing model or SKU keeps whatever it has.
+ * Model on-hand is booked through `recordOpeningStock` so the StockMove
+ * ledger matches the cached counter.
+ *
  * MANAGER+ only.
  */
 
@@ -26,6 +31,8 @@ import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError, ValidationError } from "@/lib/api/error";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { logAudit } from "@/lib/audit";
+import { cycleToStored } from "@/lib/catalog/cycle-unit";
+import { recordOpeningStock } from "@/lib/inventory/moves";
 
 interface ImportSummary {
   rowsProcessed: number;
@@ -100,6 +107,26 @@ function toInt(raw: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Price cell → number (blank / unparsable → null). Decimals are kept. */
+function toNum(raw: string | undefined): number | null {
+  if (!raw || !raw.trim()) return null;
+  const n = Number(raw.trim().replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Read a cycle cell, preferring the day-based column the exporter writes and
+ *  falling back to the legacy month-based one (×30 via cycleToStored). */
+function readCycle(
+  row: string[],
+  dayIdx: number,
+  monthIdx: number,
+): { raw: string; days: number | null; unit: "DAY" | "MONTH" } {
+  const dayRaw = dayIdx >= 0 ? (row[dayIdx] ?? "").trim() : "";
+  if (dayRaw) return { raw: dayRaw, days: cycleToStored(dayRaw, "DAY"), unit: "DAY" };
+  const monthRaw = monthIdx >= 0 ? (row[monthIdx] ?? "").trim() : "";
+  return { raw: monthRaw, days: cycleToStored(monthRaw, "MONTH"), unit: "MONTH" };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request);
@@ -136,9 +163,19 @@ export async function POST(request: NextRequest) {
     const cPartKo = idx("part name (ko)");
     const cPartVi = idx("part name (vi)");
     const cQty = idx("quantity");
-    const cReplace = idx("replace every (months)");
-    const cClean = idx("clean every (months)");
+    // The exporter emits day-based cycle headers; older templates said months.
+    // Accept both so a file from either generation imports its cycles.
+    const cReplaceDays = idx("replace every (days)");
+    const cReplaceMonths = idx("replace every (months)");
+    const cCleanDays = idx("clean every (days)");
+    const cCleanMonths = idx("clean every (months)");
     const cMinor = idx("minor part");
+    const cOnHand = idx("on hand");
+    const cSafety = idx("safety stock");
+    const cSalePrice = idx("sale price (vnd)");
+    const cRetailPrice = idx("retail price (vnd)");
+    const cPurchasePrice = idx("purchase price (vnd)");
+    const cDealerPrice = idx("dealer price (vnd)");
 
     if ([cBrand, cCatEn, cCatKo, cCatVi, cModelCode].some((i) => i < 0)) {
       throw new ValidationError(
@@ -277,10 +314,23 @@ export async function POST(request: NextRequest) {
                   nameEn: ((row[cModelEn] ?? "").trim() || modelCode),
                   brandId,
                   categoryId,
+                  salePrice: toNum(row[cSalePrice]),
+                  retailPrice: toNum(row[cRetailPrice]),
+                  purchasePrice: toNum(row[cPurchasePrice]),
+                  fixedPrice: toNum(row[cDealerPrice]),
+                  safetyStock: toInt(row[cSafety]) ?? 0,
                 },
                 select: { id: true },
               });
               id = created.id;
+              // Opening on-hand goes through the ledger so StockMove history
+              // and the cached counter agree (same rule as the model form).
+              await recordOpeningStock(prisma, {
+                itemKind: "MODEL",
+                equipmentModelId: id,
+                qty: toInt(row[cOnHand]) ?? 0,
+                createdById: auth.userId,
+              });
               summary.modelsCreated++;
               summary.newItems.models.push(modelCode);
             }
@@ -312,17 +362,23 @@ export async function POST(request: NextRequest) {
             consumableId = existing.id;
             summary.duplicates.consumables++;
           } else {
-            const replaceEveryDays = toInt(row[cReplace]);
-            const cleanRaw = (row[cClean] ?? "").trim().toLowerCase();
-            const cleanOnEveryVisit = cleanRaw === "every visit";
-            const cleanEveryDays = cleanOnEveryVisit ? null : toInt(row[cClean]);
+            const replace = readCycle(row, cReplaceDays, cReplaceMonths);
+            const clean = readCycle(row, cCleanDays, cCleanMonths);
+            const cleanOnEveryVisit = clean.raw.toLowerCase() === "every visit";
+            const cleanEveryDays = cleanOnEveryVisit ? null : clean.days;
+            if (replace.days == null && cleanEveryDays == null && !cleanOnEveryVisit) {
+              summary.warnings.push(
+                `Row ${r + 2}: ${partSku} has no replace/clean cycle — it will never be scheduled`,
+              );
+            }
             const created = await prisma.consumable.create({
               data: {
                 sku: partSku,
                 nameEn: partNameEn,
                 nameKo: partNameKo,
                 nameVi: partNameVi,
-                replaceEveryDays,
+                replaceEveryDays: replace.days,
+                replaceCycleUnit: replace.unit,
                 cleanEveryDays,
                 cleanOnEveryVisit,
                 retailPrice: 0,
