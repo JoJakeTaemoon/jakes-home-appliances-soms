@@ -2349,7 +2349,8 @@
       "fixedPriceHelp": "Giá cung cấp ấn định cho đại lý/điểm bán.",
       "searchOrAdd": "Tìm hoặc thêm mới…",
       "quickCreateCategory": "Thêm nhóm sản phẩm “{name}”",
-      "quickCreateBrand": "Thêm thương hiệu “{name}”"
+      "quickCreateBrand": "Thêm thương hiệu “{name}”",
+      "codeAutoPlaceholder": "Để trống sẽ tự tạo"
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { pickModelName, pickCategoryName, categoryAltNames } from "@/lib/products/name";
+import { categoryCodeFromName } from "@/lib/products/category-code";
 import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
@@ -789,10 +790,16 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
+  // Latin-script names only: Korean cannot produce an A-Z code.
+  const derivedCode = categoryCodeFromName(form.nameEn || form.nameVi);
+
   async function submitCreate() {
     setError(null);
     try {
-      await api.post("/api/admin/products/categories", form);
+      await api.post("/api/admin/products/categories", {
+        ...form,
+        code: form.code.trim() || derivedCode,
+      });
       setShowForm(false);
       setForm({ code: "", nameKo: "", nameVi: "", nameEn: "", sortOrder: 0 });
       await load();
@@ -819,9 +826,6 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
       </div>
       {showForm && (
         <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <FormField label={t("colCode")}>
-            <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="DEHUMIDIFIER" />
-          </FormField>
           <FormField label={t("colNameKo")}>
             <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
           </FormField>
@@ -830,6 +834,13 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
           </FormField>
           <FormField label={t("colNameEn")}>
             <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
+          </FormField>
+          <FormField label={t("colCode")}>
+            <Input
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value })}
+              placeholder={t("codeAutoPlaceholder")}
+            />
           </FormField>
           <div className="flex items-end gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>

@@ -7,6 +7,12 @@
  * category created either way lands on the same code.
  */
 
+/**
+ * `createProductCategorySchema` caps the code at 30 characters, so a long
+ * name has to be cut here rather than bounce off the API as "Invalid body".
+ */
+const MAX_CODE_LENGTH = 30;
+
 export function categoryCodeFromName(name: string): string {
   const slug = name
     .normalize("NFD")
@@ -17,6 +23,8 @@ export function categoryCodeFromName(name: string): string {
     .replace(/Đ/g, "D")
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+    .replace(/^_+|_+$/g, "")
+    .slice(0, MAX_CODE_LENGTH)
+    .replace(/_+$/, "");
   return slug || "CATEGORY";
 }

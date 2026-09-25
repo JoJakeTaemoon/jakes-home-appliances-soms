@@ -2349,7 +2349,8 @@
       "fixedPriceHelp": "Fixed supply price set for dealers/agencies.",
       "searchOrAdd": "Search or add new…",
       "quickCreateCategory": "Add category “{name}”",
-      "quickCreateBrand": "Add brand “{name}”"
+      "quickCreateBrand": "Add brand “{name}”",
+      "codeAutoPlaceholder": "Leave blank to auto-generate"
     },
     "notificationTemplates": {
       "title": "Notification templates",

@@ -2372,7 +2372,8 @@
       "fixedPriceHelp": "대리점·판매점에 지정하는 공급가입니다.",
       "searchOrAdd": "검색 또는 새로 추가…",
       "quickCreateCategory": "제품군 “{name}” 추가",
-      "quickCreateBrand": "브랜드 “{name}” 추가"
+      "quickCreateBrand": "브랜드 “{name}” 추가",
+      "codeAutoPlaceholder": "비워두면 자동생성"
     },
     "users": {
       "title": "사용자 관리",
