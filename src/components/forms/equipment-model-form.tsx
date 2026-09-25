@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApi, ApiClientError, apiErrorText } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
@@ -297,7 +297,7 @@ export function EquipmentModelForm({
       }
       finish();
     } catch (e) {
-      if (e instanceof ApiClientError) setErr(e.message);
+      if (e instanceof ApiClientError) setErr(apiErrorText(e, e.message));
       else setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);

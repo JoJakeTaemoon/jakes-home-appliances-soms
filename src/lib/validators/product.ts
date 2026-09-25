@@ -25,7 +25,13 @@ const categoryCodeRegex = /^[A-Z][A-Z0-9_]{1,29}$/;
 // ─────────────────────────────────────────────────────────────────────────
 
 export const createProductCategorySchema = z.object({
-  code: z.string().trim().regex(categoryCodeRegex, "Category code must be UPPER_SNAKE_CASE"),
+  // Optional: left blank, the route mints a free one from the name. Nobody
+  // types a category code by hand any more.
+  code: z
+    .string()
+    .trim()
+    .regex(categoryCodeRegex, "Category code must be UPPER_SNAKE_CASE")
+    .optional(),
   nameKo: z.string().trim().min(1).max(120),
   nameVi: z.string().trim().min(1).max(120),
   nameEn: z.string().trim().min(1).max(120),
@@ -121,7 +127,13 @@ function requireAtLeastOneCycle<T extends {
   }
 }
 
-export const createConsumableSchema = z.object(consumableCoreShape).superRefine(requireAtLeastOneCycle);
+export const createConsumableSchema = z
+  .object({
+    ...consumableCoreShape,
+    // Optional: left blank, the route mints the next FLT-NNNNNN.
+    sku: consumableCoreShape.sku.optional(),
+  })
+  .superRefine(requireAtLeastOneCycle);
 
 // For update we don't know whether the missing field is "unset" or "unchanged";
 // the route handler merges with the existing row before re-validating.
@@ -165,7 +177,12 @@ export type ConsumableListQuery = z.infer<typeof consumableListQuerySchema>;
 // ─────────────────────────────────────────────────────────────────────────
 
 export const createAccessorySchema = z.object({
-  sku: z.string().trim().regex(skuRegex, "SKU must be 2-30 chars, letters/digits/dash"),
+  // Optional: left blank, the route mints the next ACC-NNNNNN.
+  sku: z
+    .string()
+    .trim()
+    .regex(skuRegex, "SKU must be 2-30 chars, letters/digits/dash")
+    .optional(),
   nameKo: z.string().trim().min(1).max(180),
   nameVi: z.string().trim().min(1).max(180),
   nameEn: z.string().trim().min(1).max(180),

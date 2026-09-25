@@ -11,6 +11,7 @@ import {
   accessoryListQuerySchema,
 } from "@/lib/validators/product";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
+import { ACCESSORY_SKU_PREFIX, nextSku } from "@/lib/products/sku";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -62,15 +63,18 @@ export const POST = defineMutation({
   body: createAccessorySchema,
   successStatus: 201,
   handler: async ({ body }) => {
-    const existing = await prisma.accessory.findUnique({
-      where: { sku: body.sku },
-      select: { id: true },
-    });
-    if (existing) throw new ConflictError(`SKU ${body.sku} already exists`);
+    if (body.sku) {
+      const existing = await prisma.accessory.findUnique({
+        where: { sku: body.sku },
+        select: { id: true },
+      });
+      if (existing) throw new ConflictError(`SKU ${body.sku} already exists`);
+    }
     return prisma.$transaction(async (tx) => {
+      const sku = body.sku ?? (await allocateSku(tx));
       const row = await tx.accessory.create({
         data: {
-          sku: body.sku,
+          sku,
           nameKo: body.nameKo,
           nameVi: body.nameVi,
           nameEn: body.nameEn,
@@ -98,3 +102,17 @@ export const POST = defineMutation({
     after: (r) => r,
   },
 });
+
+/**
+ * Next `ACC-NNNNNN`, serialized against parallel creates — same reasoning as
+ * the consumable allocator: without the lock two saves read the same max and
+ * the unique violation aborts the whole transaction.
+ */
+async function allocateSku(tx: Prisma.TransactionClient): Promise<string> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`accessory-sku-${ACCESSORY_SKU_PREFIX}`}))`;
+  const taken = await tx.accessory.findMany({
+    where: { sku: { startsWith: `${ACCESSORY_SKU_PREFIX}-` } },
+    select: { sku: true },
+  });
+  return nextSku(ACCESSORY_SKU_PREFIX, taken.map((r) => r.sku));
+}

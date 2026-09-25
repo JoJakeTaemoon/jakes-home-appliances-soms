@@ -29,6 +29,21 @@ export class ApiClientError extends Error {
   }
 }
 
+/**
+ * Human-readable text for a failed request.
+ *
+ * A validation failure arrives as a bare "Invalid body" with the offending
+ * fields in `issues`. Showing only the message tells the office nothing about
+ * which box to fix, so fold the issues in.
+ */
+export function apiErrorText(e: unknown, fallback: string): string {
+  if (e instanceof ApiClientError && e.issues?.length) {
+    const fields = e.issues.map((i) => `${i.path.join(".")}: ${i.message}`);
+    return `${e.message} — ${fields.join(", ")}`;
+  }
+  return e instanceof Error ? e.message : fallback;
+}
+
 interface ApiOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   /** Override or omit Authorization header. */

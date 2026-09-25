@@ -26,24 +26,26 @@ function inputFor(label: string): HTMLInputElement {
 }
 
 describe("CategoryQuickCreateModal", () => {
-  it("prefills every locale name from the typed text and derives the code", () => {
+  it("prefills every locale name from the typed text and leaves the code blank", () => {
     render(
       <CategoryQuickCreateModal initialName="Máy hút ẩm" onClose={vi.fn()} onCreated={vi.fn()} />,
     );
     expect(inputFor("colNameVi").value).toBe("Máy hút ẩm");
     expect(inputFor("colNameKo").value).toBe("Máy hút ẩm");
-    expect(inputFor("colCode").value).toBe("MAY_HUT_AM");
+    // The server mints the code from the name — nothing to prefill, and no
+    // `CATEGORY` placeholder text sitting in the box for a Korean-only name.
+    expect(inputFor("colCode").value).toBe("");
   });
 
-  it("re-derives the code while the English name is edited", () => {
+  it("keeps the code blank while the names are edited", () => {
     render(<CategoryQuickCreateModal initialName="x" onClose={vi.fn()} onCreated={vi.fn()} />);
     fireEvent.change(inputFor("colNameEn"), { target: { value: "Ice maker" } });
-    expect(inputFor("colCode").value).toBe("ICE_MAKER");
+    expect(inputFor("colCode").value).toBe("");
   });
 
-  it("stops tracking the name once the code is edited by hand", () => {
+  it("keeps a hand-typed code, upper-cased", () => {
     render(<CategoryQuickCreateModal initialName="x" onClose={vi.fn()} onCreated={vi.fn()} />);
-    fireEvent.change(inputFor("colCode"), { target: { value: "CUSTOM" } });
+    fireEvent.change(inputFor("colCode"), { target: { value: "custom" } });
     fireEvent.change(inputFor("colNameEn"), { target: { value: "Ice maker" } });
     expect(inputFor("colCode").value).toBe("CUSTOM");
   });
@@ -67,7 +69,8 @@ describe("CategoryQuickCreateModal", () => {
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(created));
     expect(post).toHaveBeenCalledWith("/api/admin/products/categories", {
-      code: "ICE_MAKER",
+      // Blank — the route allocates a free code from the name.
+      code: undefined,
       nameKo: "제빙기",
       nameVi: "Máy làm đá",
       nameEn: "Ice maker",

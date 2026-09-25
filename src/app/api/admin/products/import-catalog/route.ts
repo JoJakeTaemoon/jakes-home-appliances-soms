@@ -25,7 +25,7 @@
 
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { categoryCodeFromName } from "@/lib/products/category-code";
+import { allocateCategoryCode } from "@/lib/products/category-code";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError, ValidationError } from "@/lib/api/error";
@@ -266,17 +266,16 @@ export async function POST(request: NextRequest) {
               id = existing.id;
               summary.duplicates.categories++;
             } else {
-              // Generate a unique code; on collision append a numeric suffix.
-              let code = categoryCodeFromName(catEn);
-              let suffix = 1;
-              while (
-                await prisma.productCategory.findUnique({
-                  where: { code },
-                  select: { id: true },
-                })
-              ) {
-                code = `${categoryCodeFromName(catEn)}_${suffix++}`;
-              }
+              // Rows are created one at a time, so a code minted earlier in
+              // this same upload is already visible to the lookup.
+              const code = await allocateCategoryCode(
+                catEn,
+                async (candidate) =>
+                  (await prisma.productCategory.findUnique({
+                    where: { code: candidate },
+                    select: { id: true },
+                  })) !== null,
+              );
               const created = await prisma.productCategory.create({
                 data: { code, nameEn: catEn, nameKo: catKo, nameVi: catVi },
                 select: { id: true },

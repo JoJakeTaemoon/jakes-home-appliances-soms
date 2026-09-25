@@ -18,7 +18,6 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { categoryCodeFromName } from "@/lib/products/category-code";
 
 export interface CreatedCategory {
   id: string;
@@ -60,21 +59,15 @@ export function CategoryQuickCreateModal({
   const [nameKo, setNameKo] = useState(initialName);
   const [nameVi, setNameVi] = useState(initialName);
   const [nameEn, setNameEn] = useState(initialName);
-  const [code, setCode] = useState(() => categoryCodeFromName(initialName));
-  // Once the user edits the code by hand we stop tracking the name.
-  const [codeTouched, setCodeTouched] = useState(false);
+  // Blank by default — the server mints the code from the name on save.
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Code follows the Latin-script names (EN → VI); Korean can't produce an
-  // A-Z code, so a ko-only entry keeps whatever the initial derivation gave.
   function setName(which: "ko" | "vi" | "en", value: string) {
-    const next = { ko: nameKo, vi: nameVi, en: nameEn, [which]: value };
     if (which === "ko") setNameKo(value);
     if (which === "vi") setNameVi(value);
     if (which === "en") setNameEn(value);
-    const codeSource = next.en || next.vi;
-    if (!codeTouched && codeSource) setCode(categoryCodeFromName(codeSource));
   }
 
   async function save() {
@@ -83,7 +76,7 @@ export function CategoryQuickCreateModal({
     setErr(null);
     try {
       const res = await api.post<CreatedCategory>("/api/admin/products/categories", {
-        code,
+        code: code.trim() || undefined,
         nameKo: nameKo || nameVi || nameEn,
         nameVi: nameVi || nameEn || nameKo,
         nameEn: nameEn || nameVi || nameKo,
@@ -109,23 +102,20 @@ export function CategoryQuickCreateModal({
       }
     >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label={t("colNameKo")}>
+        <FormField label={t("colNameKo")} required>
           <Input autoFocus={locale === "ko"} value={nameKo} onChange={(e) => setName("ko", e.target.value)} />
         </FormField>
-        <FormField label={t("colNameVi")}>
+        <FormField label={t("colNameVi")} required>
           <Input autoFocus={locale === "vi"} value={nameVi} onChange={(e) => setName("vi", e.target.value)} />
         </FormField>
-        <FormField label={t("colNameEn")}>
+        <FormField label={t("colNameEn")} required>
           <Input autoFocus={locale === "en"} value={nameEn} onChange={(e) => setName("en", e.target.value)} />
         </FormField>
         <FormField label={t("colCode")}>
           <Input
             value={code}
-            onChange={(e) => {
-              setCodeTouched(true);
-              setCode(e.target.value.toUpperCase());
-            }}
-            placeholder="DEHUMIDIFIER"
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder={t("codeAutoPlaceholder")}
           />
         </FormField>
       </div>
@@ -178,7 +168,7 @@ export function BrandQuickCreateModal({
         </>
       }
     >
-      <FormField label={t("colBrand")}>
+      <FormField label={t("colBrand")} required>
         <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} />
       </FormField>
       {err && <div className="mt-3 text-sm text-red-600">{err}</div>}

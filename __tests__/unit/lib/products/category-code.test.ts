@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { categoryCodeFromName } from "@/lib/products/category-code";
+import {
+  allocateCategoryCode,
+  categoryCodeFromName,
+} from "@/lib/products/category-code";
 
 describe("categoryCodeFromName", () => {
   it("upper-snake-cases a plain English name", () => {
@@ -38,5 +41,46 @@ describe("categoryCodeFromName", () => {
   it("falls back to CATEGORY when nothing survives (e.g. Korean-only input)", () => {
     expect(categoryCodeFromName("정수기")).toBe("CATEGORY");
     expect(categoryCodeFromName("")).toBe("CATEGORY");
+  });
+});
+
+describe("allocateCategoryCode", () => {
+  const takenBy = (codes: string[]) => async (code: string) =>
+    codes.includes(code);
+
+  it("returns the plain derivation when it is free", async () => {
+    expect(await allocateCategoryCode("Dehumidifier", takenBy([]))).toBe(
+      "DEHUMIDIFIER",
+    );
+  });
+
+  it("suffixes on collision", async () => {
+    expect(
+      await allocateCategoryCode("Dehumidifier", takenBy(["DEHUMIDIFIER"])),
+    ).toBe("DEHUMIDIFIER_2");
+    expect(
+      await allocateCategoryCode(
+        "Dehumidifier",
+        takenBy(["DEHUMIDIFIER", "DEHUMIDIFIER_2"]),
+      ),
+    ).toBe("DEHUMIDIFIER_3");
+  });
+
+  it("keeps Korean-only names apart instead of colliding on CATEGORY", async () => {
+    // Korean yields no A-Z letters, so every such name derives CATEGORY —
+    // without the suffix the second one would 409.
+    expect(await allocateCategoryCode("정수기", takenBy([]))).toBe("CATEGORY");
+    expect(await allocateCategoryCode("공기청정기", takenBy(["CATEGORY"]))).toBe(
+      "CATEGORY_2",
+    );
+  });
+
+  it("stays inside 30 characters once the suffix is appended", async () => {
+    const long = "Hot and cold water purifier under sink";
+    const base = categoryCodeFromName(long);
+    const code = await allocateCategoryCode(long, takenBy([base]));
+    expect(code.length).toBeLessThanOrEqual(30);
+    expect(code).toMatch(/^[A-Z][A-Z0-9_]{1,29}$/);
+    expect(code.endsWith("_2")).toBe(true);
   });
 });

@@ -12,9 +12,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApi, ApiClientError, apiErrorText } from "@/lib/api/client";
 import { pickModelName, pickCategoryName, categoryAltNames } from "@/lib/products/name";
-import { categoryCodeFromName } from "@/lib/products/category-code";
 import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
@@ -647,7 +646,7 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
       </div>
       {showForm && (
         <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <FormField label={t("colName")}>
+          <FormField label={t("colName")} required>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Seoul Aqua" />
           </FormField>
           <div className="flex items-end gap-2">
@@ -749,7 +748,7 @@ function BrandEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiCl
       }
     >
       <div className="grid grid-cols-1 gap-3">
-        <FormField label={t("colName")}>
+        <FormField label={t("colName")} required>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
         <label className="flex items-center gap-2 text-sm">
@@ -790,15 +789,13 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
-  // Latin-script names only: Korean cannot produce an A-Z code.
-  const derivedCode = categoryCodeFromName(form.nameEn || form.nameVi);
-
   async function submitCreate() {
     setError(null);
     try {
+      // Blank code → the route mints one from the name.
       await api.post("/api/admin/products/categories", {
         ...form,
-        code: form.code.trim() || derivedCode,
+        code: form.code.trim() || undefined,
       });
       setShowForm(false);
       setForm({ code: "", nameKo: "", nameVi: "", nameEn: "", sortOrder: 0 });
@@ -825,28 +822,32 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
         <Button onClick={() => setShowForm((s) => !s)}>+ {t("addCategory")}</Button>
       </div>
       {showForm && (
-        <div className="border border-border p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
-          <FormField label={t("colNameKo")}>
+        // One language per row so the names get the full width of the card;
+        // the code shares the last row with the buttons.
+        <div className="border border-border p-4 space-y-3">
+          <FormField label={t("colNameKo")} required>
             <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
           </FormField>
-          <FormField label={t("colNameVi")}>
+          <FormField label={t("colNameVi")} required>
             <Input value={form.nameVi} onChange={(e) => setForm({ ...form, nameVi: e.target.value })} />
           </FormField>
-          <FormField label={t("colNameEn")}>
+          <FormField label={t("colNameEn")} required>
             <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
           </FormField>
-          <FormField label={t("colCode")}>
-            <Input
-              value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value })}
-              placeholder={t("codeAutoPlaceholder")}
-            />
-          </FormField>
-          <div className="flex items-end gap-2">
-            <Button onClick={submitCreate}>{t("save")}</Button>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <FormField label={t("colCode")} className="flex-1">
+              <Input
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                placeholder={t("codeAutoPlaceholder")}
+              />
+            </FormField>
+            <div className="flex shrink-0 gap-2">
+              <Button onClick={submitCreate}>{t("save")}</Button>
+              <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
+            </div>
           </div>
-          {error && <div className="md:col-span-5 text-red-600 text-sm">{error}</div>}
+          {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
       )}
       <table className="w-full border border-border">
@@ -948,13 +949,13 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
         <FormField label={t("colSortOrder")}>
           <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
         </FormField>
-        <FormField label={t("colNameKo")}>
+        <FormField label={t("colNameKo")} required>
           <Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
         </FormField>
-        <FormField label={t("colNameVi")}>
+        <FormField label={t("colNameVi")} required>
           <Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} />
         </FormField>
-        <FormField label={t("colNameEn")}>
+        <FormField label={t("colNameEn")} required>
           <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
         </FormField>
         <label className="flex items-center gap-2 text-sm sm:col-span-2">
@@ -1668,11 +1669,15 @@ function ConsumableForm({
       if (row) {
         await api.patch(`/api/admin/products/consumables/${row.id}`, { ...payload, isActive });
       } else {
-        await api.post("/api/admin/products/consumables", { sku, ...payload });
+        // Blank SKU → the route mints the next FLT-NNNNNN.
+        await api.post("/api/admin/products/consumables", {
+          sku: sku.trim() || undefined,
+          ...payload,
+        });
       }
       onDone();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t("errorGeneric"));
+      setErr(apiErrorText(e, t("errorGeneric")));
     } finally {
       setBusy(false);
     }
@@ -1701,10 +1706,18 @@ function ConsumableForm({
           <SectionBadge n={1} title={t("secFilterInfo")} />
           {headerActions}
         </div>
+        {err && (
+          <div
+            role="alert"
+            className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+          >
+            {err}
+          </div>
+        )}
         <div className="grid gap-x-6 gap-y-3 md:grid-cols-2">
           {/* LEFT — descriptive */}
           <div className="flex flex-col gap-3">
-            <ModeField label={t("colName")} mode={mode} value={nameView}>
+            <ModeField label={t("colName")} mode={mode} value={nameView} required>
               <div className="flex flex-col gap-1">
                 <Input ref={nameRef} value={nameKo} onChange={(e) => setNameKo(e.target.value)} placeholder="한국어" aria-label={t("colNameKo")} />
                 <Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} placeholder="Tiếng Việt" aria-label={t("colNameVi")} />
@@ -1713,7 +1726,11 @@ function ConsumableForm({
             </ModeField>
             {/* SKU is immutable after creation — editable only in 신규 등록, read-only elsewhere. */}
             <ModeField label={t("colSku")} mode={mode === "create" ? "create" : "view"} value={sku}>
-              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="FLT-NEW-001" />
+              <Input
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder={t("codeAutoPlaceholder")}
+              />
             </ModeField>
             <ModeField label={t("colCategory")} mode={mode} value={categoryName}>
               <Combobox
@@ -1783,7 +1800,7 @@ function ConsumableForm({
             <ModeField label={t("safetyStock")} mode={mode} value={safetyStock}>
               <Input type="number" value={safetyStock} onChange={(e) => setSafetyStock(e.target.value)} />
             </ModeField>
-            <ModeField label={t("consumerPrice")} mode={mode} value={fmtMoney(retailPrice)}>
+            <ModeField label={t("consumerPrice")} mode={mode} value={fmtMoney(retailPrice)} required>
               <NumberInput variant="money" min={0} {...money(retailPrice, setRetailPrice)} />
             </ModeField>
             <ModeField label={t("fixedPrice")} mode={mode} value={fmtMoney(fixedPrice)}>
@@ -1893,8 +1910,6 @@ function ConsumableForm({
         )}
       </div>
 
-      {err && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>}
-
       {isEdit && row && (
         <StockAdjustModal
           open={stockOpen} onClose={() => setStockOpen(false)}
@@ -1973,7 +1988,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     setError(null);
     try {
       await api.post("/api/admin/products/accessories", {
-        sku: form.sku,
+        sku: form.sku.trim() || undefined,
         nameKo: form.nameKo,
         nameVi: form.nameVi,
         nameEn: form.nameEn,
@@ -1985,7 +2000,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
       setForm({ sku: "", nameKo: "", nameVi: "", nameEn: "", isMinorPart: false, retailPrice: 0, compatibleModelIds: [] });
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("errorGeneric"));
+      setError(apiErrorText(err, t("errorGeneric")));
     }
   }
 
@@ -2064,25 +2079,36 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         <Button onClick={() => setShowForm((s) => !s)}>+ {t("addAccessory")}</Button>
       </div>
       {showForm && (
+        // One language per row, then SKU + 소형부속 share a row; the
+        // compatibility picker and the buttons close it out.
         <div className="border border-border p-4 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <FormField label={t("colSku")}>
-              <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="ACC-NEW-001" />
+          <FormField label={t("colNameKo")} required>
+            <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
+          </FormField>
+          <FormField label={t("colNameVi")} required>
+            <Input value={form.nameVi} onChange={(e) => setForm({ ...form, nameVi: e.target.value })} />
+          </FormField>
+          <FormField label={t("colNameEn")} required>
+            <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
+          </FormField>
+          <FormField label={t("colRetailPrice")} required>
+            <NumberInput
+              variant="money"
+              min={0}
+              value={form.retailPrice}
+              onChange={(n) => setForm({ ...form, retailPrice: n })}
+            />
+          </FormField>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <FormField label={t("colSku")} className="flex-1">
+              <Input
+                value={form.sku}
+                onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                placeholder={t("codeAutoPlaceholder")}
+              />
             </FormField>
-            <FormField label={t("colNameKo")}>
-              <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
-            </FormField>
-            <FormField label={t("colNameVi")}>
-              <Input value={form.nameVi} onChange={(e) => setForm({ ...form, nameVi: e.target.value })} />
-            </FormField>
-            <FormField label={t("colNameEn")}>
-              <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
-            </FormField>
-            <FormField label={t("colRetailPrice")}>
-              <Input type="number" value={form.retailPrice} onChange={(e) => setForm({ ...form, retailPrice: Number(e.target.value) })} />
-            </FormField>
-            <FormField label={t("colMinorPart")}>
-              <label className="inline-flex items-center gap-2 mt-2">
+            <FormField label={t("colMinorPart")} className="shrink-0">
+              <label className="inline-flex h-9 items-center gap-2">
                 <input type="checkbox" checked={form.isMinorPart} onChange={(e) => setForm({ ...form, isMinorPart: e.target.checked })} />
                 <span className="text-sm">{t("yes")}</span>
               </label>
@@ -2091,11 +2117,11 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           <FormField label={t("colCompatibility")}>
             <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
           </FormField>
-          <div className="flex gap-2">
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+          <div className="flex justify-end gap-2">
             <Button onClick={submitCreate}>{t("save")}</Button>
             <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
           </div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
         </div>
       )}
       <table className="w-full border border-border">
@@ -2211,10 +2237,10 @@ function AccessoryEditModal({
       <div className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <FormField label={t("colSku")}><Input value={row.sku} disabled /></FormField>
-          <FormField label={t("colNameKo")}><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
-          <FormField label={t("colNameVi")}><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
-          <FormField label={t("colNameEn")}><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
-          <FormField label={t("colRetailPrice")}>
+          <FormField label={t("colNameKo")} required><Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} /></FormField>
+          <FormField label={t("colNameVi")} required><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
+          <FormField label={t("colNameEn")} required><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
+          <FormField label={t("colRetailPrice")} required>
             <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
           </FormField>
           <FormField label={t("colMinorPart")}>

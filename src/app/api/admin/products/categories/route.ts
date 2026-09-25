@@ -10,6 +10,7 @@ import {
   createProductCategorySchema,
   productCategoryListQuerySchema,
 } from "@/lib/validators/product";
+import { allocateCategoryCode } from "@/lib/products/category-code";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -57,12 +58,26 @@ export const POST = defineMutation({
   body: createProductCategorySchema,
   successStatus: 201,
   handler: async ({ body }) => {
-    const existing = await prisma.productCategory.findUnique({
-      where: { code: body.code },
-      select: { id: true },
-    });
-    if (existing) throw new ConflictError(`Category code ${body.code} already exists`);
-    return prisma.productCategory.create({ data: body });
+    const taken = async (code: string) =>
+      (await prisma.productCategory.findUnique({
+        where: { code },
+        select: { id: true },
+      })) !== null;
+
+    if (body.code) {
+      // Typed by hand — say so rather than silently saving something else.
+      if (await taken(body.code)) {
+        throw new ConflictError(`Category code ${body.code} already exists`);
+      }
+      return prisma.productCategory.create({ data: { ...body, code: body.code } });
+    }
+    // Latin-script names only: a Korean name yields no A-Z letters, so the
+    // allocator's numeric suffix is what keeps those rows apart.
+    const code = await allocateCategoryCode(
+      body.nameEn || body.nameVi || body.nameKo,
+      taken,
+    );
+    return prisma.productCategory.create({ data: { ...body, code } });
   },
   audit: {
     action: "PRODUCT_CATEGORY_CREATE",

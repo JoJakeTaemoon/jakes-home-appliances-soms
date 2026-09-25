@@ -15,6 +15,7 @@ import {
 } from "@/lib/validators/product";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
 import { recordOpeningStock } from "@/lib/inventory/moves";
+import { CONSUMABLE_SKU_PREFIX, nextSku } from "@/lib/products/sku";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -68,15 +69,18 @@ export const POST = defineMutation({
   body: createConsumableSchema,
   successStatus: 201,
   handler: async ({ body, auth }) => {
-    const existing = await prisma.consumable.findUnique({
-      where: { sku: body.sku },
-      select: { id: true },
-    });
-    if (existing) throw new ConflictError(`SKU ${body.sku} already exists`);
+    if (body.sku) {
+      const existing = await prisma.consumable.findUnique({
+        where: { sku: body.sku },
+        select: { id: true },
+      });
+      if (existing) throw new ConflictError(`SKU ${body.sku} already exists`);
+    }
     return prisma.$transaction(async (tx) => {
+      const sku = body.sku ?? (await allocateSku(tx));
       const row = await tx.consumable.create({
         data: {
-          sku: body.sku,
+          sku,
           nameKo: body.nameKo,
           nameVi: body.nameVi,
           nameEn: body.nameEn,
@@ -120,3 +124,23 @@ export const POST = defineMutation({
     after: (r) => r,
   },
 });
+
+/**
+ * Next `FLT-NNNNNN`, serialized against parallel creates.
+ *
+ * Without the lock two simultaneous saves read the same max and both INSERT
+ * the same SKU; the unique violation aborts the whole interactive
+ * transaction, so catch-and-retry inside it is not an option — the same
+ * reasoning as the equipment asset-code allocator.
+ *
+ * ponytail: scans the prefix's rows for the numeric max. The catalog is a few
+ * hundred parts; move to a counter table only if that stops being true.
+ */
+async function allocateSku(tx: Prisma.TransactionClient): Promise<string> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`consumable-sku-${CONSUMABLE_SKU_PREFIX}`}))`;
+  const taken = await tx.consumable.findMany({
+    where: { sku: { startsWith: `${CONSUMABLE_SKU_PREFIX}-` } },
+    select: { sku: true },
+  });
+  return nextSku(CONSUMABLE_SKU_PREFIX, taken.map((r) => r.sku));
+}
