@@ -7,7 +7,7 @@
  * also the backup to take before a second migration run.
  *
  * A plain handler rather than `defineQuery`, which would wrap the body in the
- * JSON envelope. ADMIN + MANAGER only: the file carries every customer's
+ * JSON envelope. ADMIN only: the file carries every customer's
  * contact details and pricing.
  */
 
@@ -22,8 +22,8 @@ import { buildMigrationExport } from "@/lib/migration/export";
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireAuth(request);
-    if (auth.role !== "ADMIN" && auth.role !== "MANAGER") {
-      throw new ForbiddenError("ADMIN or MANAGER required");
+    if (auth.role !== "ADMIN") {
+      throw new ForbiddenError("ADMIN required");
     }
 
     const customerId =

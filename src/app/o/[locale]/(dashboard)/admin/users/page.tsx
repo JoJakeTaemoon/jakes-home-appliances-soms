@@ -1,7 +1,10 @@
 "use client";
 
 /**
- * User management — ADMIN + MANAGER only.
+ * User management — ADMIN + MANAGER only, and strictly downward: every row
+ * action is gated by `outranks()`, so you never edit, re-role, reset or
+ * disable a peer, a superior, or yourself. `getAssignableRoles()` gates the
+ * role dropdowns to match.
  *
  * Lists every staff user (including disabled) and supports add / edit /
  * deactivate. Phone changes still go through PATCH /api/users/[id]/phone
@@ -21,6 +24,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/providers/auth-provider";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { getAssignableRoles, outranks } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
@@ -101,19 +105,12 @@ export default function AdminUsersPage() {
     );
   }
 
-  const canEditRow = (row: UserRow) => {
-    if (row.status === "DISABLED") return false;
-    if (user?.role === "MANAGER" && row.role === "ADMIN") return false;
-    return true;
-  };
-  // Same rule for deactivate + password reset: never yourself, never a
-  // disabled row, and a MANAGER never reaches an ADMIN.
-  const canActOnRow = (row: UserRow) => {
-    if (row.id === user?.id) return false;
-    if (row.status === "DISABLED") return false;
-    if (user?.role === "MANAGER" && row.role === "ADMIN") return false;
-    return true;
-  };
+  // One rule for edit / reset / deactivate: an active row that sits below
+  // you. `outranks()` rejects your own role, so the (me) row is covered too.
+  const canActOnRow = (row: UserRow) =>
+    row.status === "ACTIVE" &&
+    row.id !== user?.id &&
+    outranks(user?.role ?? "", row.role);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -223,7 +220,7 @@ export default function AdminUsersPage() {
                                 size="sm"
                                 variant="secondary"
                                 onClick={() => setEditing(row)}
-                                disabled={!canEditRow(row)}
+                                disabled={!canActOnRow(row)}
                               >
                                 {t("editUser")}
                               </Button>
@@ -257,6 +254,7 @@ export default function AdminUsersPage() {
 
       {showCreate && (
         <CreateUserModal
+          callerRole={(user?.role as Role) ?? "STAFF"}
           onClose={() => setShowCreate(false)}
           onCreated={(name) => {
             setShowCreate(false);
@@ -308,12 +306,18 @@ export default function AdminUsersPage() {
 // ─────────────────────────────────────────────────────────────────────────
 
 function CreateUserModal({
+  callerRole,
   onClose,
   onCreated,
-}: Readonly<{ onClose: () => void; onCreated: (name: string) => void }>) {
+}: Readonly<{
+  callerRole: Role;
+  onClose: () => void;
+  onCreated: (name: string) => void;
+}>) {
   const t = useTranslations("admin.users");
   const tRoles = useTranslations("roles");
   const api = useApi();
+  const roleOptions = getAssignableRoles(callerRole) as Role[];
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -385,7 +389,7 @@ function CreateUserModal({
           <Combobox
             value={role}
             onChange={(v) => v && setRole(v as Role)}
-            options={ROLES.map((r) => ({ value: r, label: tRoles(r) }))}
+            options={roleOptions.map((r) => ({ value: r, label: tRoles(r) }))}
             searchable={false}
             allowClear={false}
           />
@@ -430,10 +434,8 @@ function EditUserModal({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // MANAGER cannot promote to ADMIN.
-  const roleOptions = ROLES.filter(
-    (r) => callerRole === "ADMIN" || r !== "ADMIN",
-  );
+  // Only ranks below the caller — same list the API enforces.
+  const roleOptions = getAssignableRoles(callerRole) as Role[];
 
   async function submit() {
     setBusy(true);

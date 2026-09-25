@@ -2,16 +2,16 @@ import { describe, it, expect } from "vitest";
 import {
   TEMPLATES,
   getTemplate,
+  overrideLocaleFor,
   pickLocaleBody,
   pickLocaleSubject,
   renderTemplate,
+  templateLocales,
 } from "@/lib/notifications/templates";
 
 describe("notifications/templates", () => {
   it("includes every required SMS template code", () => {
     const required = [
-      "SMS_PORTAL_WELCOME",
-      "SMS_PASSWORD_RESET",
       "SMS_VISIT_REMINDER",
       "SMS_SR_APPROVED",
       "SMS_SR_REJECTED",
@@ -68,12 +68,12 @@ describe("notifications/templates", () => {
   });
 
   it("pickLocaleBody returns locale body, falls back to vi", () => {
-    const t = getTemplate("SMS_PASSWORD_RESET");
+    const t = getTemplate("SMS_SR_REJECTED");
     // SMS has no Korean body to return — the carrier does not register
     // Korean, so `ko` carries the English wording.
-    expect(pickLocaleBody(t, "ko")).toContain("password reset");
-    expect(pickLocaleBody(t, "vi")).toContain("dat lai");
-    expect(pickLocaleBody(t, "en")).toContain("password reset");
+    expect(pickLocaleBody(t, "ko")).toContain("declined");
+    expect(pickLocaleBody(t, "vi")).toContain("tu choi");
+    expect(pickLocaleBody(t, "en")).toContain("declined");
   });
 
   it("pickLocaleSubject returns email subjects", () => {
@@ -96,11 +96,34 @@ describe("notifications/templates", () => {
     }
   });
 
-  it("SMS_PORTAL_WELCOME body matches the canonical doc bodies (key phrases)", () => {
-    const t = getTemplate("SMS_PORTAL_WELCOME");
-    expect(t.bodies.ko).toContain("Welcome");
-    expect(t.bodies.vi).toContain("Cong KH");
-    expect(t.bodies.en).toContain("Welcome");
+  it("no template carries a password — credentials are never sent", () => {
+    for (const [code, t] of Object.entries(TEMPLATES)) {
+      for (const body of Object.values(t.bodies)) {
+        expect(body, `${code} interpolates a credential`).not.toMatch(
+          /\{(pwd|password|temp_password)\}/,
+        );
+      }
+    }
+  });
+
+  it("SMS offers vi + en only; email offers all three", () => {
+    expect(templateLocales(getTemplate("SMS_VISIT_REMINDER"))).toEqual([
+      "vi",
+      "en",
+    ]);
+    expect(templateLocales(getTemplate("EMAIL_RECEIPT"))).toEqual([
+      "ko",
+      "vi",
+      "en",
+    ]);
+  });
+
+  it("a Korean SMS override follows the English row", () => {
+    const sms = getTemplate("SMS_VISIT_REMINDER");
+    expect(overrideLocaleFor(sms, "ko")).toBe("en");
+    expect(overrideLocaleFor(sms, "vi")).toBe("vi");
+    // Email keeps its own Korean row.
+    expect(overrideLocaleFor(getTemplate("EMAIL_RECEIPT"), "ko")).toBe("ko");
   });
 });
 

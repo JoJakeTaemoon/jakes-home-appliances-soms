@@ -17,8 +17,9 @@
  *
  * Production-safety guard kept in this file (not in the orchestrator) because
  * it is mock-specific behaviour — a misconfigured `SMS_PROVIDER=mock` in prod
- * must redact credential bodies AND emit a loud warning, but only when the
- * mock provider is actually invoked.
+ * must emit a loud warning, but only when the mock provider is actually
+ * invoked. No template carries a credential any more (passwords are read out
+ * over the phone, never sent), so there is nothing left to redact.
  */
 
 import type {
@@ -28,7 +29,6 @@ import type {
 } from "@/lib/notifications/types";
 import { publishMockDispatch } from "@/lib/notifications/mock-bus";
 import { approximateSmsSegments } from "@/lib/notifications/sms-segments";
-import { CREDENTIAL_TEMPLATE_CODES } from "@/lib/notifications/templates";
 
 function tag(channel: SendPayload["channel"]): string {
   return channel === "SMS" ? "[MOCK SMS]" : "[MOCK EMAIL]";
@@ -39,16 +39,6 @@ function box(title: string, lines: string[]): string {
   const bar = "─".repeat(Math.min(80, max + 2));
   const inner = lines.map((l) => `│ ${l}`).join("\n");
   return [`┌${bar}┐`, `│ ${title}`, `├${bar}┤`, inner, `└${bar}┘`].join("\n");
-}
-
-/**
- * The mock provider redacts credential bodies in production logs so a
- * misconfigured `SMS_PROVIDER=mock` in prod doesn't leak passwords to the
- * terminal / log aggregator.
- */
-function shouldRedactBody(templateCode: string): boolean {
-  if (process.env.NODE_ENV !== "production") return false;
-  return CREDENTIAL_TEMPLATE_CODES.has(templateCode);
 }
 
 export class MockNotificationProvider implements NotificationProvider {
@@ -72,7 +62,6 @@ export class MockNotificationProvider implements NotificationProvider {
     }
 
     // Pretty console output — easy to spot in dev terminals.
-    const redactBody = shouldRedactBody(payload.templateCode);
     const lines = [
       `to       : ${payload.to}`,
       `template : ${payload.templateCode} (${payload.locale})`,
@@ -81,19 +70,14 @@ export class MockNotificationProvider implements NotificationProvider {
     if (segmentsUsed) lines.push(`segments : ${segmentsUsed}`);
     lines.push(`message  : ${messageId}`);
     lines.push("");
-    if (redactBody) {
-      lines.push("[body redacted — credential template in production]");
-    } else {
-      for (const ln of payload.body.split("\n")) lines.push(ln);
-    }
+    for (const ln of payload.body.split("\n")) lines.push(ln);
 
     console.log(`${tag(payload.channel)}\n${box("Mock dispatch", lines)}`);
 
-    // Fan-out to the dev-only browser bus so the portal-welcome / password-
-    // reset SMS flows surface the rendered body in the dev-tools console.
-    // Production safety: skipped when NODE_ENV === 'production' so a
-    // misconfigured mock provider in prod doesn't leak credential bodies to
-    // any SSE listener.
+    // Fan-out to the dev-only browser bus so mocked sends surface the
+    // rendered body in the dev-tools console. Skipped in production so a
+    // misconfigured mock provider doesn't stream message bodies to any SSE
+    // listener.
     if (process.env.NODE_ENV !== "production") {
       publishMockDispatch({
         id: messageId,
@@ -103,7 +87,7 @@ export class MockNotificationProvider implements NotificationProvider {
         templateCode: payload.templateCode,
         locale: payload.locale,
         subject: payload.subject,
-        body: redactBody ? "[body redacted]" : payload.body,
+        body: payload.body,
         segmentsUsed,
         messageId,
       });

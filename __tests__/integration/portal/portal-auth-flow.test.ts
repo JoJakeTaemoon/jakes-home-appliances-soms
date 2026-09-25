@@ -365,7 +365,7 @@ describe("Change password + me flow", () => {
 });
 
 describe("enablePortalAccount", () => {
-  it("auto-provisions credentials + sends mock SMS welcome (+ email when present)", async () => {
+  it("auto-provisions credentials + sends the welcome email, never the password", async () => {
     const contact = await prisma.customerContact.create({
       data: {
         customerId,
@@ -399,14 +399,18 @@ describe("enablePortalAccount", () => {
     expect(after?.mustChangePassword).toBe(true);
     expect(after?.passwordHash).toBeTruthy();
 
-    const sms = await prisma.notificationLog.findFirst({
-      where: { contactId: contact.id, templateCode: "SMS_PORTAL_WELCOME" },
-    });
-    expect(sms?.status).toBe("MOCKED");
     const email = await prisma.notificationLog.findFirst({
       where: { contactId: contact.id, templateCode: "EMAIL_PORTAL_WELCOME" },
     });
     expect(email?.status).toBe("MOCKED");
+    // Nothing carrying the credential is dispatched — the password comes back
+    // in `plainPassword` for the office to read out, and never reaches a log.
+    const logs = await prisma.notificationLog.findMany({
+      where: { contactId: contact.id },
+      select: { channel: true, payload: true },
+    });
+    expect(logs.every((l) => l.channel === "EMAIL")).toBe(true);
+    expect(JSON.stringify(logs)).not.toContain(plainPassword);
   });
 
   it("rejects contact without phone1", async () => {

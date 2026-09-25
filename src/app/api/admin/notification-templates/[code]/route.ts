@@ -15,7 +15,7 @@ import prisma from "@/lib/prisma";
 import { requireRole } from "@/lib/auth/guards";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ValidationError } from "@/lib/api/error";
-import { TEMPLATES } from "@/lib/notifications/templates";
+import { TEMPLATES, templateLocales } from "@/lib/notifications/templates";
 import { clearOverrideCache } from "@/lib/notifications/template-overrides";
 import { logAudit } from "@/lib/audit";
 import type { Locale } from "@/generated/prisma/client";
@@ -31,11 +31,17 @@ const patchSchema = z.object({
   enabled: z.boolean(),
 });
 
-function parseLocale(request: NextRequest): Locale {
+function parseLocale(request: NextRequest, code: string): Locale {
   const url = new URL(request.url);
   const raw = url.searchParams.get("locale") ?? "vi";
   if (!LOCALES.includes(raw as (typeof LOCALES)[number])) {
     throw new ValidationError("Invalid locale");
+  }
+  // SMS has no Korean body to override — Korean contacts read the English
+  // row, so a `ko` write here would create a row nothing ever reads.
+  const allowed = templateLocales(TEMPLATES[code]) as readonly string[];
+  if (!allowed.includes(raw)) {
+    throw new ValidationError(`Template ${code} has no ${raw} body`);
   }
   return raw as Locale;
 }
@@ -50,7 +56,7 @@ export async function PUT(
     if (!TEMPLATES[code]) {
       throw new ValidationError("Unknown template code");
     }
-    const locale = parseLocale(request);
+    const locale = parseLocale(request, code);
     const parsed = putSchema.parse(await request.json());
     const def = TEMPLATES[code];
     const isEmail = def.channels.includes("EMAIL");
@@ -118,7 +124,7 @@ export async function PATCH(
     if (!TEMPLATES[code]) {
       throw new ValidationError("Unknown template code");
     }
-    const locale = parseLocale(request);
+    const locale = parseLocale(request, code);
     const parsed = patchSchema.parse(await request.json());
     const def = TEMPLATES[code];
     const isEmail = def.channels.includes("EMAIL");
@@ -185,7 +191,10 @@ export async function DELETE(
   try {
     const caller = await requireRole(request, ["ADMIN", "MANAGER"]);
     const { code } = await ctx.params;
-    const locale = parseLocale(request);
+    if (!TEMPLATES[code]) {
+      throw new ValidationError("Unknown template code");
+    }
+    const locale = parseLocale(request, code);
     const before = await prisma.notificationTemplate.findUnique({
       where: { code_locale: { code, locale } },
       select: { id: true, body: true, subject: true },

@@ -317,7 +317,14 @@
     "contactDisabled": "Contact disabled",
     "loading": "Loading…",
     "serviceSummary": "Service",
-    "visitHistory": "Recent visits"
+    "visitHistory": "Recent visits",
+    "resetPortalPassword": "Reset portal password",
+    "resetPortalPasswordHint": "Issues a new temporary portal password. Nothing is sent by SMS or email — read it out to the customer on the phone.",
+    "resetPortalPasswordConfirm": "Reset the portal password for {name} ({phone}). All sessions are revoked and they must set a new password at next login.",
+    "resetPortalPasswordSuccess": "Temporary password issued for {name}. Read it out to them directly.",
+    "resetPortalPasswordOnce": "This password is shown once. Close the dialog and it is gone.",
+    "resetPortalPasswordNone": "No contact on this customer has a portal account.",
+    "resetPortalPasswordDone": "Handed over — close"
   },
   "salesReps": {
     "title": "Sales reps",
@@ -2409,7 +2416,7 @@
       "errorConflict": "Phone is already in use by another user.",
       "errorGeneric": "Could not update.",
       "errorSelfDisable": "You cannot deactivate your own account.",
-      "errorManagerOnAdmin": "MANAGER cannot edit or deactivate an ADMIN user.",
+      "errorManagerOnAdmin": "You can only edit, reset or deactivate users below your own role.",
       "notAllowed": "This page is only available to ADMIN or MANAGER.",
       "noUsersInRole": "No users in this role."
     },
@@ -2509,7 +2516,8 @@
       "downloadDataHint": "Exports live customers, contracts, equipment and consumables in this same shape. Edit and upload it back, or keep it as the backup before a migration. Rows already in are skipped on re-upload.",
       "catalogFirstTitle": "Check the product catalog first",
       "catalogFirstBody": "Model codes and consumable SKUs in the workbook must already exist in the product catalog. An unknown code is an error and nothing in the file is written. This screen never creates catalog entries. For a part the catalog does not carry, put its name in the Custom Name column of the Consumables sheet and it attaches to that unit only.",
-      "openCatalog": "Open the product catalog"
+      "openCatalog": "Open the product catalog",
+      "adminOnly": "Data migration is available to ADMIN only."
     }
   },
   "merge": {

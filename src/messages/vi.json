@@ -317,7 +317,14 @@
     "contactDisabled": "Đã vô hiệu hóa liên hệ",
     "loading": "Đang tải…",
     "serviceSummary": "Dịch vụ",
-    "visitHistory": "Lượt thăm gần đây"
+    "visitHistory": "Lượt thăm gần đây",
+    "resetPortalPassword": "Đặt lại mật khẩu cổng KH",
+    "resetPortalPasswordHint": "Cấp mật khẩu tạm mới cho cổng khách hàng. Hệ thống không gửi SMS hay email — vui lòng đọc cho khách qua điện thoại.",
+    "resetPortalPasswordConfirm": "Đặt lại mật khẩu cổng của {name} ({phone}). Mọi phiên đăng nhập sẽ bị thu hồi và khách phải đổi mật khẩu ở lần đăng nhập kế tiếp.",
+    "resetPortalPasswordSuccess": "Đã cấp mật khẩu tạm cho {name}. Vui lòng đọc trực tiếp qua điện thoại.",
+    "resetPortalPasswordOnce": "Mật khẩu này chỉ hiển thị một lần. Đóng cửa sổ là không xem lại được.",
+    "resetPortalPasswordNone": "Không có liên hệ nào đã mở tài khoản cổng.",
+    "resetPortalPasswordDone": "Đã báo khách — Đóng"
   },
   "salesReps": {
     "title": "Nhân viên bán hàng",
@@ -2409,7 +2416,7 @@
       "errorConflict": "SĐT đang được dùng bởi người dùng khác.",
       "errorGeneric": "Không thể cập nhật.",
       "errorSelfDisable": "Không thể vô hiệu hóa tài khoản của chính mình.",
-      "errorManagerOnAdmin": "MANAGER không thể sửa hoặc vô hiệu hóa ADMIN.",
+      "errorManagerOnAdmin": "Chỉ có thể sửa, đặt lại hoặc vô hiệu hóa người dùng có cấp bậc thấp hơn bạn.",
       "notAllowed": "Trang này chỉ dành cho ADMIN hoặc MANAGER.",
       "noUsersInRole": "Không có người dùng cho vai trò này."
     },
@@ -2509,7 +2516,8 @@
       "downloadDataHint": "Tải khách hàng, hợp đồng, thiết bị và vật tư đang có theo đúng mẫu này. Có thể sửa rồi tải lên lại, hoặc dùng làm bản sao lưu trước khi nhập. Dòng đã có sẽ được bỏ qua khi tải lên lại.",
       "catalogFirstTitle": "Kiểm tra danh mục sản phẩm trước",
       "catalogFirstBody": "Mã model và SKU vật tư trong file phải có sẵn trong danh mục sản phẩm. Mã chưa có sẽ báo lỗi và toàn bộ file không được ghi. Chức năng nhập dữ liệu không tạo mới danh mục. Với phụ kiện không có trong danh mục, hãy ghi tên vào cột Custom Name ở sheet Consumables — nó chỉ gắn cho thiết bị đó.",
-      "openCatalog": "Mở danh mục sản phẩm"
+      "openCatalog": "Mở danh mục sản phẩm",
+      "adminOnly": "Chỉ ADMIN mới dùng được chức năng nhập dữ liệu."
     }
   },
   "merge": {

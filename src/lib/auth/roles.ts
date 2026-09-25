@@ -67,18 +67,31 @@ export function canAssignRole(currentRole: string, targetRole: string): boolean 
 }
 
 /**
- * Check if callerRole can reset targetRole's password (staff-account reset).
+ * Can `callerRole` administer a user holding `targetRole`?
  *
- *   ADMIN   -> can reset anyone (MANAGER / STAFF / TECHNICIAN)
- *   MANAGER -> can reset STAFF / TECHNICIAN
- *   STAFF / TECHNICIAN -> no.
+ * Strictly downward: you manage the ranks below you and never your own.
+ *
+ *   ADMIN   -> MANAGER / STAFF / TECHNICIAN   (never another ADMIN)
+ *   MANAGER -> STAFF / TECHNICIAN             (never a MANAGER or ADMIN)
+ *   STAFF / TECHNICIAN -> nobody
+ *
+ * One rule for every user-management verb — edit, re-role, phone change,
+ * password reset, deactivate — so the screen and the five routes behind it
+ * cannot drift apart. A peer-on-peer action is the one that matters: two
+ * MANAGERs could otherwise reset each other and an ADMIN could be taken over
+ * by whoever reaches the account first.
  */
-export function canResetPassword(callerRole: string, targetRole: string): boolean {
+export function outranks(callerRole: string, targetRole: string): boolean {
   if (callerRole === "ADMIN") return targetRole !== "ADMIN";
   if (callerRole === "MANAGER") {
     return targetRole === "STAFF" || targetRole === "TECHNICIAN";
   }
   return false;
+}
+
+/** Staff-account password reset — same ladder as every other verb. */
+export function canResetPassword(callerRole: string, targetRole: string): boolean {
+  return outranks(callerRole, targetRole);
 }
 
 /**

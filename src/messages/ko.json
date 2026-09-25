@@ -317,7 +317,14 @@
     "contactDisabled": "담당자가 비활성화되었습니다",
     "loading": "불러오는 중...",
     "serviceSummary": "서비스",
-    "visitHistory": "최근 방문"
+    "visitHistory": "최근 방문",
+    "resetPortalPassword": "포털 비밀번호 초기화",
+    "resetPortalPasswordHint": "고객 포털 임시 비밀번호를 새로 발급합니다. 문자·이메일로 발송하지 않으므로 전화로 직접 알려주세요.",
+    "resetPortalPasswordConfirm": "{name} 님({phone})의 포털 비밀번호를 초기화합니다. 활성 세션이 모두 종료되고, 다음 로그인 때 새 비밀번호를 설정하게 됩니다.",
+    "resetPortalPasswordSuccess": "{name} 님의 임시 비밀번호가 발급되었습니다. 전화로 직접 전달하세요.",
+    "resetPortalPasswordOnce": "이 비밀번호는 지금 한 번만 표시됩니다. 창을 닫으면 다시 볼 수 없습니다.",
+    "resetPortalPasswordNone": "포털 계정이 있는 연락처가 없습니다.",
+    "resetPortalPasswordDone": "전달 완료 — 닫기"
   },
   "salesReps": {
     "title": "판매원",
@@ -2409,7 +2416,7 @@
       "errorConflict": "이미 다른 사용자가 사용 중인 전화번호입니다.",
       "errorGeneric": "변경에 실패했습니다.",
       "errorSelfDisable": "본인 계정은 비활성화할 수 없습니다.",
-      "errorManagerOnAdmin": "매니저는 관리자 사용자를 수정/비활성화할 수 없습니다.",
+      "errorManagerOnAdmin": "자신보다 하위 등급의 사용자만 수정·초기화·비활성화할 수 있습니다.",
       "notAllowed": "이 페이지는 관리자 또는 매니저만 접근할 수 있습니다.",
       "noUsersInRole": "이 역할에 사용자가 없습니다."
     },
@@ -2509,7 +2516,8 @@
       "downloadDataHint": "등록된 고객과 계약, 장비, 소모품을 같은 서식으로 받습니다. 내용을 고쳐 다시 올릴 수 있고, 이관 전 백업으로도 씁니다. 이미 등록된 행은 다시 올려도 건너뜁니다.",
       "catalogFirstTitle": "먼저 제품 카탈로그를 확인하세요",
       "catalogFirstBody": "업로드 파일의 모델코드와 소모품 SKU는 제품 카탈로그에 이미 등록돼 있어야 합니다. 없는 코드는 오류로 막히고 파일 전체가 저장되지 않습니다. 이관 작업은 카탈로그를 새로 만들지 않습니다. 카탈로그에 없는 부품은 소모품 시트의 Custom Name 칸에 이름을 직접 적으면 그 장비에만 등록됩니다.",
-      "openCatalog": "제품 카탈로그 열기"
+      "openCatalog": "제품 카탈로그 열기",
+      "adminOnly": "데이터 이관은 관리자만 사용할 수 있습니다."
     }
   },
   "merge": {

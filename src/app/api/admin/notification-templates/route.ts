@@ -13,11 +13,10 @@ import {
   TEMPLATE_CODES,
   pickLocaleBody,
   pickLocaleSubject,
+  templateLocales,
 } from "@/lib/notifications/templates";
 import { getTemplateDescription } from "@/lib/notifications/template-descriptions";
 import type { Locale } from "@/generated/prisma/client";
-
-const LOCALES: Locale[] = ["ko", "vi", "en"];
 
 interface TemplateRow {
   code: string;
@@ -56,7 +55,8 @@ export const GET = defineQuery({
     const rows: TemplateRow[] = [];
     for (const code of TEMPLATE_CODES) {
       const def = TEMPLATES[code];
-      for (const locale of LOCALES) {
+      // SMS has no Korean row — `templateLocales()` owns that rule.
+      for (const locale of templateLocales(def) as Locale[]) {
         const o = overrideMap.get(`${code}::${locale}`);
         rows.push({
           code,

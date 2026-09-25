@@ -2,13 +2,13 @@
  * POST /api/customers/[id]/contacts/[contactId]/reset-password — UC-AU-06.
  *
  * MANAGER+ resets a portal contact's password. Generates a new 10-char
- * password, hashes it, sets `mustChangePassword=true`, revokes all sessions,
- * and queues SMS_PASSWORD_RESET via the notification factory (mock provider
- * in dev — eSMS in production once F.4 credentials land).
+ * password, hashes it, sets `mustChangePassword=true` and revokes every
+ * session.
  *
- * Response payload deliberately omits the plain-text password — staff should
- * direct the customer to check their SMS. The console mock log shows the
- * password in dev for QA convenience.
+ * Nothing is sent: the plain-text password comes back in the response, is
+ * shown on screen once, and staff read it out on the phone. Same shape as the
+ * staff reset at `/api/users/[id]/password-reset`, so a credential never
+ * lands in a delivery log.
  */
 
 import { z } from "zod";
@@ -44,7 +44,7 @@ export const POST = defineMutation({
 
     return {
       contactId: result.contactId,
-      ok: true,
+      tempPassword: result.plainPassword,
     };
   },
 });

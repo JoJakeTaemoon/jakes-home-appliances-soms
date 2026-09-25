@@ -65,11 +65,14 @@ interface TemplateRow {
   enabled: boolean;
 }
 
-/** A template collapsed across its three locale rows. */
+/**
+ * A template collapsed across its locale rows. This screen only sends SMS,
+ * and SMS has no Korean body — Korean-speaking contacts read the English one.
+ */
 interface TemplateOption {
   code: string;
   description: string;
-  bodies: Record<"ko" | "vi" | "en", string>;
+  bodies: Record<"vi" | "en", string>;
   vars: string[];
 }
 
@@ -143,7 +146,7 @@ export default function NotificationLogsPage() {
   const [rawPhone, setRawPhone] = useState("");
   const [templateCode, setTemplateCode] = useState<string | null>(null);
   const [vars, setVars] = useState<Record<string, string>>({});
-  const [previewLocale, setPreviewLocale] = useState<"ko" | "vi" | "en">("vi");
+  const [previewLocale, setPreviewLocale] = useState<"vi" | "en">("vi");
   const [sending, setSending] = useState(false);
 
   const url = useMemo(() => {
@@ -208,10 +211,12 @@ export default function NotificationLogsPage() {
       const entry = byCode.get(r.code) ?? {
         code: r.code,
         description: "",
-        bodies: { ko: "", vi: "", en: "" },
+        bodies: { vi: "", en: "" },
         vars: [],
       };
-      entry.bodies[r.locale] = r.overrideBody ?? r.defaultBody;
+      if (r.locale !== "ko") {
+        entry.bodies[r.locale] = r.overrideBody ?? r.defaultBody;
+      }
       if (r.locale === "vi" || !entry.description) entry.description = r.description;
       byCode.set(r.code, entry);
     }
@@ -680,7 +685,7 @@ export default function NotificationLogsPage() {
                   <span className="text-[11px] text-[#737373]">
                     {t("previewLocale")}
                   </span>
-                  {(["vi", "en", "ko"] as const).map((l) => (
+                  {(["vi", "en"] as const).map((l) => (
                     <button
                       key={l}
                       type="button"

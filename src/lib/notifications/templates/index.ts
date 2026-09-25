@@ -78,13 +78,42 @@ export function pickLocaleSubject(
   return template.subjects[locale] ?? template.subjects.vi;
 }
 
+/** True for the SMS-only templates (every template ships on one channel). */
+function isSms(template: TemplateDef): boolean {
+  return template.channels[0] === "SMS";
+}
+
+/**
+ * Locales a template actually has a body in — what the admin 알림 서식 screen
+ * lists and what may be overridden in the DB.
+ *
+ * SMS has no Korean row: ViHAT answered `Không hỗ trợ tiếng Hàn` to every
+ * Korean line of our registration (2026-09-23), so `ko` carries the English
+ * text. Offering a KO tab there would let an admin edit a body that the
+ * carrier can never deliver.
+ */
+export function templateLocales(template: TemplateDef): NotificationLocale[] {
+  return isSms(template) ? ["vi", "en"] : ["ko", "vi", "en"];
+}
+
+/**
+ * The locale whose stored override governs `locale`. Korean SMS follows the
+ * English row, the same way the file default does.
+ */
+export function overrideLocaleFor(
+  template: TemplateDef,
+  locale: NotificationLocale,
+): NotificationLocale {
+  return isSms(template) && locale === "ko" ? "en" : locale;
+}
+
 
 /**
  * Bodies for an SMS template.
  *
- * Korean is not registrable: ViHAT answered `Không hỗ trợ tiếng Hàn` to all
- * seven Korean rows of our registration request (2026-09-23), so Korean-
- * speaking contacts receive the English body. Pointing `ko` at `en` here
+ * Korean is not registrable: ViHAT answered `Không hỗ trợ tiếng Hàn` to every
+ * Korean row of our registration request (2026-09-23), so Korean-speaking
+ * contacts receive the English body. Pointing `ko` at `en` here
  * states that once, instead of a fallback branch in the send path that every
  * caller has to remember.
  *
@@ -97,26 +126,6 @@ function smsBodies(vi: string, en: string): Record<NotificationLocale, string> {
 }
 
 // ── SMS templates (DOCUMENT_TEMPLATES §A) ───────────────────────────────
-
-const SMS_PORTAL_WELCOME: TemplateDef = {
-  code: "SMS_PORTAL_WELCOME",
-  channels: ["SMS"],
-  category: "SYSTEM",
-  bodies: smsBodies(
-    "[SeoulAqua] Chao {name}. Cong KH: soms.seoulaqua.com.vn - ID: {phone} - MK tam: {pwd}. Doi MK khi dang nhap dau.",
-    "[SeoulAqua] Welcome {name}. Portal: soms.seoulaqua.com.vn - ID: {phone} - Temp PW: {pwd}. Change PW on first login.",
-  ),
-};
-
-const SMS_PASSWORD_RESET: TemplateDef = {
-  code: "SMS_PASSWORD_RESET",
-  channels: ["SMS"],
-  category: "SYSTEM",
-  bodies: smsBodies(
-    "[SeoulAqua] MK cua {name} da dat lai. MK moi: {pwd} - soms.seoulaqua.com.vn. Khong phai ban? LH {hq_phone}",
-    "[SeoulAqua] {name}, password reset. New PW: {pwd} - soms.seoulaqua.com.vn. If not you: {hq_phone}",
-  ),
-};
 
 /**
  * The one body eSMS has registered for brandname `SEOUL AQUA` (ViHAT sheet
@@ -201,7 +210,7 @@ Seoul Aqua를 선택해주셔서 감사합니다. 고객 포털 계정이 개설
 
 ▸ 포털 주소: {url}
 ▸ 로그인 아이디: {phone}
-▸ 임시 비밀번호: 보안상의 이유로 SMS로 별도 전송됩니다
+▸ 임시 비밀번호: 보안상의 이유로 담당 직원이 전화로 안내드립니다
 
 첫 로그인 시 비밀번호 변경을 요청합니다 (보안상 필수).
 
@@ -220,7 +229,7 @@ Cảm ơn quý khách đã chọn Seoul Aqua. Tài khoản cổng khách hàng �
 
 ▸ Địa chỉ cổng: {url}
 ▸ Tên đăng nhập: {phone}
-▸ Mật khẩu tạm: được gửi riêng qua SMS vì lý do bảo mật
+▸ Mật khẩu tạm: nhân viên phụ trách sẽ thông báo qua điện thoại vì lý do bảo mật
 
 Vui lòng đổi mật khẩu khi đăng nhập lần đầu (yêu cầu bảo mật).
 
@@ -239,7 +248,7 @@ Thank you for choosing Seoul Aqua. Your customer portal account has been activat
 
 ▸ Portal URL: {url}
 ▸ Login ID: {phone}
-▸ Temporary password: sent separately via SMS for security
+▸ Temporary password: given to you by phone by our staff, for security
 
 Please change your password on first login (required for security).
 
@@ -924,8 +933,6 @@ Seoul Aqua`,
 
 export const TEMPLATES: Record<string, TemplateDef> = {
   // SMS
-  SMS_PORTAL_WELCOME,
-  SMS_PASSWORD_RESET,
   SMS_VISIT_REMINDER,
   SMS_SR_APPROVED,
   SMS_SR_REJECTED,
@@ -948,15 +955,3 @@ export const TEMPLATES: Record<string, TemplateDef> = {
 };
 
 export const TEMPLATE_CODES = Object.keys(TEMPLATES);
-
-/**
- * Templates whose rendered body contains a credential. Anything that surfaces
- * a stored body — the mock provider's console output, the admin delivery-log
- * screen — must redact these, otherwise a temporary password is readable long
- * after it was issued.
- */
-export const CREDENTIAL_TEMPLATE_CODES = new Set([
-  "SMS_PORTAL_WELCOME",
-  "SMS_PASSWORD_RESET",
-  "EMAIL_PORTAL_WELCOME",
-]);

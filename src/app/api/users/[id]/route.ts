@@ -2,9 +2,10 @@
  * PATCH  /api/users/[id]  — update username / role / preferred region.
  * DELETE /api/users/[id]  — soft-disable (status=DISABLED) + revoke sessions.
  *
- * ADMIN + MANAGER only. A user cannot disable themselves (defensive — would
- * lock the only ADMIN out). Phone changes still go through the dedicated
- * /phone endpoint so the rotation + audit semantics stay isolated.
+ * ADMIN + MANAGER only, and only ever downward: `outranks()` blocks acting on
+ * a peer or a superior, which also covers acting on yourself. Phone changes
+ * still go through the dedicated /phone endpoint so the rotation + audit
+ * semantics stay isolated.
  */
 
 import { NextRequest } from "next/server";
@@ -21,6 +22,7 @@ import {
   ValidationError,
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import { canAssignRole, outranks } from "@/lib/auth/roles";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
 
@@ -68,14 +70,12 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     });
     if (!before) throw new NotFoundError("User not found");
 
-    // MANAGER may not promote anyone to ADMIN nor edit existing ADMINs.
-    if (caller.role === "MANAGER") {
-      if (before.role === "ADMIN") {
-        throw new ForbiddenError("MANAGER cannot edit an ADMIN user");
-      }
-      if (parsed.data.role === "ADMIN") {
-        throw new ForbiddenError("MANAGER cannot promote to ADMIN");
-      }
+    if (!outranks(caller.role, before.role)) {
+      throw new ForbiddenError("You can only edit users below your own role");
+    }
+    // ...and only move them to a role that is still below yours.
+    if (parsed.data.role && !canAssignRole(caller.role, parsed.data.role)) {
+      throw new ForbiddenError(`Cannot assign the ${parsed.data.role} role`);
     }
 
     const updated = await prisma.user.update({
@@ -136,8 +136,8 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
     });
     if (!target) throw new NotFoundError("User not found");
 
-    if (caller.role === "MANAGER" && target.role === "ADMIN") {
-      throw new ForbiddenError("MANAGER cannot disable an ADMIN user");
+    if (!outranks(caller.role, target.role)) {
+      throw new ForbiddenError("You can only disable users below your own role");
     }
 
     await prisma.$transaction([

@@ -12,16 +12,6 @@ export type TemplateDescription = Record<NotificationLocale, string>;
 
 export const TEMPLATE_DESCRIPTIONS: Record<string, TemplateDescription> = {
   // ── SMS ────────────────────────────────────────────────────────────────
-  SMS_PORTAL_WELCOME: {
-    ko: "고객 포털 계정이 생성될 때 (계약 활성화 / 판매 확정) 자동 발송. 임시 비밀번호 + 포털 URL을 SMS로 전달합니다.",
-    vi: "Tự động gửi khi tài khoản Cổng KH được tạo (kích hoạt hợp đồng / chốt bán). SMS chứa mật khẩu tạm thời và URL cổng.",
-    en: "Auto-sent when a customer portal account is created (contract activation / sale finalization). SMS carries the temp password + portal URL.",
-  },
-  SMS_PASSWORD_RESET: {
-    ko: "MANAGER 이상이 고객의 포털 비밀번호를 재설정할 때 발송. opt-out 무관하게 항상 전송 (보안 메시지).",
-    vi: "Gửi khi MANAGER+ đặt lại mật khẩu cổng của KH. Luôn gửi, không phụ thuộc opt-out (tin bảo mật).",
-    en: "Sent when MANAGER+ resets a customer's portal password. Always delivered regardless of opt-out (security message).",
-  },
   SMS_VISIT_REMINDER: {
     ko: "방문 예정일 하루 전 (D-1) 자동 발송. 16:00 VST cron이 다음 날 SCHEDULED 방문을 스캔해 고객에게 알림.",
     vi: "Tự động gửi 1 ngày trước lượt thăm (D-1). Cron 16:00 VST quét các Visit SCHEDULED ngày hôm sau và gửi nhắc cho KH.",
@@ -50,9 +40,9 @@ export const TEMPLATE_DESCRIPTIONS: Record<string, TemplateDescription> = {
 
   // ── EMAIL ──────────────────────────────────────────────────────────────
   EMAIL_PORTAL_WELCOME: {
-    ko: "고객 포털 계정 생성 시 SMS와 함께 발송되는 환영 이메일. 포털 사용법 + 첫 로그인 안내.",
-    vi: "Email chào mừng gửi cùng SMS khi tài khoản Cổng KH được tạo. Hướng dẫn cách dùng cổng + đăng nhập lần đầu.",
-    en: "Welcome email sent alongside the SMS on portal account creation. Walks through portal usage + first login.",
+    ko: "고객 포털 계정이 생성될 때 발송되는 환영 이메일. 포털 사용법 + 첫 로그인 안내 (임시 비밀번호는 담당 직원이 전화로 전달).",
+    vi: "Email chào mừng khi tài khoản Cổng KH được tạo. Hướng dẫn cách dùng cổng + đăng nhập lần đầu (mật khẩu tạm do nhân viên báo qua điện thoại).",
+    en: "Welcome email sent on portal account creation. Walks through portal usage + first login (the temp password is read out by staff over the phone).",
   },
   EMAIL_FILTER_DUE_D14: {
     ko: "필터 교체 예정일 14일 전 이메일 알림. 09:00 VST cron이 정기 필터 교체 도래 장비를 스캔.",

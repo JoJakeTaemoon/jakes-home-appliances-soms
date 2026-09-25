@@ -28,6 +28,7 @@ import {
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 import { normalizePhone } from "@/lib/auth/phone";
+import { outranks } from "@/lib/auth/roles";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
 
@@ -75,6 +76,13 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       select: { id: true, username: true, phone: true, role: true },
     });
     if (!target) throw new NotFoundError("User not found");
+
+    // Your own number is yours to change; anyone else's must be below you.
+    if (target.id !== caller.userId && !outranks(caller.role, target.role)) {
+      throw new ForbiddenError(
+        "You can only change the phone of users below your own role",
+      );
+    }
 
     if (target.phone === nextPhone) {
       // No-op — return current row so the UI can refresh without surprise.

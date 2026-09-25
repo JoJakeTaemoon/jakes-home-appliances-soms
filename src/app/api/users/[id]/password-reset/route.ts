@@ -17,6 +17,7 @@ import { defineMutation } from "@/lib/api/mutation";
 import { generateRandomPassword, hashPassword } from "@/lib/auth/password";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import { canResetPassword } from "@/lib/auth/roles";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
 
@@ -37,10 +38,12 @@ export const POST = defineMutation({
     });
     if (!target) throw new NotFoundError("User not found");
 
-    // A MANAGER resetting an ADMIN would hand themselves the admin account,
-    // so that one rung of the ladder is ADMIN-only.
-    if (target.role === "ADMIN" && auth.role !== "ADMIN") {
-      throw new ForbiddenError("Only an ADMIN can reset an ADMIN's password");
+    // Resetting a peer hands you their account, so the ladder is strictly
+    // downward — a MANAGER cannot reach an ADMIN or another MANAGER.
+    if (!canResetPassword(auth.role, target.role)) {
+      throw new ForbiddenError(
+        "You can only reset the password of users below your own role",
+      );
     }
 
     const tempPassword = generateRandomPassword(TEMP_PASSWORD_LENGTH);

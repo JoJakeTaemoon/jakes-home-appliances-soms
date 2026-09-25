@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 import { defineMutation, defineQuery } from "@/lib/api/mutation";
 import { ConflictError, ForbiddenError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import { canAssignRole } from "@/lib/auth/roles";
 import { normalizePhone } from "@/lib/auth/phone";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -56,6 +57,10 @@ export const POST = defineMutation({
   body: createUserSchema,
   successStatus: 201,
   handler: async ({ auth, body, request }) => {
+    // Strictly downward: nobody mints a peer or a superior.
+    if (!canAssignRole(auth.role, body.role)) {
+      throw new ForbiddenError(`Cannot create a ${body.role} user`);
+    }
     const phone = normalizePhone(body.phone);
     const existing = await prisma.user.findUnique({
       where: { phone },

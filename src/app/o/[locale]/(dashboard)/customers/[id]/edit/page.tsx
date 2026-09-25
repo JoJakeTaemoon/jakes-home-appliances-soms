@@ -6,7 +6,10 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
+import { useAuth } from "@/providers/auth-provider";
+import { canResetCustomerPassword } from "@/lib/auth/roles";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { BackButton } from "@/components/ui/back-button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -27,7 +30,9 @@ type Residency = "DOMESTIC" | "FOREIGN";
 interface CustomerContactSummary {
   id: string;
   role: "CONTRACT_PARTY" | "OPS_CONTACT";
+  name: string;
   phone1: string;
+  portalEnabled: boolean;
 }
 
 interface CustomerDetail {
@@ -68,6 +73,7 @@ export default function EditCustomerPage() {
   const locale = useLocale() as "vi" | "ko" | "en";
   const router = useRouter();
   const api = useApi();
+  const { user } = useAuth();
 
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
@@ -299,6 +305,9 @@ export default function EditCustomerPage() {
           />
         </FormField>
       </div>
+      {canResetCustomerPassword(user?.role ?? "") && (
+        <PortalPasswordCard customerId={id} contacts={data.contacts ?? []} />
+      )}
       {err && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{err}</div>
       )}
@@ -311,5 +320,141 @@ export default function EditCustomerPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Portal password reset (MANAGER+) — UC-AU-06
+//
+// Nothing is sent: the API hands back the new password, it is shown once,
+// and the office reads it out on the phone. Same shape as the staff reset on
+// 관리자 → 사용자 관리, so a credential never reaches a delivery log.
+// ─────────────────────────────────────────────────────────────────────────
+
+function PortalPasswordCard({
+  customerId,
+  contacts,
+}: Readonly<{ customerId: string; contacts: CustomerContactSummary[] }>) {
+  const t = useTranslations("customers");
+  const portalContacts = contacts.filter((c) => c.portalEnabled);
+  const [target, setTarget] = useState<CustomerContactSummary | null>(null);
+
+  return (
+    <div className="rounded-2xl border border-[#e5e5e5] bg-white p-6">
+      <h2 className="text-sm font-semibold text-[#002A4D]">
+        {t("resetPortalPassword")}
+      </h2>
+      <p className="mt-1 text-xs text-[#737373]">
+        {t("resetPortalPasswordHint")}
+      </p>
+      {portalContacts.length === 0 ? (
+        <p className="mt-3 text-sm text-[#a3a3a3]">
+          {t("resetPortalPasswordNone")}
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-[#f0f0f0]">
+          {portalContacts.map((c) => (
+            <li key={c.id} className="flex items-center justify-between py-2">
+              <span className="text-sm text-[#262626]">
+                {c.name}
+                <span className="ml-2 font-mono text-xs text-[#737373]">
+                  {c.phone1}
+                </span>
+              </span>
+              <Button variant="secondary" size="sm" onClick={() => setTarget(c)}>
+                {t("resetPortalPassword")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {target && (
+        <PortalPasswordModal
+          customerId={customerId}
+          contact={target}
+          onClose={() => setTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PortalPasswordModal({
+  customerId,
+  contact,
+  onClose,
+}: Readonly<{
+  customerId: string;
+  contact: CustomerContactSummary;
+  onClose: () => void;
+}>) {
+  const t = useTranslations("customers");
+  const tc = useTranslations("common");
+  const api = useApi();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await api.post<{ tempPassword: string }>(
+        `/api/customers/${customerId}/contacts/${contact.id}/reset-password`,
+      );
+      setTempPassword(res.data.tempPassword);
+    } catch (e) {
+      if (e instanceof ApiClientError) setErr(e.message);
+      else setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("resetPortalPassword")}
+      size="sm"
+      footer={
+        tempPassword ? (
+          <Button onClick={onClose}>{t("resetPortalPasswordDone")}</Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={submit} isLoading={busy}>
+              {t("resetPortalPassword")}
+            </Button>
+          </>
+        )
+      }
+    >
+      {tempPassword ? (
+        <div>
+          <p className="text-sm text-[#525252]">
+            {t("resetPortalPasswordSuccess", { name: contact.name })}
+          </p>
+          <p className="mt-3 select-all rounded-md border border-[#e5e5e5] bg-[#fafafa] px-3 py-2 text-center font-mono text-lg tracking-widest text-[#262626]">
+            {tempPassword}
+          </p>
+          <p className="mt-3 text-sm font-medium text-[#b45309]">
+            {t("resetPortalPasswordOnce")}
+          </p>
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm text-[#525252]">
+            {t("resetPortalPasswordConfirm", {
+              name: contact.name,
+              phone: contact.phone1,
+            })}
+          </p>
+          {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+        </div>
+      )}
+    </Modal>
   );
 }

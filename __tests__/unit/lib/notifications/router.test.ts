@@ -70,20 +70,12 @@ describe("notifications/router", () => {
     ]);
   });
 
-  it("ignores opt-out for SYSTEM category (password reset)", () => {
+  it("ignores opt-out for SYSTEM category (portal welcome email)", () => {
     const r = route({
-      templateCode: "SMS_PASSWORD_RESET",
+      templateCode: "EMAIL_PORTAL_WELCOME",
       contact: { ...contactBoth, smsOptOut: true, emailOptOut: true },
     });
-    expect(r).toEqual([{ channel: "SMS", recipient: "0901234567" }]);
-  });
-
-  it("ignores opt-out for SYSTEM category (portal welcome SMS)", () => {
-    const r = route({
-      templateCode: "SMS_PORTAL_WELCOME",
-      contact: { ...contactBoth, smsOptOut: true },
-    });
-    expect(r).toEqual([{ channel: "SMS", recipient: "0901234567" }]);
+    expect(r).toEqual([{ channel: "EMAIL", recipient: "lan@example.com" }]);
   });
 
   it("ignores opt-out for SYSTEM category (receipt email)", () => {
@@ -94,12 +86,14 @@ describe("notifications/router", () => {
     expect(r).toEqual([{ channel: "EMAIL", recipient: "lan@example.com" }]);
   });
 
-  it("never falls back to email for SMS_PASSWORD_RESET (no-fallback list)", () => {
+  it("falls back to email when an SMS-only template has no phone", () => {
     const r = route({
-      templateCode: "SMS_PASSWORD_RESET",
+      templateCode: "SMS_SR_REJECTED",
       contact: contactEmailOnly,
     });
-    expect(r).toEqual([]);
+    expect(r).toEqual([
+      { channel: "EMAIL", recipient: "lan@example.com", fallback: true },
+    ]);
   });
 
   it("throws on unknown template code", () => {

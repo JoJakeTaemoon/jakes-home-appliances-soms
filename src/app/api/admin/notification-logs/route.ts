@@ -20,7 +20,6 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
-import { CREDENTIAL_TEMPLATE_CODES } from "@/lib/notifications/templates";
 import type { Prisma } from "@/generated/prisma/client";
 
 const querySchema = z.object({
@@ -110,10 +109,7 @@ export const GET = defineQuery({
     return {
       rows: rows.map((r) => {
         const payload = (r.payload ?? {}) as Record<string, unknown>;
-        const body =
-          typeof payload.body === "string" && !CREDENTIAL_TEMPLATE_CODES.has(r.templateCode)
-            ? payload.body
-            : null;
+        const body = typeof payload.body === "string" ? payload.body : null;
         return {
           id: r.id,
           createdAt: r.createdAt.toISOString(),

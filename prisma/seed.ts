@@ -3713,15 +3713,14 @@ async function main() {
   await ensureNotification("seed-notif-002", {
     customerId: b2c.id,
     contactId: b2cPrimaryContact.id,
-    templateCode: "SMS_PORTAL_WELCOME",
-    channel: "SMS",
+    templateCode: "EMAIL_PORTAL_WELCOME",
+    channel: "EMAIL",
     locale: "vi",
     provider: "mock",
-    recipient: b2cPrimaryContact.phone1,
+    recipient: b2cPrimaryContact.email ?? b2cPrimaryContact.phone1,
     status: "MOCKED",
-    segmentsUsed: 2,
     sentAt: daysFromNow(-40),
-    payload: { body: "Chào mừng đến cổng khách hàng Seoul Aqua. Mật khẩu tạm: ********" },
+    payload: { body: "Chào mừng đến cổng khách hàng Seoul Aqua." },
   });
   await ensureNotification("seed-notif-003", {
     customerId: b2c2.id,

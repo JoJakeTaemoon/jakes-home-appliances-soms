@@ -2,7 +2,8 @@
 
 /**
  * Bulk migration — load existing customers, contracts, equipment and
- * consumables from one workbook (ADMIN + MANAGER).
+ * consumables from one workbook (ADMIN only — a bad file rewrites the whole
+ * customer book, so this one stays off the MANAGER menu).
  *
  * Two steps on purpose. The file is checked and the findings shown first;
  * only then does the confirm button write anything. The same file is posted
@@ -51,7 +52,7 @@ interface ImportResult {
 
 export default function MigrationPage() {
   const t = useTranslations("admin.migration");
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +150,14 @@ export default function MigrationPage() {
     (result?.counts.customers ?? 0) +
     (result?.counts.contracts ?? 0) +
     (result?.counts.equipment ?? 0);
+
+  if (user && user.role !== "ADMIN") {
+    return (
+      <div className="mx-auto w-full max-w-4xl">
+        <p className="text-sm text-[#737373]">{t("adminOnly")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl">

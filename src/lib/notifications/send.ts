@@ -35,6 +35,7 @@ import { getNotificationProvider } from "@/lib/notifications";
 import { route, type RoutableContact } from "@/lib/notifications/router";
 import {
   getTemplate,
+  overrideLocaleFor,
   pickLocaleBody,
   pickLocaleSubject,
   renderTemplate,
@@ -217,7 +218,11 @@ export async function sendNotification(
 
   const results: SendResult[] = [];
   // Allow admin DB overrides (UC-AD-04) to replace the file-based body/subject.
-  const override = await getOverride(input.templateCode, locale);
+  // Korean SMS reads the English row — there is no Korean SMS body to store.
+  const override = await getOverride(
+    input.templateCode,
+    overrideLocaleFor(tmpl, locale),
+  );
 
   // Admin can disable a specific (code, locale) row from the templates page.
   // We treat the per-locale flag as a hard skip: no dispatch on any channel,

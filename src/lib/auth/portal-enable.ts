@@ -4,15 +4,18 @@
  *   - `enablePortalAccount`  : called when a CustomerContact flips to
  *     `portalEnabled=true`. Generates a 10-char random password, hashes it,
  *     marks the contact as needing first-login change, then dispatches
- *     SMS_PORTAL_WELCOME (always) + EMAIL_PORTAL_WELCOME (if email is set).
- *     Returns `{ plainPassword }` so caller can log / show in admin UI if
- *     needed (also still delivered via SMS for the customer).
+ *     EMAIL_PORTAL_WELCOME (if email is set) — an activation notice that
+ *     carries no credential.
  *
- *   - `resetPortalPassword` : MANAGER+ initiated. Same shape, sends
- *     SMS_PASSWORD_RESET (system message, ignores opt-out).
+ *   - `resetPortalPassword` : MANAGER+ initiated. Same shape, sends nothing.
  *
- * Both helpers throw if the contact has no `phone1` (SMS is the canonical
- * delivery channel for credentials — see CLAUDE.md "channel rule").
+ * Both return `{ plainPassword }`: no password is ever transmitted (2026-09-25,
+ * matching the staff reset of 2026-09-24), so the caller shows it on screen
+ * once and the office reads it out over the phone. Nothing about a credential
+ * reaches a delivery log.
+ *
+ * Both helpers throw if the contact has no `phone1` — it is the portal login
+ * ID, not a delivery channel.
  */
 
 import prisma from "@/lib/prisma";
@@ -60,7 +63,7 @@ export async function enablePortalAccount(opts: {
   if (!c) throw new ValidationError("Contact not found");
   if (!c.phone1) {
     throw new ValidationError(
-      "Cannot enable portal — contact has no phone1 (required for SMS credential delivery)",
+      "Cannot enable portal — contact has no phone1 (it is the login ID)",
     );
   }
 
@@ -80,31 +83,9 @@ export async function enablePortalAccount(opts: {
 
   const locale = c.language as NotificationLocale;
 
-  // Always send the welcome SMS.
-  await sendNotification({
-    templateCode: "SMS_PORTAL_WELCOME",
-    contactOverride: {
-      customerId: c.customerId,
-      contactId: c.id,
-      phone1: c.phone1,
-      email: c.email,
-      smsOptOut: c.smsOptOut,
-      emailOptOut: c.emailOptOut,
-      language: locale,
-    },
-    vars: {
-      name: c.name,
-      phone: c.phone1,
-      pwd: password,
-      url: PORTAL_URL,
-    },
-    actorType: opts.actorType ?? "USER",
-    actorId: opts.actorId ?? null,
-  });
-
-  // Companion long-form email when email is present (hybrid per matrix).
-  // EMAIL_PORTAL_WELCOME does NOT include the password (SMS-only for
-  // credential — the email just confirms account activation).
+  // Activation notice when an email is on file. EMAIL_PORTAL_WELCOME carries
+  // no password — it names the login ID and says staff will read the
+  // temporary password out by phone.
   if (c.email) {
     await sendNotification({
       templateCode: "EMAIL_PORTAL_WELCOME",
@@ -141,12 +122,13 @@ export async function enablePortalAccount(opts: {
 }
 
 /**
- * Office-initiated password reset (UC-AU-06).
+ * Office-initiated password reset (UC-AU-06). Requires MANAGER+, enforced by
+ * the caller.
  *
- * Differs from the self-service flow:
- *   - Requires MANAGER+ (enforced by the caller)
- *   - No "name match" gate (the staff member already has the contact in their UI)
- *   - Always sends; never returns the generic "if exists" string
+ * Sends nothing. The new password comes back in `plainPassword` for the
+ * screen to show once; staff read it out to the customer on the phone. That
+ * keeps the credential out of every delivery log and off the customer's
+ * handset, where an intercepted SMS would hand over the account.
  */
 export async function resetPortalPassword(opts: {
   contactId: string;
@@ -172,7 +154,7 @@ export async function resetPortalPassword(opts: {
     throw new ValidationError("Contact does not have a portal account");
   }
   if (!c.phone1) {
-    throw new ValidationError("Contact has no phone — cannot send reset SMS");
+    throw new ValidationError("Contact has no phone — cannot identify the login");
   }
 
   const password = generateRandomPassword(10);
@@ -192,27 +174,6 @@ export async function resetPortalPassword(opts: {
   await prisma.customerSession.updateMany({
     where: { contactId: c.id, revokedAt: null },
     data: { revokedAt: new Date() },
-  });
-
-  await sendNotification({
-    templateCode: "SMS_PASSWORD_RESET",
-    contactOverride: {
-      customerId: c.customerId,
-      contactId: c.id,
-      phone1: c.phone1,
-      email: c.email,
-      smsOptOut: c.smsOptOut,
-      emailOptOut: c.emailOptOut,
-      language: c.language as NotificationLocale,
-    },
-    vars: {
-      name: c.name,
-      pwd: password,
-      url: PORTAL_URL,
-      hq_phone: HQ_PHONE,
-    },
-    actorType: opts.actorType ?? "USER",
-    actorId: opts.actorId,
   });
 
   await logAudit({

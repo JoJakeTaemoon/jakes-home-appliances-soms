@@ -8,6 +8,7 @@ import {
   canAssignRole,
   canResetPassword,
   canResetCustomerPassword,
+  outranks,
   canManageStaff,
   canApproveOps,
 } from "@/lib/auth/roles";
@@ -78,6 +79,23 @@ describe("auth/roles", () => {
       expect(getAssignableRoles("TECHNICIAN")).toEqual([]);
       expect(canAssignRole("STAFF", "STAFF")).toBe(false);
       expect(canAssignRole("TECHNICIAN", "STAFF")).toBe(false);
+    });
+  });
+
+  describe("outranks (one ladder for every user-management verb)", () => {
+    it("never lets anyone act on a peer or a superior", () => {
+      for (const role of ["ADMIN", "MANAGER", "STAFF", "TECHNICIAN"]) {
+        expect(outranks(role, role), `${role} on itself`).toBe(false);
+      }
+      expect(outranks("MANAGER", "ADMIN")).toBe(false);
+      expect(outranks("STAFF", "TECHNICIAN")).toBe(false);
+    });
+    it("reaches strictly downward", () => {
+      expect(outranks("ADMIN", "MANAGER")).toBe(true);
+      expect(outranks("ADMIN", "STAFF")).toBe(true);
+      expect(outranks("ADMIN", "TECHNICIAN")).toBe(true);
+      expect(outranks("MANAGER", "STAFF")).toBe(true);
+      expect(outranks("MANAGER", "TECHNICIAN")).toBe(true);
     });
   });
 

@@ -12,7 +12,7 @@
  * re-runs the whole validation, so a catalog that changed between preview and
  * confirm cannot slip a bad row through.
  *
- * ADMIN + MANAGER only. This creates live customers, contracts and equipment.
+ * ADMIN only. This creates live customers, contracts and equipment.
  */
 
 import { NextRequest } from "next/server";
@@ -91,8 +91,8 @@ async function loadSnapshot(): Promise<ExistingSnapshot> {
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request);
-    if (auth.role !== "ADMIN" && auth.role !== "MANAGER") {
-      throw new ForbiddenError("ADMIN or MANAGER required");
+    if (auth.role !== "ADMIN") {
+      throw new ForbiddenError("ADMIN required");
     }
 
     const form = await request.formData();

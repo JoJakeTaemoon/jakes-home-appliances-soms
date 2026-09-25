@@ -43,14 +43,15 @@ export const POST = defineMutation({
     }
     if (!contact.phone1) {
       throw new ValidationError(
-        "Contact has no phone — required for SMS credential delivery",
+        "Contact has no phone — it is the portal login ID",
       );
     }
-    await enablePortalAccount({
+    const result = await enablePortalAccount({
       contactId,
       actorId: auth.userId,
       actorType: "USER",
     });
-    return { ok: true, contactId };
+    // Shown on screen once and read out by phone — never sent.
+    return { contactId, tempPassword: result.plainPassword };
   },
 });

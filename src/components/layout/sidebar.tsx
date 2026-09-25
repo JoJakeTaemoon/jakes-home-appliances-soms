@@ -75,6 +75,7 @@ const ALL_OFFICE_ROLES: readonly RoleKey[] = [
   "TECHNICIAN",
 ];
 const ADMIN_MANAGER: readonly RoleKey[] = ["ADMIN", "MANAGER"];
+const ADMIN_ONLY: readonly RoleKey[] = ["ADMIN"];
 
 // Top-level menu order (2026-06-26):
 //   1. 대시보드  2. 고객  3. 장비 (+sub)  4. 계약
@@ -114,7 +115,7 @@ const adminNavItems: NavItem[] = [
 const adminSettingsItems: NavItem[] = [
   { href: "/o/admin/notification-templates", labelKey: "notificationTemplates", Icon: Settings, roles: ADMIN_MANAGER },
   { href: "/o/admin/notification-logs", labelKey: "notificationLogs", Icon: Send, roles: ADMIN_MANAGER },
-  { href: "/o/admin/migration", labelKey: "dataMigration", Icon: Upload, roles: ADMIN_MANAGER },
+  { href: "/o/admin/migration", labelKey: "dataMigration", Icon: Upload, roles: ADMIN_ONLY },
 ];
 
 function visibleFor(items: readonly NavItem[], role: RoleKey | undefined): NavItem[] {

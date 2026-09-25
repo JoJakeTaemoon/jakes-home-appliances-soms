@@ -8,13 +8,13 @@
  *   2. Drop channels the contact doesn't have a recipient for
  *      (phone for SMS, email for EMAIL).
  *   3. Drop channels the contact has opted out of — UNLESS the template's
- *      `category` is `SYSTEM` (password reset, receipt, contract copy, tax
- *      invoice, portal welcome).
+ *      `category` is `SYSTEM` (receipt, contract copy, tax invoice, portal
+ *      welcome).
  *   4. If nothing is left and a fallback channel is intrinsically available
  *      AND the contact has the recipient for it AND opt-out allows it,
- *      add it as a fallback. (Used e.g. when SMS-only template fires for a
- *      contact with no phone but with email — A.2 SMS_PASSWORD_RESET is
- *      explicitly excluded from email fallback for security.)
+ *      add it as a fallback. (Used e.g. when an SMS-only template fires for
+ *      a contact with no phone but with email.) No template carries a
+ *      credential any more, so no template is excluded from fallback.
  *   5. If still nothing, return `[]` so the caller can log an admin error.
  *
  * Returns one routing entry per chosen channel — `sendNotification()` loops
@@ -35,13 +35,6 @@ export interface RoutableContact {
   smsOptOut: boolean;
   emailOptOut: boolean;
 }
-
-/** Templates that never fall back across channels — for security reasons. */
-const NO_FALLBACK_TEMPLATES = new Set<string>([
-  // Password reset must reach the phone of record. Email fallback would
-  // mean an attacker with email-only access could receive the new password.
-  "SMS_PASSWORD_RESET",
-]);
 
 function isOptedOut(
   category: NotificationCategory,
@@ -84,8 +77,6 @@ export function route({
   if (out.length > 0) return out;
 
   // 4. Cross-channel fallback (skipped for high-security templates).
-  if (NO_FALLBACK_TEMPLATES.has(templateCode)) return out;
-
   const tried = new Set(tmpl.channels);
   const fallbackOrder: NotificationChannel[] = ["EMAIL", "SMS"];
   for (const ch of fallbackOrder) {

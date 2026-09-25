@@ -25,9 +25,9 @@ describe("template-overrides.getOverride", () => {
     (
       prisma.notificationTemplate.findUnique as ReturnType<typeof vi.fn>
     ).mockResolvedValue(null);
-    expect(await getOverride("SMS_PORTAL_WELCOME", "vi")).toBeNull();
+    expect(await getOverride("SMS_VISIT_REMINDER", "vi")).toBeNull();
     // second call should hit cache
-    expect(await getOverride("SMS_PORTAL_WELCOME", "vi")).toBeNull();
+    expect(await getOverride("SMS_VISIT_REMINDER", "vi")).toBeNull();
     expect(
       (prisma.notificationTemplate.findUnique as ReturnType<typeof vi.fn>).mock
         .calls.length,
@@ -47,10 +47,10 @@ describe("template-overrides.getOverride", () => {
       typeof vi.fn
     >;
     finder.mockResolvedValue({ body: "one", subject: null });
-    await getOverride("SMS_PORTAL_WELCOME", "vi");
+    await getOverride("SMS_VISIT_REMINDER", "vi");
     clearOverrideCache();
     finder.mockResolvedValue({ body: "two", subject: null });
-    const out = await getOverride("SMS_PORTAL_WELCOME", "vi");
+    const out = await getOverride("SMS_VISIT_REMINDER", "vi");
     expect(out?.body).toBe("two");
     expect(finder.mock.calls.length).toBe(2);
   });
@@ -59,6 +59,6 @@ describe("template-overrides.getOverride", () => {
     (
       prisma.notificationTemplate.findUnique as ReturnType<typeof vi.fn>
     ).mockRejectedValue(new Error("DB unreachable"));
-    expect(await getOverride("SMS_PORTAL_WELCOME", "vi")).toBeNull();
+    expect(await getOverride("SMS_VISIT_REMINDER", "vi")).toBeNull();
   });
 });
