@@ -18,6 +18,13 @@ export type RouteNode = {
   /** i18n key under the `nav.*` namespace */
   labelKey: string;
   children?: Record<string, RouteNode>;
+  /**
+   * A label in the trail with no page of its own (e.g. `/o/admin` groups the
+   * admin screens but has no `page.tsx`). Rendered as plain text, and the
+   * back button skips it — as a link it 404s, both on click and on Next's
+   * automatic prefetch of visible links.
+   */
+  grouping?: true;
 };
 
 const TREE: RouteNode = {
@@ -94,6 +101,7 @@ const TREE: RouteNode = {
     },
     admin: {
       labelKey: "admin",
+      grouping: true,
       children: {
         users: { labelKey: "users" },
         products: { labelKey: "products" },
@@ -116,7 +124,22 @@ export type Crumb = {
    *  use this to optionally override the static label with the resolved
    *  entity name via the breadcrumb context. */
   isDynamic?: boolean;
+  /** False for a grouping segment with no page — never render it as a link. */
+  linkable: boolean;
 };
+
+/**
+ * The crumb the back button should fall back to: the nearest ancestor of
+ * the current page that is an actual page. Null at depth ≤ 1.
+ */
+export function parentCrumb(crumbs: readonly Crumb[]): Crumb | null {
+  for (let i = crumbs.length - 2; i >= 1; i--) {
+    if (crumbs[i].linkable) return crumbs[i];
+  }
+  // Only ancestors left are grouping labels (or just home) — home is the
+  // page to fall back to, but a depth-1 page has no back button at all.
+  return crumbs.length >= 3 ? crumbs[0] : null;
+}
 
 /**
  * Strip the leading `/o` prefix, then walk the tree one segment at a
@@ -131,7 +154,7 @@ export function computeOfficeCrumbs(pathname: string): Crumb[] | null {
   if (parts[0] !== "o") return null;
   const tail = parts.slice(1);
 
-  const crumbs: Crumb[] = [{ href: "/o", labelKey: TREE.labelKey }];
+  const crumbs: Crumb[] = [{ href: "/o", labelKey: TREE.labelKey, linkable: true }];
   let node: RouteNode = TREE;
   let href = "/o";
   for (const seg of tail) {
@@ -144,6 +167,7 @@ export function computeOfficeCrumbs(pathname: string): Crumb[] | null {
       href,
       labelKey: child.labelKey,
       isDynamic: exact ? undefined : true,
+      linkable: !child.grouping,
     });
     node = child;
   }

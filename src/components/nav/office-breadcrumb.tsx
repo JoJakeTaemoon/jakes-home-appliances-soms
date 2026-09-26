@@ -7,6 +7,7 @@ import { useBreadcrumbOverrides } from "@/lib/nav/breadcrumb-context";
 import { useNavigationHistory } from "@/lib/nav/navigation-history";
 import {
   computeOfficeCrumbs,
+  parentCrumb,
   type Crumb,
 } from "@/lib/nav/office-route-map";
 
@@ -32,8 +33,8 @@ export function OfficeBreadcrumb() {
   const lastIdx = crumbs.length - 1;
   // depth 0 = home only (already returned), depth 1 = home + 1 segment
   // (e.g. /customers), depth 2+ = at least one ancestor below "home".
-  const parent: Crumb | null =
-    crumbs.length >= 3 ? crumbs[lastIdx - 1] : null;
+  // Grouping crumbs (/o/admin) are skipped — they have no page to land on.
+  const parent: Crumb | null = parentCrumb(crumbs);
 
   // "뒤로" prefers real in-app history — arriving at a visit detail from
   // the schedule board should hop back to the board, not to /visits which
@@ -94,6 +95,8 @@ export function OfficeBreadcrumb() {
                 >
                   {labelFor(c)}
                 </span>
+              ) : !c.linkable ? (
+                <span>{labelFor(c)}</span>
               ) : (
                 <Link
                   href={c.href as "/o"}

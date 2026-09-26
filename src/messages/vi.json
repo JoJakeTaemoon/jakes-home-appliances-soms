@@ -53,7 +53,9 @@
     "count": "HĐ",
     "unitCount": "thiết bị",
     "daysRemaining": " ngày còn lại",
-    "daysOverdue": " ngày quá hạn"
+    "daysOverdue": " ngày quá hạn",
+    "type": "Loại",
+    "reason": "Lý do"
   },
   "auth": {
     "login": {
@@ -2407,7 +2409,8 @@
       "taxCode": "Mã số thuế (MST)",
       "save": "Lưu",
       "saving": "Đang lưu…",
-      "savedNotice": "Đã lưu. Tài liệu/cuộc gọi/tin nhắn mới sẽ dùng giá trị này trong 60 giây."
+      "savedNotice": "Đã lưu. Tài liệu/cuộc gọi/tin nhắn mới sẽ dùng giá trị này trong 60 giây.",
+      "reset": "Hoàn tác"
     },
     "users": {
       "title": "Quản lý người dùng",

@@ -53,7 +53,9 @@
     "count": "",
     "unitCount": "unit(s)",
     "daysRemaining": "d left",
-    "daysOverdue": "d overdue"
+    "daysOverdue": "d overdue",
+    "type": "Type",
+    "reason": "Reason"
   },
   "auth": {
     "login": {
@@ -2407,7 +2409,8 @@
       "taxCode": "Tax code (MST)",
       "save": "Save",
       "saving": "Saving…",
-      "savedNotice": "Saved. New documents, calls and messages will use this value within 60 seconds."
+      "savedNotice": "Saved. New documents, calls and messages will use this value within 60 seconds.",
+      "reset": "Reset"
     },
     "users": {
       "title": "User Management",
