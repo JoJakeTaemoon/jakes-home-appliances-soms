@@ -1,5 +1,5 @@
 /**
- * Seoul Aqua head-office contact constants.
+ * Jake's Home Appliances head-office contact constants.
  *
  * Centralised so the "Call HQ" action, SMS/email templates, and PDFs all use
  * one source of truth. Two formats are kept because notifications historically
@@ -16,7 +16,7 @@ export const HQ_PHONE_INTL = "+84-28-1234-5678";
 export const HQ_PHONE_TEL = "02812345678";
 
 /** Customer-service mailbox. */
-export const HQ_EMAIL = "cs@seoulaqua.com.vn";
+export const HQ_EMAIL = "cs@jakeshomeappliances.com.vn";
 
 /**
  * The one host the whole system is served from (decision 2026-09-23).
@@ -27,7 +27,7 @@ export const HQ_EMAIL = "cs@seoulaqua.com.vn";
  * `PORTAL_URL`; it is written without a scheme because SMS bodies are
  * character-budgeted and the carrier registers the literal string.
  */
-export const APP_HOST = "soms.seoulaqua.com.vn";
+export const APP_HOST = "soms.jakeshomeappliances.com.vn";
 
 /** Customer-facing entry point, as it appears in SMS bodies. */
 export const PORTAL_URL = APP_HOST;

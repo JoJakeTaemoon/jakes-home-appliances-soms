@@ -1,6 +1,6 @@
 # Hướng dẫn tải lên hàng loạt danh mục sản phẩm
 
-> **Đối tượng** — Nhân viên văn phòng Seoul Aqua phụ trách dữ liệu sản phẩm (quyền MANAGER trở lên)
+> **Đối tượng** — Nhân viên văn phòng Jake's Home Appliances phụ trách dữ liệu sản phẩm (quyền MANAGER trở lên)
 > **Chức năng** — Ứng dụng văn phòng › Quản trị › Quản lý sản phẩm › **Tải lên CSV danh mục**
 > **Tệp áp dụng** — Cùng định dạng với tệp nhận được từ nút **Xuất CSV danh mục** trên chính màn hình đó
 > **Phiên bản tài liệu** — 24/09/2026 (v1)
@@ -76,7 +76,7 @@ Cột **Bắt buộc** nếu để trống thì hạng mục tương ứng sẽ 
 | # | Tên cột | Bắt buộc | Lưu vào đâu trong hệ thống | Khi để trống | Lưu ý |
 |---|---|---|---|---|---|
 | 1 | `No.` | – | **Không được đọc** | – | Số thứ tự để người đọc dễ nhìn. Điền gì cũng được, hoặc bỏ hẳn cột |
-| 2 | `Brand` | Tùy chọn | Dữ liệu gốc thương hiệu (tên) | Model được tạo mà không có thương hiệu | **Chỉ cần lệch 1 ký tự là một thương hiệu mới được tạo.** `Seoul Aqua` / `SeoulAqua` / `seoul aqua` được coi là ba thương hiệu khác nhau (phân biệt hoa/thường) |
+| 2 | `Brand` | Tùy chọn | Dữ liệu gốc thương hiệu (tên) | Model được tạo mà không có thương hiệu | **Chỉ cần lệch 1 ký tự là một thương hiệu mới được tạo.** `Jake's Home Appliances` / `JakeApp` / `seoul aqua` được coi là ba thương hiệu khác nhau (phân biệt hoa/thường) |
 | 3 | `Category (EN)` | Bắt buộc* | Tên nhóm sản phẩm tiếng Anh | Model không có nhóm sản phẩm | *Phải điền **đủ cả ba** ngôn ngữ thì nhóm sản phẩm mới được gắn. Thiếu một ô là model được tạo mà không có nhóm |
 | 4 | `Category (KO)` | Bắt buộc* | Tên nhóm sản phẩm tiếng Hàn | 〃 | Hiển thị cho nhân viên nói tiếng Hàn |
 | 5 | `Category (VI)` | Bắt buộc* | Tên nhóm sản phẩm tiếng Việt | 〃 | Hiển thị trên màn hình khách hàng và kỹ thuật viên |
@@ -223,9 +223,9 @@ Có những giá trị **không nằm trong tệp này**. Hãy bổ sung trên m
 
 | Brand | Category (EN) | Category (KO) | Category (VI) | Model Code | Product Name (VI) | On Hand | Safety Stock | Sale Price (VND) | Part Type | Part SKU | Part Name (VI) | Quantity | Replace Every (days) | Clean Every (days) | Minor Part |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-PREFILTER | Lõi lọc thô máy lọc khí | 1 | | every visit | |
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-HEPA-6 | Lõi HEPA | 1 | 180 | | |
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Accessory | ACC-ADAPTER-001 | Bộ chuyển nguồn | 1 | | | Y |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-PREFILTER | Lõi lọc thô máy lọc khí | 1 | | every visit | |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-HEPA-6 | Lõi HEPA | 1 | 180 | | |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Accessory | ACC-ADAPTER-001 | Bộ chuyển nguồn | 1 | | | Y |
 
 - Thông tin model (từ Brand đến giá) giống hệt ở cả 3 dòng — chỉ 1 model được tạo.
 - Lõi lọc thô không có chu kỳ thay, chỉ `every visit` → được đề xuất vệ sinh mỗi lần đến.
@@ -235,7 +235,7 @@ Có những giá trị **không nằm trong tệp này**. Hãy bổ sung trên m
 
 | Brand | Category (EN) | Category (KO) | Category (VI) | Model Code | Part Type | Part SKU |
 |---|---|---|---|---|---|---|
-| Seoul Aqua | Non-powered manual bidet | 무전원 수동 비데 | Nắp vệ sinh thông minh không dùng điện | GBD-1800 | | |
+| Jake's Home Appliances | Non-powered manual bidet | 무전원 수동 비데 | Nắp vệ sinh thông minh không dùng điện | GBD-1800 | | |
 
 **A-3. Trường hợp lắp 4 lõi giống nhau như máy làm đá**
 

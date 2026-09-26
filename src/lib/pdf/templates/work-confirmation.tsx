@@ -23,7 +23,7 @@ const WATERMARK_LOGO_PATH = path.join(
   process.cwd(),
   "public",
   "logo",
-  "seoul-aqua-logo.jpg",
+  "jakes-home-appliances-logo.jpg",
 );
 
 export type WorkConfLocale = "ko" | "vi" | "en";
@@ -367,8 +367,8 @@ function SheetContent({
       </View>
       <View style={styles.brand}>
         <View style={{ flexDirection: "row", alignItems: "baseline", flex: 1 }}>
-          <Text style={styles.brandTitle}>SEOUL AQUA </Text>
-          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)</Text>
+          <Text style={styles.brandTitle}>JAKE'S HOME APPLIANCES </Text>
+          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)</Text>
         </View>
         <Text style={[{ fontSize: 9, color: "#666" }, autoFont(`${P.visitNo}${S.visitNo}`)]}>
           {P.visitNo} / {S.visitNo}:{" "}

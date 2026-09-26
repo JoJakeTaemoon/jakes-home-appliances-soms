@@ -60,7 +60,7 @@
   "auth": {
     "login": {
       "title": "Sign in",
-      "subtitle": "Seoul Aqua Service Operation Management System",
+      "subtitle": "Jake's Home Appliances Service Operation Management System",
       "phone": "Phone number",
       "phonePlaceholder": "Enter your phone number",
       "password": "Password",
@@ -303,7 +303,7 @@
       "addOpsContact": "Add OPS contact",
       "removeOpsContact": "Remove OPS contact",
       "primaryHint": "First OPS contact will be marked primary if none chosen.",
-      "b2bShortcodeHint": "Used in B2B contract numbers (e.g. SHV → HD-…/SA-SHV)"
+      "b2bShortcodeHint": "Used in B2B contract numbers (e.g. SHV → HD-…/JH-SHV)"
     },
     "errors": {
       "shortcodeInUse": "Shortcode already in use",
@@ -1225,7 +1225,7 @@
       "passwordPlaceholder": "Enter your password",
       "submit": "Sign in",
       "submitting": "Signing in...",
-      "forgotHint": "Forgot your password? Contact the Seoul Aqua office and we will reset it for you.",
+      "forgotHint": "Forgot your password? Contact the Jake's Home Appliances office and we will reset it for you.",
       "errorInvalidCredentials": "Invalid phone or password",
       "errorLocked": "Account is temporarily locked. Please try again later.",
       "errorGeneric": "Login failed. Please try again.",
@@ -1694,7 +1694,7 @@
     }
   },
   "mobile": {
-    "appName": "Seoul Aqua Field",
+    "appName": "Jake's Home Appliances Field",
     "loginTitle": "Technician sign-in",
     "loginSubtitle": "Sign in with your phone",
     "loginPhone": "Phone number",

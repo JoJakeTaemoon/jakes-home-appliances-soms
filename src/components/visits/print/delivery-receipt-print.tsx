@@ -220,7 +220,7 @@ function CopyBlock({
           header={P.company}
           headerSec={S.company}
           lines={[
-            { label: P.name, value: "SEOUL AQUA" },
+            { label: P.name, value: "JAKE'S HOME APPLIANCES" },
             { label: P.contact, value: payload.technicianName },
             { label: P.phone, value: payload.hqPhone },
           ]}

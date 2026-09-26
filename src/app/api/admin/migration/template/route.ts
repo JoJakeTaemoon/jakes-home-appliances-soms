@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/vnd.ms-excel; charset=utf-8",
         "Content-Disposition":
-          'attachment; filename="seoul-aqua-migration-template.xls"',
+          'attachment; filename="jakes-home-appliances-migration-template.xls"',
         "Cache-Control": "no-store",
       },
     });

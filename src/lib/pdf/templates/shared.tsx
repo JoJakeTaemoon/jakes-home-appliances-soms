@@ -28,7 +28,7 @@ import { PDF_DEFAULT_FAMILY, PDF_FONT_FAMILY } from "@/lib/pdf/fonts";
 
 // Watermark logo is resolved at module load — `process.cwd()` is the project
 // root in both Next.js server runtime and the standalone tsx render script.
-const WATERMARK_LOGO_PATH = path.join(process.cwd(), "public", "logo", "seoul-aqua-logo.jpg");
+const WATERMARK_LOGO_PATH = path.join(process.cwd(), "public", "logo", "jakes-home-appliances-logo.jpg");
 
 export const styles = StyleSheet.create({
   page: {
@@ -70,7 +70,7 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
-  // Two-column party layout — Seoul Aqua left, customer right; both fit on
+  // Two-column party layout — Jake's Home Appliances left, customer right; both fit on
   // page 1 above the equipment + clauses.
   partyRow: { flexDirection: "row", columnGap: 8, marginBottom: 6 },
   partyCol: { flex: 1 },
@@ -289,7 +289,7 @@ export function PdfHeader({ contract, titleKey, primary, secondary }: Readonly<H
     <>
       <View style={styles.brandHeader}>
         <View>
-          <Text style={styles.brandTitle}>SEOUL AQUA</Text>
+          <Text style={styles.brandTitle}>JAKE'S HOME APPLIANCES</Text>
           <Text style={styles.brandLegal}>{primary.labels.seoulAquaLegalName}</Text>
         </View>
         <View style={styles.contractNumberRow}>
@@ -316,7 +316,7 @@ interface PartiesBlockProps extends PairProps {
 
 /**
  * Side-by-side parties block. **Party A (left) = customer**,
- * **Party B (right) = Seoul Aqua**. The legal contract-party name (customer
+ * **Party B (right) = Jake's Home Appliances**. The legal contract-party name (customer
  * name, or company-representative name) is printed prominently right under
  * the Party header; supporting fields follow in label/value rows.
  *
@@ -396,7 +396,7 @@ export function PdfPartiesBlock({ customer, company, hqPhone, primary, secondary
         )}
       </View>
 
-      {/* Party B — Seoul Aqua (right) */}
+      {/* Party B — Jake's Home Appliances (right) */}
       <View style={[styles.card, styles.partyCol]}>
         <Text style={styles.partyTitle}>Party B</Text>
         <Text style={[styles.partyName, autoFontStyle(company.legalName)]}>

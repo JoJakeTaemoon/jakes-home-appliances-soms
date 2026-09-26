@@ -13,7 +13,7 @@ interface KpiCardProps {
 
 /**
  * Compact KPI card used by the customer-list KPI strip + the customer-detail
- * top KPI panel. The Seoul Aqua design system: warm cream canvas, 4px sharp
+ * top KPI panel. The Jake's Home Appliances design system: warm cream canvas, 4px sharp
  * borders, brand-blue accent. Keep it stateless — accepts pre-computed
  * values.
  */

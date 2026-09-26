@@ -1,6 +1,6 @@
 # URL Scheme
 
-Canonical URL structure for Seoul Aqua SOMS. All routing, auth, and
+Canonical URL structure for Jake's Home Appliances SOMS. All routing, auth, and
 realm-isolation behavior MUST conform to this document. Any divergence
 in code or documentation is a bug.
 
@@ -23,7 +23,7 @@ positional.
 | Segment | Required | Allowed values | Notes |
 |---|---|---|---|
 | `protocol` | yes | `http` / `https` | dev uses `http`, prod uses `https` |
-| `host` | yes | `localhost:3000`, `seoulaqua.com.vn`, ... | dev / prod host pair |
+| `host` | yes | `localhost:3000`, `jakeshomeappliances.com.vn`, ... | dev / prod host pair |
 | `group` | conditional | `o` / `f` / *(omitted)* | user-group prefix — see §2 |
 | `locale` | optional | `en` / `ko` / `vi` | omitted → `en` (silent, no redirect) — see §3 |
 | `path` | optional | feature path (e.g. `dashboard`, `visits/123`) | empty → group home |
@@ -227,12 +227,12 @@ Local dev (`http://localhost:3000`):
 | Customer | equipment | `http://localhost:3000/equipment` |
 | Customer | service request | `http://localhost:3000/requests/new` |
 
-Production (`https://soms.seoulaqua.com.vn`) — substitute the host:
+Production (`https://soms.jakeshomeappliances.com.vn`) — substitute the host:
 
 ```
-https://soms.seoulaqua.com.vn/o/dashboard
-https://soms.seoulaqua.com.vn/f/today
-https://soms.seoulaqua.com.vn/equipment
+https://soms.jakeshomeappliances.com.vn/o/dashboard
+https://soms.jakeshomeappliances.com.vn/f/today
+https://soms.jakeshomeappliances.com.vn/equipment
 ```
 
 The customer realm shares the bare host with the application root, by
@@ -242,7 +242,7 @@ design — the customer is the primary public audience.
 
 ## 8. Non-goals
 
-- **Subdomains.** Earlier drafts considered `portal.seoulaqua.com.vn`;
+- **Subdomains.** Earlier drafts considered `portal.jakeshomeappliances.com.vn`;
   rejected (no wildcard cert / DNS overhead, customer-portal-as-PWA
   works fine on a path).
 - **Per-realm hosts.** All three realms share the same host; only the

@@ -151,7 +151,7 @@ export async function runOverdueEscalation(
               invoice_date: formatDate(p.createdAt, "vi"),
               due_date: formatDate(p.dueDate, "vi"),
               late_fee: "0",
-              bank_info: "Vietcombank — 0123456789 — Seoul Aqua",
+              bank_info: "Vietcombank — 0123456789 — Jake's Home Appliances",
               next_visit: "—",
               url: `/portal/payments`,
               hq_phone: "+84-28-1234-5678",

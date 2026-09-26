@@ -45,8 +45,8 @@ or created (신규 등록) — never "always editable."**
 │ │                  [신규등록] [수정]  │││├──────────────────────────────────────────────┤│
 │ ├─────────────────────────────────────┤││④(sticky) # 모델명 카테고리 브랜드 재고 판매가 ││
 │ │② 모델명    PTS-2100                 │││├──────────────────────────────────────────────┤│
-│ │  브랜드    Seoul Aqua                │││  1 PTS-2100  정수기  Seoul Aqua   42  1,200,000│ ← selected
-│ │  카테고리   정수기                   │││  2 PTS-2200  정수기  Seoul Aqua   10    980,000│   (highlighted)
+│ │  브랜드    Jake's Home Appliances                │││  1 PTS-2100  정수기  Jake's Home Appliances   42  1,200,000│ ← selected
+│ │  카테고리   정수기                   │││  2 PTS-2200  정수기  Jake's Home Appliances   10    980,000│   (highlighted)
 │ │  재고수량   42                       │││  3 …                                          │  (scrolls;
 │ │  판매가    1,200,000                 │││  …                                            │   thead fixed)
 │ │  ...                                 │││  20 …                                         │

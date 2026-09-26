@@ -1,6 +1,6 @@
 # 제품 카탈로그 일괄 업로드 가이드
 
-> **대상 독자** — 서울아쿠아 사무실 직원 중 제품 마스터를 관리하는 담당자(MANAGER 이상)
+> **대상 독자** — 제이크 홈 어플라이언스 사무실 직원 중 제품 마스터를 관리하는 담당자(MANAGER 이상)
 > **대상 기능** — 사무실 앱 › 관리 › 제품 관리 › **카탈로그 CSV 업로드**
 > **대상 파일** — 같은 화면의 **카탈로그 CSV 내보내기**로 받은 파일과 동일한 형식
 > **문서 버전** — 2026-09-24 (v1)
@@ -76,7 +76,7 @@ No. │ Brand │ Category(EN/KO/VI) │ Model Code │ Product Name(EN/KO/VI) �
 | # | 열 이름 | 필수 | 시스템 반영 위치 | 빈 칸일 때 | 유의사항 |
 |---|---|---|---|---|---|
 | 1 | `No.` | – | **읽지 않음** | – | 사람이 보기 위한 일련번호. 아무 값이나 넣어도 되고 열 자체를 빼도 됩니다 |
-| 2 | `Brand` | 선택 | 브랜드 마스터(브랜드명) | 브랜드 없는 모델로 등록 | **철자가 1글자라도 다르면 다른 브랜드가 새로 생깁니다.** `Seoul Aqua` / `SeoulAqua` / `seoul aqua`는 모두 다른 브랜드로 처리됩니다(대소문자도 구분) |
+| 2 | `Brand` | 선택 | 브랜드 마스터(브랜드명) | 브랜드 없는 모델로 등록 | **철자가 1글자라도 다르면 다른 브랜드가 새로 생깁니다.** `Jake's Home Appliances` / `JakeApp` / `seoul aqua`는 모두 다른 브랜드로 처리됩니다(대소문자도 구분) |
 | 3 | `Category (EN)` | 필수* | 제품군 영어명 | 제품군 미지정 | *세 언어가 **모두** 채워져야 제품군이 붙습니다. 하나라도 비면 제품군 없이 모델만 생성됩니다 |
 | 4 | `Category (KO)` | 필수* | 제품군 한국어명 | 〃 | 한국어 직원 화면 표기 |
 | 5 | `Category (VI)` | 필수* | 제품군 베트남어명 | 〃 | 고객·기사 화면 표기 |
@@ -223,9 +223,9 @@ No. │ Brand │ Category(EN/KO/VI) │ Model Code │ Product Name(EN/KO/VI) �
 
 | Brand | Category (EN) | Category (KO) | Category (VI) | Model Code | Product Name (KO) | On Hand | Safety Stock | Sale Price (VND) | Part Type | Part SKU | Part Name (KO) | Quantity | Replace Every (days) | Clean Every (days) | Minor Part |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-PREFILTER | 공기청정기 프리필터 | 1 | | every visit | |
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-HEPA-6 | HEPA 필터 | 1 | 180 | | |
-| Seoul Aqua | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Accessory | ACC-ADAPTER-001 | 전원 어댑터 | 1 | | | Y |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-PREFILTER | 공기청정기 프리필터 | 1 | | every visit | |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Consumable | FLT-AIR-HEPA-6 | HEPA 필터 | 1 | 180 | | |
+| Jake's Home Appliances | Air purifier | 공기청정기 | Máy lọc không khí | CA-5000W | CA-5000W | 2 | 5 | 7200000 | Accessory | ACC-ADAPTER-001 | 전원 어댑터 | 1 | | | Y |
 
 - 모델 정보(브랜드~가격)는 3행 모두 동일 — 모델은 1개만 생성됩니다.
 - 프리필터는 교체 주기 없이 `every visit` 청소 → 방문할 때마다 청소 대상으로 추천됩니다.
@@ -235,7 +235,7 @@ No. │ Brand │ Category(EN/KO/VI) │ Model Code │ Product Name(EN/KO/VI) �
 
 | Brand | Category (EN) | Category (KO) | Category (VI) | Model Code | Part Type | Part SKU |
 |---|---|---|---|---|---|---|
-| Seoul Aqua | Non-powered manual bidet | 무전원 수동 비데 | Nắp vệ sinh thông minh không dùng điện | GBD-1800 | | |
+| Jake's Home Appliances | Non-powered manual bidet | 무전원 수동 비데 | Nắp vệ sinh thông minh không dùng điện | GBD-1800 | | |
 
 **A-3. 제빙기처럼 같은 필터가 4개 들어가는 경우**
 

@@ -33,7 +33,7 @@ const baseProps = {
   id: "contract-1",
   state: "ACTIVE",
   type: "RENTAL",
-  contractNumber: "HD-20260526/SA-KH0001",
+  contractNumber: "HD-20260526/JH-KH0001",
   hasContractPartyEmail: true,
   onChanged: vi.fn(),
 };

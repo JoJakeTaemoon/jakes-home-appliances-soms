@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — User Manuals
+# Jake's Home Appliances SOMS — User Manuals
 
 End-user manuals organized by **user group** and language.
 

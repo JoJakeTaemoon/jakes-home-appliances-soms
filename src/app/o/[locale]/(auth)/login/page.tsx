@@ -19,8 +19,8 @@ export default async function LoginPage({ params }: Readonly<Props>) {
         <div className="mb-6 flex flex-col items-center">
           <div className="mb-4 flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white">
             <Image
-              src="/logo/seoul-aqua-logo.jpg"
-              alt="Seoul Aqua"
+              src="/logo/jakes-home-appliances-logo.jpg"
+              alt="Jake's Home Appliances"
               width={64}
               height={64}
               priority

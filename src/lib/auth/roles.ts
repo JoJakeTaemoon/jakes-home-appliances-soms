@@ -1,5 +1,5 @@
 /**
- * Seoul Aqua SOMS — Role hierarchy.
+ * Jake's Home Appliances SOMS — Role hierarchy.
  *
  * Three-tier office hierarchy (ADMIN > MANAGER > STAFF) plus a parallel
  * field role (TECHNICIAN) that does not participate in office authority
