@@ -31,7 +31,7 @@ const CUSTOMER_SORT_MAP: SortMap<Prisma.CustomerOrderByWithRelationInput> = {
   shortcode: (dir) => ({ shortcode: dir }),
   preferredRegion: (dir) => ({ preferredRegion: dir }),
   createdAt: (dir) => ({ createdAt: dir }),
-  salesRep: (dir) => ({ salesRep: { username: dir } }),
+  salesRep: (dir) => ({ salesRep: { name: dir } }),
 };
 
 export const GET = defineQuery({
@@ -122,7 +122,7 @@ export const GET = defineQuery({
             select: { id: true, name: true, title: true, phone1: true, email: true },
           },
           salesRep: {
-            select: { id: true, username: true, title: true, avatarUrl: true },
+            select: { id: true, name: true, title: true },
           },
           _count: {
             select: { equipment: true, sites: true, contracts: true },

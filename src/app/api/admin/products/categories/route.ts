@@ -26,7 +26,7 @@ export const GET = defineQuery({
     // Category are independent taxonomies joined solely through EquipmentModel;
     // matching the model picker's `isActive=true` filter avoids offering a
     // category whose only models are inactive (→ empty model list downstream).
-    if (brandId) where.models = { some: { brandId, isActive: true } };
+    if (brandId) where.modelLinks = { some: { model: { brandId, isActive: true } } };
     if (q) {
       where.OR = [
         { code: { contains: q, mode: "insensitive" } },

@@ -541,6 +541,24 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     vi: "đã đăng ký",
     entityHint: "Brand",
   },
+  PRODUCT_TYPE_CREATE: {
+    ko: "을(를) 등록했습니다",
+    en: "registered",
+    vi: "đã đăng ký",
+    entityHint: "ProductType",
+  },
+  PRODUCT_TYPE_UPDATE: {
+    ko: "을(를) 수정했습니다",
+    en: "updated",
+    vi: "đã cập nhật",
+    entityHint: "ProductType",
+  },
+  PRODUCT_TYPE_DEACTIVATE: {
+    ko: "을(를) 비활성화했습니다",
+    en: "deactivated",
+    vi: "đã ngừng",
+    entityHint: "ProductType",
+  },
   PRODUCT_CATEGORY_CREATE: {
     ko: "을(를) 등록했습니다",
     en: "registered",
@@ -558,6 +576,24 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     en: "registered",
     vi: "đã đăng ký",
     entityHint: "Accessory",
+  },
+  SALES_REP_CREATE: {
+    ko: "을(를) 등록했습니다",
+    en: "registered",
+    vi: "đã đăng ký",
+    entityHint: "SalesRep",
+  },
+  SALES_REP_UPDATE: {
+    ko: "을(를) 수정했습니다",
+    en: "updated",
+    vi: "đã cập nhật",
+    entityHint: "SalesRep",
+  },
+  SALES_REP_DEACTIVATE: {
+    ko: "을(를) 비활성화했습니다",
+    en: "deactivated",
+    vi: "đã vô hiệu hóa",
+    entityHint: "SalesRep",
   },
   CHARGE_POLICY_UPSERT: {
     ko: " 과금 정책을 저장했습니다",

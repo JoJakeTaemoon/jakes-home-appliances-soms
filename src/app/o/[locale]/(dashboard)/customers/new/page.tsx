@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import { SalesRepModal } from "@/app/o/[locale]/(dashboard)/sales-reps/page";
 import { FormField } from "@/components/ui/form-field";
 import {
   VnAddressPicker,
@@ -19,7 +20,7 @@ import { createCustomerSchema } from "@/lib/validators/customer";
 
 interface SalesRepOption {
   id: string;
-  username: string;
+  name: string;
   title: string | null;
 }
 
@@ -76,6 +77,7 @@ interface FormValues {
 export default function NewCustomerPage() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
+  const tRep = useTranslations("salesReps");
   const tv = useTranslations("validation");
   const locale = useLocale() as "vi" | "ko" | "en";
   const router = useRouter();
@@ -116,6 +118,9 @@ export default function NewCustomerPage() {
   // /api/sales-reps for the policy rationale.
   const salesRepsQuery = useApiQuery<SalesRepOption[]>("/api/sales-reps");
   const salesReps = salesRepsQuery.data ?? [];
+  // Non-null while the inline 판매원 추가 popup is open, seeded with whatever
+  // was typed into the picker.
+  const [newRepName, setNewRepName] = useState<string | null>(null);
   const selectedSalesRepId = useWatch({ control, name: "salesRepId" });
 
   function switchTab(next: "B2C" | "B2B") {
@@ -291,10 +296,14 @@ export default function NewCustomerPage() {
               onChange={(v) => setValue("salesRepId", (v as string | null) ?? null)}
               options={salesReps.map((r) => ({
                 value: r.id,
-                label: r.title ? `${r.username} · ${r.title}` : r.username,
+                label: r.title ? `${r.name} · ${r.title}` : r.name,
               }))}
               placeholder={salesRepsQuery.isLoading ? tc("loading") : t("all")}
               searchable
+              allowClear
+              allowCreate
+              createLabel={(q) => tRep("quickCreate", { name: q })}
+              onCreate={setNewRepName}
             />
           </FormField>
           <FormField label={t("notes")} className="sm:col-span-2">
@@ -431,6 +440,19 @@ export default function NewCustomerPage() {
           </Button>
         </div>
       </form>
+
+      {newRepName !== null && (
+        <SalesRepModal
+          initialName={newRepName}
+          onClose={() => setNewRepName(null)}
+          onSaved={(_name, created) => {
+            setNewRepName(null);
+            // Select the rep that was just created, without a round-trip.
+            if (created) setValue("salesRepId", created.id);
+            void salesRepsQuery.refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

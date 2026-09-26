@@ -16,6 +16,7 @@ import { updateEquipmentSchema } from "@/lib/validators/equipment";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import { CATEGORY_LINKS_SELECT } from "@/lib/products/classification";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -32,7 +33,7 @@ export const GET = defineQuery({
       include: {
         customer: { select: { id: true, code: true, name: true, type: true } },
         site: { select: { id: true, name: true, address: true } },
-        model: { include: { productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } } } },
+        model: { include: CATEGORY_LINKS_SELECT },
         contracts: { include: { contract: true } },
         registeredBy: { select: { id: true, username: true } },
       },

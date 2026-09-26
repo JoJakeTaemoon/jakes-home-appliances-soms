@@ -48,16 +48,12 @@ export async function PATCH(
     if (salesRepId) {
       // Any active office user is a valid sales rep — see
       // /api/sales-reps for policy rationale.
-      const rep = await prisma.user.findFirst({
-        where: {
-          id: salesRepId,
-          role: { in: ["ADMIN", "MANAGER", "STAFF"] },
-          status: "ACTIVE",
-        },
+      const rep = await prisma.salesRep.findFirst({
+        where: { id: salesRepId, isActive: true },
         select: { id: true },
       });
       if (!rep) {
-        throw new ValidationError("Selected user is not an active office user");
+        throw new ValidationError("Selected sales rep is not active");
       }
     }
 
@@ -66,7 +62,7 @@ export async function PATCH(
       data: { salesRepId },
       include: {
         salesRep: {
-          select: { id: true, username: true, title: true, avatarUrl: true },
+          select: { id: true, name: true, title: true },
         },
       },
     });

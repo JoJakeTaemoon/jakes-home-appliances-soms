@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { CATEGORY_LINKS_SELECT, flattenCategories } from "@/lib/products/classification";
 import { defineQuery } from "@/lib/api/mutation";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
@@ -33,7 +34,7 @@ export const GET = defineQuery({
       where: { id: params.id },
       include: {
         brand: { select: { id: true, name: true } },
-        productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
+        ...CATEGORY_LINKS_SELECT,
         compatibleModels: {
           select: {
             modelId: true,
@@ -44,7 +45,8 @@ export const GET = defineQuery({
       },
     });
     if (!row) throw new NotFoundError("Consumable not found");
-    return row;
+    const categories = flattenCategories(row);
+    return { ...row, categories, categoryIds: categories.map((c) => c.id) };
   },
 });
 
@@ -101,7 +103,14 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           replaceCycleUnit: data.replaceCycleUnit,
           cleanEveryDays: cleanMerged,
           cleanOnEveryVisit: data.cleanOnEveryVisit,
-          categoryId: data.categoryId,
+          // Present = replace the whole 제품군 set; absent = leave it.
+          categories:
+            data.categoryIds === undefined
+              ? undefined
+              : {
+                  deleteMany: {},
+                  create: data.categoryIds.map((categoryId) => ({ categoryId })),
+                },
           brandId: data.brandId,
           spec: data.spec,
           mainUse: data.mainUse,

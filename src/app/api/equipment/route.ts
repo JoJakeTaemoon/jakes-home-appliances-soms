@@ -15,6 +15,7 @@ import { applyStockMove } from "@/lib/inventory/moves";
 import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 import { resolveOrderBy, type SortMap } from "@/lib/api/sort";
 import type { Prisma } from "@/generated/prisma/client";
+import { CATEGORY_LINKS_SELECT, flattenCategories } from "@/lib/products/classification";
 
 const EQUIPMENT_SORT_MAP: SortMap<Prisma.EquipmentOrderByWithRelationInput> = {
   serialNumber: (dir) => ({ serialNumber: dir }),
@@ -42,7 +43,7 @@ export const GET = defineQuery({
     if (brandId || categoryId) {
       const modelFilter: Prisma.EquipmentModelWhereInput = {};
       if (brandId) modelFilter.brandId = brandId;
-      if (categoryId) modelFilter.categoryId = categoryId;
+      if (categoryId) modelFilter.categories = { some: { categoryId } };
       where.model = modelFilter;
     }
     if (status) where.status = status;
@@ -82,16 +83,25 @@ export const GET = defineQuery({
               nameKo: true,
               nameVi: true,
               nameEn: true,
-              categoryId: true,
               brandId: true,
               brand: { select: { id: true, name: true } },
-              productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
+              ...CATEGORY_LINKS_SELECT,
             },
           },
         },
       }),
     ]);
-    return { rows, pagination: { page, limit: pageSize, total } };
+    return {
+      rows: rows.map((r) => {
+        if (!r.model) return r;
+        const categories = flattenCategories(r.model);
+        return {
+          ...r,
+          model: { ...r.model, categories, categoryIds: categories.map((c) => c.id) },
+        };
+      }),
+      pagination: { page, limit: pageSize, total },
+    };
   },
 });
 

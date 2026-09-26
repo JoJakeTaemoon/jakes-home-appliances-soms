@@ -1,5 +1,10 @@
 /**
- * GET /api/sales-reps/[id] — single sales rep + roster/finance summary.
+ * GET    /api/sales-reps/[id] — single sales rep + roster/finance summary.
+ * PATCH  /api/sales-reps/[id] — edit the rep (MANAGER+).
+ * DELETE /api/sales-reps/[id] — retire the rep (MANAGER+, soft: isActive=false).
+ *
+ * Retiring rather than deleting: customers keep naming who sold them, and the
+ * FK is `onDelete: SetNull`, so a hard delete would silently blank that.
  *
  * `last30dRevenue` = money collected in the last 30 days for this rep's
  * customers: RENTAL_FEE + SALE_PAYMENT payments (COLLECTED/HANDED_OVER/
@@ -10,8 +15,10 @@
 
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { defineQuery } from "@/lib/api/mutation";
-import { NotFoundError } from "@/lib/api/error";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { updateSalesRepSchema } from "@/lib/validators/salesRep";
+import { canApproveOps } from "@/lib/auth/roles";
+import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -19,20 +26,16 @@ export const GET = defineQuery({
   audience: "staff",
   params: paramsSchema,
   handler: async ({ params }) => {
-    const rep = await prisma.user.findFirst({
-      where: {
-        id: params.id,
-        role: { in: ["ADMIN", "MANAGER", "STAFF"] },
-      },
+    const rep = await prisma.salesRep.findUnique({
+      where: { id: params.id },
       select: {
         id: true,
-        username: true,
+        name: true,
         title: true,
-        avatarUrl: true,
-        role: true,
         email: true,
         phone: true,
-        isSalesRep: true,
+        notes: true,
+        isActive: true,
       },
     });
     if (!rep) throw new NotFoundError("Sales rep not found");
@@ -95,5 +98,54 @@ export const GET = defineQuery({
         receivables,
       },
     };
+  },
+});
+
+function requireManager(role: string): void {
+  if (!canApproveOps(role)) throw new ForbiddenError("MANAGER+ required");
+}
+
+export const PATCH = defineMutation({
+  audience: "staff",
+  params: paramsSchema,
+  authorize: (auth) => requireManager(auth.role),
+  body: updateSalesRepSchema,
+  handler: async ({ params, body }) => {
+    const exists = await prisma.salesRep.findUnique({
+      where: { id: params.id },
+      select: { id: true },
+    });
+    if (!exists) throw new NotFoundError("Sales rep not found");
+    return prisma.salesRep.update({ where: { id: params.id }, data: body });
+  },
+  audit: {
+    action: "SALES_REP_UPDATE",
+    entityType: "SalesRep",
+    after: (r) => r,
+  },
+});
+
+export const DELETE = defineMutation({
+  audience: "staff",
+  params: paramsSchema,
+  authorize: (auth) => requireManager(auth.role),
+  handler: async ({ params }) => {
+    const rep = await prisma.salesRep.findUnique({
+      where: { id: params.id },
+      select: { id: true, isActive: true },
+    });
+    if (!rep) throw new NotFoundError("Sales rep not found");
+    // Customers keep pointing at a retired rep — the roster hides it, the
+    // history does not.
+    await prisma.salesRep.update({
+      where: { id: params.id },
+      data: { isActive: false },
+    });
+    return { id: params.id, isActive: false };
+  },
+  audit: {
+    action: "SALES_REP_DEACTIVATE",
+    entityType: "SalesRep",
+    after: (r) => r,
   },
 });

@@ -55,10 +55,15 @@ function csvReq(csv: string, fileName = "catalog.csv") {
   });
 }
 
+// A model needs one 제품군; kept apart from CAT_EN so the CSV-import cases
+// above still see their category as brand new.
+const MODEL_CAT_CODE = "TEST_AUDIT_MODEL_CAT";
+
 async function cleanup() {
   await prisma.equipmentModel.deleteMany({ where: { modelCode: { startsWith: "TEST-AUDIT-" } } });
   await prisma.equipmentModel.deleteMany({ where: { nameEn: MODEL_NAME } });
   await prisma.productCategory.deleteMany({ where: { nameEn: CAT_EN } });
+  await prisma.productCategory.deleteMany({ where: { code: MODEL_CAT_CODE } });
   await prisma.brand.deleteMany({ where: { name: BRAND } });
   await prisma.user.deleteMany({ where: { username: USER } });
 }
@@ -133,10 +138,18 @@ describe("CSV catalog import", () => {
 
 describe("model activation state", () => {
   let modelId = "";
+  let categoryId = "";
+
+  beforeAll(async () => {
+    const cat = await prisma.productCategory.create({
+      data: { code: MODEL_CAT_CODE, nameKo: "감사 테스트", nameVi: "Audit test", nameEn: "Audit test" },
+    });
+    categoryId = cat.id;
+  });
 
   it("logs a create", async () => {
     const res = await modelPost(
-      jsonReq("/api/equipment-models", "POST", { nameEn: MODEL_NAME }),
+      jsonReq("/api/equipment-models", "POST", { nameEn: MODEL_NAME, categoryIds: [categoryId] }),
     );
     const body = (await res.json()) as { data: { id: string } };
     modelId = body.data.id;

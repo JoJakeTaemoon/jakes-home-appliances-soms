@@ -329,7 +329,7 @@
   "salesReps": {
     "title": "판매원",
     "subtitle": "담당 판매원별 고객, 계약, 미수금 현황을 조회합니다.",
-    "emptyState": "등록된 판매원이 없습니다 — 시스템 설정에서 사용자에게 판매원 권한을 부여하세요.",
+    "emptyState": "등록된 판매원이 없습니다 — 「판매원 추가」로 등록하세요.",
     "type": "유형",
     "equipmentCount": "장비 수",
     "contractCount": "계약 수",
@@ -368,7 +368,25 @@
     "receivables": {
       "paymentCount": "건수",
       "noEquipment": "연결된 장비 정보가 없습니다."
-    }
+    },
+    "addRep": "판매원 추가",
+    "addRepTitle": "판매원 추가",
+    "editRep": "판매원 수정",
+    "retire": "비활성",
+    "retireTitle": "판매원 비활성",
+    "retireConfirm": "{name} 님을 비활성 처리합니다. 목록에서 숨겨지지만, 이미 배정된 고객의 담당 판매원 기록은 그대로 남습니다.",
+    "reactivate": "다시 활성",
+    "showInactive": "비활성 포함",
+    "inactive": "비활성",
+    "fieldName": "이름",
+    "fieldPhone": "전화",
+    "fieldEmail": "이메일",
+    "fieldTitle": "직함",
+    "fieldNotes": "비고",
+    "createSuccess": "{name} 님을 등록했습니다.",
+    "updateSuccess": "{name} 님의 정보를 수정했습니다.",
+    "retireSuccess": "{name} 님을 비활성 처리했습니다.",
+    "quickCreate": "「{name}」 판매원으로 추가"
   },
   "orders": {
     "title": "주문",
@@ -949,7 +967,8 @@
       "cycleDays": "교체주기(일)",
       "quantity": "수량"
     },
-    "filterConfigHint": "교체주기를 비워두면 해당 필터의 기본 주기를 사용합니다. 표시 순서는 위에서 아래로입니다."
+    "filterConfigHint": "교체주기를 비워두면 해당 필터의 기본 주기를 사용합니다. 표시 순서는 위에서 아래로입니다.",
+    "productType": "제품 유형"
   },
   "contracts": {
     "title": "계약",
@@ -2181,7 +2200,9 @@
         "SystemSetting": "시스템 설정",
         "CatalogImport": "카탈로그 CSV 업로드",
         "Order": "주문",
-        "StockMove": "재고 이동"
+        "StockMove": "재고 이동",
+        "SalesRep": "판매원",
+        "ProductType": "제품 유형"
       }
     }
   },
@@ -2373,7 +2394,20 @@
       "searchOrAdd": "검색 또는 새로 추가…",
       "quickCreateCategory": "제품군 “{name}” 추가",
       "quickCreateBrand": "브랜드 “{name}” 추가",
-      "codeAutoPlaceholder": "비워두면 자동생성"
+      "codeAutoPlaceholder": "비워두면 자동생성",
+      "tabProductTypes": "제품 유형",
+      "addProductType": "제품 유형 추가",
+      "editProductType": "제품 유형 수정",
+      "colProductType": "제품 유형",
+      "colCategories": "제품군",
+      "filterByCategory": "제품군으로 필터",
+      "productTypeNone": "유형 없음",
+      "productTypeHint": "선택한 제품군을 모두 포함하는 유형만 표시됩니다. 유형을 고르면 그 유형의 제품군만 선택할 수 있습니다.",
+      "categoriesRequiredHint": "하나 이상 선택",
+      "categoriesOptionalHint": "분류·검색용 — 모델에 자동 적용되지 않습니다",
+      "noCategoriesYet": "등록된 제품군이 없습니다. 제품군 탭에서 먼저 추가하세요.",
+      "quickCreateProductType": "제품 유형 “{name}” 추가",
+      "typeCategoryInUse": "이 유형으로 등록된 모델이 빼려는 제품군을 아직 쓰고 있습니다. 해당 모델의 제품군이나 유형을 먼저 바꾸세요."
     },
     "users": {
       "title": "사용자 관리",

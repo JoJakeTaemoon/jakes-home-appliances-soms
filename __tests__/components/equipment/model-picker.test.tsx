@@ -23,7 +23,9 @@ const models = [
     nameVi: "Máy lọc nước AQ-500",
     nameEn: "AQ-500 Purifier",
     brand: { id: "brand-1", name: "Seoul Aqua" },
-    productCategory: { id: "cat-1", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier" },
+    // A model may sit in several 제품군; this one is in one.
+    categoryIds: ["cat-1"],
+    categories: [{ id: "cat-1", nameKo: "정수기", nameVi: "Máy lọc nước", nameEn: "Water purifier" }],
   },
 ];
 

@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { CATEGORY_LINKS_SELECT, flattenCategories } from "@/lib/products/classification";
 import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { ForbiddenError } from "@/lib/api/error";
@@ -49,7 +50,7 @@ async function loadModelsWithParts() {
     orderBy: [{ brand: { sortOrder: "asc" } }, { brand: { name: "asc" } }, { nameKo: "asc" }],
     include: {
       brand: { select: { name: true } },
-      productCategory: { select: { nameEn: true, nameKo: true, nameVi: true } },
+      ...CATEGORY_LINKS_SELECT,
       consumables: {
         include: {
           consumable: {
@@ -91,12 +92,15 @@ function priceCell(v: { toString(): string } | null | undefined): Cell {
 
 /** Build the leading columns shared by every row emitted for a given model. */
 function baseRowFor(model: ModelWithParts): ReadonlyArray<Cell> {
-  const cat = model.productCategory;
+  // Several 제품군 go out as "A | B" in each name cell, positionally aligned,
+  // which is exactly what the importer splits back apart.
+  const cats = flattenCategories(model);
+  const join = (pick: (c: (typeof cats)[number]) => string) => cats.map(pick).join(" | ");
   return [
     model.brand?.name ?? "",
-    cat?.nameEn ?? "",
-    cat?.nameKo ?? "",
-    cat?.nameVi ?? "",
+    join((c) => c.nameEn),
+    join((c) => c.nameKo),
+    join((c) => c.nameVi),
     model.modelCode ?? "",
     model.nameEn ?? "",
     model.nameKo ?? "",
@@ -198,7 +202,7 @@ async function loadFilters(): Promise<Cell[][]> {
       notes: true,
       isActive: true,
       brand: { select: { name: true } },
-      productCategory: { select: { nameKo: true } },
+      ...CATEGORY_LINKS_SELECT,
     },
   });
   return rows.map((c, i) => [
@@ -207,7 +211,7 @@ async function loadFilters(): Promise<Cell[][]> {
     c.nameEn,
     c.nameKo,
     c.nameVi,
-    c.productCategory?.nameKo ?? "",
+    flattenCategories(c).map((cat) => cat.nameKo).join(" | "),
     c.brand?.name ?? "",
     c.spec ?? "",
     c.replaceEveryDays,

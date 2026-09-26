@@ -17,6 +17,12 @@ import { updateEquipmentModelSchema } from "@/lib/validators/equipmentModel";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import {
+  CATEGORY_LINKS_SELECT,
+  assertModelClassification,
+  flattenCategories,
+  writeModelCategories,
+} from "@/lib/products/classification";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -32,6 +38,8 @@ export const GET = defineQuery({
       where: { id: params.id },
       include: {
         _count: { select: { equipment: true } },
+        productType: { select: { id: true, code: true, nameKo: true, nameVi: true, nameEn: true } },
+        ...CATEGORY_LINKS_SELECT,
         // The model's filter config for edit prefill (ordered).
         consumables: {
           orderBy: { sortOrder: "asc" },
@@ -47,7 +55,8 @@ export const GET = defineQuery({
       },
     });
     if (!model) throw new NotFoundError("Model not found");
-    return model;
+    const categories = flattenCategories(model);
+    return { ...model, categories, categoryIds: categories.map((c) => c.id) };
   },
 });
 
@@ -65,8 +74,15 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       throw new ForbiddenError("MANAGER+ required");
     }
     const { id } = await ctx.params;
-    const before = await prisma.equipmentModel.findUnique({ where: { id } });
-    if (!before) throw new NotFoundError("Model not found");
+    const beforeRow = await prisma.equipmentModel.findUnique({
+      where: { id },
+      include: { categories: { select: { categoryId: true } } },
+    });
+    if (!beforeRow) throw new NotFoundError("Model not found");
+    const { categories: beforeLinks, ...beforeScalars } = beforeRow;
+    const beforeCategoryIds = beforeLinks.map((l) => l.categoryId);
+    // Flat string so the audit drawer's shallow diff can show it.
+    const before = { ...beforeScalars, categoryIds: beforeCategoryIds.join(",") };
 
     const body = await request.json().catch(() => null);
     const parsed = updateEquipmentModelSchema.safeParse(body);
@@ -85,6 +101,17 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     // matches what nullable+optional schema fields advertise. Coalescing
     // would silently drop `{brandId: null}` clears from the client.
     const updated = await prisma.$transaction(async (tx) => {
+      // A PATCH may carry only one of the two — check the merged result, not
+      // the delta, so moving a model to a new type re-validates its 제품군.
+      const nextCategoryIds = data.categoryIds ?? beforeCategoryIds;
+      const nextTypeId =
+        data.productTypeId === undefined ? beforeScalars.productTypeId : data.productTypeId;
+      if (data.categoryIds !== undefined || data.productTypeId !== undefined) {
+        await assertModelClassification(tx, {
+          categoryIds: nextCategoryIds,
+          productTypeId: nextTypeId,
+        });
+      }
       const row = await tx.equipmentModel.update({
         where: { id },
         data: {
@@ -92,7 +119,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           nameVi: data.nameVi,
           nameEn: data.nameEn,
           brandId: data.brandId,
-          categoryId: data.categoryId,
+          productTypeId: data.productTypeId,
           description: data.description,
           retailPrice: data.retailPrice,
           salePrice: data.salePrice,
@@ -131,7 +158,10 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           });
         }
       }
-      return row;
+      if (data.categoryIds !== undefined) {
+        await writeModelCategories(tx, id, data.categoryIds);
+      }
+      return { ...row, categoryIds: [...new Set(nextCategoryIds)] };
     });
     // The catalog UI "deletes" a model by PATCHing isActive=false (there is no
     // DELETE route — models are never hard-deleted). Logging that as a plain
@@ -141,11 +171,11 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     await logAudit({
       actorType: "USER",
       actorId: auth.userId,
-      action: activationAction(before.isActive, updated.isActive),
+      action: activationAction(beforeScalars.isActive, updated.isActive),
       entityType: "EquipmentModel",
       entityId: id,
       before,
-      after: updated,
+      after: { ...updated, categoryIds: updated.categoryIds.join(",") },
       request,
     });
     return successResponse(updated);

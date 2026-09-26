@@ -140,8 +140,8 @@ function NewContractPageInner() {
       nameEn: string | null;
       brandId: string | null;
       brand: { id: string; name: string } | null;
-      categoryId: string | null;
-      productCategory: { id: string; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+      /** 제품군 — the equipment API flattens a model's links. */
+      categoryIds: string[];
     } | null;
     customDescription: string | null;
     serialNumber: string | null;
@@ -169,13 +169,14 @@ function NewContractPageInner() {
     nameEn: string | null;
     brandId: string | null;
     brand: { id: string; name: string } | null;
-    categoryId: string | null;
-    productCategory: {
+    /** 제품군 — a model may sit in several. */
+    categoryIds: string[];
+    categories: {
       id: string;
       nameKo: string | null;
       nameVi: string | null;
       nameEn: string | null;
-    } | null;
+    }[];
     monthlyRentalPrice: string | null;
     retailPrice: string | null;
   }
@@ -221,8 +222,7 @@ function NewContractPageInner() {
   const categoryOptions = useMemo(() => {
     const m = new Map<string, string>();
     for (const cm of catalog) {
-      const pc = cm.productCategory;
-      if (pc) m.set(pc.id, localizedCategoryName(pc));
+      for (const pc of cm.categories ?? []) m.set(pc.id, localizedCategoryName(pc));
     }
     return Array.from(m.entries())
       .map(([id, label]) => ({ value: id, label }))
@@ -233,7 +233,7 @@ function NewContractPageInner() {
       (equipmentQuery.data ?? [])
         .filter((e) => (brandFilter ? e.model?.brandId === brandFilter : true))
         .filter((e) =>
-          categoryFilter ? e.model?.categoryId === categoryFilter : true,
+          categoryFilter ? (e.model?.categoryIds ?? []).includes(categoryFilter) : true,
         )
         .map((e) => ({
           id: e.id,
@@ -531,7 +531,7 @@ function NewContractPageInner() {
                   brandFilter ? cm.brandId === brandFilter : true,
                 )
                 .filter((cm) =>
-                  categoryFilter ? cm.categoryId === categoryFilter : true,
+                  categoryFilter ? (cm.categoryIds ?? []).includes(categoryFilter) : true,
                 )
                 .map((cm) => ({
                   value: cm.id,

@@ -19,7 +19,7 @@ import { formatDateOrDash as formatDate } from "@/lib/format";
 
 interface SalesRepLite {
   id: string;
-  username: string;
+  name: string;
   title: string | null;
   avatarUrl: string | null;
 }
@@ -310,8 +310,8 @@ export default function CustomersPage() {
           }
           return (
             <div className="flex items-center gap-2">
-              <Avatar name={r.salesRep.username} imageUrl={r.salesRep.avatarUrl} size="sm" />
-              <span className="text-sm text-gray-900">{r.salesRep.username}</span>
+              <Avatar name={r.salesRep.name} size="sm" />
+              <span className="text-sm text-gray-900">{r.salesRep.name}</span>
             </div>
           );
         },
@@ -417,7 +417,7 @@ export default function CustomersPage() {
             <Combobox
               value={salesRepId}
               onChange={(v) => onSalesRep(v as string | null)}
-              options={reps.map((r) => ({ value: r.id, label: r.username }))}
+              options={reps.map((r) => ({ value: r.id, label: r.name }))}
               placeholder={t("all")}
               searchable
             />

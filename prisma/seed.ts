@@ -128,7 +128,6 @@ async function main() {
       username: "manager",
       passwordHash: devPw,
       role: "MANAGER",
-      isSalesRep: true,
       title: "영업팀 매니저",
     },
     create: {
@@ -137,7 +136,6 @@ async function main() {
       email: "manager@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "MANAGER",
-      isSalesRep: true,
       title: "영업팀 매니저",
     },
   });
@@ -147,7 +145,6 @@ async function main() {
       username: "staff",
       passwordHash: devPw,
       role: "STAFF",
-      isSalesRep: true,
       title: "판매원",
     },
     create: {
@@ -156,7 +153,6 @@ async function main() {
       email: "staff@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "STAFF",
-      isSalesRep: true,
       title: "판매원",
     },
   });
@@ -166,7 +162,6 @@ async function main() {
       username: "Trần Thị Thu",
       passwordHash: devPw,
       role: "STAFF",
-      isSalesRep: true,
       title: "영업 사원",
     },
     create: {
@@ -175,57 +170,45 @@ async function main() {
       email: "thu.tran@seoulaqua.com.vn",
       passwordHash: devPw,
       role: "STAFF",
-      isSalesRep: true,
       title: "영업 사원",
     },
   });
   void manager;
   void staffThu;
 
-  // Two extra office users so the /o/sales-reps cards show more than three
-  // rows and "is every active office user a candidate?" can be exercised
-  // end-to-end. Both are flagged isSalesRep=true for parity with the
-  // anchor reps even though the picker now ignores that flag.
-  const repAn = await prisma.user.upsert({
-    where: { phone: "0123456790" },
-    update: {
-      username: "Lê Văn An",
-      passwordHash: devPw,
-      role: "STAFF",
-      isSalesRep: true,
-      title: "영업 사원",
-    },
-    create: {
-      username: "Lê Văn An",
-      phone: "0123456790",
-      email: "an.le@seoulaqua.com.vn",
-      passwordHash: devPw,
-      role: "STAFF",
-      isSalesRep: true,
-      title: "영업 사원",
-    },
+  // 판매원 roster. Reps are their own master now (2026-09-25), not office
+  // accounts — the two demo reps below have no login, which is the normal
+  // case. `findFirst` + create rather than upsert: SalesRep has no natural
+  // unique key, so a re-seed matches on the name it wrote last time.
+  async function ensureSalesRep(data: {
+    name: string;
+    phone?: string;
+    email?: string;
+    title?: string;
+  }) {
+    const found = await prisma.salesRep.findFirst({
+      where: { name: data.name },
+      select: { id: true },
+    });
+    return found ?? (await prisma.salesRep.create({ data }));
+  }
+  const repAn = await ensureSalesRep({
+    name: "Lê Văn An",
+    phone: "0123456790",
+    email: "an.le@seoulaqua.com.vn",
+    title: "영업 사원",
   });
-  const repDuc = await prisma.user.upsert({
-    where: { phone: "0123456791" },
-    update: {
-      username: "Hoàng Minh Đức",
-      passwordHash: devPw,
-      role: "MANAGER",
-      isSalesRep: true,
-      title: "지역 매니저",
-    },
-    create: {
-      username: "Hoàng Minh Đức",
-      phone: "0123456791",
-      email: "duc.hoang@seoulaqua.com.vn",
-      passwordHash: devPw,
-      role: "MANAGER",
-      isSalesRep: true,
-      title: "지역 매니저",
-    },
+  const repDuc = await ensureSalesRep({
+    name: "Hoàng Minh Đức",
+    phone: "0123456791",
+    email: "duc.hoang@seoulaqua.com.vn",
+    title: "지역 매니저",
   });
-  void repAn;
-  void repDuc;
+  const repHa = await ensureSalesRep({
+    name: "Phạm Thu Hà",
+    phone: "0123456792",
+    title: "영업 사원",
+  });
 
   // 5 technicians spread across regions so the scheduler has real candidates.
   const techSeed = [
@@ -305,6 +288,30 @@ async function main() {
     categoriesByCode.set(c.code, row);
   }
   console.log(`  ✓ product categories (${catSeed.length})`);
+
+  // 제품 유형 — a finer cut under 제품군. Each belongs to one or more 제품군;
+  // a model filed under a type may only carry that type's 제품군. 탱크형 spans
+  // two 제품군 on purpose, to exercise the many-to-many side.
+  const typeSeed = [
+    { code: "DIRECT_FLOW", nameKo: "직수형", nameVi: "Trực tiếp", nameEn: "Direct-flow", categories: ["HOT_COLD_PURIFIER"], sortOrder: 10 },
+    { code: "TANK_TYPE", nameKo: "탱크형", nameVi: "Có bình chứa", nameEn: "Tank type", categories: ["HOT_COLD_PURIFIER", "RO_HOT_COLD_PURIFIER"], sortOrder: 20 },
+    { code: "STAND_AIR", nameKo: "스탠드형", nameVi: "Dạng đứng", nameEn: "Stand type", categories: ["AIR_PURIFIER"], sortOrder: 30 },
+  ];
+  const typesByCode = new Map<string, { id: string }>();
+  for (const ty of typeSeed) {
+    const links = ty.categories
+      .map((code) => categoriesByCode.get(code)?.id)
+      .filter((id): id is string => !!id)
+      .map((categoryId) => ({ categoryId }));
+    const data = { nameKo: ty.nameKo, nameVi: ty.nameVi, nameEn: ty.nameEn, sortOrder: ty.sortOrder };
+    const row = await prisma.productType.upsert({
+      where: { code: ty.code },
+      update: { ...data, categories: { deleteMany: {}, create: links } },
+      create: { code: ty.code, ...data, categories: { create: links } },
+    });
+    typesByCode.set(ty.code, row);
+  }
+  console.log(`  ✓ product types (${typeSeed.length})`);
 
   // ─── Equipment models ───────────────────────────────────────────────
   // Data-driven from the "브랜드+제품군+모델명+제품명+필터+교체주기" PDF + the
@@ -431,11 +438,30 @@ async function main() {
   const stockSeedFresh = (await prisma.stockMove.count()) === 0;
 
   const modelByCode = new Map<string, { id: string; modelCode: string | null }>();
-  // code → ProductCategory code, so filters can inherit a 제품군 from the
-  // appliance they fit (the 소모품 list shows this column).
-  const modelCategoryCodeByCode = new Map<string, string>();
+  // code → its 제품군 codes, so filters can inherit the 제품군 of the
+  // appliances they fit (the 소모품 list shows this column).
+  const modelCategoryCodesByCode = new Map<string, string[]>();
   for (const [mIdx, m] of modelSeed.entries()) {
-    modelCategoryCodeByCode.set(m.code, m.category);
+    // RO 냉온정수기 also file under 냉온정수기 — a model may sit in several
+    // 제품군. Type assignment: RO → 탱크형, every other 냉온정수기 → 직수형,
+    // the rest untyped (a type is optional).
+    const catCodes = m.category === "RO_HOT_COLD_PURIFIER"
+      ? ["RO_HOT_COLD_PURIFIER", "HOT_COLD_PURIFIER"]
+      : [m.category];
+    const typeCode =
+      m.category === "RO_HOT_COLD_PURIFIER"
+        ? "TANK_TYPE"
+        : m.category === "HOT_COLD_PURIFIER" && mIdx % 2 === 0
+          ? "DIRECT_FLOW"
+          : m.category === "AIR_PURIFIER"
+            ? "STAND_AIR"
+            : null;
+    const categoryLinks = catCodes
+      .map((code) => categoriesByCode.get(code)?.id)
+      .filter((id): id is string => !!id)
+      .map((categoryId) => ({ categoryId }));
+    const productTypeId = typeCode ? typesByCode.get(typeCode)?.id ?? null : null;
+    modelCategoryCodesByCode.set(m.code, catCodes);
     // Deterministic stock so the 재고 UI has real numbers to test against.
     // A couple of models sit below safetyStock to exercise the low-stock alert.
     const stockOnHand = mIdx % 6 === 0 ? 2 : 8 + ((mIdx * 13) % 55);
@@ -457,7 +483,8 @@ async function main() {
         nameVi: m.displayVi ?? m.code,
         nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
-        categoryId: categoriesByCode.get(m.category)?.id,
+        productTypeId,
+        categories: { deleteMany: {}, create: categoryLinks },
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
         ...stockField,
@@ -473,7 +500,8 @@ async function main() {
         nameVi: m.displayVi ?? m.code,
         nameEn: m.displayEn ?? m.code,
         brandId: brandsByName.get(m.brand)?.id,
-        categoryId: categoriesByCode.get(m.category)?.id,
+        productTypeId,
+        categories: { create: categoryLinks },
         inspectionEveryDays: m.inspectionEveryDays ?? null,
         warrantyMonths: m.warrantyMonths ?? 12,
         ...stockField,
@@ -1036,17 +1064,19 @@ async function main() {
     // Deterministic stock; a few filters sit below safetyStock for the alert.
     const stockOnHand = cIdx % 5 === 0 ? 4 : 20 + ((cIdx * 17) % 120);
     const safetyStock = 10;
-    // 제품군: inherit from the first compatible model whose category is known.
-    const firstCatCode = c.compatibleModels
-      .map((cm) => modelCategoryCodeByCode.get(cm.modelCode))
-      .find((code): code is string => !!code && categoriesByCode.has(code));
-    const derivedCategoryId = firstCatCode ? categoriesByCode.get(firstCatCode)?.id : undefined;
+    // 제품군: every 제품군 of the models it fits (seed convenience only — the
+    // app never derives a part's 제품군, and never applies a part by 제품군).
+    const partCategoryLinks = [
+      ...new Set(c.compatibleModels.flatMap((cm) => modelCategoryCodesByCode.get(cm.modelCode) ?? [])),
+    ]
+      .map((code) => categoriesByCode.get(code)?.id)
+      .filter((id): id is string => !!id)
+      .map((categoryId) => ({ categoryId }));
     const stockExtras = {
       // Only seed the counter on a fresh seed (see stockSeedFresh note above).
       ...(stockSeedFresh ? { stockOnHand } : {}),
       safetyStock,
       brandId: defaultFilterBrandId,
-      ...(derivedCategoryId ? { categoryId: derivedCategoryId } : {}),
       purchasePrice: Math.round(c.retailPrice * 0.55),
       fixedPrice: Math.round(c.retailPrice * 0.8),
     };
@@ -1061,6 +1091,7 @@ async function main() {
         cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
         ...stockExtras,
+        categories: { deleteMany: {}, create: partCategoryLinks },
       },
       create: {
         sku: c.sku,
@@ -1072,6 +1103,7 @@ async function main() {
         cleanOnEveryVisit: c.cleanOnEveryVisit ?? false,
         retailPrice: c.retailPrice,
         ...stockExtras,
+        categories: { create: partCategoryLinks },
       },
     });
     // Reset compatibility and rewrite — keeps the join table aligned with
@@ -1499,7 +1531,7 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech1.id,
       preferredRegion: "HCMC-D1",
-      salesRepId: staff.id,
+      salesRepId: repHa.id,
       notes: "VIP 고객 / 정기 관리 요청",
       contacts: {
         create: [
@@ -1584,7 +1616,7 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       district: "Phường Sài Gòn",
       preferredRegion: "HCMC-D1",
-      salesRepId: manager.id,
+      salesRepId: repDuc.id,
       contacts: {
         create: [
           {
@@ -1832,7 +1864,7 @@ async function main() {
       city: "Thành phố Hồ Chí Minh",
       preferredTechnicianId: tech2.id,
       preferredRegion: "HCMC-D7",
-      salesRepId: staffThu.id,
+      salesRepId: repAn.id,
       contacts: {
         create: [
           {
@@ -1923,7 +1955,7 @@ async function main() {
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
         preferredTechnicianId: c.tech,
         preferredRegion: c.region,
-        salesRepId: [staff.id, staffThu.id, manager.id][parseInt(c.code.slice(-2), 10) % 3],
+        salesRepId: [repAn.id, repDuc.id, repHa.id][parseInt(c.code.slice(-2), 10) % 3],
         contacts: {
           create: [
             {
@@ -1985,7 +2017,7 @@ async function main() {
         address: `HQ, ${c.region}`,
         city: c.region.startsWith("HN") ? "Hà Nội" : "TP. Hồ Chí Minh",
         preferredRegion: c.region,
-        salesRepId: [staff.id, staffThu.id, manager.id][parseInt(c.code.slice(-2), 10) % 3],
+        salesRepId: [repAn.id, repDuc.id, repHa.id][parseInt(c.code.slice(-2), 10) % 3],
         contacts: {
           create: [
             {
@@ -4065,8 +4097,8 @@ async function main() {
   // customer's salesRepId. Without this seed the cards are all zeros on a
   // fresh DB.
 
-  // Six extra customers belonging to the two new reps (repAn, repDuc) so
-  // the /o/sales-reps cards stay non-zero for every active office user.
+  // Six extra customers belonging to repAn / repDuc so the /o/sales-reps
+  // cards stay non-zero for every rep on the roster.
   // Skipped on re-seed via upsert — fresh DBs get them, existing rows are
   // left untouched.
   const extraCustomerSeed = [

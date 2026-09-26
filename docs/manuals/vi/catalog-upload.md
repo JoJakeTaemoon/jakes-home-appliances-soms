@@ -116,7 +116,7 @@ Hệ thống dùng các khóa dưới đây để tìm dữ liệu đã có. **N
 | Hạng mục | Căn cứ xác định là trùng | Lưu ý |
 |---|---|---|
 | Thương hiệu | Tên thương hiệu trùng khớp tuyệt đối | Phân biệt cả hoa/thường và dấu cách |
-| Nhóm sản phẩm | Trùng **cả ba** tên (Anh, Hàn, Việt) | Lệch một ngôn ngữ là tạo nhóm mới. Ví dụ đổi dấu gạch dài (—) trong `냉온정수기 — RO 방식` thành gạch ngắn (-) sẽ thành nhóm khác |
+| Nhóm sản phẩm | Trùng **cả ba** tên (Anh, Hàn, Việt) | Lệch một ngôn ngữ là tạo nhóm mới. Ví dụ đổi dấu gạch dài (—) trong `냉온정수기 — RO 방식` thành gạch ngắn (-) sẽ thành nhóm khác. Nếu một model thuộc **nhiều nhóm sản phẩm**, ghi nối bằng ` \| ` (gạch đứng) theo cùng thứ tự ở cả ba ô. Ví dụ: `Hot and cold water purifier \| RO` / `냉온정수기 \| RO` / `Máy lọc nước nóng lạnh \| RO`. File tải xuống cũng theo định dạng này |
 | Model | Mã model trùng khớp tuyệt đối | |
 | Vật tư tiêu hao | SKU trùng khớp tuyệt đối | |
 | Phụ kiện | SKU trùng khớp tuyệt đối | |

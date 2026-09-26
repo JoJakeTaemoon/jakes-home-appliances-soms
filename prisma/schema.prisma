@@ -28,31 +28,27 @@ enum UserStatus {
 }
 
 model User {
-  id                         String     @id @default(cuid())
+  id                 String     @id @default(cuid())
   // Phone is the login key for every staff role (admin/manager/staff/technician).
   // username is a free-form display label (e.g. "admin", "Nguyễn Văn A") — not unique.
-  username                   String
-  phone                      String     @unique
-  email                      String?
-  passwordHash               String
-  role                       StaffRole
-  status                     UserStatus @default(ACTIVE)
-  preferredRegion            String? // scheduler input
-  mustChangePassword         Boolean    @default(false)
-  /// True when this user is a candidate in the sales-rep selector. Set by
-  /// ADMIN. Independent from `role` so a STAFF or MANAGER can be marked as
-  /// sales rep, while TECHNICIAN/ADMIN are never picked.
-  isSalesRep                 Boolean    @default(false)
+  username           String
+  phone              String     @unique
+  email              String?
+  passwordHash       String
+  role               StaffRole
+  status             UserStatus @default(ACTIVE)
+  preferredRegion    String? // scheduler input
+  mustChangePassword Boolean    @default(false)
   /// Display title shown next to the user's name on customer-detail headers,
   /// table avatars, and SMS signatures (e.g. "구매팀 차장", "본인").
-  title                      String?
+  title              String?
   /// Avatar image URL (Vercel Blob / Gravatar / fallback initials).
-  avatarUrl                  String?
-  lastLoginAt                DateTime?
-  failedLoginCount           Int        @default(0)
-  lockedUntil                DateTime?
-  createdAt                  DateTime   @default(now())
-  updatedAt                  DateTime   @updatedAt
+  avatarUrl          String?
+  lastLoginAt        DateTime?
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   sessions             Session[]
   leadVisits           Visit[]        @relation("LeadTechnician")
@@ -60,13 +56,11 @@ model User {
   collectedPayments    Payment[]
   loginAttempts        LoginAttempt[]
   preferredByCustomers Customer[]     @relation("PreferredTech")
-  assignedCustomers    Customer[]     @relation("CustomerSalesRep")
   registeredEquipment  Equipment[]    @relation("EquipmentRegisteredBy")
   createdOrders        Order[]        @relation("OrderCreatedBy")
   stockMoves           StockMove[]    @relation("StockMoveCreatedBy")
 
   @@index([role, status])
-  @@index([isSalesRep])
 }
 
 model Session {
@@ -213,11 +207,12 @@ model Customer {
   preferredTechnician   User?   @relation("PreferredTech", fields: [preferredTechnicianId], references: [id], onDelete: SetNull, map: "Customer_preferredTechnicianId_fkey")
   preferredRegion       String? // soft hint for scheduler (C.2)
 
-  /// Sales rep (담당 판매원) — User with isSalesRep=true. Used in the customer
-  /// list "담당 판매원" column and the sales-rep menu's per-rep aggregations
-  /// (new contracts / receivables by period).
+  /// Sales rep (담당 판매원) — a row in the `SalesRep` master, NOT a login
+  /// account: a rep is often an outside agent with no reason to sign in.
+  /// Used in the customer list "담당 판매원" column and the sales-rep menu's
+  /// per-rep aggregations (new contracts / receivables by period).
   salesRepId String?
-  salesRep   User?   @relation("CustomerSalesRep", fields: [salesRepId], references: [id], onDelete: SetNull)
+  salesRep   SalesRep? @relation("CustomerSalesRep", fields: [salesRepId], references: [id], onDelete: SetNull)
 
   notes String?
 
@@ -397,10 +392,79 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  models      EquipmentModel[]
-  consumables Consumable[]
+  modelLinks      EquipmentModelCategory[]
+  typeLinks       ProductTypeCategory[]
+  consumableLinks ConsumableCategory[]
+  accessoryLinks  AccessoryCategory[]
 
   @@index([isActive, sortOrder])
+}
+
+/// 제품 유형 — a finer cut under 제품군 (e.g. 정수기 → 냉온정수기 / 직수형).
+/// Belongs to ONE OR MORE 제품군 (enforced by the API, not the DB — a join
+/// table cannot carry a "min 1" constraint). A model may carry a type; when it
+/// does, every 제품군 on the model must be one of the type's 제품군 — see
+/// `src/lib/products/classification.ts`.
+model ProductType {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  nameKo    String
+  nameVi    String
+  nameEn    String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories ProductTypeCategory[]
+  models     EquipmentModel[]
+
+  @@index([isActive, sortOrder])
+}
+
+model ProductTypeCategory {
+  productTypeId String
+  categoryId    String
+  productType   ProductType     @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  category      ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productTypeId, categoryId])
+  @@index([categoryId])
+}
+
+/// A model's 제품군 — one or more (API-enforced). Classification only: which
+/// consumables a model actually uses lives in `ConsumableOnModel`.
+model EquipmentModelCategory {
+  modelId    String
+  categoryId String
+  model      EquipmentModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([modelId, categoryId])
+  @@index([categoryId])
+}
+
+/// A consumable's 제품군 — zero or more, for sorting and search. Tagging a
+/// filter with a 제품군 does NOT apply it to that 제품군's models.
+model ConsumableCategory {
+  consumableId String
+  categoryId   String
+  consumable   Consumable      @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  category     ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([consumableId, categoryId])
+  @@index([categoryId])
+}
+
+/// An accessory's 제품군 — zero or more, same meaning as ConsumableCategory.
+model AccessoryCategory {
+  accessoryId String
+  categoryId  String
+  accessory   Accessory       @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  category    ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([accessoryId, categoryId])
+  @@index([categoryId])
 }
 
 // Brand — distinct manufacturer/marketer of equipment models. Single name
@@ -420,11 +484,11 @@ model Brand {
 }
 
 model EquipmentModel {
-  id                      String             @id @default(cuid())
+  id                      String                   @id @default(cuid())
   /// Legacy SKU-like identifier. UI no longer surfaces this field; new rows
   /// may leave it null. Kept on the table for back-compat with existing data.
   /// NULL is allowed (Postgres permits multiple NULL rows under @unique).
-  modelCode               String?            @unique
+  modelCode               String?                  @unique
   // Customer-facing product names in KO/VI/EN. The model code itself
   // stays single-language (alphanumeric/symbol). The previous single-language
   // `name` column was dropped — UI / API now picks the locale-appropriate
@@ -433,35 +497,36 @@ model EquipmentModel {
   nameVi                  String?
   nameEn                  String?
   brandId                 String?
-  brand                   Brand?             @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  // Sole classifier — the 제품군 master (ProductCategory). The legacy
-  // `EquipmentCategory` enum was dropped in migration
-  // 20260924000000_drop_equipment_category_enum.
-  categoryId              String?
-  productCategory         ProductCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand                   Brand?                   @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  // Classification (2026-09-26): one or more 제품군 through
+  // `EquipmentModelCategory`, plus an optional 제품 유형. When the type is set,
+  // every 제품군 here must be one of the type's.
+  categories              EquipmentModelCategory[]
+  productTypeId           String?
+  productType             ProductType?             @relation(fields: [productTypeId], references: [id], onDelete: SetNull)
   description             String?
   filterPolicy            Json? // legacy: { filters: [{type, replaceEveryDays}, ...] } — use Consumable instead
-  retailPrice             Decimal?           @db.Decimal(14, 2) // 소비자가 (Giá bán lẻ)
+  retailPrice             Decimal?                 @db.Decimal(14, 2) // 소비자가 (Giá bán lẻ)
   // 판매가 (Giá bán) — mockup shows this alongside 소비자가; kept distinct so
   // list price and actual sale price can differ. Nullable; UI falls back to retailPrice.
-  salePrice               Decimal?           @db.Decimal(14, 2)
+  salePrice               Decimal?                 @db.Decimal(14, 2)
   // 입고가 (Giá nhập) — purchase/inbound unit cost.
-  purchasePrice           Decimal?           @db.Decimal(14, 2)
+  purchasePrice           Decimal?                 @db.Decimal(14, 2)
   // 지정가 (Giá tại đại lý) — dealer/agency price.
-  fixedPrice              Decimal?           @db.Decimal(14, 2)
-  monthlyRentalPrice      Decimal?           @db.Decimal(14, 2)
-  monthlyMaintenancePrice Decimal?           @db.Decimal(14, 2)
+  fixedPrice              Decimal?                 @db.Decimal(14, 2)
+  monthlyRentalPrice      Decimal?                 @db.Decimal(14, 2)
+  monthlyMaintenancePrice Decimal?                 @db.Decimal(14, 2)
   // Inventory — cached on-hand counter (StockMove ledger is history-of-record)
   // and low-stock threshold. Negative on-hand is allowed (alert, not a block).
-  stockOnHand             Int                @default(0)
-  safetyStock             Int                @default(0)
+  stockOnHand             Int                      @default(0)
+  safetyStock             Int                      @default(0)
   // Periodic inspection cycle (days). 30 for water purifiers (PDF A.2).
   inspectionEveryDays     Int?
   // Warranty months for SALE customers — used by charge-policy default rules.
-  warrantyMonths          Int?               @default(12)
-  isActive                Boolean            @default(true)
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @updatedAt
+  warrantyMonths          Int?                     @default(12)
+  isActive                Boolean                  @default(true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
 
   equipment   Equipment[]
   consumables ConsumableOnModel[]
@@ -469,7 +534,7 @@ model EquipmentModel {
   orderItems  OrderItem[]
   stockMoves  StockMove[]         @relation("StockMoveModel")
 
-  @@index([categoryId, isActive])
+  @@index([productTypeId, isActive])
   @@index([brandId, isActive])
 }
 
@@ -488,39 +553,37 @@ enum ConsumableCycleUnit {
 }
 
 model Consumable {
-  id                String              @id @default(cuid())
-  sku               String              @unique
+  id                String               @id @default(cuid())
+  sku               String               @unique
   nameKo            String
   nameVi            String
   nameEn            String
   replaceEveryDays  Int?
   /// Input/display unit for replaceEveryDays (canonical storage stays days).
-  replaceCycleUnit  ConsumableCycleUnit @default(DAY)
+  replaceCycleUnit  ConsumableCycleUnit  @default(DAY)
   cleanEveryDays    Int?
   // PDF A.4: pre-filters are cleaned on every periodic-inspection visit
   // (no fixed month-based cycle). When true, recommender prefills CLEAN
   // on every PERIODIC_INSPECTION visit regardless of cycle math.
-  cleanOnEveryVisit Boolean             @default(false)
-  // Product classification — mirrors EquipmentModel so the filter master can
-  // carry its own 제품그룹 (category) + 브랜드 (brand), independent of which
-  // models it attaches to. Nullable; FK set-null on delete.
-  categoryId        String?
-  productCategory   ProductCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  cleanOnEveryVisit Boolean              @default(false)
+  // Classification — zero or more 제품군 through `ConsumableCategory`, for
+  // sorting and search only. Which models a filter fits is `compatibleModels`.
+  categories        ConsumableCategory[]
   brandId           String?
-  brand             Brand?              @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  brand             Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
   spec              String? // 규격 (Quy cách) — e.g. "9 inch", "14 W"
   mainUse           String? // 주요용도 (Công dụng chính)
-  retailPrice       Decimal             @db.Decimal(14, 2) // 소비자가
+  retailPrice       Decimal              @db.Decimal(14, 2) // 소비자가
   // 입고가 / 지정가 — same semantics as EquipmentModel.
-  purchasePrice     Decimal?            @db.Decimal(14, 2)
-  fixedPrice        Decimal?            @db.Decimal(14, 2)
+  purchasePrice     Decimal?             @db.Decimal(14, 2)
+  fixedPrice        Decimal?             @db.Decimal(14, 2)
   // Inventory — see EquipmentModel. Negative on-hand allowed (alert, not block).
-  stockOnHand       Int                 @default(0)
-  safetyStock       Int                 @default(0)
+  stockOnHand       Int                  @default(0)
+  safetyStock       Int                  @default(0)
   notes             String?
-  isActive          Boolean             @default(true)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  isActive          Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   compatibleModels ConsumableOnModel[]
   visitLogs        VisitConsumableLog[]
@@ -530,7 +593,6 @@ model Consumable {
   stockMoves       StockMove[]           @relation("StockMoveConsumable")
 
   @@index([isActive])
-  @@index([categoryId, isActive])
   @@index([brandId, isActive])
 }
 
@@ -554,6 +616,30 @@ model Accessory {
 
   compatibleModels AccessoryOnModel[]
   chargePolicies   ChargePolicy[]
+  // Zero or more 제품군, for sorting and search (see ConsumableCategory).
+  categories       AccessoryCategory[]
+
+  @@index([isActive])
+}
+
+/// 판매원 — who sold the contract. Deliberately NOT a `User`: most reps never
+/// log in, and tying the roster to office accounts meant every staff member
+/// showed up in the picker whether they sell or not (policy 2026-06-26).
+/// Retired reps are deactivated rather than deleted so past customers keep
+/// naming who sold them.
+model SalesRep {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  /// e.g. "영업팀장", "대리점" — shown next to the name in pickers.
+  title     String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customers Customer[] @relation("CustomerSalesRep")
 
   @@index([isActive])
 }

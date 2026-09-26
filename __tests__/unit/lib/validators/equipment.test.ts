@@ -67,38 +67,45 @@ describe("filterPolicySchema", () => {
 });
 
 describe("createEquipmentModelSchema", () => {
-  it("requires at least one localized name (categoryId + brand are optional)", () => {
+  it("takes one or more 제품군 and an optional 제품 유형", () => {
     expect(
       createEquipmentModelSchema.safeParse({
         nameVi: "Test",
-        categoryId: "cat_water_purifier",
+        categoryIds: ["cat_hot_cold", "cat_ro"],
+        productTypeId: "type_tank",
       }).success,
+    ).toBe(true);
+    expect(
+      createEquipmentModelSchema.safeParse({ nameVi: "Test", categoryIds: ["cat_hot_cold"] }).success,
     ).toBe(true);
   });
 
-  it("drops the retired `category` enum instead of forwarding it", () => {
+  it("refuses a model with no 제품군 (a model sits in at least one)", () => {
+    expect(createEquipmentModelSchema.safeParse({ nameVi: "Test" }).success).toBe(false);
+    const empty = createEquipmentModelSchema.safeParse({ nameVi: "Test", categoryIds: [] });
+    expect(empty.success).toBe(false);
+    if (!empty.success) {
+      expect(empty.error.issues.some((i) => i.path[0] === "categoryIds")).toBe(true);
+    }
+  });
+
+  it("drops the retired single `categoryId` / `category` keys instead of forwarding them", () => {
     const parsed = createEquipmentModelSchema.safeParse({
       nameVi: "Test",
+      categoryIds: ["cat_hot_cold"],
+      categoryId: "cat_legacy",
       category: "WATER_PURIFIER",
     });
-    // 제품군 (categoryId) is the only classifier now; the legacy key is
-    // stripped by Zod so it can never reach Prisma.
-    expect(parsed.success && "category" in parsed.data).toBe(false);
-  });
-
-  it("accepts a model with no category or brand", () => {
-    expect(
-      createEquipmentModelSchema.safeParse({
-        nameVi: "Test",
-      }).success,
-    ).toBe(true);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect("categoryId" in parsed.data).toBe(false);
+      expect("category" in parsed.data).toBe(false);
+    }
   });
 
   it("rejects a model with no localized name in any locale", () => {
     expect(
-      createEquipmentModelSchema.safeParse({
-        categoryId: "cat_water_purifier",
-      }).success,
+      createEquipmentModelSchema.safeParse({ categoryIds: ["cat_hot_cold"] }).success,
     ).toBe(false);
   });
 });

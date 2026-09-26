@@ -29,6 +29,9 @@ let token = "";
 let modelId = "";
 let c1Id = "";
 let c2Id = "";
+// A model needs at least one 제품군.
+const CAT_CODE = "TEST_WSA1_CAT";
+let categoryId = "";
 
 function req(url: string, method: string, body?: unknown) {
   return new NextRequest(`http://localhost${url}`, {
@@ -46,6 +49,7 @@ async function cleanup() {
   await prisma.equipmentModel.deleteMany({ where: { nameEn: MODEL_NAME } });
   await prisma.consumableOnModel.deleteMany({ where: { consumable: { sku: { in: [SKU1, SKU2, SKU3] } } } });
   await prisma.consumable.deleteMany({ where: { sku: { in: [SKU1, SKU2, SKU3] } } });
+  await prisma.productCategory.deleteMany({ where: { code: CAT_CODE } });
   const u = await prisma.user.findUnique({ where: { phone: PHONE }, select: { id: true } });
   if (u) {
     await prisma.session.deleteMany({ where: { userId: u.id } });
@@ -68,6 +72,10 @@ beforeAll(async () => {
   const f2 = await prisma.consumable.create({ data: { sku: SKU2, nameKo: "F2", nameVi: "F2", nameEn: "F2", replaceEveryDays: 90, retailPrice: 40_000 } });
   c1Id = f1.id;
   c2Id = f2.id;
+  const cat = await prisma.productCategory.create({
+    data: { code: CAT_CODE, nameKo: "WSA1", nameVi: "WSA1", nameEn: "WSA1" },
+  });
+  categoryId = cat.id;
 });
 
 afterAll(async () => {
@@ -79,6 +87,7 @@ describe("model filter config (WS-A1)", () => {
     const res = await modelPost(
       req("/api/equipment-models", "POST", {
         nameEn: MODEL_NAME,
+        categoryIds: [categoryId],
         compatibleConsumables: [
           { consumableId: c2Id, quantity: 2, sortOrder: 0 }, // no override → 90
           { consumableId: c1Id, quantity: 1, sortOrder: 1, replaceEveryDaysOverride: 45 }, // override 45 (< 180)

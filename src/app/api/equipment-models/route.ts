@@ -12,6 +12,12 @@ import {
 } from "@/lib/validators/equipmentModel";
 import { ForbiddenError } from "@/lib/api/error";
 import { recordOpeningStock } from "@/lib/inventory/moves";
+import {
+  CATEGORY_LINKS_SELECT,
+  assertModelClassification,
+  flattenCategories,
+  writeModelCategories,
+} from "@/lib/products/classification";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const GET = defineQuery({
@@ -19,10 +25,12 @@ export const GET = defineQuery({
   query: equipmentModelListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, brandId, categoryId, isActive, page, pageSize } = query;
+    const { q, brandId, categoryId, productTypeId, isActive, page, pageSize } = query;
     const where: Prisma.EquipmentModelWhereInput = {};
     if (brandId) where.brandId = brandId;
-    if (categoryId) where.categoryId = categoryId;
+    // A model sits in every 제품군 it links to.
+    if (categoryId) where.categories = { some: { categoryId } };
+    if (productTypeId) where.productTypeId = productTypeId;
     if (typeof isActive === "boolean") where.isActive = isActive;
     if (q) {
       where.OR = [
@@ -41,11 +49,20 @@ export const GET = defineQuery({
         take: pageSize,
         include: {
           brand: { select: { id: true, name: true } },
-          productCategory: { select: { id: true, nameKo: true, nameVi: true, nameEn: true } },
+          productType: { select: { id: true, code: true, nameKo: true, nameVi: true, nameEn: true } },
+          ...CATEGORY_LINKS_SELECT,
         },
       }),
     ]);
-    return { rows, pagination: { page, limit: pageSize, total } };
+    // Flatten the links so clients get `categories: CategoryLite[]` plus the
+    // bare ids for filtering.
+    return {
+      rows: rows.map((r) => {
+        const categories = flattenCategories(r);
+        return { ...r, categories, categoryIds: categories.map((c) => c.id) };
+      }),
+      pagination: { page, limit: pageSize, total },
+    };
   },
 });
 
@@ -61,13 +78,17 @@ export const POST = defineMutation({
   handler: async ({ body, auth }) => {
     const filters = body.compatibleConsumables ?? [];
     return prisma.$transaction(async (tx) => {
+      await assertModelClassification(tx, {
+        categoryIds: body.categoryIds,
+        productTypeId: body.productTypeId ?? null,
+      });
       const model = await tx.equipmentModel.create({
         data: {
           nameKo: body.nameKo ?? null,
           nameVi: body.nameVi ?? null,
           nameEn: body.nameEn ?? null,
           brandId: body.brandId ?? null,
-          categoryId: body.categoryId ?? null,
+          productTypeId: body.productTypeId ?? null,
           description: body.description ?? null,
           retailPrice: body.retailPrice ?? null,
           salePrice: body.salePrice ?? null,
@@ -82,6 +103,7 @@ export const POST = defineMutation({
           isActive: body.isActive,
         },
       });
+      await writeModelCategories(tx, model.id, body.categoryIds);
       if (filters.length > 0) {
         await tx.consumableOnModel.createMany({
           data: filters.map((f) => ({
@@ -101,12 +123,13 @@ export const POST = defineMutation({
         qty: body.stockOnHand,
         createdById: auth.userId,
       });
-      return model;
+      return { ...model, categoryIds: [...new Set(body.categoryIds)] };
     });
   },
   audit: {
     action: "EQUIPMENT_MODEL_CREATE",
     entityType: "EquipmentModel",
-    after: (r) => r,
+    // Flat string so the audit drawer's shallow diff can show it.
+    after: (r) => ({ ...r, categoryIds: r.categoryIds.join(",") }),
   },
 });

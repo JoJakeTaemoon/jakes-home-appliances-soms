@@ -41,10 +41,11 @@ export const createEquipmentModelSchema = z.object({
   nameVi: optStr(180),
   nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
-  // 제품군 — the model's only classifier (the legacy `category` enum was
-  // dropped). Nullable so a category deletion can SetNull; the office form
-  // requires it on entry.
-  categoryId: z.string().trim().min(1).nullable().optional(),
+  // 제품군 — one or more (2026-09-26). The subset rule against 제품 유형 needs
+  // the DB, so it lives in `assertModelClassification`, not here.
+  categoryIds: z.array(z.string().trim().min(1)).min(1, "At least one 제품군 is required"),
+  // 제품 유형 — optional.
+  productTypeId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
   // 판매가 / 입고가 / 지정가 (mockup). All optional; retailPrice stays 소비자가.
@@ -85,7 +86,9 @@ export const updateEquipmentModelSchema = z.object({
   nameVi: optStr(180),
   nameEn: optStr(180),
   brandId: z.string().trim().min(1).nullable().optional(),
-  categoryId: z.string().trim().min(1).nullable().optional(),
+  // Absent = leave the links alone; present = the full new set (≥ 1).
+  categoryIds: z.array(z.string().trim().min(1)).min(1, "At least one 제품군 is required").optional(),
+  productTypeId: z.string().trim().min(1).nullable().optional(),
   description: optStr(2000),
   retailPrice: z.coerce.number().nonnegative().nullable().optional(),
   salePrice: z.coerce.number().nonnegative().nullable().optional(),
@@ -110,6 +113,7 @@ export const equipmentModelListQuerySchema = z.object({
   // Server-side filters used by the bulk-register wizard's model picker.
   brandId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
+  productTypeId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),

@@ -248,11 +248,20 @@ export async function POST(request: NextRequest) {
         }
 
         // ── ProductCategory ──────────────────────────────────────────────
-        let categoryId: string | null = null;
-        const catEn = (row[cCatEn] ?? "").trim();
-        const catKo = (row[cCatKo] ?? "").trim();
-        const catVi = (row[cCatVi] ?? "").trim();
-        if (catEn && catKo && catVi) {
+        // A model may sit in several 제품군. The export writes them as
+        // "A | B" in each of the three name cells, positionally aligned, so
+        // split all three the same way and resolve each triple.
+        const categoryIds: string[] = [];
+        const split = (v: string | undefined) =>
+          (v ?? "").split("|").map((x) => x.trim());
+        const ens = split(row[cCatEn]);
+        const kos = split(row[cCatKo]);
+        const vis = split(row[cCatVi]);
+        for (let i = 0; i < ens.length; i++) {
+          const catEn = ens[i];
+          const catKo = kos[i] ?? "";
+          const catVi = vis[i] ?? "";
+          if (!catEn || !catKo || !catVi) continue;
           const key = `${catEn}|||${catKo}|||${catVi}`;
           let id = catCache.get(key);
           if (id) {
@@ -286,7 +295,7 @@ export async function POST(request: NextRequest) {
             }
             catCache.set(key, id);
           }
-          categoryId = id;
+          if (!categoryIds.includes(id)) categoryIds.push(id);
         }
 
         // ── EquipmentModel ───────────────────────────────────────────────
@@ -312,7 +321,11 @@ export async function POST(request: NextRequest) {
                   nameVi: ((row[cModelVi] ?? "").trim() || modelCode),
                   nameEn: ((row[cModelEn] ?? "").trim() || modelCode),
                   brandId,
-                  categoryId,
+                  // A model without a 제품군 in the sheet imports unclassified;
+                  // the office form asks for one on its next save.
+                  categories: categoryIds.length
+                    ? { create: categoryIds.map((categoryId) => ({ categoryId })) }
+                    : undefined,
                   salePrice: toNum(row[cSalePrice]),
                   retailPrice: toNum(row[cRetailPrice]),
                   purchasePrice: toNum(row[cPurchasePrice]),

@@ -11,7 +11,7 @@ import { useApiQuery } from "@/lib/api/hooks";
 
 interface SalesRepOption {
   id: string;
-  username: string;
+  name: string;
   title: string | null;
 }
 
@@ -81,7 +81,7 @@ export function ChangeSalesRepModal({
             onChange={(v) => setSelected(v as string | null)}
             options={reps.map((r) => ({
               value: r.id,
-              label: r.title ? `${r.username} · ${r.title}` : r.username,
+              label: r.title ? `${r.name} · ${r.title}` : r.name,
             }))}
             placeholder={t("all")}
             searchable

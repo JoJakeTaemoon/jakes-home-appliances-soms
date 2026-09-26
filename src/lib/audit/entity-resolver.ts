@@ -158,6 +158,17 @@ const RESOLVERS: Record<string, Resolver> = {
       (r) => r.nameKo ?? r.nameEn ?? r.nameVi ?? r.code ?? r.id,
     );
   },
+  async ProductType(ids) {
+    const rows = await prisma.productType.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, nameKo: true, nameEn: true, nameVi: true, code: true },
+    });
+    return toMap(
+      rows,
+      (r) => r.id,
+      (r) => r.nameKo ?? r.nameEn ?? r.nameVi ?? r.code ?? r.id,
+    );
+  },
   async Consumable(ids) {
     const rows = await prisma.consumable.findMany({
       where: { id: { in: ids } },

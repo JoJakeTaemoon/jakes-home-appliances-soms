@@ -104,6 +104,9 @@ describe("getActionLabel — product catalog codes are registered", () => {
   const CODES = [
     "BRAND_CREATE",
     "PRODUCT_CATEGORY_CREATE",
+    "PRODUCT_TYPE_CREATE",
+    "PRODUCT_TYPE_UPDATE",
+    "PRODUCT_TYPE_DEACTIVATE",
     "CONSUMABLE_CREATE",
     "ACCESSORY_CREATE",
     "CHARGE_POLICY_UPSERT",

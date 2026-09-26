@@ -76,7 +76,7 @@ interface CustomerDetail {
   equipment: EquipmentRow[];
   contracts: ContractRow[];
   recentAudit: AuditRow[];
-  salesRep: { id: string; username: string; title: string | null; avatarUrl: string | null } | null;
+  salesRep: { id: string; name: string; title: string | null } | null;
   salesRepId: string | null;
 }
 
@@ -719,9 +719,8 @@ function SalesRepCard({
 }: Readonly<{
   salesRep: {
     id: string;
-    username: string;
+    name: string;
     title: string | null;
-    avatarUrl: string | null;
   } | null;
 }>) {
   const t = useTranslations("customers");
@@ -732,10 +731,10 @@ function SalesRepCard({
           href={`/o/sales-reps/${salesRep.id}`}
           className="-m-1 flex items-center gap-3 rounded-lg p-1 transition-colors hover:bg-[var(--brand-blue-50)]"
         >
-          <Avatar name={salesRep.username} imageUrl={salesRep.avatarUrl} size="md" />
+          <Avatar name={salesRep.name} size="md" />
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-[#111111]">
-              {salesRep.username}
+              {salesRep.name}
             </div>
             {salesRep.title && (
               <div className="truncate text-xs text-[#737373]">{salesRep.title}</div>

@@ -8,6 +8,7 @@
 
 import prisma from "@/lib/prisma";
 import { NotFoundError } from "@/lib/api/error";
+import { CATEGORY_LINKS_SELECT } from "@/lib/products/classification";
 
 export type VisitDetail = NonNullable<
   Awaited<ReturnType<typeof getVisitOr404>>
@@ -59,7 +60,7 @@ export async function getVisitOr404(visitId: string) {
               nameKo: true,
               nameVi: true,
               nameEn: true,
-              productCategory: { select: { nameKo: true, nameVi: true, nameEn: true } },
+              ...CATEGORY_LINKS_SELECT,
               // Filters / consumables compatible with this model — drives
               // the technician-facing "scope of work" section so the field
               // visit detail can show "replace pre-filter / clean post

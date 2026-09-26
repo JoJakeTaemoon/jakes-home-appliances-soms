@@ -53,10 +53,47 @@ export const updateProductCategorySchema = z.object({
 export const productCategoryListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   isActive: z.coerce.boolean().optional(),
-  // Narrow to categories that have at least one model of this brand.
-  // Brand↔Category have no direct relation — they're linked only through
-  // EquipmentModel — so this filters via `models.some.brandId`.
+  // Narrow to categories that have at least one active model of this brand.
+  // Brand↔Category meet only through a model's 제품군 links.
   brandId: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(500).default(50),
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// ProductType (제품 유형) — belongs to one or more 제품군.
+// ─────────────────────────────────────────────────────────────────────────
+
+export const createProductTypeSchema = z.object({
+  // Optional: left blank, the route mints one from the name.
+  code: z
+    .string()
+    .trim()
+    .regex(categoryCodeRegex, "Type code must be UPPER_SNAKE_CASE")
+    .optional(),
+  nameKo: z.string().trim().min(1).max(120),
+  nameVi: z.string().trim().min(1).max(120),
+  nameEn: z.string().trim().min(1).max(120),
+  categoryIds: z.array(z.string().trim().min(1)).min(1, "At least one 제품군 is required"),
+  sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
+  isActive: z.boolean().default(true),
+});
+// Hand-built: no `.default()` may leak onto PATCH (an empty body would
+// otherwise reactivate a retired type).
+export const updateProductTypeSchema = z.object({
+  nameKo: z.string().trim().min(1).max(120).optional(),
+  nameVi: z.string().trim().min(1).max(120).optional(),
+  nameEn: z.string().trim().min(1).max(120).optional(),
+  categoryIds: z.array(z.string().trim().min(1)).min(1, "At least one 제품군 is required").optional(),
+  sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const productTypeListQuerySchema = z.object({
+  q: z.string().trim().max(255).optional(),
+  isActive: z.coerce.boolean().optional(),
+  /** Only the types that sit under this 제품군. */
+  categoryId: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });
@@ -93,7 +130,8 @@ const consumableCoreShape = {
   cleanOnEveryVisit: z.boolean().default(false),
   // 제품그룹 / 브랜드 / 규격 / 주요용도 (mockup) — the filter master carries its
   // own classification, independent of which models it attaches to.
-  categoryId: z.string().trim().min(1).nullable().optional(),
+  // 제품군 — zero or more, search only. Never applies the part to models.
+  categoryIds: z.array(z.string().trim().min(1)).optional(),
   brandId: z.string().trim().min(1).nullable().optional(),
   spec: optStr(120),
   mainUse: optStr(500),
@@ -146,7 +184,8 @@ export const updateConsumableSchema = z.object({
   replaceCycleUnit: z.enum(["DAY", "MONTH"]).optional(),
   cleanEveryDays: dayCycle,
   cleanOnEveryVisit: z.boolean().optional(),
-  categoryId: z.string().trim().min(1).nullable().optional(),
+  // 제품군 — zero or more, search only. Never applies the part to models.
+  categoryIds: z.array(z.string().trim().min(1)).optional(),
   brandId: z.string().trim().min(1).nullable().optional(),
   spec: optStr(120),
   mainUse: optStr(500),
@@ -163,6 +202,7 @@ export const updateConsumableSchema = z.object({
 export const consumableListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   modelId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),
@@ -193,6 +233,8 @@ export const createAccessorySchema = z.object({
   notes: optStr(2000),
   isActive: z.boolean().default(true),
   compatibleModels: z.array(compatibilityEntrySchema).default([]),
+  // 제품군 — zero or more, search only.
+  categoryIds: z.array(z.string().trim().min(1)).optional(),
 });
 // Hand-built so .partial() doesn't carry `.default()` values onto PATCH
 // (mass-assignment via Zod defaults — a PATCH `{}` body would otherwise reset
@@ -208,11 +250,13 @@ export const updateAccessorySchema = z.object({
   notes: optStr(2000),
   isActive: z.boolean().optional(),
   compatibleModels: z.array(compatibilityEntrySchema).optional(),
+  categoryIds: z.array(z.string().trim().min(1)).optional(),
 });
 
 export const accessoryListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   modelId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),

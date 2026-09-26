@@ -329,7 +329,7 @@
   "salesReps": {
     "title": "Sales reps",
     "subtitle": "Per-rep customers, contracts, and receivables.",
-    "emptyState": "No sales reps yet — toggle isSalesRep in user settings.",
+    "emptyState": "No sales reps yet — use “Add sales rep” to register one.",
     "type": "Type",
     "equipmentCount": "Equipment",
     "contractCount": "Contracts",
@@ -368,7 +368,25 @@
     "receivables": {
       "paymentCount": "Items",
       "noEquipment": "No equipment information linked."
-    }
+    },
+    "addRep": "Add sales rep",
+    "addRepTitle": "Add sales rep",
+    "editRep": "Edit sales rep",
+    "retire": "Deactivate",
+    "retireTitle": "Deactivate sales rep",
+    "retireConfirm": "Deactivate {name}. They drop out of the roster, but customers already assigned keep naming them.",
+    "reactivate": "Reactivate",
+    "showInactive": "Include inactive",
+    "inactive": "Inactive",
+    "fieldName": "Name",
+    "fieldPhone": "Phone",
+    "fieldEmail": "Email",
+    "fieldTitle": "Title",
+    "fieldNotes": "Notes",
+    "createSuccess": "Registered {name}.",
+    "updateSuccess": "Updated {name}.",
+    "retireSuccess": "Deactivated {name}.",
+    "quickCreate": "Add “{name}” as a sales rep"
   },
   "orders": {
     "title": "Orders",
@@ -949,7 +967,8 @@
       "cycleDays": "Cycle (days)",
       "quantity": "Qty"
     },
-    "filterConfigHint": "Leave the cycle blank to use the filter's own default cycle. Rows display top to bottom."
+    "filterConfigHint": "Leave the cycle blank to use the filter's own default cycle. Rows display top to bottom.",
+    "productType": "Product type"
   },
   "contracts": {
     "title": "Contracts",
@@ -2181,7 +2200,9 @@
         "SystemSetting": "System setting",
         "CatalogImport": "Catalog CSV import",
         "Order": "Order",
-        "StockMove": "Stock move"
+        "StockMove": "Stock move",
+        "SalesRep": "Sales rep",
+        "ProductType": "Product type"
       }
     }
   },
@@ -2350,7 +2371,20 @@
       "searchOrAdd": "Search or add new…",
       "quickCreateCategory": "Add category “{name}”",
       "quickCreateBrand": "Add brand “{name}”",
-      "codeAutoPlaceholder": "Leave blank to auto-generate"
+      "codeAutoPlaceholder": "Leave blank to auto-generate",
+      "tabProductTypes": "Product types",
+      "addProductType": "Add product type",
+      "editProductType": "Edit product type",
+      "colProductType": "Product type",
+      "colCategories": "Categories",
+      "filterByCategory": "Filter by category",
+      "productTypeNone": "No type",
+      "productTypeHint": "Only types that contain every selected category are listed. Picking a type limits categories to that type's.",
+      "categoriesRequiredHint": "Pick at least one",
+      "categoriesOptionalHint": "For sorting and search — never applied to models automatically",
+      "noCategoriesYet": "No categories yet. Add one on the Categories tab first.",
+      "quickCreateProductType": "Add product type “{name}”",
+      "typeCategoryInUse": "Models of this type still use a category you are removing. Change those models' category or type first."
     },
     "notificationTemplates": {
       "title": "Notification templates",

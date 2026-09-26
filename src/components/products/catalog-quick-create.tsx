@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Inline "not in the list? add it here" popups for the two catalog masters a
- * model / consumable form has to reference: 제품군 (ProductCategory) and
- * 브랜드 (Brand).
+ * Inline "not in the list? add it here" popups for the catalog masters a
+ * model / consumable form has to reference: 제품군 (ProductCategory), 제품
+ * 유형 (ProductType) and 브랜드 (Brand).
  *
  * Both are driven by the Combobox's own `allowCreate` row — the user types a
  * name that matches nothing, picks "+ 추가", and lands in the matching modal
@@ -13,11 +13,13 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useApi, ApiClientError } from "@/lib/api/client";
+import { useApi, apiErrorText } from "@/lib/api/client";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
+import { MultiCombobox } from "@/components/ui/multi-combobox";
+import { categoryAltNames, pickCategoryName } from "@/lib/products/name";
 
 export interface CreatedCategory {
   id: string;
@@ -27,15 +29,19 @@ export interface CreatedCategory {
   nameEn: string;
 }
 
+export interface CreatedProductType extends CreatedCategory {
+  categoryIds: string[];
+}
+
 export interface CreatedBrand {
   id: string;
   name: string;
 }
 
+/** Names the failing field too (a bare "Invalid body" says nothing). */
 function useErrorText() {
   const t = useTranslations("admin.products");
-  return (e: unknown) =>
-    e instanceof ApiClientError || e instanceof Error ? e.message : t("errorGeneric");
+  return (e: unknown) => apiErrorText(e, t("errorGeneric"));
 }
 
 /**
@@ -110,6 +116,107 @@ export function CategoryQuickCreateModal({
         </FormField>
         <FormField label={t("colNameEn")} required>
           <Input autoFocus={locale === "en"} value={nameEn} onChange={(e) => setName("en", e.target.value)} />
+        </FormField>
+        <FormField label={t("colCode")}>
+          <Input
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder={t("codeAutoPlaceholder")}
+          />
+        </FormField>
+      </div>
+      {err && <div className="mt-3 text-sm text-red-600">{err}</div>}
+    </Modal>
+  );
+}
+
+/**
+ * 제품 유형 추가 — from the model form's 제품 유형 dropdown. A type needs at
+ * least one 제품군; the model's current 제품군 selection is pre-picked, since
+ * the new type is almost always meant to hold the model being entered.
+ */
+export function ProductTypeQuickCreateModal({
+  initialName,
+  categories,
+  initialCategoryIds,
+  onClose,
+  onCreated,
+}: Readonly<{
+  initialName: string;
+  categories: CreatedCategory[];
+  initialCategoryIds: string[];
+  onClose: () => void;
+  onCreated: (row: CreatedProductType) => void;
+}>) {
+  const t = useTranslations("admin.products");
+  const locale = useLocale();
+  const api = useApi();
+  const toErrorText = useErrorText();
+  const [nameKo, setNameKo] = useState(initialName);
+  const [nameVi, setNameVi] = useState(initialName);
+  const [nameEn, setNameEn] = useState(initialName);
+  const [categoryIds, setCategoryIds] = useState<string[]>(initialCategoryIds);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await api.post<CreatedProductType>("/api/admin/products/product-types", {
+        code: code.trim() || undefined,
+        nameKo: nameKo || nameVi || nameEn,
+        nameVi: nameVi || nameEn || nameKo,
+        nameEn: nameEn || nameVi || nameKo,
+        categoryIds,
+      });
+      if (res.data) onCreated({ ...res.data, categoryIds });
+    } catch (e) {
+      setErr(toErrorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("addProductType")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy} disabled={categoryIds.length === 0}>
+            {t("save")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <FormField label={t("colNameKo")} required>
+          <Input autoFocus={locale === "ko"} value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameVi")} required>
+          <Input autoFocus={locale === "vi"} value={nameVi} onChange={(e) => setNameVi(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameEn")} required>
+          <Input autoFocus={locale === "en"} value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+        </FormField>
+        <FormField label={t("colCategories")} required hint={t("categoriesRequiredHint")}>
+          <MultiCombobox
+            values={categoryIds}
+            onChange={setCategoryIds}
+            options={categories.map((c) => ({
+              value: c.id,
+              label: pickCategoryName(c, locale),
+              description: categoryAltNames(c, locale),
+            }))}
+            placeholder={t("colCategories")}
+            searchPlaceholder={t("searchOrAdd")}
+            ariaLabel={t("colCategories")}
+          />
         </FormField>
         <FormField label={t("colCode")}>
           <Input

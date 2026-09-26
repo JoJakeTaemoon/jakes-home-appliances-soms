@@ -329,7 +329,7 @@
   "salesReps": {
     "title": "Nhân viên bán hàng",
     "subtitle": "Quản lý khách hàng, hợp đồng và công nợ theo nhân viên.",
-    "emptyState": "Chưa có nhân viên — bật cờ \"Nhân viên BH\" trong cài đặt.",
+    "emptyState": "Chưa có nhân viên kinh doanh — dùng nút Thêm để đăng ký.",
     "type": "Loại",
     "equipmentCount": "Thiết bị",
     "contractCount": "Số HĐ",
@@ -368,7 +368,25 @@
     "receivables": {
       "paymentCount": "Số mục",
       "noEquipment": "Không có thông tin thiết bị liên kết."
-    }
+    },
+    "addRep": "Thêm NVKD",
+    "addRepTitle": "Thêm nhân viên kinh doanh",
+    "editRep": "Sửa nhân viên kinh doanh",
+    "retire": "Vô hiệu hóa",
+    "retireTitle": "Vô hiệu hóa NVKD",
+    "retireConfirm": "Vô hiệu hóa {name}. Người này sẽ ẩn khỏi danh sách, nhưng khách hàng đã gán vẫn giữ nguyên thông tin phụ trách.",
+    "reactivate": "Kích hoạt lại",
+    "showInactive": "Gồm cả đã vô hiệu",
+    "inactive": "Đã vô hiệu",
+    "fieldName": "Họ tên",
+    "fieldPhone": "Điện thoại",
+    "fieldEmail": "Email",
+    "fieldTitle": "Chức danh",
+    "fieldNotes": "Ghi chú",
+    "createSuccess": "Đã đăng ký {name}.",
+    "updateSuccess": "Đã cập nhật {name}.",
+    "retireSuccess": "Đã vô hiệu hóa {name}.",
+    "quickCreate": "Thêm “{name}” vào danh sách NVKD"
   },
   "orders": {
     "title": "Đơn hàng",
@@ -949,7 +967,8 @@
       "cycleDays": "Chu kỳ thay (ngày)",
       "quantity": "Số lượng"
     },
-    "filterConfigHint": "Để trống chu kỳ thay để dùng chu kỳ mặc định của lõi lọc. Thứ tự hiển thị từ trên xuống."
+    "filterConfigHint": "Để trống chu kỳ thay để dùng chu kỳ mặc định của lõi lọc. Thứ tự hiển thị từ trên xuống.",
+    "productType": "Loại sản phẩm"
   },
   "contracts": {
     "title": "Hợp đồng",
@@ -2181,7 +2200,9 @@
         "SystemSetting": "Cấu hình hệ thống",
         "CatalogImport": "Nhập CSV danh mục",
         "Order": "Đơn hàng",
-        "StockMove": "Chuyển kho"
+        "StockMove": "Chuyển kho",
+        "SalesRep": "Nhân viên kinh doanh",
+        "ProductType": "Loại sản phẩm"
       }
     }
   },
@@ -2191,7 +2212,7 @@
       "title": "Danh mục sản phẩm",
       "subtitle": "Dữ liệu gốc cho thương hiệu, loại, model, phụ kiện và vật tư tiêu hao.",
       "tabBrands": "Thương hiệu",
-      "tabCategories": "Loại sản phẩm",
+      "tabCategories": "Nhóm sản phẩm",
       "tabModels": "Model",
       "tabConsumables": "Vật tư tiêu hao",
       "tabAccessories": "Phụ kiện",
@@ -2232,7 +2253,7 @@
       "yes": "Có",
       "no": "Không",
       "addBrand": "Thêm thương hiệu",
-      "addCategory": "Thêm loại",
+      "addCategory": "Thêm nhóm sản phẩm",
       "addModel": "Thêm mẫu",
       "downloadCatalogCsv": "Tải CSV danh mục sản phẩm",
       "uploadCatalogCsv": "Tải lên CSV danh mục",
@@ -2261,7 +2282,7 @@
       "deactivateConfirm": "Ngừng kích hoạt {name}? Lịch sử được giữ lại nhưng không thể dùng tiếp.",
       "deactivateConfirmBulk": "Ngừng kích hoạt {count} mục đã chọn? Lịch sử được giữ lại nhưng không thể dùng tiếp.",
       "editBrand": "Sửa thương hiệu",
-      "editCategory": "Sửa loại",
+      "editCategory": "Sửa nhóm sản phẩm",
       "editModel": "Sửa mẫu",
       "editConsumable": "Sửa vật tư",
       "editAccessory": "Sửa phụ kiện",
@@ -2350,7 +2371,20 @@
       "searchOrAdd": "Tìm hoặc thêm mới…",
       "quickCreateCategory": "Thêm nhóm sản phẩm “{name}”",
       "quickCreateBrand": "Thêm thương hiệu “{name}”",
-      "codeAutoPlaceholder": "Để trống sẽ tự tạo"
+      "codeAutoPlaceholder": "Để trống sẽ tự tạo",
+      "tabProductTypes": "Loại sản phẩm",
+      "addProductType": "Thêm loại sản phẩm",
+      "editProductType": "Sửa loại sản phẩm",
+      "colProductType": "Loại sản phẩm",
+      "colCategories": "Nhóm sản phẩm",
+      "filterByCategory": "Lọc theo nhóm sản phẩm",
+      "productTypeNone": "Không có loại",
+      "productTypeHint": "Chỉ hiện các loại bao gồm tất cả nhóm sản phẩm đã chọn. Khi chọn loại, chỉ được chọn nhóm sản phẩm của loại đó.",
+      "categoriesRequiredHint": "Chọn ít nhất một",
+      "categoriesOptionalHint": "Dùng để phân loại/tìm kiếm — không tự áp dụng cho model",
+      "noCategoriesYet": "Chưa có nhóm sản phẩm. Hãy thêm ở tab Nhóm sản phẩm trước.",
+      "quickCreateProductType": "Thêm loại sản phẩm “{name}”",
+      "typeCategoryInUse": "Vẫn có model thuộc loại này đang dùng nhóm sản phẩm bạn muốn bỏ. Hãy đổi nhóm sản phẩm hoặc loại của các model đó trước."
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

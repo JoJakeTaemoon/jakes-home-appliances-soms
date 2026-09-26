@@ -82,7 +82,10 @@ beforeAll(async () => {
 
   // Only CAT_WITH owns a model of this brand.
   await prisma.equipmentModel.create({
-    data: { modelCode: MODEL_CODE, nameKo: "M", nameVi: "M", nameEn: "M", brandId, categoryId: catWithId },
+    data: {
+      modelCode: MODEL_CODE, nameKo: "M", nameVi: "M", nameEn: "M", brandId,
+      categories: { create: [{ categoryId: catWithId }] },
+    },
   });
 });
 

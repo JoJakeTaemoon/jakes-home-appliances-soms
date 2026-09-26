@@ -4,6 +4,7 @@
  */
 
 import prisma from "@/lib/prisma";
+import { CATEGORY_LINKS_SELECT, flattenCategories } from "@/lib/products/classification";
 import { defineMutation, defineQuery } from "@/lib/api/mutation";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import {
@@ -19,10 +20,11 @@ export const GET = defineQuery({
   query: accessoryListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, modelId, isActive, page, pageSize } = query;
+    const { q, modelId, categoryId, isActive, page, pageSize } = query;
     const where: Prisma.AccessoryWhereInput = {};
     if (typeof isActive === "boolean") where.isActive = isActive;
     if (modelId) where.compatibleModels = { some: { modelId } };
+    if (categoryId) where.categories = { some: { categoryId } };
     if (q) {
       where.OR = [
         { sku: { contains: q, mode: "insensitive" } },
@@ -39,6 +41,7 @@ export const GET = defineQuery({
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
+          ...CATEGORY_LINKS_SELECT,
           compatibleModels: {
             select: {
               modelId: true,
@@ -49,7 +52,14 @@ export const GET = defineQuery({
         },
       }),
     ]);
-    return { rows, pagination: { page, limit: pageSize, total } };
+    // Flatten the 제품군 links: `categories: CategoryLite[]` + bare ids.
+    return {
+      rows: rows.map((r) => {
+        const categories = flattenCategories(r);
+        return { ...r, categories, categoryIds: categories.map((c) => c.id) };
+      }),
+      pagination: { page, limit: pageSize, total },
+    };
   },
 });
 
@@ -79,6 +89,9 @@ export const POST = defineMutation({
           nameVi: body.nameVi,
           nameEn: body.nameEn,
           isMinorPart: body.isMinorPart,
+          categories: body.categoryIds?.length
+            ? { create: body.categoryIds.map((categoryId) => ({ categoryId })) }
+            : undefined,
           retailPrice: body.retailPrice,
           notes: body.notes ?? null,
           isActive: body.isActive,

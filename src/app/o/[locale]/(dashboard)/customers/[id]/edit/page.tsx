@@ -13,11 +13,12 @@ import { Modal } from "@/components/ui/modal";
 import { BackButton } from "@/components/ui/back-button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
+import { SalesRepModal } from "@/app/o/[locale]/(dashboard)/sales-reps/page";
 import { FormField } from "@/components/ui/form-field";
 
 interface SalesRepOption {
   id: string;
-  username: string;
+  name: string;
   title: string | null;
 }
 import {
@@ -70,6 +71,7 @@ export default function EditCustomerPage() {
   const id = params?.id ?? "";
   const t = useTranslations("customers");
   const tc = useTranslations("common");
+  const tRep = useTranslations("salesReps");
   const locale = useLocale() as "vi" | "ko" | "en";
   const router = useRouter();
   const api = useApi();
@@ -85,6 +87,8 @@ export default function EditCustomerPage() {
   const [err, setErr] = useState<string | null>(null);
   const [edits, setEdits] = useState<Partial<CustomerDetail>>({});
   const [phoneEdit, setPhoneEdit] = useState<string | null>(null);
+  // Non-null while the inline 판매원 추가 popup is open.
+  const [newRepName, setNewRepName] = useState<string | null>(null);
   const data = useMemo<CustomerDetail | null>(
     () => (query.data ? { ...query.data, ...edits } : null),
     [query.data, edits],
@@ -291,10 +295,14 @@ export default function EditCustomerPage() {
             onChange={(v) => patch({ salesRepId: (v as string | null) ?? null })}
             options={salesReps.map((r) => ({
               value: r.id,
-              label: r.title ? `${r.username} · ${r.title}` : r.username,
+              label: r.title ? `${r.name} · ${r.title}` : r.name,
             }))}
             placeholder={salesRepsQuery.isLoading ? tc("loading") : t("all")}
             searchable
+            allowClear
+            allowCreate
+            createLabel={(q) => tRep("quickCreate", { name: q })}
+            onCreate={setNewRepName}
           />
         </FormField>
         <FormField label={t("notes")} className="sm:col-span-2">
@@ -305,6 +313,17 @@ export default function EditCustomerPage() {
           />
         </FormField>
       </div>
+      {newRepName !== null && (
+        <SalesRepModal
+          initialName={newRepName}
+          onClose={() => setNewRepName(null)}
+          onSaved={(_name, created) => {
+            setNewRepName(null);
+            if (created) patch({ salesRepId: created.id });
+            void salesRepsQuery.refetch();
+          }}
+        />
+      )}
       {canResetCustomerPassword(user?.role ?? "") && (
         <PortalPasswordCard customerId={id} contacts={data.contacts ?? []} />
       )}

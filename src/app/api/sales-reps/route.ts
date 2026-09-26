@@ -1,23 +1,26 @@
 /**
- * GET /api/sales-reps — list office users that can be designated as a
- * customer's sales rep. Used by:
+ * GET  /api/sales-reps — the 판매원 roster. Used by:
  *   - the customer-list sidebar filter (Combobox)
+ *   - the 담당 판매원 picker on the customer form
  *   - the change-sales-rep modal in customer-detail
  *   - the sales-rep landing page (/o/sales-reps)
+ * POST /api/sales-reps — add a rep (STAFF+, so the picker's inline "+ 추가"
+ *   works for whoever is entering the customer).
  *
- * Policy (2026-06-26): every active office user (ADMIN / MANAGER /
- * STAFF) is a candidate. TECHNICIAN is excluded — they're field
- * technicians, never the customer's sales contact. The legacy
- * `User.isSalesRep` toggle is ignored here so the picker reflects the
- * full office roster automatically.
+ * Policy (2026-09-25): a rep is a row in `SalesRep`, not a `User`. Most reps
+ * never log in, and hanging the roster off office accounts put every staff
+ * member in the picker whether they sell or not. Deactivated reps stay out of
+ * the list but keep naming who sold a past customer.
  *
- * Each row carries a `stats` block (this-month counts + receivables)
+ * Each row carries a `stats` block (counts + 30-day revenue + receivables)
  * so the landing page can render numeric cards without N round-trips.
- * Computed in a single groupBy per metric.
  */
 
 import prisma from "@/lib/prisma";
-import { defineQuery } from "@/lib/api/mutation";
+import { defineMutation, defineQuery } from "@/lib/api/mutation";
+import { createSalesRepSchema } from "@/lib/validators/salesRep";
+import { ForbiddenError } from "@/lib/api/error";
+import { isOfficeRole } from "@/lib/auth/roles";
 import { z } from "zod";
 
 export const GET = defineQuery({
@@ -25,21 +28,23 @@ export const GET = defineQuery({
   authorize: () => {
     /* All staff can read the sales-rep roster (used in filters). */
   },
-  query: z.object({}),
-  handler: async () => {
-    const reps = await prisma.user.findMany({
-      where: {
-        role: { in: ["ADMIN", "MANAGER", "STAFF"] },
-        status: "ACTIVE",
-      },
+  query: z.object({
+    /** `true` also returns deactivated reps — the roster screen wants them. */
+    includeInactive: z.coerce.boolean().optional(),
+  }),
+  handler: async ({ query }) => {
+    const reps = await prisma.salesRep.findMany({
+      where: query.includeInactive ? {} : { isActive: true },
       select: {
         id: true,
-        username: true,
+        name: true,
+        phone: true,
+        email: true,
         title: true,
-        avatarUrl: true,
-        role: true,
+        notes: true,
+        isActive: true,
       },
-      orderBy: { username: "asc" },
+      orderBy: { name: "asc" },
     });
     if (reps.length === 0) return [];
 
@@ -149,5 +154,31 @@ export const GET = defineQuery({
         receivables: receivablesByRep.get(r.id) ?? 0,
       },
     }));
+  },
+});
+
+export const POST = defineMutation({
+  audience: "staff",
+  authorize: (auth) => {
+    // Any office role — whoever registers the customer may need to add the
+    // rep in the same breath. Editing and retiring are MANAGER+ (see [id]).
+    if (!isOfficeRole(auth.role)) throw new ForbiddenError("Office role required");
+  },
+  body: createSalesRepSchema,
+  successStatus: 201,
+  handler: async ({ body }) =>
+    prisma.salesRep.create({
+      data: {
+        name: body.name,
+        phone: body.phone ?? null,
+        email: body.email ?? null,
+        title: body.title ?? null,
+        notes: body.notes ?? null,
+      },
+    }),
+  audit: {
+    action: "SALES_REP_CREATE",
+    entityType: "SalesRep",
+    after: (r) => r,
   },
 });

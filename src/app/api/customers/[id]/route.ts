@@ -72,7 +72,7 @@ export const GET = defineQuery({
         },
         contracts: { orderBy: { createdAt: "desc" }, take: 10 },
         salesRep: {
-          select: { id: true, username: true, title: true, avatarUrl: true },
+          select: { id: true, name: true, title: true },
         },
         // contracts/equipment above are capped (take: 10 / status filter) for
         // display — _count gives the true totals for the summary counters.

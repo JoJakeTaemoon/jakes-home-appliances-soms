@@ -27,6 +27,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { SectionBadge } from "@/components/ui/section-badge";
 import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiCombobox } from "@/components/ui/multi-combobox";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RecordWorkspace } from "@/components/ui/record-workspace";
@@ -40,7 +41,7 @@ import {
   CategoryQuickCreateModal,
 } from "@/components/products/catalog-quick-create";
 
-type Tab = "brands" | "categories" | "models" | "consumables" | "accessories" | "charges";
+type Tab = "brands" | "categories" | "productTypes" | "models" | "consumables" | "accessories" | "charges";
 
 /** Returns the row's display name in the current UI locale, with fallbacks. */
 function pickLocaleName(
@@ -70,14 +71,57 @@ interface CategoryRow {
   isActive: boolean;
 }
 
+/** A 제품군 as the list APIs flatten it onto models, types and parts. */
+interface CategoryLite {
+  id: string;
+  code: string;
+  nameKo: string;
+  nameVi: string;
+  nameEn: string;
+}
+
+interface ProductTypeRow extends CategoryRow {
+  /** One or more 제품군. */
+  categoryIds: string[];
+  categories: CategoryLite[];
+  _count?: { models: number };
+}
+
+/**
+ * 제품군 filter options for a parts list — the 제품군 its rows actually carry,
+ * so the dropdown never offers a choice that empties the table.
+ */
+function categoryFilterOptions(
+  rows: readonly { categories?: CategoryLite[] }[],
+  locale: string,
+): { value: string; label: string; description?: string }[] {
+  const seen = new Map<string, CategoryLite>();
+  for (const r of rows) for (const c of r.categories ?? []) seen.set(c.id, c);
+  return [...seen.values()]
+    .map((c) => ({
+      value: c.id,
+      label: pickCategoryName(c, locale),
+      description: categoryAltNames(c, locale),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** "정수기 · 냉온정수기" in the viewer's language, or "—". */
+function categoryNames(cats: readonly CategoryLite[] | undefined, locale: string): string {
+  return (cats ?? []).map((c) => pickCategoryName(c, locale)).join(" · ") || "—";
+}
+
 interface ModelRow {
   id: string;
   modelCode: string | null;
   nameKo: string | null;
   nameVi: string | null;
   nameEn: string | null;
-  categoryId: string | null;
-  productCategory: { id: string; nameKo: string; nameVi: string; nameEn: string } | null;
+  /** 제품군 — one or more. */
+  categoryIds: string[];
+  categories: CategoryLite[];
+  productTypeId: string | null;
+  productType: CategoryLite | null;
   isActive: boolean;
   brand: { id: string; name: string } | null;
   stockOnHand?: number;
@@ -107,10 +151,11 @@ interface ConsumableRow {
   spec?: string | null;
   mainUse?: string | null;
   notes?: string | null;
-  categoryId?: string | null;
+  /** 제품군 — zero or more, search only. */
+  categoryIds?: string[];
+  categories?: CategoryLite[];
   brandId?: string | null;
   brand?: { id: string; name: string } | null;
-  productCategory?: { id: string; nameKo: string; nameVi: string; nameEn: string } | null;
   isActive: boolean;
   compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
@@ -124,6 +169,9 @@ interface AccessoryRow {
   isMinorPart: boolean;
   retailPrice: string;
   isActive: boolean;
+  /** 제품군 — zero or more, search only. */
+  categoryIds?: string[];
+  categories?: CategoryLite[];
   compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
 
@@ -301,7 +349,7 @@ export default function ProductCatalogPage() {
 
       <nav className="flex flex-wrap gap-1 border-b border-border">
         {(
-          ["brands", "categories", "models", "consumables", "accessories", "charges"] as Tab[]
+          ["brands", "categories", "productTypes", "models", "consumables", "accessories", "charges"] as Tab[]
         ).map((key) => {
           const isActive = tab === key;
           return (
@@ -325,6 +373,7 @@ export default function ProductCatalogPage() {
 
       {tab === "brands" && <BrandsTab api={api} t={t} />}
       {tab === "categories" && <CategoriesTab api={api} t={t} />}
+      {tab === "productTypes" && <ProductTypesTab api={api} t={t} />}
       {tab === "models" && <ModelsTab api={api} t={t} canManage={allowed} onExportExcel={() => downloadCatalog("xlsx")} />}
       {tab === "consumables" && (
         <ConsumablesTab api={api} t={t} canManage={allowed} onExportExcel={() => downloadCatalog("xlsx")} />
@@ -338,6 +387,7 @@ export default function ProductCatalogPage() {
 const TAB_LABEL_KEYS: Record<Tab, string> = {
   brands: "tabBrands",
   categories: "tabCategories",
+  productTypes: "tabProductTypes",
   models: "tabModels",
   consumables: "tabConsumables",
   accessories: "tabAccessories",
@@ -969,6 +1019,265 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// Product types (제품 유형)
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * 제품 유형 — a finer cut under 제품군 (정수기 → 냉온정수기 / 직수형). Each
+ * type holds one or more 제품군; a model filed under a type may only carry
+ * that type's 제품군, so the server refuses to drop a 제품군 a model still
+ * uses (409, surfaced verbatim).
+ */
+function ProductTypesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
+  const locale = useLocale();
+  const [categories, addCategory] = useCategoryOptions(api);
+  const [rows, setRows] = useState<ProductTypeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<ProductTypeRow | null>(null);
+  const [deleting, setDeleting] = useState<ProductTypeRow | null>(null);
+  const EMPTY_FORM = { code: "", nameKo: "", nameVi: "", nameEn: "", categoryIds: [] as string[] };
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [error, setError] = useState<string | null>(null);
+  const { sort, onClick } = useSort<"code" | "name" | "categories" | "isActive">("code");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<ProductTypeRow[]>("/api/admin/products/product-types?pageSize=200");
+      setRows(res.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  async function submitCreate() {
+    setError(null);
+    try {
+      // Blank code → the route mints one from the name.
+      await api.post("/api/admin/products/product-types", {
+        ...form,
+        code: form.code.trim() || undefined,
+      });
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      await load();
+    } catch (err) {
+      setError(apiErrorText(err, t("errorGeneric")));
+    }
+  }
+
+  const sorted = useMemo(
+    () =>
+      sortRows(rows, sort, {
+        code: (r) => r.code,
+        name: (r) => pickLocaleName(r, locale),
+        categories: (r) => categoryNames(r.categories, locale),
+        isActive: (r) => r.isActive,
+      }),
+    [rows, sort, locale],
+  );
+
+  return (
+    <section className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowForm((s) => !s)}>+ {t("addProductType")}</Button>
+      </div>
+      {showForm && (
+        <div className="border border-border p-4 space-y-3">
+          <FormField label={t("colNameKo")} required>
+            <Input value={form.nameKo} onChange={(e) => setForm({ ...form, nameKo: e.target.value })} />
+          </FormField>
+          <FormField label={t("colNameVi")} required>
+            <Input value={form.nameVi} onChange={(e) => setForm({ ...form, nameVi: e.target.value })} />
+          </FormField>
+          <FormField label={t("colNameEn")} required>
+            <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
+          </FormField>
+          <FormField label={t("colCategories")} required>
+            <PartCategoryField
+              t={t}
+              categories={categories}
+              onCategoryCreated={addCategory}
+              values={form.categoryIds}
+              onChange={(ids) => setForm((f) => ({ ...f, categoryIds: ids }))}
+              placeholder={t("categoriesRequiredHint")}
+            />
+          </FormField>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <FormField label={t("colCode")} className="flex-1">
+              <Input
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                placeholder={t("codeAutoPlaceholder")}
+              />
+            </FormField>
+            <div className="flex shrink-0 gap-2">
+              <Button onClick={submitCreate} disabled={form.categoryIds.length === 0}>{t("save")}</Button>
+              <Button variant="ghost" onClick={() => setShowForm(false)}>{t("cancel")}</Button>
+            </div>
+          </div>
+          {error && <div className="text-red-600 text-sm">{error}</div>}
+        </div>
+      )}
+      <table className="w-full border border-border">
+        <thead className="bg-muted">
+          <tr>
+            <SortableTh column="code" sort={sort} onClick={onClick}>{t("colCode")}</SortableTh>
+            <SortableTh column="name" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
+            <SortableTh column="categories" sort={sort} onClick={onClick}>{t("colCategories")}</SortableTh>
+            <SortableTh column="isActive" sort={sort} onClick={onClick}>{t("colActive")}</SortableTh>
+            <th className="p-2 border-b border-border text-right">{t("colActions")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr><td colSpan={5} className="p-4 text-center">...</td></tr>
+          ) : sorted.length === 0 ? (
+            <tr><td colSpan={5} className="p-4 text-center text-gray-500">—</td></tr>
+          ) : (
+            sorted.map((r) => (
+              <tr key={r.id} className="border-b border-border">
+                <td className="p-2 font-mono text-sm">{r.code}</td>
+                <td className="p-2">{pickLocaleName(r, locale)}</td>
+                <td className="p-2 text-sm text-[#586a7c]">{categoryNames(r.categories, locale)}</td>
+                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                <td className="p-2 text-right">
+                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+      {editing && (
+        <ProductTypeEditModal
+          api={api}
+          t={t}
+          row={editing}
+          categories={categories}
+          onCategoryCreated={addCategory}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); void load(); }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          open
+          title={t("deactivate")}
+          message={t("deactivateConfirm", { name: pickLocaleName(deleting, locale) || deleting.code })}
+          confirmLabel={t("deactivate")}
+          cancelLabel={t("cancel")}
+          variant="danger"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            try {
+              await api.del(`/api/admin/products/product-types/${deleting.id}`);
+            } catch (err) {
+              alert(apiErrorText(err, t("errorGeneric")));
+            } finally {
+              setDeleting(null);
+              await load();
+            }
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function ProductTypeEditModal({
+  api, t, row, categories, onCategoryCreated, onClose, onSaved,
+}: Readonly<{
+  api: ApiClient;
+  t: Translate;
+  row: ProductTypeRow;
+  categories: CategoryLite[];
+  onCategoryCreated: (row: CategoryLite) => void;
+  onClose: () => void;
+  onSaved: () => void;
+}>) {
+  const [nameKo, setNameKo] = useState(row.nameKo);
+  const [nameVi, setNameVi] = useState(row.nameVi);
+  const [nameEn, setNameEn] = useState(row.nameEn);
+  const [categoryIds, setCategoryIds] = useState<string[]>(row.categoryIds);
+  const [sortOrder, setSortOrder] = useState(row.sortOrder);
+  const [isActive, setIsActive] = useState(row.isActive);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  async function save() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.patch(`/api/admin/products/product-types/${row.id}`, {
+        nameKo, nameVi, nameEn, categoryIds, sortOrder, isActive,
+      });
+      onSaved();
+    } catch (e) {
+      // A 409 here means a model of this type still uses a 제품군 being removed.
+      setErr(
+        e instanceof ApiClientError && e.status === 409
+          ? t("typeCategoryInUse")
+          : apiErrorText(e, t("errorGeneric")),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={t("editProductType")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
+          <Button onClick={save} isLoading={busy} disabled={categoryIds.length === 0}>{t("save")}</Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormField label={t("colCode")}>
+            <Input value={row.code} disabled />
+          </FormField>
+          <FormField label={t("colSortOrder")}>
+            <NumberInput value={sortOrder} onChange={setSortOrder} min={0} />
+          </FormField>
+        </div>
+        <FormField label={t("colNameKo")} required>
+          <Input value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameVi")} required>
+          <Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} />
+        </FormField>
+        <FormField label={t("colNameEn")} required>
+          <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+        </FormField>
+        <FormField label={t("colCategories")} required>
+          <PartCategoryField
+            t={t}
+            categories={categories}
+            onCategoryCreated={onCategoryCreated}
+            values={categoryIds}
+            onChange={setCategoryIds}
+            placeholder={t("categoriesRequiredHint")}
+          />
+        </FormField>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          {t("statusActive")}
+        </label>
+      </div>
+      {err && <div className="mt-3 text-red-600 text-sm">{err}</div>}
+    </Modal>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // Models
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -1016,7 +1325,7 @@ function ModelsTab({
     if (!q) return rows;
     return rows.filter((r) =>
       foldDiacritics(
-        `${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${pickCategoryName(r.productCategory, locale)}`,
+        `${r.nameKo ?? ""} ${r.nameVi ?? ""} ${r.nameEn ?? ""} ${r.brand?.name ?? ""} ${categoryNames(r.categories, locale)} ${r.productType ? pickCategoryName(r.productType, locale) : ""}`,
       ).includes(q),
     );
   }, [rows, search, locale]);
@@ -1026,7 +1335,7 @@ function ModelsTab({
       sortRows(filtered, sort, {
         name: (r) => pickModelName(r, locale),
         brand: (r) => r.brand?.name ?? "",
-        category: (r) => pickCategoryName(r.productCategory, locale),
+        category: (r) => categoryNames(r.categories, locale),
         isActive: (r) => r.isActive,
       }),
     [filtered, sort, locale],
@@ -1104,7 +1413,8 @@ function ModelsTab({
               nameVi: selected.nameVi ?? "",
               nameEn: selected.nameEn ?? "",
               brandId: selected.brand?.id ?? null,
-              categoryId: selected.categoryId ?? null,
+              categoryIds: selected.categoryIds ?? [],
+              productTypeId: selected.productTypeId ?? null,
               isActive: selected.isActive,
               stockOnHand: selected.stockOnHand ?? 0,
               safetyStock: s(selected.safetyStock),
@@ -1155,6 +1465,7 @@ function ModelsTab({
               <th className="px-2 py-1.5 text-left">#</th>
               <th className="px-2 py-1.5 text-left">{t("colName")}</th>
               <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+              <th className="whitespace-nowrap px-2 py-1.5 text-left">{t("colProductType")}</th>
               <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
               <th className="px-2 py-1.5 text-right">{t("stockOnHand")}</th>
               <th className="px-2 py-1.5 text-right">{t("consumerPrice")}</th>
@@ -1164,10 +1475,10 @@ function ModelsTab({
           </thead>
           <tbody className="divide-y divide-[#f0f0f0]">
             {loading && (
-              <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>
+              <tr><td colSpan={10} className="p-4 text-center text-[#737373]">…</td></tr>
             )}
             {!loading && sorted.length === 0 && (
-              <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
+              <tr><td colSpan={10} className="p-4 text-center text-[#737373]">{t("noModels")}</td></tr>
             )}
             {!loading &&
               sorted.map((r, i) => {
@@ -1197,7 +1508,8 @@ function ModelsTab({
                     </td>
                     <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
                     <td className="px-2 py-1.5 font-medium text-[#111]">{pickModelName(r, locale)}</td>
-                    <td className="px-2 py-1.5 text-[#586a7c]">{pickCategoryName(r.productCategory, locale)}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{categoryNames(r.categories, locale)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 text-[#586a7c]">{r.productType ? pickCategoryName(r.productType, locale) : "—"}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
                     <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                       {(r.stockOnHand ?? 0).toLocaleString()}
@@ -1297,6 +1609,74 @@ function useBrandOptions(api: ApiClient): [BrandRow[], (row: BrandRow) => void] 
   return [brands, add];
 }
 
+/** Active 제품군, plus an adder for rows created inline. */
+function useCategoryOptions(api: ApiClient): [CategoryLite[], (row: CategoryLite) => void] {
+  const [categories, setCategories] = useState<CategoryLite[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const res = await api.get<CategoryLite[]>("/api/admin/products/categories?pageSize=200&isActive=true");
+      setCategories(res.data);
+    })();
+  }, [api]);
+  const add = useCallback((row: CategoryLite) => setCategories((prev) => [...prev, row]), []);
+  return [categories, add];
+}
+
+/**
+ * 제품군 picker for a part (소모품 / 부속품): zero or more, searchable, with an
+ * inline 「+ 추가」 that creates the 제품군 and selects it. Classification only
+ * — it never applies the part to that 제품군's models.
+ */
+function PartCategoryField({
+  t,
+  categories,
+  onCategoryCreated,
+  values,
+  onChange,
+  placeholder,
+}: Readonly<{
+  t: Translate;
+  categories: CategoryLite[];
+  onCategoryCreated: (row: CategoryLite) => void;
+  values: string[];
+  onChange: (ids: string[]) => void;
+  /** Defaults to the "search only, never auto-applied" hint used for parts. */
+  placeholder?: string;
+}>) {
+  const locale = useLocale();
+  const [newName, setNewName] = useState<string | null>(null);
+  return (
+    <>
+      <MultiCombobox
+        values={values}
+        onChange={onChange}
+        options={categories.map((c) => ({
+          value: c.id,
+          label: pickCategoryName(c, locale),
+          description: categoryAltNames(c, locale),
+        }))}
+        placeholder={placeholder ?? t("categoriesOptionalHint")}
+        searchPlaceholder={t("searchOrAdd")}
+        allowCreate
+        createLabel={(q) => t("quickCreateCategory", { name: q })}
+        onCreate={setNewName}
+        ariaLabel={t("colCategory")}
+      />
+      {newName !== null && (
+        <CategoryQuickCreateModal
+          initialName={newName}
+          onClose={() => setNewName(null)}
+          onCreated={(row) => {
+            onCategoryCreated(row);
+            onChange([...values, row.id]);
+            setNewName(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Consumables
 // ───────────────────────────────────────────────────────────────────────────
@@ -1347,11 +1727,20 @@ function ConsumablesTab({
     saved(selected ? data.find((r) => r.id === selected.id) ?? null : null);
   }, [fetchRows, saved, selected]);
 
+  // 제품군 filter — a search aid over the parts' own classification.
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const filterOptions = useMemo(() => categoryFilterOptions(rows, locale), [rows, locale]);
+
   const filtered = useMemo(() => {
     const q = foldDiacritics(search.trim());
-    if (!q) return rows;
-    return rows.filter((r) => foldDiacritics(`${r.sku} ${r.nameKo} ${r.nameVi} ${r.nameEn} ${r.spec ?? ""}`).includes(q));
-  }, [rows, search]);
+    return rows.filter((r) => {
+      if (categoryFilter && !(r.categoryIds ?? []).includes(categoryFilter)) return false;
+      if (!q) return true;
+      return foldDiacritics(
+        `${r.sku} ${r.nameKo} ${r.nameVi} ${r.nameEn} ${r.spec ?? ""} ${categoryNames(r.categories, locale)}`,
+      ).includes(q);
+    });
+  }, [rows, search, categoryFilter, locale]);
 
   const sorted = useMemo(
     () =>
@@ -1426,6 +1815,19 @@ function ConsumablesTab({
           </div>
         </div>
         <div className="flex items-end gap-2">
+          <div className="w-44 shrink-0">
+            <FormField label={t("filterByCategory")}>
+              <Combobox
+                value={categoryFilter}
+                onChange={(v) => setCategoryFilter(v || null)}
+                options={filterOptions}
+                placeholder={t("filterAll")}
+                searchable
+                allowClear
+                ariaLabel={t("filterByCategory")}
+              />
+            </FormField>
+          </div>
           <div className="flex-1">
             <FormField label={`${t("searchDataLabel")} [F10]`}>
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("searchFilters")} data-catalog-search />
@@ -1461,7 +1863,7 @@ function ConsumablesTab({
               sorted.map((r, i) => {
                 const low = (r.stockOnHand ?? 0) < (r.safetyStock ?? 0);
                 const isSel = selected?.id === r.id;
-                const catName = r.productCategory ? pickLocaleName(r.productCategory, locale) : "—";
+                const catName = categoryNames(r.categories, locale);
                 return (
                   <tr
                     key={r.id}
@@ -1564,7 +1966,8 @@ function ConsumableForm({
   const [nameKo, setNameKo] = useState(row?.nameKo ?? "");
   const [nameVi, setNameVi] = useState(row?.nameVi ?? "");
   const [nameEn, setNameEn] = useState(row?.nameEn ?? "");
-  const [categoryId, setCategoryId] = useState<string | null>(row?.categoryId ?? null);
+  // 제품군 — zero or more; classification only (never applied to models).
+  const [categoryIds, setCategoryIds] = useState<string[]>(row?.categoryIds ?? []);
   const [brandId, setBrandId] = useState<string | null>(row?.brandId ?? null);
   const [spec, setSpec] = useState(row?.spec ?? "");
   const [mainUse, setMainUse] = useState(row?.mainUse ?? "");
@@ -1614,8 +2017,10 @@ function ConsumableForm({
     })();
   }, [api]);
 
-  const category = categories.find((x) => x.id === categoryId);
-  const categoryName = category ? pickLocaleName(category, locale) : "";
+  const categoryName = categories
+    .filter((x) => categoryIds.includes(x.id))
+    .map((x) => pickLocaleName(x, locale))
+    .join(" · ");
   const brandName = brands.find((b) => b.id === brandId)?.name ?? "";
   const replaceView = replaceEveryDays
     ? `${replaceEveryDays} ${replaceCycleUnit === "DAY" ? t("cycleUnitDay") : t("cycleUnitMonth")}`
@@ -1652,7 +2057,7 @@ function ConsumableForm({
         .map((a) => ({ modelId: a.modelId, quantity: a.quantity ? Number(a.quantity) : 1 }));
       const payload = {
         nameKo, nameVi, nameEn,
-        categoryId, brandId,
+        categoryIds, brandId,
         spec: spec || undefined,
         mainUse: mainUse || undefined,
         notes: notes || undefined,
@@ -1733,19 +2138,20 @@ function ConsumableForm({
               />
             </ModeField>
             <ModeField label={t("colCategory")} mode={mode} value={categoryName}>
-              <Combobox
-                value={categoryId}
-                onChange={(v) => setCategoryId(v || null)}
+              <MultiCombobox
+                values={categoryIds}
+                onChange={setCategoryIds}
                 options={categories.map((c) => ({
                   value: c.id,
                   label: pickLocaleName(c, locale),
                   description: categoryAltNames(c, locale),
                 }))}
-                searchable searchPlaceholder={t("searchOrAdd")}
+                placeholder={t("categoriesOptionalHint")}
+                searchPlaceholder={t("searchOrAdd")}
                 allowCreate
                 createLabel={(q) => t("quickCreateCategory", { name: q })}
                 onCreate={setNewCategoryName}
-                allowClear ariaLabel={t("colCategory")}
+                ariaLabel={t("colCategory")}
               />
             </ModeField>
             <ModeField label={t("colBrand")} mode={mode} value={brandName}>
@@ -1880,7 +2286,7 @@ function ConsumableForm({
                     <tr key={a.uid}>
                       <td className="px-2 py-1.5 text-[#737373]">{idx + 1}</td>
                       <td className="px-2 py-1.5 font-medium text-[#111]">{m ? pickModelName(m, locale) : "—"}</td>
-                      <td className="px-2 py-1.5 text-[#586a7c]">{pickCategoryName(m?.productCategory, locale)}</td>
+                      <td className="px-2 py-1.5 text-[#586a7c]">{categoryNames(m?.categories, locale)}</td>
                       <td className="px-2 py-1.5 text-[#586a7c]">{m?.brand?.name ?? "—"}</td>
                       {isView ? (
                         <td className="px-2 py-1.5 text-right tabular-nums text-[#111]">{a.quantity || "1"}</td>
@@ -1924,7 +2330,7 @@ function ConsumableForm({
           onClose={() => setNewCategoryName(null)}
           onCreated={(created) => {
             setCategories((prev) => [...prev, created]);
-            setCategoryId(created.id);
+            setCategoryIds((prev) => [...prev, created.id]);
             setNewCategoryName(null);
           }}
         />
@@ -1952,6 +2358,8 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const locale = useLocale();
   const models = useModelOptions(api);
   const [brands] = useBrandOptions(api);
+  const [categories, addCategory] = useCategoryOptions(api);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1967,6 +2375,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     isMinorPart: false,
     retailPrice: 0,
     compatibleModelIds: [] as string[],
+    categoryIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"sku" | "nameVi" | "isMinorPart" | "retailPrice" | "isActive">("sku");
@@ -1995,9 +2404,10 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         isMinorPart: form.isMinorPart,
         retailPrice: form.retailPrice,
         compatibleModels: form.compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
+        categoryIds: form.categoryIds,
       });
       setShowForm(false);
-      setForm({ sku: "", nameKo: "", nameVi: "", nameEn: "", isMinorPart: false, retailPrice: 0, compatibleModelIds: [] });
+      setForm({ sku: "", nameKo: "", nameVi: "", nameEn: "", isMinorPart: false, retailPrice: 0, compatibleModelIds: [], categoryIds: [] });
       await load();
     } catch (err) {
       setError(apiErrorText(err, t("errorGeneric")));
@@ -2014,11 +2424,13 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
+      if (categoryFilter && !(r.categoryIds ?? []).includes(categoryFilter)) return false;
       if (modelFilter && !r.compatibleModels.some((cm) => cm.modelId === modelFilter)) return false;
       if (brandFilter && !r.compatibleModels.some((cm) => modelToBrand.get(cm.modelId) === brandFilter)) return false;
       return true;
     });
-  }, [rows, brandFilter, modelFilter, modelToBrand]);
+  }, [rows, brandFilter, modelFilter, categoryFilter, modelToBrand]);
+  const filterOptions = useMemo(() => categoryFilterOptions(rows, locale), [rows, locale]);
 
   const modelDropdownOptions = useMemo(
     () =>
@@ -2044,6 +2456,19 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-wrap items-end gap-2">
+          <div className="w-56">
+            <FormField label={t("filterByCategory")}>
+              <Combobox
+                value={categoryFilter}
+                onChange={(v) => setCategoryFilter(v || null)}
+                options={filterOptions}
+                placeholder={t("filterAll")}
+                searchable
+                allowClear
+                ariaLabel={t("filterByCategory")}
+              />
+            </FormField>
+          </div>
           <div className="w-56">
             <FormField label={t("filterByBrand")}>
               <Combobox
@@ -2114,6 +2539,15 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               </label>
             </FormField>
           </div>
+          <FormField label={t("colCategory")}>
+            <PartCategoryField
+              t={t}
+              categories={categories}
+              onCategoryCreated={addCategory}
+              values={form.categoryIds}
+              onChange={(ids) => setForm((f) => ({ ...f, categoryIds: ids }))}
+            />
+          </FormField>
           <FormField label={t("colCompatibility")}>
             <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
           </FormField>
@@ -2129,6 +2563,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           <tr>
             <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
             <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
+            <th className="min-w-[7rem] whitespace-nowrap p-2 border-b border-border">{t("colCategory")}</th>
             <SortableTh column="isMinorPart" sort={sort} onClick={onClick} align="center">{t("colMinorPart")}</SortableTh>
             <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
             <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
@@ -2138,12 +2573,13 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={7} className="p-4 text-center">...</td></tr>
+            <tr><td colSpan={8} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
                 <td className="p-2">{pickLocaleName(r, locale)}</td>
+                <td className="min-w-[7rem] p-2 text-xs">{categoryNames(r.categories, locale)}</td>
                 <td className="p-2 text-center">{r.isMinorPart ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
                 <td className="p-2 text-xs">{r.compatibleModels.map((m) => pickModelName(m.model, locale)).join(", ") || "—"}</td>
@@ -2162,6 +2598,8 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           t={t}
           row={editing}
           models={models}
+          categories={categories}
+          onCategoryCreated={addCategory}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
         />
@@ -2192,8 +2630,17 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 }
 
 function AccessoryEditModal({
-  api, t, row, models, onClose, onSaved,
-}: Readonly<{ api: ApiClient; t: Translate; row: AccessoryRow; models: ModelRow[]; onClose: () => void; onSaved: () => void }>) {
+  api, t, row, models, categories, onCategoryCreated, onClose, onSaved,
+}: Readonly<{
+  api: ApiClient;
+  t: Translate;
+  row: AccessoryRow;
+  models: ModelRow[];
+  categories: CategoryLite[];
+  onCategoryCreated: (row: CategoryLite) => void;
+  onClose: () => void;
+  onSaved: () => void;
+}>) {
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
@@ -2201,6 +2648,7 @@ function AccessoryEditModal({
   const [retailPrice, setRetailPrice] = useState(Number(row.retailPrice));
   const [isActive, setIsActive] = useState(row.isActive);
   const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
+  const [categoryIds, setCategoryIds] = useState<string[]>(row.categoryIds ?? []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function save() {
@@ -2213,10 +2661,11 @@ function AccessoryEditModal({
         retailPrice,
         isActive,
         compatibleModels: compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
+        categoryIds,
       });
       onSaved();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t("errorGeneric"));
+      setErr(apiErrorText(e, t("errorGeneric")));
     } finally {
       setBusy(false);
     }
@@ -2241,7 +2690,7 @@ function AccessoryEditModal({
           <FormField label={t("colNameVi")} required><Input value={nameVi} onChange={(e) => setNameVi(e.target.value)} /></FormField>
           <FormField label={t("colNameEn")} required><Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} /></FormField>
           <FormField label={t("colRetailPrice")} required>
-            <Input type="number" value={retailPrice} onChange={(e) => setRetailPrice(Number(e.target.value))} />
+            <NumberInput variant="money" min={0} value={retailPrice} onChange={setRetailPrice} />
           </FormField>
           <FormField label={t("colMinorPart")}>
             <label className="inline-flex items-center gap-2 mt-2">
@@ -2250,6 +2699,15 @@ function AccessoryEditModal({
             </label>
           </FormField>
         </div>
+        <FormField label={t("colCategory")}>
+          <PartCategoryField
+            t={t}
+            categories={categories}
+            onCategoryCreated={onCategoryCreated}
+            values={categoryIds}
+            onChange={setCategoryIds}
+          />
+        </FormField>
         <FormField label={t("colCompatibility")}>
           <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />
         </FormField>

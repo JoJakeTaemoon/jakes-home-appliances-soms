@@ -40,7 +40,7 @@ interface Props {
   minDropdownWidth?: number;
 }
 
-interface Coords {
+export interface Coords {
   top: number;
   left: number;
   width: number;
@@ -147,8 +147,11 @@ export function Combobox({
       if (dropdownRef.current?.contains(target)) return;
       setOpen(false);
     };
-    // Escape closes the dropdown and is swallowed here, so a global Esc hotkey
-    // (ActionBar 닫기) can't also fire and reset the form behind it.
+    // Escape closes the dropdown and is swallowed here, so neither a global
+    // Esc hotkey (ActionBar 닫기) nor a surrounding Modal also fires. Listening
+    // on `window` in the CAPTURE phase is what makes that true: the Modal's own
+    // Esc listener sits on `document` and, being registered first, used to run
+    // before this one and close the whole dialog.
     const keyHandler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
@@ -157,10 +160,10 @@ export function Combobox({
       }
     };
     document.addEventListener("mousedown", handler);
-    document.addEventListener("keydown", keyHandler);
+    window.addEventListener("keydown", keyHandler, true);
     return () => {
       document.removeEventListener("mousedown", handler);
-      document.removeEventListener("keydown", keyHandler);
+      window.removeEventListener("keydown", keyHandler, true);
     };
   }, [open]);
 
@@ -302,14 +305,14 @@ export function Combobox({
   );
 }
 
-interface PortalPanelProps {
+export interface PortalPanelProps {
   coords: Coords;
   minWidth: number;
   panelRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
 }
 
-function PortalPanel({ coords, minWidth, panelRef, children }: Readonly<PortalPanelProps>) {
+export function PortalPanel({ coords, minWidth, panelRef, children }: Readonly<PortalPanelProps>) {
   // Clamp horizontally so the panel stays in the viewport even when the
   // trigger sits near the right edge.
   const viewportW = typeof globalThis.window === "undefined" ? 1024 : globalThis.window.innerWidth;

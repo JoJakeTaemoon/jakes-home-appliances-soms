@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiCombobox } from "@/components/ui/multi-combobox";
 import { FormField } from "@/components/ui/form-field";
 import { ModeField } from "@/components/ui/mode-field";
 import { SectionBadge } from "@/components/ui/section-badge";
@@ -16,8 +17,10 @@ import { StockAdjustModal } from "@/components/inventory/stock-adjust-modal";
 import {
   BrandQuickCreateModal,
   CategoryQuickCreateModal,
+  ProductTypeQuickCreateModal,
   type CreatedBrand,
   type CreatedCategory,
+  type CreatedProductType,
 } from "@/components/products/catalog-quick-create";
 import { categoryAltNames, pickCategoryName } from "@/lib/products/name";
 import type { RecordMode } from "@/lib/hooks/use-record-mode";
@@ -43,7 +46,10 @@ interface ModelInput {
   nameVi: string;
   nameEn: string;
   brandId: string | null;
-  categoryId: string | null;
+  /** 제품군 — one or more (2026-09-26). */
+  categoryIds: string[];
+  /** 제품 유형 — optional; when set, every 제품군 must be one of its. */
+  productTypeId: string | null;
   description: string;
   retailPrice: string;
   salePrice: string;
@@ -81,9 +87,14 @@ interface BrandOpt {
 
 interface CategoryOpt {
   id: string;
+  code: string;
   nameKo: string;
   nameVi: string;
   nameEn: string;
+}
+
+interface TypeOpt extends CategoryOpt {
+  categoryIds: string[];
 }
 
 interface ConsumableOpt {
@@ -93,6 +104,8 @@ interface ConsumableOpt {
   nameVi: string;
   nameEn: string;
   replaceEveryDays: number | null;
+  /** The part's own 제품군 — shown and searchable in the picker, never auto-applied. */
+  categories?: { id: string; nameKo: string; nameVi: string; nameEn: string }[];
 }
 
 const EMPTY: ModelInput = {
@@ -100,7 +113,8 @@ const EMPTY: ModelInput = {
   nameVi: "",
   nameEn: "",
   brandId: null,
-  categoryId: null,
+  categoryIds: [],
+  productTypeId: null,
   description: "",
   retailPrice: "",
   salePrice: "",
@@ -143,9 +157,11 @@ export function EquipmentModelForm({
   const [err, setErr] = useState<string | null>(null);
   const [brands, setBrands] = useState<BrandOpt[]>([]);
   const [categories, setCategories] = useState<CategoryOpt[]>([]);
-  // Non-null while the inline "add a 제품군 / 브랜드" popup is open; holds
-  // the text the user typed into the combobox so the popup can prefill it.
+  const [types, setTypes] = useState<TypeOpt[]>([]);
+  // Non-null while the inline "add a 제품군 / 제품 유형 / 브랜드" popup is
+  // open; holds the text the user typed so the popup can prefill it.
   const [newCategoryName, setNewCategoryName] = useState<string | null>(null);
+  const [newTypeName, setNewTypeName] = useState<string | null>(null);
   const [newBrandName, setNewBrandName] = useState<string | null>(null);
   const [consumables, setConsumables] = useState<ConsumableOpt[]>([]);
   const [stockOpen, setStockOpen] = useState(false);
@@ -156,8 +172,51 @@ export function EquipmentModelForm({
   const lowStock = mode !== "create" && stockOnHand < safetyNum;
   const fmtMoney = (v: string) => (v ? Number(v).toLocaleString() : "");
   const brandName = brands.find((b) => b.id === data.brandId)?.name ?? "";
-  const category = categories.find((c) => c.id === data.categoryId);
-  const categoryLabel = category ? pickCategoryName(category, locale) : "";
+  const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const categoryLabel = data.categoryIds
+    .map((id) => categoryById.get(id))
+    .filter((c): c is CategoryOpt => !!c)
+    .map((c) => pickCategoryName(c, locale))
+    .join(" · ");
+  const selectedType = types.find((ty) => ty.id === data.productTypeId) ?? null;
+  const typeLabel = selectedType ? pickCategoryName(selectedType, locale) : "";
+
+  // 제품군 options: with a 제품 유형 picked, only that type's 제품군 are open.
+  const categoryOptions = categories.map((c) => ({
+    value: c.id,
+    label: pickCategoryName(c, locale),
+    description: categoryAltNames(c, locale),
+    disabled: selectedType ? !selectedType.categoryIds.includes(c.id) : false,
+  }));
+  // 제품 유형 options: only types holding every 제품군 already picked (the
+  // current type always stays listed so it can be seen and cleared).
+  const typeOptions = types
+    .filter(
+      (ty) =>
+        ty.id === data.productTypeId ||
+        data.categoryIds.every((id) => ty.categoryIds.includes(id)),
+    )
+    .map((ty) => ({
+      value: ty.id,
+      label: pickCategoryName(ty, locale),
+      description: ty.categoryIds
+        .map((id) => categoryById.get(id))
+        .filter((c): c is CategoryOpt => !!c)
+        .map((c) => pickCategoryName(c, locale))
+        .join(" · "),
+    }));
+
+  function pickType(id: string | null) {
+    const ty = types.find((x) => x.id === id) ?? null;
+    setData((d) => {
+      // Drop 제품군 the new type doesn't hold; a single-제품군 type fills in.
+      let categoryIds = ty ? d.categoryIds.filter((c) => ty.categoryIds.includes(c)) : d.categoryIds;
+      if (ty && categoryIds.length === 0 && ty.categoryIds.length === 1) {
+        categoryIds = [...ty.categoryIds];
+      }
+      return { ...d, productTypeId: id, categoryIds };
+    });
+  }
   const nameView = (
     <span className="flex flex-col leading-tight">
       <span>{data.nameKo || "—"}</span>
@@ -174,14 +233,16 @@ export function EquipmentModelForm({
   useEffect(() => {
     void (async () => {
       try {
-        const [b, c, cat] = await Promise.all([
+        const [b, c, cat, ty] = await Promise.all([
           api.get<BrandOpt[]>("/api/admin/products/brands?pageSize=100&isActive=true"),
           api.get<ConsumableOpt[]>("/api/admin/products/consumables?pageSize=500&isActive=true"),
           api.get<CategoryOpt[]>("/api/admin/products/categories?pageSize=200&isActive=true"),
+          api.get<TypeOpt[]>("/api/admin/products/product-types?pageSize=200&isActive=true"),
         ]);
         setBrands(b.data ?? []);
         setConsumables(c.data ?? []);
         setCategories(cat.data ?? []);
+        setTypes(ty.data ?? []);
       } catch (e) {
         if (e instanceof ApiClientError && e.status === 403) return;
         console.warn("[equipment-model-form] catalog load failed", e);
@@ -237,9 +298,17 @@ export function EquipmentModelForm({
     return `${name} (${c.sku})`;
   }
   const consumableById = useMemo(() => new Map(consumables.map((c) => [c.id, c])), [consumables]);
+  // The part's 제품군 ride along as the description, so typing "정수기" in
+  // the filter picker narrows to parts tagged 정수기. A search aid only —
+  // nothing is applied by 제품군.
   const consumableOptions = useMemo(
-    () => consumables.map((c) => ({ value: c.id, label: consumableLabel(c) })),
-    [consumables],
+    () =>
+      consumables.map((c) => ({
+        value: c.id,
+        label: consumableLabel(c),
+        description: (c.categories ?? []).map((cat) => pickCategoryName(cat, locale)).join(" · ") || undefined,
+      })),
+    [consumables, locale],
   );
 
   function updateFilter(idx: number, patch: Partial<ModelFilterRow>) {
@@ -274,7 +343,8 @@ export function EquipmentModelForm({
         nameVi: data.nameVi || undefined,
         nameEn: data.nameEn || undefined,
         brandId: data.brandId,
-        categoryId: data.categoryId ?? null,
+        categoryIds: data.categoryIds,
+        productTypeId: data.productTypeId,
         description: data.description || undefined,
         retailPrice: num(data.retailPrice),
         salePrice: num(data.salePrice),
@@ -328,22 +398,36 @@ export function EquipmentModelForm({
               </div>
             </ModeField>
             <ModeField label={t("category")} mode={mode} required value={categoryLabel}>
+              <MultiCombobox
+                values={data.categoryIds}
+                onChange={(ids) => setField("categoryIds", ids)}
+                options={categoryOptions}
+                placeholder={tp("categoriesRequiredHint")}
+                searchPlaceholder={tp("searchOrAdd")}
+                // Under a 제품 유형 the 제품군 come from the type, so a brand-new
+                // 제품군 could never be picked here — offer creation only
+                // while no type is set.
+                allowCreate={!data.productTypeId}
+                createLabel={(q) => tp("quickCreateCategory", { name: q })}
+                onCreate={setNewCategoryName}
+                ariaLabel={t("category")}
+              />
+            </ModeField>
+            <ModeField label={t("productType")} mode={mode} value={typeLabel}>
               <Combobox
-                value={data.categoryId}
-                onChange={(v) => setField("categoryId", v || null)}
-                options={categories.map((c) => ({
-                  value: c.id,
-                  label: pickCategoryName(c, locale),
-                  description: categoryAltNames(c, locale),
-                }))}
+                value={data.productTypeId}
+                onChange={(v) => pickType(v || null)}
+                options={typeOptions}
+                placeholder={tp("productTypeNone")}
                 searchable
                 searchPlaceholder={tp("searchOrAdd")}
                 allowCreate
-                createLabel={(q) => tp("quickCreateCategory", { name: q })}
-                onCreate={setNewCategoryName}
+                createLabel={(q) => tp("quickCreateProductType", { name: q })}
+                onCreate={setNewTypeName}
                 allowClear
-                ariaLabel={t("category")}
+                ariaLabel={t("productType")}
               />
+              <p className="mt-1 text-xs text-[#737373]">{tp("productTypeHint")}</p>
             </ModeField>
             <ModeField label={t("brand")} mode={mode} required value={brandName}>
               <Combobox
@@ -528,8 +612,29 @@ export function EquipmentModelForm({
           onClose={() => setNewCategoryName(null)}
           onCreated={(row: CreatedCategory) => {
             setCategories((prev) => [...prev, row]);
-            setField("categoryId", row.id);
+            setData((d) => ({ ...d, categoryIds: [...d.categoryIds, row.id] }));
             setNewCategoryName(null);
+          }}
+        />
+      )}
+      {newTypeName !== null && (
+        <ProductTypeQuickCreateModal
+          initialName={newTypeName}
+          categories={categories}
+          initialCategoryIds={data.categoryIds}
+          onClose={() => setNewTypeName(null)}
+          onCreated={(row: CreatedProductType) => {
+            setTypes((prev) => [...prev, row]);
+            // The popup may have changed the 제품군 — keep the model inside the
+            // new type, same rule as picking an existing one.
+            setData((d) => {
+              let categoryIds = d.categoryIds.filter((c) => row.categoryIds.includes(c));
+              if (categoryIds.length === 0 && row.categoryIds.length === 1) {
+                categoryIds = [...row.categoryIds];
+              }
+              return { ...d, productTypeId: row.id, categoryIds };
+            });
+            setNewTypeName(null);
           }}
         />
       )}

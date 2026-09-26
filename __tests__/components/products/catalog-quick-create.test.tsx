@@ -11,9 +11,10 @@ vi.mock("next-intl", () => ({
 }));
 
 const post = vi.fn();
-vi.mock("@/lib/api/client", () => ({
+// Keep the real error helpers (apiErrorText) — only the network is faked.
+vi.mock("@/lib/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/client")>()),
   useApi: () => ({ post }),
-  ApiClientError: class ApiClientError extends Error {},
 }));
 
 beforeEach(() => {

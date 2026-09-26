@@ -13,6 +13,7 @@
 import prisma from "@/lib/prisma";
 import { defineQuery } from "@/lib/api/mutation";
 import { canViewEquipmentAtSite } from "@/lib/auth/customer-access";
+import { CATEGORY_LINKS_SELECT } from "@/lib/products/classification";
 
 export const GET = defineQuery({
   audience: "customer",
@@ -27,7 +28,7 @@ export const GET = defineQuery({
             nameKo: true,
             nameVi: true,
             nameEn: true,
-            productCategory: { select: { nameKo: true, nameVi: true, nameEn: true } },
+            ...CATEGORY_LINKS_SELECT,
             filterPolicy: true,
             // ConsumableOnModel join — needed so the customer dashboard
             // can compute the next filter-replacement due date when no

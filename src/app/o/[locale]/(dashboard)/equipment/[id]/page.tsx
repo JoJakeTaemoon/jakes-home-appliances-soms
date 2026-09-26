@@ -45,7 +45,8 @@ interface EquipmentDetail {
     nameKo: string | null;
     nameVi: string | null;
     nameEn: string | null;
-    productCategory: { nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+    /** 제품군 links, as the equipment detail API includes them. */
+    categories: { category: { nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
     description: string | null;
     retailPrice: string | null;
     monthlyRentalPrice: string | null;
@@ -216,7 +217,7 @@ export default function EquipmentDetailPage() {
           <Row label={t("serial")} value={data.serialNumber ?? "—"} mono />
           <Row label={t("installDate")} value={formatDate(data.installedAt, locale)} />
           <Row label={t("model")} value={`${pickModelName(data.model, locale)} — ${pickModelName(data.model, locale)}`} />
-          <Row label={t("category")} value={pickCategoryName(data.model.productCategory, locale)} />
+          <Row label={t("category")} value={data.model.categories.map((l) => pickCategoryName(l.category, locale)).join(" · ") || "—"} />
           <Row label={t("ownership")} value={data.ownership} />
           {data.deactivatedAt && (
             <Row

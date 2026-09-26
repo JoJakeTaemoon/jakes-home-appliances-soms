@@ -73,7 +73,7 @@ const createBaseFields = {
   ...addressFields,
   preferredRegion: optString(60),
   preferredTechnicianId: optString(60),
-  /** Sales rep (담당 판매원) — User with isSalesRep=true. */
+  /** Sales rep (담당 판매원) — a row in the `SalesRep` master. */
   salesRepId: optString(60),
   notes: optString(2000),
 } as const;
@@ -151,7 +151,7 @@ export const updateCustomerSchema = z.object({
   preferredRegion: optString(60),
   preferredTechnicianId: optString(60),
   /**
-   * Sales rep (담당 판매원) — User with isSalesRep=true. Optional; nulling
+   * Sales rep (담당 판매원) — a row in the `SalesRep` master. Optional; nulling
    * unassigns the rep.
    */
   salesRepId: z.preprocess((v) => {

@@ -21,12 +21,9 @@ interface ModelLite {
   nameVi: string | null;
   nameEn: string | null;
   brand: { id: string; name: string } | null;
-  productCategory: {
-    id: string;
-    nameKo: string;
-    nameVi: string;
-    nameEn: string;
-  } | null;
+  /** 제품군 — a model may sit in several (2026-09-26). */
+  categoryIds: string[];
+  categories: { id: string; nameKo: string; nameVi: string; nameEn: string }[];
 }
 
 interface BrandLite {
@@ -132,16 +129,20 @@ export function ModelPicker({
             // Emit the picked model's brand/category so the caller can
             // auto-fill those selects. On clear (v === null) send nulls.
             const picked = v ? models.find((m) => m.id === v) : null;
-            onModel(v, {
-              brandId: picked?.brand?.id ?? null,
-              categoryId: picked?.productCategory?.id ?? null,
-            });
+            // Keep the 제품군 filter the model was found under; otherwise its
+            // first 제품군 (a model may carry several).
+            const categoryId = picked
+              ? categoryFilter && picked.categoryIds.includes(categoryFilter)
+                ? categoryFilter
+                : picked.categoryIds[0] ?? null
+              : null;
+            onModel(v, { brandId: picked?.brand?.id ?? null, categoryId });
           }}
           options={models.map((m) => {
             const name = pickModelName(m, locale);
             // Add brand + category context so search hits "Seoul Aqua
             // AQ-500" even when the operator only remembers one token.
-            const cat = m.productCategory ? pickCategoryName(m.productCategory, locale) : null;
+            const cat = m.categories.map((c) => pickCategoryName(c, locale)).join(" · ") || null;
             const suffix = [m.brand?.name, cat].filter(Boolean).join(" · ");
             return {
               value: m.id,

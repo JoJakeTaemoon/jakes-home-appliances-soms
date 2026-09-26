@@ -27,7 +27,7 @@ export const GET = defineQuery({
   handler: async ({ params }) => {
     const row = await prisma.productCategory.findUnique({
       where: { id: params.id },
-      include: { _count: { select: { models: true } } },
+      include: { _count: { select: { modelLinks: true } } },
     });
     if (!row) throw new NotFoundError("Category not found");
     return row;

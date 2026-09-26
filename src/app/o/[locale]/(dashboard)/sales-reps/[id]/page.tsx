@@ -13,10 +13,9 @@ import { formatDateOrDash as formatDate } from "@/lib/format";
 
 interface RepDetail {
   id: string;
-  username: string;
+  name: string;
   title: string | null;
-  avatarUrl: string | null;
-  role: string;
+  isActive: boolean;
   email: string | null;
   phone: string;
   stats: {
@@ -131,11 +130,11 @@ export default function SalesRepDetailPage() {
   return (
     <div className="flex w-full flex-col gap-4">
       <header className="flex items-center gap-3 rounded-lg border-2 border-gray-200 bg-white p-4">
-        <Avatar name={rep.username} imageUrl={rep.avatarUrl} size="lg" />
+        <Avatar name={rep.name} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-semibold text-[#002A4D]">{rep.username}</h1>
+          <h1 className="text-2xl font-semibold text-[#002A4D]">{rep.name}</h1>
           <p className="text-xs text-gray-500">
-            {rep.title ?? rep.role} · {rep.phone}{" "}
+            {rep.title ?? "—"} · {rep.phone ?? "—"}{" "}
             {rep.email ? `· ${rep.email}` : ""}
           </p>
         </div>
