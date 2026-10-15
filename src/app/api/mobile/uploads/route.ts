@@ -13,7 +13,7 @@
  */
 
 import { NextRequest } from "next/server";
-import { requireAuth } from "@/lib/auth/guards";
+import { requireFieldAuth } from "@/lib/auth/field-guards";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { VisitWorkflow } from "@/lib/visits/workflow";
@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAuth(request);
+    const auth = await requireFieldAuth(request);
     if (auth.role !== "TECHNICIAN") {
       throw new ForbiddenError("Mobile uploads are technician-only");
     }
