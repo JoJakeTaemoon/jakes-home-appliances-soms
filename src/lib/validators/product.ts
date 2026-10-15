@@ -81,6 +81,12 @@ export const createProductTypeSchema = z.object({
 // Hand-built: no `.default()` may leak onto PATCH (an empty body would
 // otherwise reactivate a retired type).
 export const updateProductTypeSchema = z.object({
+  // Editable by hand; the route keeps it unique.
+  code: z
+    .string()
+    .trim()
+    .regex(categoryCodeRegex, "Type code must be UPPER_SNAKE_CASE")
+    .optional(),
   nameKo: z.string().trim().min(1).max(120).optional(),
   nameVi: z.string().trim().min(1).max(120).optional(),
   nameEn: z.string().trim().min(1).max(120).optional(),

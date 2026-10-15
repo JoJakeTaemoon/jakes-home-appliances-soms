@@ -2386,7 +2386,9 @@
       "categoriesOptionalHint": "Dùng để phân loại/tìm kiếm — không tự áp dụng cho model",
       "noCategoriesYet": "Chưa có nhóm sản phẩm. Hãy thêm ở tab Nhóm sản phẩm trước.",
       "quickCreateProductType": "Thêm loại sản phẩm “{name}”",
-      "typeCategoryInUse": "Vẫn có model thuộc loại này đang dùng nhóm sản phẩm bạn muốn bỏ. Hãy đổi nhóm sản phẩm hoặc loại của các model đó trước."
+      "typeCategoryInUse": "Vẫn có model thuộc loại này đang dùng nhóm sản phẩm bạn muốn bỏ. Hãy đổi nhóm sản phẩm hoặc loại của các model đó trước.",
+      "codeHint": "Chữ in hoa, số và _, 2–30 ký tự (khoảng trắng đổi thành _)",
+      "codeTaken": "Mã {code} đã được sử dụng."
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",

@@ -10,10 +10,12 @@
  * volumes fit comfortably in memory).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useApi, ApiClientError, apiErrorText } from "@/lib/api/client";
+import { useApiQuery } from "@/lib/api/hooks";
 import { pickModelName, pickCategoryName, categoryAltNames } from "@/lib/products/name";
+import { normalizeCodeInput } from "@/lib/products/category-code";
 import { cycleToStored, cycleToDisplay } from "@/lib/catalog/cycle-unit";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
@@ -624,13 +626,90 @@ function RowActions({
   t,
 }: Readonly<{ onEdit: () => void; onDelete: () => void; t: Translate }>) {
   return (
-    <div className="flex items-center gap-2">
+    // Rows in the brand / 제품군 / 제품 유형 tables expand on click; the
+    // action buttons must not toggle the row they sit in.
+    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
       <Button variant="secondary" size="sm" onClick={onEdit}>
         {t("edit")}
       </Button>
       <Button variant="ghost" size="sm" onClick={onDelete}>
         {t("deactivate")}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * Click-to-expand for the brand / 제품군 / 제품 유형 tables: the row toggles
+ * open, and the models filed under it render in a row right below.
+ * `useExpandedRow` holds which row is open (one at a time).
+ */
+function useExpandedRow() {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const rowProps = (id: string) => ({
+    onClick: () => setOpenId((cur) => (cur === id ? null : id)),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setOpenId((cur) => (cur === id ? null : id));
+      }
+    },
+    tabIndex: 0,
+    "aria-expanded": openId === id,
+    className: cn(
+      "cursor-pointer border-b border-border hover:bg-[#fafafa]",
+      openId === id && "bg-[var(--brand-blue-50)] hover:bg-[var(--brand-blue-50)]",
+    ),
+  });
+  return { openId, rowProps };
+}
+
+function Chevron({ open }: Readonly<{ open: boolean }>) {
+  return (
+    <span aria-hidden="true" className={cn("mr-1.5 inline-block text-[#a3a3a3] transition-transform", open && "rotate-90")}>
+      ▸
+    </span>
+  );
+}
+
+/**
+ * The models under one brand / 제품군 / 제품 유형 — fetched when the row opens,
+ * through the same list filters the model pickers use. Inactive models are
+ * listed too (dimmed), so a retired model is not mistaken for a missing one.
+ */
+function ModelsUnder({ t, filter }: Readonly<{ t: Translate; filter: string }>) {
+  const locale = useLocale();
+  const q = useApiQuery<ModelRow[]>(`/api/equipment-models?${filter}&pageSize=500`);
+  const rows = q.data ?? [];
+  if (q.isLoading) return <p className="px-3 py-2 text-xs text-[#737373]">…</p>;
+  if (rows.length === 0) return <p className="px-3 py-2 text-xs text-[#a3a3a3]">{t("noModels")}</p>;
+  return (
+    <div className="px-3 py-2">
+      <p className="mb-1.5 text-xs font-medium text-[#525252]">{t("statusModelCount", { count: rows.length })}</p>
+      <table className="w-full text-xs">
+        <thead className="text-left text-[11px] uppercase tracking-wider text-[#737373]">
+          <tr>
+            <th className="py-1 pr-3">{t("tabModels")}</th>
+            <th className="py-1 pr-3">{t("colCategory")}</th>
+            <th className="py-1 pr-3">{t("colProductType")}</th>
+            <th className="py-1 pr-3">{t("colBrand")}</th>
+            <th className="py-1 pr-3 text-right">{t("stockOnHand")}</th>
+            <th className="py-1">{t("colActive")}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#f0f0f0]">
+          {rows.map((m) => (
+            <tr key={m.id} className={cn(!m.isActive && "text-[#a3a3a3]")}>
+              <td className="py-1.5 pr-3 font-medium">{pickModelName(m, locale)}</td>
+              <td className="py-1.5 pr-3">{categoryNames(m.categories, locale)}</td>
+              <td className="py-1.5 pr-3">{m.productType ? pickCategoryName(m.productType, locale) : "—"}</td>
+              <td className="py-1.5 pr-3">{m.brand?.name ?? "—"}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums">{(m.stockOnHand ?? 0).toLocaleString()}</td>
+              <td className="py-1.5"><StatusPill active={m.isActive} t={t} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -648,6 +727,7 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [form, setForm] = useState({ name: "" });
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"name" | "models" | "isActive">("name");
+  const { openId, rowProps } = useExpandedRow();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -720,16 +800,23 @@ function BrandsTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             <tr><td colSpan={4} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2 font-semibold">{r.name}</td>
-                <td className="p-2 text-right text-xs">
-                  {t("statusModelCount", { count: r._count?.models ?? 0 })}
-                </td>
-                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-                <td className="p-2 text-right">
-                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
-                </td>
-              </tr>
+              <Fragment key={r.id}>
+                <tr {...rowProps(r.id)}>
+                  <td className="p-2 font-semibold"><Chevron open={openId === r.id} />{r.name}</td>
+                  <td className="p-2 text-right text-xs">
+                    {t("statusModelCount", { count: r._count?.models ?? 0 })}
+                  </td>
+                  <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                  <td className="p-2 text-right">
+                    <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                  </td>
+                </tr>
+                {openId === r.id && (
+                  <tr className="border-b border-border bg-[#fcfcfc]">
+                    <td colSpan={4}><ModelsUnder t={t} filter={`brandId=${r.id}`} /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))
           )}
         </tbody>
@@ -825,6 +912,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
   const [form, setForm] = useState({ code: "", nameKo: "", nameVi: "", nameEn: "", sortOrder: 0 });
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"code" | "name" | "sortOrder" | "isActive">("code");
+  const { openId, rowProps } = useExpandedRow();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -888,7 +976,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             <FormField label={t("colCode")} className="flex-1">
               <Input
                 value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                onChange={(e) => setForm({ ...form, code: normalizeCodeInput(e.target.value) })}
                 placeholder={t("codeAutoPlaceholder")}
               />
             </FormField>
@@ -914,14 +1002,21 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
             <tr><td colSpan={4} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2 font-mono text-sm">{r.code}</td>
-                <td className="p-2">{pickLocaleName(r, locale)}</td>
-                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-                <td className="p-2 text-right">
-                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
-                </td>
-              </tr>
+              <Fragment key={r.id}>
+                <tr {...rowProps(r.id)}>
+                  <td className="p-2 font-mono text-sm"><Chevron open={openId === r.id} />{r.code}</td>
+                  <td className="p-2">{pickLocaleName(r, locale)}</td>
+                  <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                  <td className="p-2 text-right">
+                    <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                  </td>
+                </tr>
+                {openId === r.id && (
+                  <tr className="border-b border-border bg-[#fcfcfc]">
+                    <td colSpan={4}><ModelsUnder t={t} filter={`categoryId=${r.id}`} /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))
           )}
         </tbody>
@@ -961,6 +1056,7 @@ function CategoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) {
 }
 
 function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: ApiClient; t: Translate; row: CategoryRow; onClose: () => void; onSaved: () => void }>) {
+  const [code, setCode] = useState(row.code);
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
@@ -972,10 +1068,19 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
     setBusy(true);
     setErr(null);
     try {
-      await api.patch(`/api/admin/products/categories/${row.id}`, { nameKo, nameVi, nameEn, sortOrder, isActive });
+      await api.patch(`/api/admin/products/categories/${row.id}`, {
+        nameKo, nameVi, nameEn, sortOrder, isActive,
+        // Only send the code when it changed — an unchanged one needs no
+        // uniqueness round trip.
+        ...(code !== row.code ? { code } : {}),
+      });
       onSaved();
     } catch (e) {
-      setErr(e instanceof ApiClientError ? e.message : e instanceof Error ? e.message : t("errorGeneric"));
+      setErr(
+        e instanceof ApiClientError && e.status === 409
+          ? t("codeTaken", { code })
+          : apiErrorText(e, t("errorGeneric")),
+      );
     } finally {
       setBusy(false);
     }
@@ -988,13 +1093,13 @@ function CategoryEditModal({ api, t, row, onClose, onSaved }: Readonly<{ api: Ap
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
-          <Button onClick={save} isLoading={busy}>{t("save")}</Button>
+          <Button onClick={save} isLoading={busy} disabled={!code.trim()}>{t("save")}</Button>
         </>
       }
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormField label={t("colCode")}>
-          <Input value={row.code} disabled />
+        <FormField label={t("colCode")} required hint={t("codeHint")}>
+          <Input value={code} onChange={(e) => setCode(normalizeCodeInput(e.target.value))} />
         </FormField>
         <FormField label={t("colSortOrder")}>
           <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
@@ -1040,6 +1145,7 @@ function ProductTypesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>)
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"code" | "name" | "categories" | "isActive">("code");
+  const { openId, rowProps } = useExpandedRow();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1111,7 +1217,7 @@ function ProductTypesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>)
             <FormField label={t("colCode")} className="flex-1">
               <Input
                 value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                onChange={(e) => setForm({ ...form, code: normalizeCodeInput(e.target.value) })}
                 placeholder={t("codeAutoPlaceholder")}
               />
             </FormField>
@@ -1140,15 +1246,22 @@ function ProductTypesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>)
             <tr><td colSpan={5} className="p-4 text-center text-gray-500">—</td></tr>
           ) : (
             sorted.map((r) => (
-              <tr key={r.id} className="border-b border-border">
-                <td className="p-2 font-mono text-sm">{r.code}</td>
-                <td className="p-2">{pickLocaleName(r, locale)}</td>
-                <td className="p-2 text-sm text-[#586a7c]">{categoryNames(r.categories, locale)}</td>
-                <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
-                <td className="p-2 text-right">
-                  <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
-                </td>
-              </tr>
+              <Fragment key={r.id}>
+                <tr {...rowProps(r.id)}>
+                  <td className="p-2 font-mono text-sm"><Chevron open={openId === r.id} />{r.code}</td>
+                  <td className="p-2">{pickLocaleName(r, locale)}</td>
+                  <td className="p-2 text-sm text-[#586a7c]">{categoryNames(r.categories, locale)}</td>
+                  <td className="p-2"><StatusPill active={r.isActive} t={t} /></td>
+                  <td className="p-2 text-right">
+                    <RowActions t={t} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
+                  </td>
+                </tr>
+                {openId === r.id && (
+                  <tr className="border-b border-border bg-[#fcfcfc]">
+                    <td colSpan={5}><ModelsUnder t={t} filter={`productTypeId=${r.id}`} /></td>
+                  </tr>
+                )}
+              </Fragment>
             ))
           )}
         </tbody>
@@ -1200,6 +1313,7 @@ function ProductTypeEditModal({
   onClose: () => void;
   onSaved: () => void;
 }>) {
+  const [code, setCode] = useState(row.code);
   const [nameKo, setNameKo] = useState(row.nameKo);
   const [nameVi, setNameVi] = useState(row.nameVi);
   const [nameEn, setNameEn] = useState(row.nameEn);
@@ -1214,13 +1328,17 @@ function ProductTypeEditModal({
     try {
       await api.patch(`/api/admin/products/product-types/${row.id}`, {
         nameKo, nameVi, nameEn, categoryIds, sortOrder, isActive,
+        ...(code !== row.code ? { code } : {}),
       });
       onSaved();
     } catch (e) {
-      // A 409 here means a model of this type still uses a 제품군 being removed.
+      // Two different 409s: the new code is taken, or a model of this type
+      // still uses a 제품군 being removed.
       setErr(
         e instanceof ApiClientError && e.status === 409
-          ? t("typeCategoryInUse")
+          ? /code/i.test(e.message)
+            ? t("codeTaken", { code })
+            : t("typeCategoryInUse")
           : apiErrorText(e, t("errorGeneric")),
       );
     } finally {
@@ -1235,14 +1353,14 @@ function ProductTypeEditModal({
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={busy}>{t("cancel")}</Button>
-          <Button onClick={save} isLoading={busy} disabled={categoryIds.length === 0}>{t("save")}</Button>
+          <Button onClick={save} isLoading={busy} disabled={categoryIds.length === 0 || !code.trim()}>{t("save")}</Button>
         </>
       }
     >
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <FormField label={t("colCode")}>
-            <Input value={row.code} disabled />
+          <FormField label={t("colCode")} required hint={t("codeHint")}>
+            <Input value={code} onChange={(e) => setCode(normalizeCodeInput(e.target.value))} />
           </FormField>
           <FormField label={t("colSortOrder")}>
             <NumberInput value={sortOrder} onChange={setSortOrder} min={0} />

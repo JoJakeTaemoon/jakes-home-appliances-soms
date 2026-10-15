@@ -31,6 +31,15 @@ export function categoryCodeFromName(name: string): string {
 }
 
 /**
+ * What a hand-typed code box keeps as you type: upper case, spaces → `_`.
+ * Anything else the API's UPPER_SNAKE_CASE rule still rejects, by field name,
+ * so "WATER PURIFIER" becomes WATER_PURIFIER instead of bouncing.
+ */
+export function normalizeCodeInput(value: string): string {
+  return value.toUpperCase().replace(/\s+/g, "_");
+}
+
+/**
  * A free code for `name`, falling back to `BASE_2`, `BASE_3`, … when the
  * plain derivation is taken.
  *

@@ -2386,7 +2386,9 @@
       "categoriesOptionalHint": "For sorting and search — never applied to models automatically",
       "noCategoriesYet": "No categories yet. Add one on the Categories tab first.",
       "quickCreateProductType": "Add product type “{name}”",
-      "typeCategoryInUse": "Models of this type still use a category you are removing. Change those models' category or type first."
+      "typeCategoryInUse": "Models of this type still use a category you are removing. Change those models' category or type first.",
+      "codeHint": "Upper-case letters, digits and _, 2–30 chars (spaces become _)",
+      "codeTaken": "Code {code} is already in use."
     },
     "notificationTemplates": {
       "title": "Notification templates",

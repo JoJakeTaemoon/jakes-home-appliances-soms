@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   allocateCategoryCode,
   categoryCodeFromName,
+  normalizeCodeInput,
 } from "@/lib/products/category-code";
 
 describe("categoryCodeFromName", () => {
@@ -82,5 +83,15 @@ describe("allocateCategoryCode", () => {
     expect(code.length).toBeLessThanOrEqual(30);
     expect(code).toMatch(/^[A-Z][A-Z0-9_]{1,29}$/);
     expect(code.endsWith("_2")).toBe(true);
+  });
+});
+
+describe("normalizeCodeInput", () => {
+  it("upper-cases and turns spaces into underscores as you type", () => {
+    expect(normalizeCodeInput("water purifier")).toBe("WATER_PURIFIER");
+    expect(normalizeCodeInput("hot  cold")).toBe("HOT_COLD");
+  });
+  it("leaves other characters for the API rule to reject by field", () => {
+    expect(normalizeCodeInput("정수기-1")).toBe("정수기-1");
   });
 });

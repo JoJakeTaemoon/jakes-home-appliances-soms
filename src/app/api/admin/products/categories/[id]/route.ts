@@ -12,7 +12,7 @@ import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { updateProductCategorySchema } from "@/lib/validators/product";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 
 const paramsSchema = z.object({ id: z.string() });
@@ -53,6 +53,16 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           message: i.message,
         })),
       );
+    }
+    // The code is editable (2026-10-15) — nothing reads it as logic, it is a
+    // label office staff choose — but it must stay unique.
+    const nextCode = parsed.data.code;
+    if (nextCode && nextCode !== before.code) {
+      const taken = await prisma.productCategory.findUnique({
+        where: { code: nextCode },
+        select: { id: true },
+      });
+      if (taken) throw new ConflictError(`Category code ${nextCode} already exists`);
     }
     const updated = await prisma.productCategory.update({
       where: { id },

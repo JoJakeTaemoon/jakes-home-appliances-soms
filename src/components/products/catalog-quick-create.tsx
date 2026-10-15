@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { MultiCombobox } from "@/components/ui/multi-combobox";
 import { categoryAltNames, pickCategoryName } from "@/lib/products/name";
+import { normalizeCodeInput } from "@/lib/products/category-code";
 
 export interface CreatedCategory {
   id: string;
@@ -120,7 +121,7 @@ export function CategoryQuickCreateModal({
         <FormField label={t("colCode")}>
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => setCode(normalizeCodeInput(e.target.value))}
             placeholder={t("codeAutoPlaceholder")}
           />
         </FormField>
@@ -221,7 +222,7 @@ export function ProductTypeQuickCreateModal({
         <FormField label={t("colCode")}>
           <Input
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => setCode(normalizeCodeInput(e.target.value))}
             placeholder={t("codeAutoPlaceholder")}
           />
         </FormField>

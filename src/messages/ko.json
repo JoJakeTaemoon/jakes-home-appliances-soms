@@ -2410,7 +2410,9 @@
       "categoriesOptionalHint": "분류·검색용 — 모델에 자동 적용되지 않습니다",
       "noCategoriesYet": "등록된 제품군이 없습니다. 제품군 탭에서 먼저 추가하세요.",
       "quickCreateProductType": "제품 유형 “{name}” 추가",
-      "typeCategoryInUse": "이 유형으로 등록된 모델이 빼려는 제품군을 아직 쓰고 있습니다. 해당 모델의 제품군이나 유형을 먼저 바꾸세요."
+      "typeCategoryInUse": "이 유형으로 등록된 모델이 빼려는 제품군을 아직 쓰고 있습니다. 해당 모델의 제품군이나 유형을 먼저 바꾸세요.",
+      "codeHint": "영문 대문자·숫자·_ 조합, 2~30자 (공백은 _로 바뀝니다)",
+      "codeTaken": "코드 {code}는 이미 사용 중입니다."
     },
     "users": {
       "title": "사용자 관리",

@@ -16,7 +16,7 @@ import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import { updateProductTypeSchema } from "@/lib/validators/product";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 import {
   CATEGORY_LINKS_SELECT,
@@ -76,6 +76,13 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       );
     }
     const { categoryIds, ...scalars } = parsed.data;
+    if (scalars.code && scalars.code !== before.code) {
+      const taken = await prisma.productType.findUnique({
+        where: { code: scalars.code },
+        select: { id: true },
+      });
+      if (taken) throw new ConflictError(`Type code ${scalars.code} already exists`);
+    }
     await prisma.$transaction(async (tx) => {
       if (categoryIds) {
         const unique = [...new Set(categoryIds)];
