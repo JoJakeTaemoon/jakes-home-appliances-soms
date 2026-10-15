@@ -42,6 +42,8 @@ export const GET = defineQuery({
       where: { id: params.id },
       include: {
         contacts: {
+          // The bcrypt hash of portal contacts never leaves the server.
+          omit: { passwordHash: true },
           orderBy: [
             { role: "asc" },
             { isPrimary: "desc" },

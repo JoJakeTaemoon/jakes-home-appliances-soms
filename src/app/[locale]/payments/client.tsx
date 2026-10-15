@@ -21,11 +21,13 @@ interface PortalPaymentsResponse {
 
 export function PortalPaymentsClient() {
   const t = useTranslations("portalExtra.payments");
+  const tc = useTranslations("common");
+  const tState = useTranslations("payments.states");
   const locale = useLocale();
   const query = useApiQuery<PortalPaymentsResponse>(`/api/portal/payments`);
   const data = query.data;
 
-  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">{tc("loading")}</p>;
   if (!data) return <p className="text-sm text-[#737373]">{t("loadError")}</p>;
   if (data.payments.length === 0)
     return <p className="text-sm text-[#737373]">{t("noPayments")}</p>;
@@ -69,7 +71,7 @@ export function PortalPaymentsClient() {
                         : "info"
                   }
                 >
-                  {p.state}
+                  {tState(p.state as never)}
                 </StatusBadge>
               </div>
             </div>

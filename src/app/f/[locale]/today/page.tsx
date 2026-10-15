@@ -41,6 +41,7 @@ export default function MobileTodayPage() {
 
 function MobileTodayContent() {
   const t = useTranslations("mobile");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const query = useApiQuery<{ lead: VisitCard[]; collaborator: VisitCard[] }>(
     `/api/mobile/visits/today`,
@@ -49,7 +50,7 @@ function MobileTodayContent() {
   const collab = query.data?.collaborator ?? [];
 
   if (query.isLoading) {
-    return <p className="text-sm text-[#737373]">Loading…</p>;
+    return <p className="text-sm text-[#737373]">{tc("loading")}</p>;
   }
 
   const empty = lead.length === 0 && collab.length === 0;

@@ -15,6 +15,7 @@ interface InvoiceRow {
 
 export function PortalInvoicesClient() {
   const t = useTranslations("portalExtra.invoices");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const query = useApiQuery<InvoiceRow[]>(`/api/portal/invoices`);
 
@@ -22,7 +23,7 @@ export function PortalInvoicesClient() {
     query.error instanceof ApiClientError && query.error.status === 403;
   const rows = query.data ?? [];
 
-  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">{tc("loading")}</p>;
   if (isForbidden) {
     return (
       <div className="rounded-2xl border border-dashed border-[#e5e5e5] bg-white p-8 text-center">

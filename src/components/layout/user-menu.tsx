@@ -20,6 +20,7 @@ function getInitials(name: string): string {
 export function UserMenu() {
   const t = useTranslations("nav");
   const tRoles = useTranslations("roles");
+  const tPwd = useTranslations("portal.changePassword");
   const { user, logout } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -66,6 +67,16 @@ export function UserMenu() {
             </p>
           </div>
           <div className="my-1 h-px bg-[#e5e5e5]" />
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center rounded-md px-3 py-1.5 text-sm font-normal text-[#000000] hover:bg-[#f5f5f5]"
+            onClick={() => {
+              setOpen(false);
+              router.push("/o/change-password");
+            }}
+          >
+            {tPwd("title")}
+          </button>
           <button
             type="button"
             className="flex w-full cursor-pointer items-center rounded-md px-3 py-1.5 text-sm font-normal text-[#000000] hover:bg-[#f5f5f5]"

@@ -26,6 +26,7 @@ import {
   fromVstDateTimeInput,
 } from "@/lib/format";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { photoSrc } from "@/lib/visits/photo-src";
 
 interface VisitDetail {
   id: string;
@@ -127,7 +128,6 @@ interface VisitDetail {
   }>;
 }
 
-interface PhotoEntry { storageKey: string }
 
 /**
  * The body of the visit-detail page, extracted so the calendar drawer
@@ -206,15 +206,11 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
   const canReschedule =
     isOffice && ["SCHEDULED", "FAILED_NO_SHOW", "RESCHEDULED"].includes(data.state);
 
-  // Seed/legacy photo entries occasionally lack `storageKey` (or are bare
-  // strings) — filter defensively so a single malformed row can't blow up
-  // the whole detail page.
-  const photos = (Array.isArray(data.photos) ? data.photos : []).filter(
-    (p): p is PhotoEntry =>
-      p != null &&
-      typeof p === "object" &&
-      typeof (p as PhotoEntry).storageKey === "string",
-  );
+  // Uploads carry `storageKey`, seed/legacy rows a ready `url`; malformed
+  // rows drop out so one bad entry can't blow up the detail page.
+  const photos = (Array.isArray(data.photos) ? data.photos : [])
+    .map(photoSrc)
+    .filter((src): src is string => src !== null);
   const parts = Array.isArray(data.partsReplaced)
     ? (data.partsReplaced as string[])
     : [];
@@ -371,14 +367,15 @@ export function VisitDetailContent({ visitId }: Readonly<{ visitId: string }>) {
             <p className="text-sm text-[#737373]">{tc("noData")}</p>
           ) : (
             <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {photos.map((p, i) => (
+              {photos.map((src, i) => (
                 <li
-                  key={`${p.storageKey}-${i}`}
+                  key={`${src}-${i}`}
                   className="aspect-square overflow-hidden rounded border border-[#e5e5e5] bg-[#fafafa]"
                 >
-                  <span className="block break-all p-2 font-mono text-[10px] text-[#737373]">
-                    {p.storageKey.split("/").pop()}
-                  </span>
+                  <a href={src} target="_blank" rel="noreferrer" className="block h-full w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- auth-gated /uploads file, not optimisable */}
+                    <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  </a>
                 </li>
               ))}
             </ul>

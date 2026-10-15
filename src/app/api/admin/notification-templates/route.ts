@@ -15,14 +15,12 @@ import {
   pickLocaleSubject,
   templateLocales,
 } from "@/lib/notifications/templates";
-import { getTemplateDescription } from "@/lib/notifications/template-descriptions";
 import type { Locale } from "@/generated/prisma/client";
 
 interface TemplateRow {
   code: string;
   channel: "SMS" | "EMAIL";
   locale: Locale;
-  description: string;
   defaultBody: string;
   defaultSubject: string | null;
   overrideBody: string | null;
@@ -62,7 +60,6 @@ export const GET = defineQuery({
           code,
           channel: def.channels[0] as "SMS" | "EMAIL",
           locale,
-          description: getTemplateDescription(code, locale),
           defaultBody: pickLocaleBody(def, locale),
           defaultSubject: pickLocaleSubject(def, locale) ?? null,
           overrideBody: o?.body ?? null,

@@ -1,236 +1,279 @@
-# Seoul Aqua SOMS — Hướng dẫn sử dụng Cổng Khách hàng
+# Seoul Aqua SOMS — Hướng dẫn sử dụng Cổng khách hàng
 
-> Cập nhật lần cuối: Phản ánh cải tiến thiết bị, đại lý, đơn hàng và các loại lượt thăm mới (2026-07)
-
----
-
-## Đối tượng hướng dẫn này
-
-Hướng dẫn này dành cho khách hàng đang thuê, mua hoặc bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh và các sản phẩm xử lý nước gia dụng từ Seoul Aqua. Sau khi đăng nhập vào Cổng Khách hàng (`portal.seoulaqua.com.vn`), bạn có thể xem tình trạng thiết bị, lịch sử lượt thăm, gửi yêu cầu dịch vụ và xem lịch sử thanh toán.
-
-Tài khoản Cổng Khách hàng được cấp cho Người ký hợp đồng (CONTRACT_PARTY) hoặc Liên hệ vận hành (OPS_CONTACT). Nếu chưa có tài khoản hoặc quên mật khẩu, hãy liên hệ văn phòng.
+> Cập nhật lần cuối: 15/10/2026 (chụp lại toàn bộ màn hình · đổi địa chỉ cổng · hướng dẫn nhận mật khẩu qua điện thoại · bổ sung yêu cầu dịch vụ 5 bước)
 
 ---
 
-## Bạn có thể làm gì
+## Giới thiệu hướng dẫn này
 
-- Đăng nhập / Đổi mật khẩu / Lấy lại mật khẩu đã quên
-- Xem tóm tắt thiết bị, lịch lượt thăm và yêu cầu dịch vụ trên màn hình Trang chủ
-- Xem danh sách và thông tin chi tiết thiết bị của bạn
-- Xem lịch sử lượt thăm và tải Phiếu xác nhận công việc
-- Gửi yêu cầu dịch vụ và theo dõi tiến trình xử lý
-- Xem lịch sử thanh toán và số tiền còn nợ
-- Tải hóa đơn GTGT (chỉ khách hàng B2B)
-- Xem thông tin liên hệ
-- Cài đặt thông báo và đổi mật khẩu (màn hình Cài đặt)
+Hướng dẫn này dành cho quý khách đang thuê, mua hoặc sử dụng dịch vụ bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh... của Seoul Aqua. Trên cổng khách hàng, quý khách có thể xem tình trạng thiết bị, lịch sử lượt thăm, yêu cầu dịch vụ và lịch sử thanh toán.
+
+Địa chỉ cổng:
+
+```
+https://soms.seoulaqua.com.vn/vi/login
+```
+
+- `/vi` trong địa chỉ là giao diện tiếng Việt. `/ko` là tiếng Hàn, bỏ đi thì là tiếng Anh.
+- Địa chỉ cũ `portal.seoulaqua.com.vn` không còn được sử dụng.
+- Quý khách nên tạo lối tắt bằng "Thêm vào màn hình chính" trong menu trình duyệt trên điện thoại để tiện truy cập.
+
+Tài khoản cổng khách hàng do văn phòng Seoul Aqua mở cho người phụ trách hợp đồng (Bên ký hợp đồng) hoặc người phụ trách vận hành. Nếu cần tài khoản, vui lòng liên hệ văn phòng.
+
+---
+
+## Quý khách có thể làm gì
+
+- Xem nhanh trên Trang chính: lượt thăm kế tiếp · lần thay lõi lọc kế tiếp · yêu cầu đang chờ · công nợ
+- Xem danh sách và chi tiết thiết bị của mình
+- Xem lịch sử lượt thăm, nội dung công việc và hình ảnh
+- Gửi yêu cầu dịch vụ, theo dõi tiến trình, trao đổi tin nhắn với văn phòng, hủy yêu cầu
+- Xem lịch sử thanh toán và số dư còn nợ
+- Xem các liên hệ đã đăng ký (tài khoản Bên ký hợp đồng)
+- Cài đặt tên · email · ngôn ngữ · nhận thông báo, đổi mật khẩu
 
 ---
 
 ## 1. Đăng nhập
 
-1. Mở `portal.seoulaqua.com.vn` trên trình duyệt (hoặc ứng dụng đã thêm vào màn hình chính).
-2. Nhập **Số điện thoại** và **Mật khẩu**, rồi nhấn **Đăng nhập**.
+![Màn hình đăng nhập](../screenshots/vi/customer/01-login.png)
 
-   ![Màn hình đăng nhập cổng khách hàng](../screenshots/vi/customer/01-login.png)
+1. Nhập **Số điện thoại** và **Mật khẩu**, rồi nhấn **Đăng nhập**.
+2. Nếu một số điện thoại được đăng ký cho nhiều tài khoản, màn hình **Chọn tài khoản** sẽ hiện ra. Hãy chọn đúng khách hàng (công ty) của mình.
 
-3. Nếu số điện thoại này được đăng ký với nhiều tài khoản, màn hình chọn tài khoản sẽ hiện ra. Chọn tên công ty (hoặc tên) phù hợp.
+### Khi đăng nhập lần đầu
 
-### Lần đầu đăng nhập bằng mật khẩu tạm thời
+- Khi tài khoản cổng được mở, quý khách có thể nhận **email hướng dẫn** (thông báo ID đăng nhập), còn **mật khẩu tạm thời do nhân viên văn phòng đọc cho quý khách qua điện thoại.** Mật khẩu không được gửi qua tin nhắn hay email.
+- Khi đăng nhập lần đầu bằng mật khẩu tạm thời, màn hình **Đổi mật khẩu** sẽ mở ngay. Nhập mật khẩu hiện tại (mật khẩu tạm thời), mật khẩu mới (từ 8 ký tự trở lên), xác nhận mật khẩu mới rồi nhấn **Đổi mật khẩu**. Chưa đổi thì không chuyển sang màn hình khác được.
 
-Ngay sau khi kích hoạt hợp đồng, bạn sẽ nhận được mật khẩu tạm thời (10 ký tự) qua SMS. Khi đăng nhập lần đầu, bạn phải đặt mật khẩu mới (tối thiểu 8 ký tự) ngay lập tức. Nếu chưa đặt, bạn không thể chuyển sang màn hình khác.
+![Đổi mật khẩu](../screenshots/vi/customer/15-change-password.png)
 
 ### Quên mật khẩu?
 
-**Vui lòng liên hệ văn phòng Seoul Aqua.** Màn hình đăng nhập không còn chức năng tự lấy lại mật khẩu. Sau khi văn phòng xác minh và đặt lại, hệ thống sẽ gửi mật khẩu tạm thời qua SMS đến số điện thoại đã đăng ký.
+**Vui lòng gọi điện cho văn phòng Seoul Aqua.** Sau khi xác minh danh tính, nhân viên sẽ tạo mật khẩu tạm thời mới và **đọc cho quý khách qua điện thoại.** Màn hình đăng nhập không có chức năng tự cấp lại mật khẩu.
+
+### Khi đăng nhập bị khóa
+
+Nếu nhập sai mật khẩu 5 lần trong 15 phút, thông báo "Tài khoản tạm thời bị khóa. Vui lòng thử lại sau." sẽ hiện ra và quý khách không thể đăng nhập trong 15 phút. Hãy thử lại sau 15 phút, hoặc nhờ văn phòng đặt lại mật khẩu.
 
 ---
 
-## 2. Trang chủ (Bảng điều khiển)
+## 2. Bố cục màn hình
 
-Sau khi đăng nhập, màn hình Trang chủ hiển thị ngay. Bất cứ lúc nào cũng có thể quay lại bằng cách nhấn **Trang chủ** trên thanh tab phía dưới.
+- **Phía trên**: tên khách hàng và tên người phụ trách, menu ngôn ngữ, nút **Đăng xuất**
+- **5 tab phía dưới**: **Trang chính · Thiết bị · Lịch hẹn · Yêu cầu · Cài đặt**
 
-![Trang chủ bảng điều khiển](../screenshots/vi/customer/02-home.png)
-
-| Thẻ | Nội dung |
-|---|---|
-| **Lượt thăm tiếp theo** | Ngày lượt thăm dự kiến gần nhất và tên KTV |
-| **Yêu cầu đang xử lý** | Số yêu cầu dịch vụ chưa hoàn thành |
-| **Số tiền còn nợ** | Tổng số tiền chưa thanh toán |
-| **Thay lõi lọc tiếp theo** | Ngày thay lõi lọc dự kiến gần nhất |
-| **Hoạt động gần đây** | Danh sách lượt thăm và yêu cầu gần đây |
+Lịch sử thanh toán mở từ thẻ **Công nợ** ở Trang chính, còn liên hệ mở từ **Cài đặt → Quản lý liên hệ** (tài khoản Bên ký hợp đồng).
 
 ---
 
-## 3. Thiết bị
+## 3. Trang chính
 
-Nhấn tab **Thiết bị** ở thanh dưới để xem danh sách toàn bộ thiết bị đang có hợp đồng.
+![Trang chính](../screenshots/vi/customer/02-home.png)
+
+Sau khi đăng nhập, quý khách thấy lời chào và 4 thẻ. Nhấn vào thẻ để chuyển đến màn hình tương ứng.
+
+| Thẻ | Nội dung | Khi nhấn vào |
+|---|---|---|
+| **Lượt thăm kế tiếp** | Ngày (thứ) của lượt thăm gần nhất | Lịch hẹn |
+| **Thay lõi kế tiếp** | Ngày thay lõi lọc sớm nhất | Thiết bị |
+| **Yêu cầu chờ** | Số yêu cầu đang chờ văn phòng xem xét | Yêu cầu |
+| **Công nợ** | Tổng số tiền chưa thanh toán | Thanh toán |
+
+Bên dưới là mục **Hoạt động gần đây** hiển thị các lượt thăm và yêu cầu gần đây.
+
+---
+
+## 4. Thiết bị
 
 ![Danh sách thiết bị](../screenshots/vi/customer/03-equipment.png)
 
-Mỗi thẻ thiết bị hiển thị tên sản phẩm, mẫu, ngày lắp đặt và trạng thái hiện tại (đang thuê, đã mua v.v.).
+**Tab phía dưới → Thiết bị**. Thiết bị của quý khách được nhóm theo cơ sở. Mỗi thẻ có model, số seri, trạng thái và ngày lắp đặt.
 
 ### Chi tiết thiết bị
 
-Nhấp vào thẻ thiết bị để mở màn hình chi tiết.
+![Chi tiết thiết bị](../screenshots/vi/customer/04-equipment-detail.png)
 
-- **Thông tin cơ bản**: Số serial, trạng thái, phân loại sở hữu (thuê/mua), ngày lắp đặt
-- **Địa điểm** (khách hàng B2B): Tên địa điểm nơi thiết bị được lắp đặt
-- **Lịch thay lõi lọc**: Ngày dự kiến thay tiếp theo và loại lõi lọc
-- **Lịch sử lượt thăm**: Danh sách lượt thăm liên quan đến thiết bị này
+Nhấn vào thẻ thiết bị để mở.
 
----
-
-## 4. Lượt thăm
-
-Nhấn tab **Lượt thăm** để xem lịch sử lượt thăm.
-
-![Lịch sử lượt thăm](../screenshots/vi/customer/04-visits.png)
-
-Mỗi mục lượt thăm hiển thị ngày, tên KTV, loại lượt thăm (kiểm tra định kỳ, lắp đặt, sửa chữa, giao hàng tiêu hao v.v.) và trạng thái hoàn thành.
-
-### Tải Phiếu xác nhận công việc
-
-Nhấp vào lượt thăm đã hoàn thành để mở màn hình chi tiết. Nhấn nút **Tải Phiếu xác nhận công việc** để tải tài liệu PDF của lượt thăm đó.
+- **Thông tin cơ bản**: Số seri, Trạng thái, Sở hữu, Ngày lắp đặt
+- **Cơ sở**: cơ sở lắp đặt thiết bị và địa chỉ (khách hàng doanh nghiệp)
+- **Lịch thay lõi**: nếu đã đăng ký, hiển thị ngày thay kế tiếp và loại lõi lọc
+- **Lịch sử thăm**: các lượt thăm của thiết bị này — ngày, loại, trạng thái, nội dung công việc, vật tư đã dùng
 
 ---
 
-## 5. Yêu cầu dịch vụ
+## 5. Lịch hẹn
 
-Nhấn tab **Yêu cầu** để xem danh sách yêu cầu dịch vụ và gửi yêu cầu mới.
+![Danh sách lượt thăm](../screenshots/vi/customer/05-visits.png)
 
-![Danh sách yêu cầu dịch vụ](../screenshots/vi/customer/05-requests.png)
+**Tab phía dưới → Lịch hẹn**. Mỗi lượt thăm hiển thị loại (bảo trì định kỳ · lắp đặt · sửa chữa · thay lõi lọc · giao vật tư...), trạng thái, model, ngày hẹn và kỹ thuật viên phụ trách.
 
-### Gửi yêu cầu dịch vụ mới
+### Chi tiết lượt thăm
 
-1. Nhấn nút **+ Yêu cầu mới**.
+![Chi tiết lượt thăm](../screenshots/vi/customer/06-visit-detail.png)
 
-   ![Biểu mẫu yêu cầu dịch vụ mới](../screenshots/vi/customer/06-requests-new.png)
+Nhấn vào lượt thăm để xem thời điểm hoàn tất, **Nội dung công việc** do kỹ thuật viên ghi và **Hình ảnh hiện trường**. Với lượt thăm đã có phiếu xác nhận công việc, nút **Tải phiếu công việc** sẽ hiện ra, nhấn vào sẽ mở tệp PDF.
 
-2. **1. Chọn thiết bị** — Chọn thiết bị gặp sự cố. Khách hàng B2B có thể chỉ định thêm địa điểm.
-3. **2. Loại yêu cầu** — Chọn một trong: Kiểm tra, Sửa chữa, Thay phụ kiện, Di chuyển.
-4. **3. Mô tả chi tiết** — Nhập triệu chứng hoặc nội dung yêu cầu (tối thiểu 10 ký tự).
-5. **4. Đính kèm ảnh (tùy chọn)** — Đính kèm ảnh để xử lý nhanh hơn.
-6. **5. Xem lại và Gửi** — Kiểm tra chi phí dự kiến (miễn phí/có phí) rồi nhấn **Gửi**.
+---
 
-### Thông tin chi phí dự kiến
+## 6. Yêu cầu dịch vụ
 
-| Hiển thị | Ý nghĩa |
+![Danh sách yêu cầu](../screenshots/vi/customer/07-requests.png)
+
+**Tab phía dưới → Yêu cầu**. Hiển thị các yêu cầu đã gửi và tiến trình.
+
+### 6.1 Gửi yêu cầu mới
+
+Nhấn **"+ Yêu cầu mới"** rồi thực hiện lần lượt năm bước. Di chuyển bằng "Tiếp" · "Quay lại" ở phía dưới.
+
+**1. Chọn thiết bị** — nhấn vào thiết bị đang gặp vấn đề. Khách hàng doanh nghiệp có nhiều cơ sở có thể thu hẹp theo cơ sở trước.
+
+![Bước 1 — Chọn thiết bị](../screenshots/vi/customer/09-request-step1.png)
+
+**2. Loại yêu cầu** — chọn một trong: Bảo trì định kỳ · Sửa chữa · Thay phụ tùng · Di dời · Khác.
+
+![Bước 2 — Loại yêu cầu](../screenshots/vi/customer/10-request-step2.png)
+
+**3. Mô tả vấn đề** — ghi từ 10 ký tự trở lên về vấn đề gì và bắt đầu từ khi nào. Nếu nhập **Thời gian khách mong muốn**, văn phòng sẽ tham khảo khi xếp lịch (tùy chọn).
+
+**4. Thêm ảnh (tùy chọn)** — có thể tải lên tối đa 8 ảnh chụp phần có vấn đề. Có ảnh thì việc xử lý sẽ nhanh hơn.
+
+**5. Xem lại & gửi** — kiểm tra nội dung rồi nhấn **Gửi yêu cầu**.
+
+![Bước 5 — Xem lại](../screenshots/vi/customer/11-request-review.png)
+
+### 6.2 Sau khi gửi
+
+- **Yêu cầu miễn phí** (thuộc phạm vi hợp đồng) chuyển ngay sang **Đã duyệt** và lịch thăm được xếp tự động. Màn hình hiện "Chúng tôi đã tự động xếp lịch. Văn phòng sẽ xác nhận KTV sớm."
+- **Yêu cầu có phí** chuyển sang **Chờ duyệt** và màn hình hiện "Văn phòng sẽ phản hồi trong 1 ngày làm việc." Văn phòng sẽ xác định số tiền và lịch hẹn rồi liên hệ với quý khách.
+
+Các trường hợp thường được miễn phí như sau. Quyết định chính xác thuộc về văn phòng.
+
+| Loại | Trường hợp miễn phí |
 |---|---|
-| Miễn phí — Đã bao gồm trong hợp đồng | Trong phạm vi hợp đồng bảo trì/thuê, bảo hành, hoặc trong 90 ngày sau lắp đặt |
-| Có phí — Văn phòng báo giá sau | Ngoài phạm vi hợp đồng. Văn phòng sẽ liên hệ sau khi kiểm tra báo giá. |
+| Bảo trì định kỳ | Đang trong hợp đồng thuê · bảo trì, hoặc trong vòng 90 ngày sau khi lắp đặt |
+| Sửa chữa | Đang thuê, hoặc trong vòng 6 tháng sau khi lắp đặt |
+| Thay phụ tùng | Đang trong hợp đồng thuê · bảo trì |
+| Di dời | Lần di dời đầu tiên trong vòng 90 ngày sau khi lắp đặt |
+| Khác | Có phí |
 
-### Quy trình xử lý yêu cầu
+### 6.3 Trạng thái yêu cầu
 
-- **Đã tiếp nhận** → Chờ văn phòng xem xét
-- **Đang xem xét** → Văn phòng đang xử lý (bao gồm xác nhận báo giá nếu có phí)
-- **Đã duyệt** → Đã lên lịch lượt thăm, thông báo qua SMS
-- **Hoàn thành** → Lượt thăm đã hoàn thành
-
-Nếu yêu cầu bị từ chối, lý do từ chối sẽ hiển thị và bạn sẽ nhận được thông báo qua SMS.
-
----
-
-## 6. Thanh toán
-
-Di chuyển đến `/payments` trong trình duyệt hoặc nhấn vào thẻ **Số tiền còn nợ** trên Trang chủ.
-
-![Lịch sử thanh toán](../screenshots/vi/customer/08-payments.png)
-
-| Cột | Nội dung |
+| Trạng thái | Ý nghĩa |
 |---|---|
-| **Ngày** | Ngày đến hạn hoặc ngày thanh toán |
-| **Hợp đồng** | Số hợp đồng liên kết |
-| **Dự kiến** | Số tiền được lập hóa đơn |
-| **Đã thanh toán** | Số tiền thực tế đã trả |
-| **Trạng thái** | Đã thanh toán, Chưa thanh toán, Quá hạn v.v. |
+| Chờ duyệt | Văn phòng đang xem xét (yêu cầu có phí) |
+| Đã duyệt | Đã được duyệt và đang xếp lịch thăm |
+| Đã xếp lịch | Đã xác định kỹ thuật viên và ngày giờ thăm |
+| Hoàn tất | Lượt thăm đã kết thúc |
+| Từ chối | Quyết định không xử lý (có hiển thị lý do) |
+| Đã hủy | Đã hủy |
 
-Thẻ **Số tiền còn nợ** ở đầu màn hình hiển thị tổng số tiền chưa thanh toán với font chữ đậm.
+### 6.4 Chi tiết yêu cầu — tin nhắn và hủy
 
----
+![Chi tiết yêu cầu](../screenshots/vi/customer/08-request-detail.png)
 
-## 7. Hóa đơn GTGT (chỉ khách hàng B2B)
+- Hiển thị nội dung yêu cầu, ảnh và trạng thái.
+- Dùng khung **Trao đổi** để nhắn tin qua lại với văn phòng.
+- Khi yêu cầu ở trạng thái Chờ duyệt · Đã duyệt · Đã xếp lịch và lượt thăm chưa kết thúc, quý khách có thể nhấn **Hủy yêu cầu** (lý do là tùy chọn).
 
-Khách hàng B2B có thể xem danh sách hóa đơn GTGT tại `/invoices` trong trình duyệt.
-
-![Danh sách hóa đơn GTGT](../screenshots/vi/customer/07-invoices.png)
-
-Mỗi mục hiển thị số hóa đơn, ngày phát hành và số tiền. Nhấn nút **Tải xuống** để tải file PDF.
-
-Khách hàng B2C (hộ gia đình) không thấy menu này.
+> Tin duyệt hoặc từ chối yêu cầu sẽ được văn phòng báo cho quý khách **qua điện thoại**. Thông báo bằng tin nhắn đang được chuẩn bị.
 
 ---
 
-## 8. Liên hệ
+## 7. Thanh toán
 
-Di chuyển đến `/contacts` trong trình duyệt.
+![Lịch sử thanh toán](../screenshots/vi/customer/12-payments.png)
 
-![Danh sách liên hệ](../screenshots/vi/customer/09-contacts.png)
+Mở bằng cách nhấn vào thẻ **Công nợ** ở Trang chính.
 
-Danh sách liên hệ được đăng ký với tài khoản của bạn.
+- Thẻ **Còn nợ** phía trên hiển thị đậm tổng số tiền chưa thanh toán.
+- Mỗi thẻ bên dưới hiển thị số hợp đồng, hạn thanh toán, số tiền đã trả và trạng thái.
 
-| Vai trò | Mô tả |
+---
+
+## 8. Hóa đơn GTGT (khách hàng doanh nghiệp)
+
+Khách hàng doanh nghiệp (B2B) có thể tải về hóa đơn GTGT đã phát hành. Mở bằng **Cài đặt → Bảo mật → "Hóa đơn GTGT"** (chỉ hiện với khách hàng doanh nghiệp). Mỗi hóa đơn có số, ngày phát hành, số tiền và nút **Tải xuống**. Khách hàng cá nhân (B2C) sẽ thấy dòng "Hóa đơn GTGT chỉ dành cho khách hàng B2B."
+
+---
+
+## 9. Liên hệ (tài khoản Bên ký hợp đồng)
+
+![Liên hệ](../screenshots/vi/customer/13-contacts.png)
+
+**Cài đặt → Quản lý liên hệ** (chỉ hiện với tài khoản Bên ký hợp đồng). Đây là danh sách người phụ trách đã đăng ký tại Seoul Aqua, khách hàng doanh nghiệp thấy là "Liên hệ công ty", khách hàng cá nhân thấy là "Liên hệ của tôi". Mỗi người được hiển thị tên, chức danh, điện thoại, email, vai trò (Bên ký HĐ / Liên hệ vận hành · Chính), việc có dùng cổng hay không và cơ sở.
+
+| Vai trò | Nội dung nhận được |
 |---|---|
-| **Người ký hợp đồng** | Người ký hợp đồng, nhận hóa đơn GTGT và thông báo pháp lý |
-| **Liên hệ vận hành** | Người nhận SMS lịch lượt thăm và biên lai |
+| **Bên ký HĐ** | Hợp đồng, hóa đơn GTGT, thông báo pháp lý, thông báo quá hạn · hết hạn |
+| **Liên hệ vận hành** | Thông báo lịch thăm, biên lai, thông báo thay lõi lọc |
 
-Việc thay đổi thông tin liên hệ (thêm, xóa, sửa) hiện chưa được hỗ trợ trực tiếp trên Cổng. Vui lòng liên hệ nhân viên phụ trách để thay đổi.
+Nút thêm liên hệ hiện chưa bấm được — để thêm hoặc sửa, vui lòng nhờ văn phòng.
 
 ---
 
-## 9. Cài đặt
+## 10. Cài đặt
 
-Nhấn tab **Cài đặt** ở thanh dưới hoặc di chuyển đến `/settings` trong trình duyệt.
+![Cài đặt](../screenshots/vi/customer/14-settings.png)
 
-![Màn hình cài đặt](../screenshots/vi/customer/10-settings.png)
+**Tab phía dưới → Cài đặt**
 
-### Sửa thông tin liên hệ
+### Thông tin liên hệ
 
-- Thay đổi **Tên, Email, Ngôn ngữ** rồi nhấn nút **Lưu thay đổi**.
-- **Số điện thoại** không thể thay đổi trực tiếp trên Cổng. Hãy liên hệ văn phòng.
+Thay đổi Họ và tên · Email · Ngôn ngữ rồi nhấn **Lưu thay đổi**. Số điện thoại là ID đăng nhập nên không thể đổi trên cổng. Vui lòng liên hệ văn phòng.
 
-### Cài đặt thông báo
+**Ngôn ngữ** là ngôn ngữ của tài liệu và thông báo Seoul Aqua gửi cho quý khách. Ngôn ngữ màn hình được đổi riêng ở menu ngôn ngữ phía trên bên phải.
 
-- **Từ chối nhận SMS quảng cáo/nhắc nhở**: Tích chọn để ngừng nhận SMS marketing và nhắc nhở.
-- **Từ chối nhận Email quảng cáo/nhắc nhở**: Tích chọn để ngừng nhận Email marketing và nhắc nhở.
+### Thông báo
 
-> Thông báo bảo mật và giao dịch (đặt lại mật khẩu, biên lai thanh toán) luôn được gửi bất kể tùy chọn từ chối.
+- **Không nhận SMS quảng cáo / nhắc nhở**
+- **Không nhận email quảng cáo / nhắc nhở**
+
+Đánh dấu rồi nhấn **Lưu thay đổi**. Nếu từ chối nhận, quý khách cũng sẽ không nhận các thông báo như nhắc lịch thăm, thông báo thay lõi lọc, kết quả yêu cầu, thông báo quá hạn. Biên lai · hóa đơn GTGT · bản sao hợp đồng · thông báo mở cổng vẫn được gửi dù quý khách có từ chối hay không.
 
 ### Đổi mật khẩu
 
-1. Nhấn nút **Đổi mật khẩu** trong màn hình Cài đặt.
-2. Nhập mật khẩu hiện tại.
-3. Nhập mật khẩu mới (tối thiểu 8 ký tự) hai lần rồi nhấn **Đổi**.
+**Bảo mật → Đổi mật khẩu** → Mật khẩu hiện tại · Mật khẩu mới (từ 8 ký tự, phải khác mật khẩu cũ) · Xác nhận mật khẩu mới → **Đổi mật khẩu**
 
 ---
 
-## 10. Chuyển đổi ngôn ngữ
+## 11. Đổi ngôn ngữ
 
-Tại bất kỳ màn hình nào, nhấn nút ngôn ngữ (KO / VI / EN) ở góc trên bên phải để thay đổi ngôn ngữ giao diện. Lưu ngôn ngữ mặc định trong Cài đặt để giữ nguyên sau khi đăng nhập lại.
+Ở bất kỳ màn hình nào, hãy chọn Tiếng Việt · 한국어 · English trong menu ngôn ngữ (hình quả địa cầu) ở phía trên bên phải. Ở màn hình đăng nhập, menu nằm bên dưới các ô nhập.
 
 ---
 
-## Giải thích thuật ngữ
+## 12. Thông báo quý khách sẽ nhận
 
-| Thuật ngữ | Giải thích |
+| Khi nào | Nội dung |
 |---|---|
-| Người ký hợp đồng | Người ký hợp đồng và nhận hóa đơn GTGT, thông báo pháp lý |
-| Liên hệ vận hành | Người nhận SMS lịch lượt thăm và biên lai |
-| Cổng khách hàng | Cổng khách hàng (`portal.seoulaqua.com.vn`) |
-| Mật khẩu tạm thời | Mật khẩu ban đầu 10 ký tự gửi qua SMS khi kích hoạt hợp đồng |
-| Phiếu xác nhận công việc | Tài liệu xác nhận công việc sau khi KTV hoàn thành lượt thăm (PDF) |
-| Số tiền còn nợ | Tổng số tiền chưa thanh toán |
-| B2B | Khách hàng doanh nghiệp |
-| B2C | Khách hàng hộ gia đình |
+| Một ngày trước lượt thăm | SMS lịch thăm — gửi bằng tiếng Việt không dấu (nội dung đã đăng ký với nhà mạng nên không có dấu) |
+| Các thông báo khác | Thông báo qua email đang được chuẩn bị. Các nội dung quan trọng như kết quả yêu cầu · quá hạn sẽ do văn phòng báo qua điện thoại |
 
 ---
 
-## Xử lý sự cố
+## Thuật ngữ
 
-| Triệu chứng | Giải pháp |
+| Thuật ngữ | Ý nghĩa |
 |---|---|
-| Không thể đăng nhập | Kiểm tra lại số điện thoại và mật khẩu. Nếu đăng nhập sai 5 lần liên tiếp, tài khoản sẽ bị khóa. Hãy liên hệ văn phòng để được đặt lại mật khẩu. |
-| Không nhận được SMS mật khẩu tạm thời | Hợp đồng có thể chưa được xử lý xong. Liên hệ văn phòng để xác nhận. |
-| Không thấy thiết bị trong danh sách | Hợp đồng chưa được kích hoạt. Vui lòng xác nhận với văn phòng. |
-| Không thấy menu Hóa đơn GTGT | Chức năng này chỉ dành cho khách hàng B2B. Khách hàng hộ gia đình (B2C) không thấy menu này. |
-| Muốn sửa thông tin liên hệ | Hiện chưa hỗ trợ trực tiếp trên Cổng. Vui lòng liên hệ nhân viên phụ trách để thay đổi. |
-| Trạng thái yêu cầu không thay đổi | Việc xử lý có thể mất thời gian. Bạn sẽ nhận thông báo qua SMS khi trạng thái thay đổi. |
+| Bên ký hợp đồng | Người ký hợp đồng và nhận hóa đơn GTGT · thông báo pháp lý |
+| Liên hệ vận hành | Người phụ trách tại hiện trường nhận lịch thăm · biên lai |
+| Mật khẩu tạm thời | Mật khẩu 10 ký tự mà nhân viên văn phòng đọc cho quý khách qua điện thoại khi mở hoặc đặt lại tài khoản |
+| Phiếu xác nhận công việc | Tài liệu (PDF) xác nhận công việc, được phát hành sau khi kết thúc lượt thăm |
+| Công nợ | Số tiền chưa thanh toán |
+| B2B / B2C | Khách hàng doanh nghiệp / khách hàng cá nhân hộ gia đình |
+
+---
+
+## Khắc phục sự cố
+
+| Hiện tượng | Cách giải quyết |
+|---|---|
+| Không đăng nhập được | Kiểm tra số điện thoại và mật khẩu. Nhập sai 5 lần sẽ bị khóa 15 phút. Nếu liên hệ văn phòng, văn phòng sẽ đặt lại mật khẩu và đọc cho quý khách qua điện thoại |
+| Tôi không nhận được mật khẩu tạm thời | Mật khẩu không được gửi qua tin nhắn. Vui lòng gọi điện cho văn phòng |
+| Hiện giao diện tiếng Anh | Kiểm tra trong địa chỉ có `/vi` không, hoặc chọn Tiếng Việt trong menu ngôn ngữ phía trên bên phải |
+| Thiết bị không có trong danh sách | Có thể thiết bị chưa được đăng ký, hoặc tài khoản chỉ phụ trách một cơ sở nên không thấy thiết bị của cơ sở khác. Vui lòng hỏi văn phòng |
+| Không có menu hóa đơn GTGT | Mục này chỉ dành cho khách hàng doanh nghiệp (B2B). Nằm ở Cài đặt → Bảo mật → "Hóa đơn GTGT" |
+| Tôi muốn sửa liên hệ | Trên cổng hiện chưa làm được. Vui lòng nhờ văn phòng |
+| Trạng thái yêu cầu không thay đổi | Việc xử lý có thể mất thời gian. Hãy hỏi qua khung trao đổi trong chi tiết yêu cầu |

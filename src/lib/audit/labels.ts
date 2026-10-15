@@ -44,6 +44,16 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     en: "reset the password of",
     vi: "đã đặt lại mật khẩu của",
   },
+  PASSWORD_CHANGED: {
+    ko: "비밀번호를 변경했습니다",
+    en: "changed their password",
+    vi: "đã đổi mật khẩu",
+  },
+  PASSWORD_CHANGE_FAILED: {
+    ko: "비밀번호 변경에 실패했습니다",
+    en: "failed to change their password",
+    vi: "đổi mật khẩu thất bại",
+  },
   // The three below are retired — staff self-service recovery was removed on
   // 2026-09-24. Labels stay so audit rows from before that date still read.
   PASSWORD_RESET_REQUEST: {
@@ -495,6 +505,18 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     ko: " 주문을 등록했습니다",
     en: "created the order",
     vi: "đã tạo đơn hàng",
+    entityHint: "Order",
+  },
+  ORDER_DELIVER: {
+    ko: " 주문을 전달 완료 처리했습니다",
+    en: "marked the order delivered",
+    vi: "đã đánh dấu đơn hàng đã giao",
+    entityHint: "Order",
+  },
+  ORDER_CANCEL: {
+    ko: " 주문을 취소했습니다",
+    en: "cancelled the order",
+    vi: "đã hủy đơn hàng",
     entityHint: "Order",
   },
   PAYMENT_UPDATED: {

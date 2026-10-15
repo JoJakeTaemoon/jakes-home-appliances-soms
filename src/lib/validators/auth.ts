@@ -22,3 +22,10 @@ export const loginSchema = z
     path: ["phone"],
   });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+/** Self-service password change — office + field realms (same rule as the portal). */
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(256),
+  newPassword: z.string().min(8, "Password must be at least 8 characters").max(256),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

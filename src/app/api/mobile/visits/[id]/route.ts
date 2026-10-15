@@ -11,8 +11,9 @@ import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { VisitWorkflow } from "@/lib/visits/workflow";
 import { getHqPhone } from "@/lib/settings";
+import { findLatestContract } from "./latest-contract";
 import {
-  suggestVisitDocumentKind,
+  suggestVisitDocumentKindList,
   type CustomerTypeForSuggest,
   type VisitTypeForSuggest,
 } from "@/lib/visits/document-suggest";
@@ -59,20 +60,15 @@ export const GET = defineQuery({
     // the mobile detail page can show inline previews per doc kind and
     // a contract PDF link for INSTALLATION visits — mirrors today/page
     // behaviour but with extra metadata for the per-doc preview cards.
-    const latestContract = await prisma.contract.findFirst({
-      where: {
-        customerId: visit.customerId,
-        state: { in: ["ACTIVE", "PENDING_SIGNATURE", "AMENDED"] },
-      },
-      orderBy: [{ activatedAt: "desc" }, { createdAt: "desc" }],
-      select: { id: true, contractNumber: true, type: true },
-    });
-    const docKind = suggestVisitDocumentKind({
+    const latestContract = await findLatestContract(visit.customerId);
+    // Every type the visit carries — an order piggy-backed on an inspection
+    // (additionalTypes) brings its own sale receipt / delivery slip.
+    const signatureDocs: string[] = suggestVisitDocumentKindList({
       visitType: visit.type as VisitTypeForSuggest,
+      additionalTypes: (visit.additionalTypes ?? []) as VisitTypeForSuggest[],
       customerType: visit.customer.type as CustomerTypeForSuggest,
       contractType: latestContract?.type ?? null,
     });
-    const signatureDocs: string[] = [docKind];
     if (visit.type === "INSTALLATION" && latestContract) {
       signatureDocs.push("CONTRACT");
     }

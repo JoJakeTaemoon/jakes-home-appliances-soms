@@ -121,6 +121,8 @@ const ACTIONS_BY_ENTITY: Record<string, string[]> = {
     "USER_DISABLE",
     "USER_PHONE_UPDATE",
     "PASSWORD_RESET_BY_STAFF",
+    "PASSWORD_CHANGED",
+    "PASSWORD_CHANGE_FAILED",
   ],
   Equipment: [
     "EQUIPMENT_INSTALL",
@@ -152,7 +154,7 @@ const ACTIONS_BY_ENTITY: Record<string, string[]> = {
   SalesRep: ["SALES_REP_CREATE", "SALES_REP_UPDATE", "SALES_REP_DEACTIVATE"],
   ChargePolicy: ["CHARGE_POLICY_UPSERT", "CHARGE_POLICY_UPDATE", "CHARGE_POLICY_DELETE"],
   CatalogImport: ["CATALOG_IMPORT"],
-  Order: ["ORDER_CREATE"],
+  Order: ["ORDER_CREATE", "ORDER_DELIVER", "ORDER_CANCEL"],
   StockMove: ["STOCK_MOVE"],
   NotificationTemplate: [
     "NOTIFICATION_TEMPLATE_UPSERT",

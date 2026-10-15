@@ -2,28 +2,27 @@
 
 End-user manuals organized by **user group** and language.
 
-## Coverage (2026-07-11 — refreshed for the 4-step equipment-registration redesign)
+## Coverage (2026-10-15 — full rewrite against the running app, every screenshot re-captured)
 
 | User Group | Korean (ko) | Vietnamese (vi) | English |
 |---|---|---|---|
-| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) (1020 lines) | ✅ [`vi/office.md`](vi/office.md) (1020 lines) | — (not in v1 scope) |
+| **Office** (ADMIN / MANAGER / STAFF) | ✅ [`ko/office.md`](ko/office.md) | ✅ [`vi/office.md`](vi/office.md) | — (not in v1 scope) |
 | **Field** (TECHNICIAN) | ✅ [`ko/field.md`](ko/field.md) | ✅ [`vi/field.md`](vi/field.md) | — |
 | **Customer** (CONTRACT_PARTY / OPS_CONTACT) | ✅ [`ko/customer.md`](ko/customer.md) | ✅ [`vi/customer.md`](vi/customer.md) | — |
-| **Catalog upload** (MANAGER+ data prep) | ✅ [`ko/catalog-upload.md`](ko/catalog-upload.md) | ✅ [`vi/catalog-upload.md`](vi/catalog-upload.md) | — |
+| **Catalog upload** (ADMIN / MANAGER data prep) | ✅ [`ko/catalog-upload.md`](ko/catalog-upload.md) | ✅ [`vi/catalog-upload.md`](vi/catalog-upload.md) | — |
 
-**2026-07-11 update** — Equipment-registration redesign (step wizards) + Vietnam 2025 administrative reform. Only `office.md` (ko + vi) changed; `field.md` / `customer.md` were unaffected (visit/read workflows only). Updated sections:
+**2026-10-15 rewrite** — the manuals had drifted far from the product, so all three role manuals were rewritten from the code and the live screens rather than patched. Highlights:
 
-| Manual | Updated sections |
+| Manual | What changed |
 |---|---|
-| `office.md` | §5.2 address entry (3-level → 2-level, no district, diacritic-insensitive search), §7.1 domain overview (5-step wizard, day-unit cycles), §7.4 bulk-register wizard rewritten (5 steps incl. **최종 확인 / final review**), §7.5 new single-register multi-line wizard, §8.4 new manual signed-contract PDF upload, scenario 5, Appendix A |
-
-See [`../../change_log.md`](../../change_log.md) for the user-facing summary of this release.
-
-Each manual covers the workflow overview (taken from [HOW_TO_USE.md](../HOW_TO_USE.md)) **plus** every screen and every common scenario for that user group.
+| `office.md` | Real permission matrix (downward-only user management, MANAGER+ approvals), cron schedule in VST, actual sidebar, 판매원 as its own roster, 제품 유형 + multi-제품군 catalog, 포털 비밀번호 초기화, 알림 서식 / 알림 발송 내역 / 회사 정보 / 데이터 이관 (ADMIN), what SMS/email actually reach customers today, and Appendix E "what the screens can't do yet" |
+| `field.md` | 5-step completion wizard (work · photos · signature photo · payment · review), 보유 현금 badge and 48h handover, 방문 전달사항 instead of calling customers, offline queue, known issues |
+| `customer.md` | Single host `soms.seoulaqua.com.vn`, passwords read out by phone, 5-step service request, request messages and cancel, real home cards, contacts via 설정 → 연락처 관리 |
+| `catalog-upload.md` | Menu names, 제품 유형 not in the CSV, editable 제품군 codes, stock adjustment location |
 
 ## Generated PDFs
 
-Same content rendered as pageless PDFs (single long page per document, optimized for on-screen reading) under [`pdf/`](pdf/):
+Same content rendered as pageless PDFs (single long page per document, optimized for on-screen reading) under [`pdf/`](pdf/) — `npm run manuals:pdf`:
 
 - `pdf/office-ko.pdf` / `pdf/office-vi.pdf`
 - `pdf/field-ko.pdf` / `pdf/field-vi.pdf`
@@ -32,17 +31,15 @@ Same content rendered as pageless PDFs (single long page per document, optimized
 
 ## Screenshots
 
-UI screenshots used in the manuals live under [`screenshots/`](screenshots/), organized **per locale × per user group** (`{ko,vi}/{office,field,customer}/`). Each language manual references its own locale-specific PNGs so the screenshots match the manual's UI language. The screenshot pipeline is in `scripts/manuals/capture-screenshots.ts` and runs each user group twice (once per locale) against a dev server with seeded data. The Phase 6 bulk-print shot (`office/19-visits-print.png`) is captured with a real `date` + `technicianId` query string resolved at runtime so the preview shows a populated per-tech bundle.
+UI screenshots live under [`screenshots/`](screenshots/) as `{ko,vi}/{office,field,customer}/NN-name.png`; each language manual references its own locale. They come from `scripts/manuals/capture-screenshots.ts` (`npm run manuals:screenshots`), run against a dev server on a freshly reset dev DB (`npm run db:reset:dev`). Each shot names the exact file the manual references and carries its own `prepare` step (open a tab, a modal, a dropdown, expand a row, walk the completion wizard) — labels are read from `src/messages/{locale}.json`, so the same step works in both languages. Re-take a subset with `SHOTS=name1,name2` and/or `LOCALES=vi`.
 
 ## Structure
 
-- **Office manual** — Desktop-first. Sections cover login, customers, contracts, visits, service requests, payments, tax invoices, reports/audit, and system administration. Permission differences (ADMIN / MANAGER / STAFF) are highlighted throughout.
-- **Field manual** — Mobile-first. Covers technician daily routine, the 6-step visit completion wizard, photo and signature capture, on-site payment collection, cash handover, and shared-tablet security.
-- **Customer manual** — Mobile-first. Covers portal login, home screen, equipment, visit history, service requests, payments and transfers, tax invoices (B2B), contact management (CONTRACT_PARTY only), and safe usage rules.
+- **Office manual** — Desktop-first. Login, customers, sales reps, equipment, contracts, visits, orders, service requests, payments, tax invoices, reports/audit, admin menus, scenarios, appendices (sidebar, documents, notification templates, status codes, current limitations).
+- **Field manual** — Mobile-first. Daily routine, today / upcoming, visit detail, the 5-step completion wizard, cash on hand and handover, collaborators, per-type notes, offline, known issues.
+- **Customer manual** — Mobile-first. Login and first-login password change, home, equipment, visits, service requests, payments, tax invoices (B2B), contacts, settings, notifications.
 
 ## Reference (workflow docs)
 
-The companion workflow references in `docs/`:
-
-- [`USER_WORKFLOWS.md`](../USER_WORKFLOWS.md) — Technical workflow reference in English (43 Mermaid diagrams)
-- [`HOW_TO_USE.md`](../HOW_TO_USE.md) — Plain-language scenario guide in Korean (12 diagrams)
+- [`USER_WORKFLOWS.md`](../USER_WORKFLOWS.md) — Technical workflow reference in English (Mermaid diagrams)
+- [`HOW_TO_USE.md`](../HOW_TO_USE.md) — Plain-language scenario guide in Korean

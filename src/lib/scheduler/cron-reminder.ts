@@ -1,17 +1,20 @@
 /**
  * Visit reminder cron (UC-VS-10).
  *
- *   runVisitReminderD1() — finds SCHEDULED visits with `scheduledFor` between
- *   23h and 25h from `now`. For each visit, picks the recipient using the
- *   same OPS-contact precedence as the completion email:
+ *   runVisitReminderD1() — finds SCHEDULED visits whose `scheduledFor` falls
+ *   on tomorrow's VST calendar day (00:00–24:00 Asia/Ho_Chi_Minh). The job
+ *   runs once a day (16:00 VST), so a window relative to the run time would
+ *   only catch the visits booked around 16:00. For each visit, picks the
+ *   recipient using the same OPS-contact precedence as the completion email:
  *
  *     1. Primary OPS contact scoped to the visit's site (if any)
  *     2. Primary OPS contact scoped to the customer
  *     3. Any OPS contact
  *     4. CONTRACT_PARTY (fallback)
  *
- *   Dedup: skip if NotificationLog already has a SENT/MOCKED row with the
- *   same `templateCode + contactId` whose `payload.visitId === visit.id`.
+ *   Dedup: skip if NotificationLog already has a SENT/MOCKED reminder for
+ *   this visit at this slot (`payload.vars.visit_id` + `date` + `time`), so a
+ *   re-run is a no-op while a rescheduled visit is reminded for its new slot.
  *
  *   This module exports the function as `runVisitReminderD1` and a script in
  *   `scripts/cron-visit-reminder.ts` invokes it. Phase 6 will wire to Vercel
@@ -24,6 +27,19 @@ import { formatDateTime, toAsciiVi } from "@/lib/format";
 import { pickEquipmentLabel } from "@/lib/products/name";
 
 const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+/** Vietnam is UTC+7 year-round (no DST), so a fixed offset is exact. */
+const VST_OFFSET = 7 * HOUR;
+
+/** [start, end) of the VST calendar day after the one `now` falls on. */
+function tomorrowVst(now: Date): { start: Date; end: Date } {
+  const todayStart =
+    Math.floor((now.getTime() + VST_OFFSET) / DAY) * DAY - VST_OFFSET;
+  return {
+    start: new Date(todayStart + DAY),
+    end: new Date(todayStart + 2 * DAY),
+  };
+}
 
 interface ReminderStats {
   candidates: number;
@@ -100,37 +116,37 @@ async function pickRecipient(visit: {
   };
 }
 
+/**
+ * `date` + `time` are the UTC slices of `scheduledFor` that every reminder has
+ * carried in its vars, so together with `visit_id` they key "this visit at
+ * this slot" — rows written before this check existed still match. Not keyed
+ * on the contact: if the primary OPS changes between runs, the visit has
+ * still been announced.
+ */
 async function alreadyReminded(
   visitId: string,
-  contactId: string,
+  date: string,
+  time: string,
 ): Promise<boolean> {
   const log = await prisma.notificationLog.findFirst({
     where: {
-      contactId,
       templateCode: "SMS_VISIT_REMINDER",
       status: { in: ["SENT", "MOCKED"] },
+      AND: [
+        { payload: { path: ["vars", "visit_id"], equals: visitId } },
+        { payload: { path: ["vars", "date"], equals: date } },
+        { payload: { path: ["vars", "time"], equals: time } },
+      ],
     },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, payload: true },
+    select: { id: true },
   });
-  if (!log) return false;
-  // The payload includes the templated vars dict — sendNotification stamps
-  // them onto the row. We re-check the visitId so the same OPS contact can
-  // still be reminded about a *different* visit on the same day.
-  const payload = log.payload as Record<string, unknown> | null;
-  if (!payload) return false;
-  const vars = payload.vars as Record<string, unknown> | undefined;
-  if (vars && typeof vars.visit_id === "string" && vars.visit_id === visitId) {
-    return true;
-  }
-  return false;
+  return log !== null;
 }
 
 export async function runVisitReminderD1(
   now: Date = new Date(),
 ): Promise<ReminderStats> {
-  const winStart = new Date(now.getTime() + 23 * HOUR);
-  const winEnd = new Date(now.getTime() + 25 * HOUR);
+  const { start: winStart, end: winEnd } = tomorrowVst(now);
 
   const visits = await prisma.visit.findMany({
     where: {
@@ -174,13 +190,13 @@ export async function runVisitReminderD1(
       stats.skipped += 1;
       continue;
     }
-    if (await alreadyReminded(v.id, pick.contactId)) {
+    const dateStr = v.scheduledFor.toISOString().slice(0, 10);
+    const timeStr = v.scheduledFor.toISOString().slice(11, 16);
+    if (await alreadyReminded(v.id, dateStr, timeStr)) {
       stats.skipped += 1;
       continue;
     }
     try {
-      const dateStr = v.scheduledFor.toISOString().slice(0, 10);
-      const timeStr = v.scheduledFor.toISOString().slice(11, 16);
       // The eSMS-approved body has two slots: equipment (50 chars) and the
       // appointment moment (40). Only Vietnamese and English bodies are
       // registered, so Korean contacts get the Vietnamese wording — and with

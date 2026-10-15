@@ -1,7 +1,7 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Kỹ thuật viên
+# Seoul Aqua SOMS — Hướng dẫn dành cho Kỹ thuật viên hiện trường
 
-**Đối tượng**: Kỹ thuật viên (TECHNICIAN) — khoảng 80 người, chỉ dùng trên điện thoại
-**Phiên bản**: 2026-07 (cập nhật lượt thăm nhiều loại, giao hàng tiêu hao, KTV hỗ trợ)
+**Đối tượng**: Kỹ thuật viên (TECHNICIAN) — dùng điện thoại
+**Phiên bản**: 15/10/2026 (chụp lại toàn bộ màn hình · sửa đổi toàn diện theo hoạt động thực tế — hoàn tất lượt thăm 5 bước, ảnh chữ ký, huy hiệu tiền mặt đang giữ, lời nhắn về văn phòng)
 **Ngôn ngữ**: Tiếng Việt
 **Tài liệu liên quan**: [Hướng dẫn Văn phòng](./office.md) · [Hướng dẫn Khách hàng](./customer.md)
 
@@ -10,75 +10,69 @@
 ## Mục lục
 
 - [Chương 1. Bắt đầu](#chương-1-bắt-đầu)
-- [Chương 2. Một ngày làm việc (tổng quan)](#chương-2-một-ngày-làm-việc-tổng-quan)
+- [Chương 2. Một ngày của Kỹ thuật viên](#chương-2-một-ngày-của-kỹ-thuật-viên)
 - [Chương 3. Đăng nhập](#chương-3-đăng-nhập)
-- [Chương 4. Màn hình "Hôm nay" — Công việc trong ngày](#chương-4-màn-hình-hôm-nay--công-việc-trong-ngày)
-- [Chương 5. Màn hình "Sắp tới" — Lịch công việc tiếp theo](#chương-5-màn-hình-sắp-tới--lịch-công-việc-tiếp-theo)
-- [Chương 6. Màn hình Chi tiết Lượt thăm](#chương-6-màn-hình-chi-tiết-lượt-thăm)
-- [Chương 7. Hướng dẫn theo từng loại lượt thăm](#chương-7-hướng-dẫn-theo-từng-loại-lượt-thăm)
-- [Chương 8. Quy trình Bắt đầu → Hoàn thành lượt thăm](#chương-8-quy-trình-bắt-đầu--hoàn-thành-lượt-thăm)
-- [Chương 9. Chụp ảnh và Tải lên](#chương-9-chụp-ảnh-và-tải-lên)
-- [Chương 10. Lấy chữ ký khách hàng](#chương-10-lấy-chữ-ký-khách-hàng)
-- [Chương 11. Thu tiền tại hiện trường](#chương-11-thu-tiền-tại-hiện-trường)
-- [Chương 12. KTV hỗ trợ (làm việc nhóm)](#chương-12-ktv-hỗ-trợ-làm-việc-nhóm)
-- [Chương 13. Xử lý lượt thăm giao hàng tiêu hao](#chương-13-xử-lý-lượt-thăm-giao-hàng-tiêu-hao)
-- [Chương 14. Liên hệ với khách hàng](#chương-14-liên-hệ-với-khách-hàng)
-- [Chương 15. Khách vắng mặt, thiếu phụ kiện và tình huống đặc biệt](#chương-15-khách-vắng-mặt-thiếu-phụ-kiện-và-tình-huống-đặc-biệt)
-- [Chương 16. Kết thúc ngày và Bàn giao tiền mặt](#chương-16-kết-thúc-ngày-và-bàn-giao-tiền-mặt)
-- [Chương 17. Quản lý Hồ sơ](#chương-17-quản-lý-hồ-sơ)
-- [Chương 18. Các tình huống thường gặp](#chương-18-các-tình-huống-thường-gặp)
+- [Chương 4. Bố cục màn hình](#chương-4-bố-cục-màn-hình)
+- [Chương 5. Màn hình "Hôm nay"](#chương-5-màn-hình-hôm-nay)
+- [Chương 6. Màn hình "Sắp tới"](#chương-6-màn-hình-sắp-tới)
+- [Chương 7. Chi tiết lượt thăm](#chương-7-chi-tiết-lượt-thăm)
+- [Chương 8. Bắt đầu và hoàn tất lượt thăm (5 bước)](#chương-8-bắt-đầu-và-hoàn-tất-lượt-thăm-5-bước)
+- [Chương 9. Thu tiền và tiền mặt đang giữ](#chương-9-thu-tiền-và-tiền-mặt-đang-giữ)
+- [Chương 10. Khi tham gia với vai trò KTV phụ](#chương-10-khi-tham-gia-với-vai-trò-ktv-phụ)
+- [Chương 11. Hướng dẫn theo từng loại lượt thăm](#chương-11-hướng-dẫn-theo-từng-loại-lượt-thăm)
+- [Chương 12. Khi cần liên hệ với khách hàng](#chương-12-khi-cần-liên-hệ-với-khách-hàng)
+- [Chương 13. Khách vắng mặt · thiếu phụ tùng · mất mạng](#chương-13-khách-vắng-mặt--thiếu-phụ-tùng--mất-mạng)
+- [Chương 14. Kết thúc ngày và bàn giao tiền mặt](#chương-14-kết-thúc-ngày-và-bàn-giao-tiền-mặt)
+- [Chương 15. Hồ sơ](#chương-15-hồ-sơ)
+- [Chương 16. Các tình huống thường gặp](#chương-16-các-tình-huống-thường-gặp)
 - [Phụ lục A. Tra cứu nhanh loại lượt thăm](#phụ-lục-a-tra-cứu-nhanh-loại-lượt-thăm)
+- [Phụ lục B. Các vấn đề đã biết](#phụ-lục-b-các-vấn-đề-đã-biết)
 
 ---
 
 ## Chương 1. Bắt đầu
 
-### 1.1 Cần thiết bị gì?
+### 1.1 Cần chuẩn bị gì
 
 | Mục | Khuyến nghị |
 |---|---|
-| Hệ điều hành | Android 8+ hoặc iPhone iOS 14+ |
-| Màn hình | Từ 5–6 inch trở lên |
-| Camera | Từ 8 megapixel (để chụp lõi lọc) |
-| Internet | LTE/5G hoặc 4G |
+| Điện thoại | Android 8 trở lên hoặc iPhone iOS 14 trở lên, màn hình từ 5 inch trở lên |
+| Camera | Camera chụp được ảnh hiện trường và chữ ký của khách hàng |
+| Internet | Dữ liệu di động (4G/LTE/5G) hoặc Wi-Fi |
 
-### 1.2 Địa chỉ ứng dụng KTV
+### 1.2 Địa chỉ ứng dụng dành cho KTV
 
-Mở Chrome hoặc Safari trên điện thoại:
+Mở bằng Chrome hoặc Safari trên điện thoại.
 
 ```
 https://soms.seoulaqua.com.vn/f/vi/login
 ```
 
-> **Không cần tải ứng dụng.** Dùng ngay trên trình duyệt. Để truy cập nhanh, thêm vào Màn hình chính (menu trình duyệt → Thêm vào màn hình chính).
+- `/vi` trong địa chỉ là giao diện tiếng Việt. Bỏ đi thì là tiếng Anh, `/ko` là tiếng Hàn.
+- Không cần tải ứng dụng. Nếu tạo lối tắt bằng **"Thêm vào màn hình chính"** trong menu trình duyệt, ứng dụng sẽ mở như một app bình thường.
 
-### 1.3 Thông tin cần nhận lúc đầu
+### 1.3 Thông tin bạn nhận lúc đầu
 
-Khi quản trị viên tạo tài khoản, họ **đọc trực tiếp mật khẩu tạm thời** cho bạn. Thông tin này không gửi qua SMS, vì vậy hãy hỏi quản trị viên.
+Quản trị viên tạo tài khoản và **đọc trực tiếp mật khẩu tạm thời cho bạn.** Mật khẩu không gửi qua tin nhắn.
 
 - ID đăng nhập: số điện thoại di động của bạn
-- Mật khẩu tạm thời: quản trị viên đọc trực tiếp
-- Địa chỉ đăng nhập: `soms.seoulaqua.com.vn/f/login`
+- Mật khẩu: mật khẩu tạm thời nhận từ quản trị viên — lần đăng nhập đầu tiên sẽ hiện màn hình đặt mật khẩu mới ([Chương 3](#chương-3-đăng-nhập))
 
-Tuyệt đối không chia sẻ mật khẩu với người khác.
+Không chia sẻ mật khẩu cho người khác.
 
 ---
 
-## Chương 2. Một ngày làm việc (tổng quan)
+## Chương 2. Một ngày của Kỹ thuật viên
 
 ```
-Sáng → Đăng nhập → Kiểm tra màn hình Hôm nay
-  → Xuất phát đến điểm thăm đầu tiên
-  → Đến nơi → Bấm "Bắt đầu"
-  → Chọn hạng mục công việc (lõi lọc, phụ kiện)
-  → Chụp ảnh trước/sau
-  → Lấy chữ ký khách hàng (dạng số)
-  → Thu tiền (nếu có)
-  → Bấm "Hoàn thành"
-  → Lặp lại cho điểm tiếp theo
-  → Trước khi về: Kiểm tra tổng tiền thu
-  → Đăng xuất (bắt buộc nếu dùng điện thoại chung)
-  → Sáng hôm sau: Bàn giao tiền mặt cho văn phòng
+Sáng → Đăng nhập → Kiểm tra màn hình "Hôm nay"
+  → Trong chi tiết lượt thăm, xem thiết bị · chứng từ · nội dung công việc · lời nhắn của văn phòng
+  → Xuất phát ("Mở bản đồ")
+  → Đến nơi → "Bắt đầu"
+  → Làm việc → "Hoàn tất" → nhập 5 bước (nội dung công việc · ảnh · chữ ký · thanh toán · xem lại)
+  → Lượt thăm tiếp theo
+  → Trước khi về: kiểm tra tiền mặt đang giữ
+  → Ngày làm việc kế tiếp: bàn giao tiền mặt cho văn phòng (trong vòng 48 giờ kể từ lúc thu)
 ```
 
 ---
@@ -87,396 +81,338 @@ Sáng → Đăng nhập → Kiểm tra màn hình Hôm nay
 
 ![Màn hình đăng nhập](../screenshots/vi/field/01-login.png)
 
-Trang đăng nhập KTV: `/f/vi/login`
-
-| Trường | Mô tả |
+| Mục | Mô tả |
 |---|---|
-| Số điện thoại | Số di động cá nhân |
-| Mật khẩu | Mật khẩu tạm thời hoặc mật khẩu đã đổi |
+| Số điện thoại | Số di động của bạn |
+| Mật khẩu | Mật khẩu nhận từ quản trị viên |
 
-**Lần đầu đăng nhập**: Sau khi đăng nhập bằng mật khẩu tạm thời, màn hình đổi mật khẩu sẽ hiện ra ngay. Đặt mật khẩu mới tối thiểu 8 ký tự.
-
-**Quên mật khẩu**: Gọi cho văn phòng. Quản trị viên sẽ cấp mật khẩu tạm thời mới ngay và đọc trực tiếp cho bạn. Không có màn hình tự lấy lại mật khẩu.
-
-> Nếu dùng tài khoản KTV để đăng nhập vào ứng dụng văn phòng (`/o/login`), hệ thống sẽ tự hướng dẫn bạn đến đúng ứng dụng KTV.
+- **Nhập sai 5 lần trong 15 phút thì tài khoản bị khóa 15 phút.** Khi hiện "Đăng nhập sai nhiều lần nên tài khoản tạm bị khóa…", hãy thử lại sau 15 phút, hoặc nhờ văn phòng đặt lại mật khẩu (đặt lại cũng sẽ mở khóa).
+- **Khi đăng nhập bằng mật khẩu tạm thời**, màn hình "Đổi mật khẩu" sẽ hiện trước. Nhập mật khẩu hiện tại (mật khẩu tạm thời) · mật khẩu mới (từ 8 ký tự, phải khác mật khẩu cũ) · xác nhận mật khẩu mới rồi nhấn "Đổi mật khẩu". Bạn không thể sang màn hình khác trước khi đổi.
+- **Khi quên mật khẩu**: gọi điện cho văn phòng. Quản trị viên sẽ cấp mật khẩu tạm thời mới và đọc trực tiếp cho bạn. Không có màn hình tự cấp lại mật khẩu.
+- Muốn đổi mật khẩu trong lúc dùng bình thường: "Hồ sơ" → "Đổi mật khẩu" ([Chương 15](#chương-15-hồ-sơ)).
+- Nếu đăng nhập ứng dụng văn phòng (`/o/vi/login`) bằng tài khoản KTV, màn hình sẽ hiện thông báo "Đây là tài khoản kỹ thuật viên. Vui lòng đăng nhập tại trang dành cho KTV." cùng liên kết "Đến trang KTV".
 
 ---
 
-## Chương 4. Màn hình "Hôm nay" — Công việc trong ngày
+## Chương 4. Bố cục màn hình
+
+- **Phía trên**: "Seoul Aqua Hiện trường", menu ngôn ngữ (한국어 · Tiếng Việt · English), biểu tượng đăng xuất
+- **3 tab phía dưới**: **Hôm nay · Sắp tới · Hồ sơ**
+- Khi mất mạng, phía trên hiện biểu ngữ "Ngoại tuyến" (xem [§13.3](#133-khi-mất-mạng)).
+
+---
+
+## Chương 5. Màn hình "Hôm nay"
 
 ![Màn hình Hôm nay](../screenshots/vi/field/02-today.png)
 
-Sau khi đăng nhập, danh sách lượt thăm được phân công trong ngày hiển thị theo thứ tự thời gian.
+Đây là màn hình mở ra sau khi đăng nhập.
 
-Mỗi thẻ lượt thăm hiển thị:
-- **Tên và địa chỉ khách hàng**
-- **Loại lượt thăm** (Lắp đặt, Kiểm tra định kỳ, Giao hàng tiêu hao v.v.)
-- **Giờ hẹn**
-- **Huy hiệu trạng thái** (Theo kế hoạch / Đang thực hiện / Hoàn thành)
-- Lượt thăm nhiều loại hiển thị cả loại bổ sung (ví dụ: Kiểm tra định kỳ + Giao hàng tiêu hao)
+- Trên cùng là huy hiệu **Tiền mặt đang giữ** — số tiền mặt bạn đã thu nhưng chưa bàn giao cho văn phòng ([§9.3](#93-huy-hiệu-tiền-mặt-đang-giữ))
+- Nhóm **Chính** — các lượt thăm bạn chịu trách nhiệm
+- Nhóm **Phụ** — các lượt thăm bạn hỗ trợ KTV khác ([Chương 10](#chương-10-khi-tham-gia-với-vai-trò-ktv-phụ))
 
-**Lượt thăm cùng nhóm**: Lượt thăm bạn tham gia với tư cách KTV hỗ trợ có huy hiệu "**Cùng làm việc**".
+Thẻ lượt thăm hiển thị:
 
-Nhấp vào thẻ để vào màn hình chi tiết.
+- Tên khách hàng và nhãn "Chính" hoặc "Phụ"
+- Loại lượt thăm và mã khách hàng
+- Ngày · giờ
+- Model · số sê-ri
+- Khung vàng **"Cần ký: …"** — các chứng từ cần lấy chữ ký khách hàng trong lượt thăm này
+
+Chỉ hiện các lượt thăm hôm nay ở trạng thái Đã xếp lịch · Đang tiến hành · Đã đổi lịch. **Lượt thăm đã hoàn tất sẽ biến mất khỏi danh sách.**
+
+Nhấn vào thẻ để mở chi tiết lượt thăm.
 
 ---
 
-## Chương 5. Màn hình "Sắp tới" — Lịch công việc tiếp theo
+## Chương 6. Màn hình "Sắp tới"
 
 ![Màn hình Sắp tới](../screenshots/vi/field/03-upcoming.png)
 
-Hiển thị các lượt thăm được lên kế hoạch từ ngày mai trở đi, sắp xếp theo ngày. Dùng để chuẩn bị phụ kiện trước hoặc tìm đường đi.
+Hiển thị các lượt thăm **trong 7 ngày kể từ ngày mai**, chia theo ngày. Dùng để chuẩn bị phụ tùng hoặc lên trước lộ trình. Nếu không có, màn hình hiện "Không có lượt thăm 7 ngày tới."
 
 ---
 
-## Chương 6. Màn hình Chi tiết Lượt thăm
+## Chương 7. Chi tiết lượt thăm
 
-![Chi tiết lượt thăm](../screenshots/vi/field/04-visit-detail.png)
+Mở ra khi bạn nhấn vào thẻ lượt thăm. Các phần được sắp xếp từ trên xuống như sau.
 
-Nhấp vào thẻ lượt thăm để mở màn hình chi tiết.
+![Chi tiết lượt thăm — phần trên](../screenshots/vi/field/04-visit-detail.png)
 
-### Phần trên — Tóm tắt lượt thăm
+1. **Đầu trang**: loại lượt thăm · trạng thái, tên khách hàng, ngày · giờ
+2. Nút **"Gọi tổng đài"** — nhấn để gọi đến số của văn phòng
+3. **Người liên hệ** — tên người phụ trách phía khách hàng (không hiển thị số điện thoại, xem [Chương 12](#chương-12-khi-cần-liên-hệ-với-khách-hàng))
+4. **"Mở bản đồ"** — mở địa chỉ khách hàng trên Google Maps
+5. **Thiết bị** — tên model, mã model · số sê-ri · ngày lắp đặt, cơ sở (địa điểm)
 
-- Tên khách hàng, địa chỉ, loại lượt thăm
-- Giờ hẹn và trạng thái
+![Chứng từ cần ký](../screenshots/vi/field/05-visit-docs.png)
 
-### Phần Liên hệ khách hàng
+6. **Cần ký** — mỗi chứng từ có bản xem trước PDF và liên kết "Mở tab mới". Cần lấy **chữ ký của cả khách hàng và KTV.** Chứng từ giấy do văn phòng in sẵn cho bạn.
 
-- Số điện thoại liên hệ chính (nhấp để gọi điện)
-- Không gọi trực tiếp cho khách — liên hệ qua văn phòng ([Chương 14](#chương-14-liên-hệ-với-khách-hàng))
+![Nội dung công việc](../screenshots/vi/field/06-visit-work.png)
 
-### Phần Thiết bị
+7. **Nội dung công việc** — hướng dẫn công việc theo loại lượt thăm, danh sách **Cần thay (lõi lọc · vật tư)** và **Cần vệ sinh · kiểm tra** (kèm chu kỳ: "mỗi 180 ngày", "mỗi lượt thăm"), số tiền dự kiến (nếu có)
+8. **Yêu cầu dịch vụ** — nếu lượt thăm phát sinh từ yêu cầu của khách hàng thì có mã yêu cầu · loại · nội dung khách hàng đã viết
+9. **Địa chỉ**
 
-- Danh sách thiết bị cần xử lý trong lượt thăm này
-- Tên mẫu, số serial, ngày kiểm tra gần nhất
+![Lời nhắn về văn phòng và các nút](../screenshots/vi/field/07-visit-note-actions.png)
 
-### Phần Vật tư tiêu hao (chỉ lượt thăm giao hàng tiêu hao)
-
-- Danh sách hàng hóa từ đơn hàng liên kết
-- Số lượng và đơn giá từng mặt hàng
-
-### Phần Hạng mục công việc
-
-- Danh sách kiểm tra thay lõi lọc
-- Ghi chép thay phụ kiện
-
-### Phần Ảnh
-
-- Ảnh trước/sau (tối đa 10 ảnh)
-
-### Phần Chữ ký
-
-![Khu vực chữ ký](../screenshots/vi/field/08-visit-signature.png)
-
-- Khách hàng ký trực tiếp bằng ngón tay trên màn hình
-
-### Thanh hành động phía dưới
-
-- Nút **Bắt đầu** → Đánh dấu bắt đầu khi đến nơi
-- Nút **Hoàn thành** → Sau khi hoàn tất mọi công việc
+10. **Nhắn về văn phòng** — ghi chú trao đổi với văn phòng. Đừng liên hệ trực tiếp với khách hàng, hãy viết vào đây rồi nhấn "Gửi văn phòng". Nội dung này không được in trên chứng từ của khách hàng.
+11. **Các nút** (chỉ KTV chính nhìn thấy)
+    - "Bắt đầu" — khi trạng thái là Đã xếp lịch
+    - "Hoàn tất" — khi trạng thái là Đang tiến hành
+    - "KH vắng" — khi trạng thái là Đã xếp lịch hoặc Đang tiến hành ([§13.1](#131-khi-khách-hàng-không-có-nhà))
 
 ---
 
-## Chương 7. Hướng dẫn theo từng loại lượt thăm
+## Chương 8. Bắt đầu và hoàn tất lượt thăm (5 bước)
 
-### 7.1 Lắp đặt (INSTALLATION)
+### 8.1 Bắt đầu lượt thăm
 
-Lượt thăm lắp đặt thiết bị mới.
+Khi đến nhà hoặc văn phòng của khách hàng, vào chi tiết lượt thăm → **"Bắt đầu"**. Trạng thái chuyển sang **Đang tiến hành** và giờ bắt đầu được ghi lại. Lúc này nút "Hoàn tất" xuất hiện.
 
-Cần mang theo:
-- Thiết bị và dụng cụ lắp đặt
-- Hợp đồng + PDF Phiếu giao nhận (văn phòng in sẵn)
+### 8.2 Hoàn tất lượt thăm — 5 bước
 
-Lấy chữ ký khách hàng trên phiếu giao nhận sau khi kiểm tra xong.
+Làm xong việc, nhấn **"Hoàn tất"**. Nhập lần lượt năm bước; di chuyển giữa các bước bằng "Tiếp" · "Quay lại" ở phía dưới.
 
-### 7.2 Kiểm tra định kỳ (PERIODIC_INSPECTION)
+#### ① Nội dung + phụ tùng
 
-Lượt thăm hàng tháng hoặc 2 tháng/lần.
+![Bước 1 — Nội dung công việc](../screenshots/vi/field/09-complete-work.png)
 
-Quy trình:
-1. Kiểm tra tình trạng lõi lọc → Tích chọn hạng mục cần thay
-2. Chụp ảnh trước/sau
-3. Lấy chữ ký khách hàng
-4. Thu tiền (phí thuê hoặc phí lõi lọc nếu có)
+- **Bạn đã làm gì?** (bắt buộc) — ghi lại công việc đã thực hiện. Nội dung này được đưa vào phiếu xác nhận công việc gửi khách hàng.
+- **Đề xuất công việc (bảo trì định kỳ)** — danh sách lõi lọc được đề xuất tự động theo chu kỳ thay · vệ sinh của thiết bị. Ban đầu tất cả đều được chọn, vì vậy hãy **bỏ chọn những mục thực tế bạn không làm.** Các mục thay đã chọn sẽ được tính lại ngày thay kế tiếp và trừ khỏi tồn kho.
+- **Phụ tùng đã thay / sử dụng** — tìm trong danh mục theo SKU hoặc tên rồi chọn. Nếu không có trong danh sách, dùng "+ Thêm "tên"".
 
-### 7.3 Giao hàng tiêu hao (CONSUMABLE_DELIVERY)
+#### ② Hình ảnh
 
-Lượt thăm giao vật tư (bộ lõi lọc, phụ kiện v.v.) cho khách hàng. Có thể thực hiện cùng lúc với kiểm tra định kỳ.
+![Bước 2 — Hình ảnh](../screenshots/vi/field/10-complete-photos.png)
 
-Quy trình:
-1. Kiểm tra phần "**Vật tư tiêu hao**" trong chi tiết lượt thăm để xác nhận hàng hóa
-2. Đối chiếu với hàng thực tế mang đến
-3. Khách hàng xác nhận xong → Lấy chữ ký
-4. Thu tiền (tiền mặt hoặc chuyển khoản sau)
+- "Thêm ảnh" → chọn từ camera hoặc thư viện. Có thể chọn nhiều ảnh cùng lúc, ảnh được tự động nén 1080p (khuyến nghị 1–12 ảnh).
+- Ảnh đã chọn được đánh dấu "Chờ tải lên". **Phải nhấn "Tải lên N ảnh đã chọn" thì ảnh mới được tải lên.** Còn ảnh chưa tải lên thì không sang được bước tiếp theo. Ảnh không cần có thể bỏ bằng dấu ×.
+- Muốn chụp thêm, nhấn "Thêm ảnh nữa".
+- Ảnh không bắt buộc, nhưng giữ ảnh trước · sau khi làm việc sẽ là bằng chứng khi sau này phát sinh tranh chấp.
 
-> Chứng từ giao hàng tiêu hao được chọn tự động theo loại khách: B2C → Biên lai bán hàng, B2B → Phiếu xuất kho (Mẫu 02-VT). Văn phòng in sẵn để KTV mang theo.
+#### ③ Chữ ký
 
-### 7.4 Sửa chữa (REPAIR)
+![Bước 3 — Chữ ký](../screenshots/vi/field/11-complete-signature.png)
 
-Thực hiện theo báo cáo sự cố hoặc chỉ thị văn phòng. Xác nhận với văn phòng về phụ kiện cần dùng trước khi xuất phát.
+- Chụp và tải lên **ảnh chữ ký của khách hàng**. Hãy chụp chữ ký đã ký trên chứng từ giấy hoặc chữ ký ký trên màn hình.
+- Nhấn "Chụp ảnh chữ ký" để mở camera. Nếu chụp sai, nhấn "Chụp lại" hoặc nhấn "Xóa" rồi chụp lại.
+- **Chữ ký là bắt buộc.** Nếu thiếu, đến bước cuối hệ thống sẽ từ chối khi gửi.
 
-### 7.5 Thay lõi lọc (FILTER_REPLACEMENT)
+#### ④ Thanh toán
 
-Lượt thăm chỉ thay lõi lọc, tách biệt với kiểm tra định kỳ. Bắt buộc chụp ảnh sau khi thay.
+![Bước 4 — Thanh toán](../screenshots/vi/field/12-complete-payment.png)
 
-### 7.6 Thu hồi thiết bị (RETRIEVAL)
-
-Lượt thăm thu hồi thiết bị sau khi hết hợp đồng thuê.
-
-- Đóng gói thiết bị cẩn thận trước khi mang về
-- Bàn giao cho văn phòng để nhập kho
-
----
-
-## Chương 8. Quy trình Bắt đầu → Hoàn thành lượt thăm
-
-![Màn hình bắt đầu lượt thăm](../screenshots/vi/field/05-visit-start.png)
-
-1. **Đến nơi**: Mở thẻ lượt thăm sau khi đến nhà/văn phòng khách hàng
-2. **Bấm "Bắt đầu"**: Ghi lại thời gian đến
-3. **Tích hạng mục công việc**: Chọn lõi lọc, phụ kiện đã thay/xử lý
-4. **Chụp ảnh**: Tải ảnh trước và sau ([Chương 9](#chương-9-chụp-ảnh-và-tải-lên))
-5. **Lấy chữ ký**: Khách hàng ký trên màn hình ([Chương 10](#chương-10-lấy-chữ-ký-khách-hàng))
-6. **Thu tiền**: Nhập số tiền nếu thu tiền mặt ([Chương 11](#chương-11-thu-tiền-tại-hiện-trường))
-7. **Bấm "Hoàn thành"**:
-   - Văn phòng nhận thông báo tự động
-   - Hệ thống tự gửi email Phiếu xác nhận công việc cho khách hàng
-
-> **Không thể sửa sau khi hoàn thành.** Nếu có sai sót, liên hệ văn phòng ngay lập tức.
-
----
-
-## Chương 9. Chụp ảnh và Tải lên
-
-Chi tiết lượt thăm → phần "**Ảnh**"
-
-### Ảnh cần chụp
-
-| Bắt buộc | Nội dung |
+| Ô | Mô tả |
 |---|---|
-| Trước | Tình trạng lõi lọc hoặc thiết bị (trước khi thay) |
-| Sau | Lõi lọc mới hoặc sau khi lắp đặt xong |
+| Số tiền tính phí | Số tiền dự kiến do văn phòng đặt đã được điền sẵn. Nếu thay đổi, bắt buộc ghi **Lý do điều chỉnh** (từ 5 ký tự trở lên) |
+| Số tiền đã thu | Số tiền thực nhận. **Nếu chưa thu thì nhập 0** |
+| Phương thức | Hiện ra khi số tiền đã thu lớn hơn 0. Tiền mặt · Chuyển khoản · Thẻ · Khác |
+| Thu cho thiết bị nào? | Hiện ra khi khách hàng có từ 2 thiết bị trở lên |
 
-Tùy tình huống thêm:
-- Cận cảnh phụ kiện hỏng (khi sửa chữa)
-- Toàn cảnh môi trường lắp đặt (lần đầu lắp đặt)
+Nếu khách hàng nói "để lát nữa tôi chuyển khoản", hãy để số tiền đã thu là **0**. Văn phòng sẽ xác nhận tiền vào và xử lý.
 
-### Cách tải lên
+#### ⑤ Xem lại + gửi
 
-1. Nhấn "**Thêm ảnh**"
-2. Chọn "**Chụp ảnh**" hoặc "**Chọn từ thư viện**"
-3. Chọn ảnh → Tự động tải lên (cần Internet)
+![Bước 5 — Xem lại](../screenshots/vi/field/13-complete-review.png)
 
-> Nếu ảnh mờ hoặc quá tối, hãy chụp lại. Chất lượng ảnh rất quan trọng khi văn phòng xử lý chứng từ.
+Kiểm tra nội dung đã nhập rồi nhấn **"Gửi hoàn tất"**. Nếu cần sửa, nhấn "Quay lại".
 
----
+### 8.3 Điều gì xảy ra sau khi hoàn tất
 
-## Chương 10. Lấy chữ ký khách hàng
+- Lượt thăm chuyển sang **Hoàn tất** và bạn quay về chi tiết lượt thăm. Các nút không còn hiện nữa.
+- Phiếu xác nhận công việc dạng PDF được tạo, và email thông báo hoàn tất lượt thăm được gửi đến người liên hệ của khách hàng (hiện email đang trong giai đoạn chuẩn bị gửi).
+- Nếu lượt thăm phát sinh từ yêu cầu của khách hàng thì yêu cầu đó cũng chuyển sang **Hoàn tất.**
+- Lõi lọc thay đã chọn được trừ khỏi tồn kho và ngày thay kế tiếp được đặt lại.
+- Nếu có số tiền đã thu thì bản ghi thu tiền được tạo và cộng vào tiền mặt đang giữ.
 
-Chi tiết lượt thăm → Kéo xuống → phần "**Chữ ký**"
-
-![Khu vực chữ ký](../screenshots/vi/field/08-visit-signature.png)
-
-1. Đưa màn hình cho khách hàng xem
-2. Hướng dẫn "**Vui lòng ký vào đây**"
-3. Khách hàng ký bằng ngón tay
-4. Nhấn "**Xác nhận**"
-
-> Chữ ký không thể thay đổi sau khi đã lưu. Nếu sai, nhấn "**Xóa**" rồi lấy chữ ký lại.
-
-**Khi khách hàng từ chối ký**: Ghi lý do vào phần ghi chú và chọn "**Tiếp tục không có chữ ký**". Phải báo cáo với văn phòng.
+> **Sau khi hoàn tất không thể sửa.** Nếu nhập nhầm, hãy liên hệ văn phòng ngay.
 
 ---
 
-## Chương 11. Thu tiền tại hiện trường
+## Chương 9. Thu tiền và tiền mặt đang giữ
 
-### 11.1 Thu tiền mặt
+### 9.1 Thu tiền tại hiện trường
 
-Trong bước hoàn thành lượt thăm:
+Nhập ở bước 4 của phần hoàn tất lượt thăm (§8.2 ④). Lượt thăm "Thu tiền" chỉ để thu tiền cũng làm theo cách tương tự.
 
-1. Nhấn mục "**Thu tiền mặt**"
-2. Nhập số tiền (dùng bàn phím số)
-3. Xác nhận → Lưu
+### 9.2 Biên lai
 
-> Biên lai được văn phòng tự động gửi email cho khách hàng. Dùng phiếu giấy văn phòng đã chuẩn bị sẵn nếu cần.
+Biên lai cho khách hàng do văn phòng chuẩn bị. Nếu cần biên lai giấy, hãy dùng chứng từ văn phòng đã chuẩn bị cho bạn.
 
-### 11.2 Khi khách hàng chuyển khoản sau
+### 9.3 Huy hiệu tiền mặt đang giữ
 
-Khi khách hàng nói "Tôi sẽ chuyển khoản sau":
-- Không nhập số tiền, chọn "**Chuyển khoản sau**"
-- Văn phòng sẽ đối soát khi nhận được tiền
+Huy hiệu **Tiền mặt đang giữ** ở trên cùng màn hình "Hôm nay" hiển thị tổng số tiền mặt bạn đã thu mà chưa bàn giao cho văn phòng.
 
-### 11.3 Kiểm tra tổng tiền thu trong ngày
-
-Để xem tổng tiền mặt đã thu hôm nay:
-- Màn hình Hồ sơ → phần "**Thu tiền hôm nay**"
-
----
-
-## Chương 12. KTV hỗ trợ (làm việc nhóm)
-
-Áp dụng khi có 2 KTV trở lên làm việc tại cùng một điểm (B2B lớn, lắp đặt nhiều thiết bị cùng lúc v.v.).
-
-### Phân chia vai trò
-
-| Vai trò | Quyền hạn |
+| Huy hiệu | Ý nghĩa |
 |---|---|
-| **KTV chính (Lead)** | Bắt đầu/Hoàn thành lượt thăm, Thu tiền, Lấy chữ ký |
-| **KTV hỗ trợ (Collaborator)** | Xem lượt thăm, thêm ghi chú, tải ảnh lên. Không thể bấm Hoàn thành hoặc Thu tiền |
+| OK | Khoản tiền mặt thu lâu nhất chưa đến 24 giờ |
+| Sắp đến hạn | 24–47 giờ |
+| Quá hạn | Từ 48 giờ trở lên — bảng điều khiển của văn phòng cũng hiện cảnh báo |
 
-### Khi tham gia với tư cách KTV hỗ trợ
-
-- Màn hình Hôm nay hiển thị huy hiệu "**Cùng làm việc**" trên lượt thăm đó
-- Có thể thêm ghi chú và ảnh trong chi tiết lượt thăm
-- KTV chính chịu trách nhiệm bấm Hoàn thành và Thu tiền
+Trên huy hiệu có hiển thị hạn chót dạng "bàn giao trước …". **Hãy bàn giao tiền mặt đã thu cho văn phòng trong vòng 48 giờ.**
 
 ---
 
-## Chương 13. Xử lý lượt thăm giao hàng tiêu hao
+## Chương 10. Khi tham gia với vai trò KTV phụ
 
-Khi thẻ lượt thăm hiển thị loại "Giao hàng tiêu hao":
+Ở những hiện trường lớn (như lắp nhiều máy cho khách B2B), nhiều KTV cùng đi.
 
-1. Vào chi tiết lượt thăm → Kiểm tra phần "**Vật tư tiêu hao**" để xác nhận danh sách và số lượng hàng hóa
-2. Đối chiếu với hàng thực tế mang đến tại hiện trường
-3. Khách hàng xác nhận xong → Lấy chữ ký
-4. Khách hàng B2C: Giao phiếu Biên lai bán hàng (văn phòng in sẵn trong tài liệu mang theo)
-5. Khách hàng B2B: Giao Phiếu xuất kho (Mẫu 02-VT) → Lấy chữ ký và đóng dấu của khách → Mang về văn phòng
+| Vai trò | Việc có thể làm |
+|---|---|
+| **KTV chính** | Bắt đầu lượt thăm · hoàn tất lượt thăm (nội dung công việc · ảnh · chữ ký · thanh toán) · lời nhắn về văn phòng |
+| **KTV phụ** | Xem lượt thăm · lời nhắn về văn phòng |
 
-> Nếu số lượng không khớp, **liên hệ văn phòng trước khi bấm Hoàn thành**. Sau khi hoàn thành rất khó sửa.
+![Lượt thăm cùng làm](../screenshots/vi/field/08-visit-shared.png)
 
----
-
-## Chương 14. Liên hệ với khách hàng
-
-**Chính sách**: KTV không xem số điện thoại cá nhân của khách hàng. Số điện thoại không hiển thị trong chi tiết lượt thăm.
-
-**Lý do**: Bảo vệ thông tin cá nhân khách hàng + thống nhất quản lý lịch qua văn phòng.
-
-**Khi cần liên hệ khách hàng**:
-1. Gọi điện cho văn phòng → "Phiền anh/chị thông báo giờ đến cho khách hàng [tên] giúp em"
-2. Hoặc ghi yêu cầu vào phần **Ghi chú** của lượt thăm → Văn phòng sẽ kiểm tra
-
-**Tình huống khẩn cấp** (không vào được do khách vắng mặt v.v.):
-- Chi tiết lượt thăm → Nút "**Báo vắng mặt**"
-- Văn phòng nhận thông báo tự động và liên hệ khách hàng
+- Lượt thăm cùng làm hiện trong nhóm **Phụ** của màn hình "Hôm nay", kèm nhãn "Phụ".
+- KTV phụ không có nút bắt đầu · hoàn tất. Ảnh do KTV chính tải lên ở bước hoàn tất, vì vậy hãy chuyển ảnh bạn chụp cho KTV chính.
 
 ---
 
-## Chương 15. Khách vắng mặt, thiếu phụ kiện và tình huống đặc biệt
+## Chương 11. Hướng dẫn theo từng loại lượt thăm
 
-### 15.1 Khách hàng vắng mặt
+Mục **Nội dung công việc** trong chi tiết lượt thăm có hướng dẫn theo từng loại. Dưới đây là những điểm chính.
 
-1. Đến nơi nhưng không có ai:
-   - Chi tiết lượt thăm → Nút "**Báo vắng mặt**"
-   - Văn phòng liên hệ khách hàng và sắp xếp lịch lại
-2. Thẻ lượt thăm chuyển sang trạng thái `CUSTOMER_NO_SHOW`
+| Loại | Việc cần làm | Chứng từ cần ký |
+|---|---|---|
+| Lắp đặt | Lắp thiết bị, kiểm tra hoạt động, chạy thử. Mang đầy đủ phụ kiện và bộ lắp đặt | Biên bản bàn giao hoặc biên lai bán hàng (B2C) / phiếu xuất kho (B2B), và hợp đồng |
+| Bảo trì định kỳ | Kiểm tra · vệ sinh lõi lọc, thay lõi lọc đến chu kỳ, kiểm tra rò rỉ · chất lượng nước · hoạt động | Phiếu bảo trì định kỳ (B2C) / phiếu xác nhận bảo trì (B2B) |
+| Thay lõi lọc | Thay lõi lọc, xả hết nước cũ rồi kiểm tra hoạt động | Phiếu xác nhận công việc |
+| Sửa chữa | Đọc lời nhắn của văn phòng và nội dung yêu cầu dịch vụ rồi chẩn đoán · sửa chữa | Phiếu xác nhận công việc |
+| Di dời | Tháo → lắp lại ở vị trí mới → thử rò rỉ | Phiếu xác nhận công việc |
+| Thu tiền | Xác nhận số tiền, giao biên lai | Phiếu xác nhận công việc |
+| Giao vật tư | Giao vật tư khách đã đặt ([§11.1](#111-giao-vật-tư)) | Biên lai bán hàng (B2C) / phiếu xuất kho (B2B) |
+| Thu hồi thiết bị | Đóng gói thiết bị sạch sẽ để thu hồi, trả về văn phòng | Phiếu xác nhận công việc |
+| Khác | Đọc lời nhắn của văn phòng rồi làm việc | Phiếu xác nhận công việc |
 
-### 15.2 Thiếu phụ kiện
+### 11.1 Giao vật tư
 
-1. Khi phát hiện thiếu phụ kiện tại hiện trường:
-   - Chi tiết lượt thăm → Ghi chú "Thiếu lõi lọc PP, cần thăm lại"
-   - Chọn "**Cần thăm lại**"
-2. Văn phòng chuẩn bị phụ kiện và lên lịch lượt thăm mới
-
-### 15.3 Phát hiện thiết bị có vấn đề
-
-- Ghi chi tiết vào phần ghi chú lượt thăm
-- Chụp ảnh liên quan và tải lên
-- Báo cáo bằng lời với văn phòng sau khi hoàn thành lượt thăm
-
-### 15.4 Mất kết nối Internet
-
-Ứng dụng cơ bản cần Internet để hoạt động. Khi mất mạng:
-- Di chuyển đến khu vực có Wi-Fi hoặc bật dữ liệu di động
-- Nếu khẩn cấp: Báo nội dung công việc bằng lời qua điện thoại cho văn phòng
-- Sau khi có mạng: Mở lại chi tiết lượt thăm và nhập ảnh, ghi chú, chữ ký
+- Ứng dụng KTV **không có danh sách riêng các mặt hàng đã đặt.** Mặt hàng và số lượng được ghi trên **biên lai bán hàng (B2C) hoặc phiếu xuất kho (B2B)** do văn phòng in cho bạn, hãy đối chiếu theo đó.
+- Nếu lượt thăm bảo trì có kèm giao hàng, mục "Cần ký" sẽ hiện cả chứng từ bảo trì và chứng từ giao hàng (biên lai bán hàng hoặc phiếu xuất kho). Hãy lấy chữ ký cho cả hai.
+- Khi hoàn tất lượt thăm, đơn hàng gắn với lượt thăm đó chuyển sang "Đã giao".
+- Phiếu xuất kho B2B cần có chữ ký · con dấu của khách hàng rồi trả lại văn phòng.
+- Nếu số lượng không khớp, hãy báo bằng "Gọi tổng đài" **trước khi hoàn tất.**
 
 ---
 
-## Chương 16. Kết thúc ngày và Bàn giao tiền mặt
+## Chương 12. Khi cần liên hệ với khách hàng
 
-### 16.1 Danh sách kiểm tra cuối ngày
+Ứng dụng KTV **không hiển thị số điện thoại của khách hàng.** Mục đích là bảo vệ thông tin cá nhân của khách hàng và tập trung việc quản lý lịch hẹn về văn phòng.
 
-Trước khi về:
-- Kiểm tra màn hình Hôm nay: tất cả lượt thăm đã "Hoàn thành" hoặc "Báo vắng mặt" chưa
-- Kiểm tra tổng tiền mặt đã thu (Hồ sơ → Thu tiền hôm nay)
-- Bỏ tiền mặt vào phong bì kèm bản sao biên lai
+- Việc gấp: chi tiết lượt thăm → **"Gọi tổng đài"**
+- Việc không gấp: chi tiết lượt thăm → viết vào **Nhắn về văn phòng** rồi nhấn "Gửi văn phòng"
 
-### 16.2 Khi dùng điện thoại chung
-
-Bắt buộc **đăng xuất** khi dùng điện thoại chung của công ty.
-
-1. Menu góc trên phải → "**Đăng xuất**"
-2. Xác nhận đã quay về màn hình đăng nhập
-
-### 16.3 Bàn giao tiền mặt (sáng hôm sau)
-
-Đến văn phòng:
-1. Giao phong bì tiền mặt + bản sao biên lai hôm qua
-2. Nhân viên văn phòng kiểm đếm và bấm "**Nhận tất cả**"
-
-> Nếu chưa bàn giao đến hết D+1, quản trị viên sẽ nhận thông báo tự động.
+Văn phòng sẽ liên hệ với khách hàng.
 
 ---
 
-## Chương 17. Quản lý Hồ sơ
+## Chương 13. Khách vắng mặt · thiếu phụ tùng · mất mạng
 
-**Tab phía dưới → Hồ sơ** (hoặc `/f/vi/profile`)
+### 13.1 Khi khách hàng không có nhà
 
-![Màn hình hồ sơ](../screenshots/vi/field/07-profile.png)
+1. Chi tiết lượt thăm → **"KH vắng"**
+2. Chọn lý do: Khách hàng vắng nhà · Không liên lạc được khách hàng · Khách hàng yêu cầu đổi lịch · Không thể làm do sự cố hiện trường/thiết bị · Khác
+3. Ghi tình hình vào **Ghi chú chi tiết** (giờ đến, các lần cố liên hệ...). Nếu chọn "Khác" thì ghi chú là bắt buộc.
+4. Nhấn "Xác nhận KH vắng" → lượt thăm chuyển sang **KH vắng** và rời khỏi danh sách "Hôm nay".
+5. Khi văn phòng gọi điện cho khách hàng và sắp xếp lại lịch, lượt thăm đó sẽ hiện lại trong "Hôm nay" · "Sắp tới" với ngày mới.
 
-- Xem **tên, điện thoại, vai trò** của mình
-- Xem **khu vực phụ trách** (dùng để khớp vùng khi phân công)
-- **Đổi mật khẩu**:
-  1. Hồ sơ → "Đổi mật khẩu"
-  2. Nhập mật khẩu hiện tại + mật khẩu mới + xác nhận
-  3. Lưu
+![KH vắng](../screenshots/vi/field/15-visit-fail.png)
+
+Chỉ KTV chính mới xử lý được KH vắng. Nếu việc gấp, hãy báo thêm bằng "Gọi tổng đài".
+
+### 13.2 Khi thiếu phụ tùng / phát hiện thiết bị bất thường
+
+- Ghi vào lời nhắn về văn phòng cần những gì (ví dụ: "Hết lõi PP, cần thăm lại") và báo bằng "Gọi tổng đài".
+- Với thiết bị bất thường, hãy chụp ảnh tải lên ở bước hoàn tất và ghi chi tiết vào nội dung công việc.
+- Văn phòng chuẩn bị phụ tùng và đặt lại lượt thăm mới.
+
+### 13.3 Khi mất mạng
+
+- Phía trên hiện biểu ngữ **"Ngoại tuyến"**. Khi kết nối lại sẽ hiện "Đang đồng bộ…", và nếu còn dữ liệu chưa gửi thì hiện "N đang chờ".
+- Nếu nhấn "Gửi hoàn tất" khi đang ngoại tuyến, màn hình hiện "Đã lưu offline — sẽ đồng bộ khi có mạng." và khi có mạng, dữ liệu sẽ tự được gửi lên.
+- **Tải ảnh và ảnh chữ ký lên cần có internet.** Nếu sóng yếu, hãy di chuyển đến nơi sóng tốt hơn hoặc dùng Wi-Fi.
+- Nếu gấp, hãy báo miệng bằng "Gọi tổng đài".
 
 ---
 
-## Chương 18. Các tình huống thường gặp
+## Chương 14. Kết thúc ngày và bàn giao tiền mặt
 
-### Tình huống 1: Không thấy lượt thăm trong màn hình Hôm nay
+### 14.1 Kiểm tra trước khi về
 
-- Kiểm tra ngày: Phải đang ở tab "Hôm nay" chứ không phải "Sắp tới"
-- Xác nhận văn phòng đã phân công chưa
-- Đăng xuất rồi đăng nhập lại
+- Kiểm tra trong màn hình "Hôm nay" không còn lượt thăm nào chưa làm (lượt thăm đã hoàn tất sẽ biến mất)
+- Kiểm tra tổng số tiền mặt đang giữ bằng huy hiệu tiền mặt đang giữ
+- Cho tiền mặt vào phong bì và giữ cùng bản sao biên lai
 
-### Tình huống 2: Không tải được ảnh lên
+### 14.2 Bàn giao tiền mặt
 
-- Kiểm tra kết nối Internet (LTE/Wi-Fi)
-- Kiểm tra quyền camera (Cài đặt → Ứng dụng → Seoul Aqua → Camera → Cho phép)
-- Nếu ảnh quá nặng: Giảm độ phân giải hoặc chụp góc khác
+Mang đến văn phòng vào ngày làm việc kế tiếp. Nhân viên văn phòng kiểm tra số tiền và ghi nhận từng khoản bằng "Bàn giao văn phòng", khi đó khoản tiền được trừ khỏi tiền mặt đang giữ. Hãy bàn giao trong vòng **48 giờ** kể từ lúc thu.
 
-### Tình huống 3: Màn hình chữ ký không hiện hoặc bị đơ
+### 14.3 Đăng xuất
 
-- Kéo xuống để tải lại màn hình
-- Đóng chi tiết lượt thăm rồi mở lại
-- Đóng hoàn toàn trình duyệt và đăng nhập lại
+Nếu dùng điện thoại hoặc máy tính bảng dùng chung, nhất định phải đăng xuất. Nhấn biểu tượng đăng xuất ở góc trên bên phải hoặc nút "Đăng xuất" màu đỏ trong "Hồ sơ", rồi kiểm tra đã quay về màn hình đăng nhập.
 
-### Tình huống 4: Bấm nhầm Hoàn thành
+---
 
-- Liên hệ văn phòng ngay lập tức
-- KTV không thể tự sửa lượt thăm đã hoàn thành — văn phòng phải điều chỉnh
+## Chương 15. Hồ sơ
 
-### Tình huống 5: Nhập sai số tiền thu
+**Tab phía dưới → Hồ sơ**
 
-- Trước khi bấm Hoàn thành: Nhấp lại vào mục Thu tiền để sửa
-- Sau khi bấm Hoàn thành: Liên hệ văn phòng ngay. Nhân viên văn phòng sẽ điều chỉnh bản ghi thanh toán
+![Hồ sơ](../screenshots/vi/field/14-profile.png)
+
+- Tên đăng nhập (ID) · SĐT · Vai trò (Kỹ thuật viên)
+- Nút "Đổi mật khẩu" — mật khẩu hiện tại · mật khẩu mới (từ 8 ký tự) · xác nhận mật khẩu mới → "Đổi mật khẩu". Sau khi đổi, các thiết bị khác sẽ bị đăng xuất.
+- Nút "Đăng xuất"
+
+Muốn sửa tên · khu vực phụ trách, hãy nhờ văn phòng.
+
+---
+
+## Chương 16. Các tình huống thường gặp
+
+**Không thấy lượt thăm nào trong "Hôm nay"**
+- Kiểm tra xem tab phía dưới có đang ở "Sắp tới" không
+- Lượt thăm đã hoàn tất sẽ biến mất
+- Kiểm tra xem văn phòng đã phân công chưa → nếu vẫn không có, đăng xuất rồi đăng nhập lại
+
+**Ảnh không tải lên được**
+- Kiểm tra kết nối internet
+- Kiểm tra bạn đã nhấn "Tải lên N ảnh đã chọn" chưa
+- Cho phép trình duyệt truy cập camera · ảnh (Cài đặt điện thoại → ứng dụng trình duyệt → Quyền)
+- Mỗi ảnh phải từ 10MB trở xuống
+
+**Khi gửi thì báo cần chữ ký**
+- Quay lại bước ③ Chữ ký và tải ảnh chữ ký của khách hàng lên
+
+**Tôi nhập nhầm số tiền**
+- Trước khi gửi: nhấn "Quay lại" để về bước ④ Thanh toán và sửa
+- Sau khi gửi: liên hệ văn phòng ngay. Văn phòng sẽ chỉnh lại bản ghi thu tiền
+
+**Tôi nhấn nhầm hoàn tất**
+- KTV không thể sửa lượt thăm đã hoàn tất. Hãy liên hệ văn phòng ngay
 
 ---
 
 ## Phụ lục A. Tra cứu nhanh loại lượt thăm
 
-| Loại | Tiếng Việt | Cần mang | Chứng từ (B2C) | Chứng từ (B2B) |
+| Mã | Tên trên màn hình | Cần chuẩn bị | Chứng từ (B2C) | Chứng từ (B2B) |
 |---|---|---|---|---|
-| INSTALLATION | Lắp đặt | Thiết bị + dụng cụ | Phiếu giao nhận | Phiếu xuất kho |
-| PERIODIC_INSPECTION | Kiểm tra định kỳ | Lõi lọc + dụng cụ | Phiếu kiểm tra | Phiếu kiểm tra B2B |
-| CONSUMABLE_DELIVERY | Giao hàng tiêu hao | Hàng hóa cần giao | Biên lai bán hàng | Phiếu xuất kho |
-| REPAIR | Sửa chữa | Phụ kiện + dụng cụ | Phiếu xác nhận | Phiếu xác nhận |
-| FILTER_REPLACEMENT | Thay lõi lọc | Lõi lọc | Phiếu xác nhận | Phiếu xác nhận |
-| RELOCATION | Di chuyển lắp đặt | Thiết bị + dụng cụ | Phiếu xác nhận | Phiếu xác nhận |
-| PAYMENT_COLLECTION | Thu tiền | Biên lai | Phiếu xác nhận | Phiếu xác nhận |
-| RETRIEVAL | Thu hồi thiết bị | Vật liệu đóng gói | Phiếu xác nhận | Phiếu xuất kho |
+| INSTALLATION | Lắp đặt | Thiết bị · dụng cụ lắp đặt · phụ kiện | Biên bản bàn giao (hợp đồng bán là biên lai bán hàng) + hợp đồng | Phiếu xuất kho + hợp đồng |
+| PERIODIC_INSPECTION | Bảo trì định kỳ | Lõi lọc · dụng cụ | Phiếu bảo trì định kỳ | Phiếu xác nhận bảo trì |
+| FILTER_REPLACEMENT | Thay lõi lọc | Lõi lọc | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
+| REPAIR | Sửa chữa | Phụ tùng · dụng cụ | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
+| RELOCATION | Di dời | Dụng cụ lắp đặt | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
+| PAYMENT_COLLECTION | Thu tiền | Biên lai | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
+| CONSUMABLE_DELIVERY | Giao vật tư | Vật tư đã đặt | Biên lai bán hàng | Phiếu xuất kho |
+| RETRIEVAL | Thu hồi thiết bị | Vật liệu đóng gói | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
+| OTHER | Khác | Theo hướng dẫn của văn phòng | Phiếu xác nhận công việc | Phiếu xác nhận công việc |
 
-> Tất cả chứng từ được văn phòng in sẵn. KTV không cần tự in tại hiện trường.
+Chứng từ do văn phòng in sẵn cho bạn. Bạn cũng có thể xem trước trong mục "Cần ký" của ứng dụng KTV.
+
+---
+
+## Phụ lục B. Các vấn đề đã biết
+
+Tính đến 15/10/2026 không có vấn đề nào đã biết. Nếu thấy hoạt động bất thường, hãy chụp màn hình và báo cho văn phòng.

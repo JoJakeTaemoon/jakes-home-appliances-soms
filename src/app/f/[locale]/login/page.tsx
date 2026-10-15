@@ -19,6 +19,12 @@ interface RoleMismatch {
 
 const SENSITIVE_LOGIN_PARAMS = ["phone", "password", "username"] as const;
 
+const LOGIN_ERROR_KEYS: Record<string, "loginErrorInvalidCredentials" | "loginErrorLocked" | "loginErrorInactive"> = {
+  INVALID_CREDENTIALS: "loginErrorInvalidCredentials",
+  ACCOUNT_LOCKED: "loginErrorLocked",
+  ACCOUNT_INACTIVE: "loginErrorInactive",
+};
+
 export default function MobileLoginPage() {
   const t = useTranslations("mobile");
   const router = useRouter();
@@ -63,11 +69,12 @@ export default function MobileLoginPage() {
       await login(identifier, password);
       router.replace("/f/today");
     } catch (err) {
-      if (err instanceof FieldLoginError && err.code === "ROLE_MISMATCH" && err.suggestedUrl) {
-        setMismatch({ url: err.suggestedUrl });
-        setError(err.message);
+      // Never surface the server's English message — map the code instead.
+      const code = err instanceof FieldLoginError ? err.code : "UNKNOWN";
+      if (code === "ROLE_MISMATCH" && err instanceof FieldLoginError && err.suggestedUrl) {
+        setMismatch({ url: err.suggestedUrl }); // the amber box carries the message
       } else {
-        setError(err instanceof Error ? err.message : t("loginError"));
+        setError(t(LOGIN_ERROR_KEYS[code] ?? "loginError"));
       }
     } finally {
       setSubmitting(false);

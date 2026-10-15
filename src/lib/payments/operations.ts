@@ -10,6 +10,7 @@ import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { sendNotification } from "@/lib/notifications/send";
 import {
+  acceptsPartialPayment,
   IllegalPaymentTransitionError,
   planPaymentTransition,
   type PaymentState,
@@ -408,6 +409,12 @@ export async function applyPartialPayment(args: {
     where: { id: args.paymentId },
   });
   if (!current) throw new Error("Payment not found");
+  if (!acceptsPartialPayment(current.state as PaymentState)) {
+    throw new IllegalPaymentTransitionError(
+      current.state as PaymentState,
+      "RECONCILED",
+    );
+  }
 
   const expected = toNumber(current.expectedAmount);
   if (args.partialAmount <= 0 || args.partialAmount > expected) {

@@ -111,6 +111,15 @@ export function isOverduePaymentState(state: PaymentState): boolean {
   );
 }
 
+/**
+ * Rows a payment (partial or full) can be recorded against: still-open
+ * EXPECTED rows and every overdue tier. COLLECTED / HANDED_OVER already hold
+ * the cash and go through hand-over → reconcile instead.
+ */
+export function acceptsPartialPayment(state: PaymentState): boolean {
+  return state === "EXPECTED" || isOverduePaymentState(state);
+}
+
 /** Next overdue tier given a day-count past due. Used by the escalation cron. */
 export function computeOverdueTier(
   daysPastDue: number,

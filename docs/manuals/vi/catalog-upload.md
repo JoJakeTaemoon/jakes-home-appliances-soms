@@ -1,9 +1,9 @@
 # Hướng dẫn tải lên hàng loạt danh mục sản phẩm
 
 > **Đối tượng** — Nhân viên văn phòng Seoul Aqua phụ trách dữ liệu sản phẩm (quyền MANAGER trở lên)
-> **Chức năng** — Ứng dụng văn phòng › Quản trị › Quản lý sản phẩm › **Tải lên CSV danh mục**
-> **Tệp áp dụng** — Cùng định dạng với tệp nhận được từ nút **Xuất CSV danh mục** trên chính màn hình đó
-> **Phiên bản tài liệu** — 24/09/2026 (v1)
+> **Chức năng** — Ứng dụng văn phòng › Quản trị › Danh mục sản phẩm › **Tải lên CSV danh mục**
+> **Tệp áp dụng** — Cùng định dạng với tệp nhận được từ nút **Tải CSV danh mục sản phẩm** trên chính màn hình đó
+> **Phiên bản tài liệu** — 15/10/2026 (v2 — cập nhật tên menu, loại sản phẩm, sửa mã nhóm sản phẩm, vị trí điều chỉnh tồn kho)
 
 ---
 
@@ -29,6 +29,8 @@ Một lần tải lên sẽ tạo 5 loại dữ liệu gốc và 2 loại liên 
 | **Liên kết model↔vật tư** | Model Code + Part SKU + Quantity trên cùng dòng | Model này lắp bao nhiêu lõi lọc |
 | **Liên kết model↔phụ kiện** | Model Code + Part SKU + Quantity trên cùng dòng | Model này lắp bao nhiêu phụ kiện |
 
+> **Loại sản phẩm không có trong tệp này.** Loại sản phẩm của model (ví dụ: lắp trực tiếp, đứng) hãy chỉ định sau khi tải lên, tại Danh mục sản phẩm › tab Model. Vật tư tiêu hao và phụ kiện tạo từ tệp cũng không được gắn nhóm sản phẩm, nên nếu muốn tìm theo nhóm sản phẩm, hãy chỉ định nhóm sản phẩm ở từng tab.
+
 ---
 
 ## 2. Quy cách tệp
@@ -46,7 +48,7 @@ Một lần tải lên sẽ tạo 5 loại dữ liệu gốc và 2 loại liên 
 | Ô trống | Được hiểu là "không có giá trị". Ô chỉ chứa dấu cách cũng coi như trống |
 | Giới hạn số dòng | Không có. Nhưng hệ thống xử lý từng dòng một, nên 700 dòng mất vài chục giây. **Không đóng tab trình duyệt cho tới khi hiện cửa sổ kết quả** |
 
-> 💡 **Cách bắt đầu an toàn nhất** — Vào màn hình Quản lý sản phẩm, bấm **Xuất CSV danh mục** để tải dữ liệu hiện tại, rồi dùng luôn dòng tiêu đề của tệp đó. Định dạng xuất và định dạng tải lên là một.
+> 💡 **Cách bắt đầu an toàn nhất** — Vào màn hình Danh mục sản phẩm, bấm **Tải CSV danh mục sản phẩm** để tải dữ liệu hiện tại, rồi dùng luôn dòng tiêu đề của tệp đó. Định dạng xuất và định dạng tải lên là một.
 
 ---
 
@@ -122,7 +124,7 @@ Hệ thống dùng các khóa dưới đây để tìm dữ liệu đã có. **N
 | Phụ kiện | SKU trùng khớp tuyệt đối | |
 | Liên kết model↔phụ tùng | Cặp (model, phụ tùng) | Nếu đã liên kết sẵn thì `Quantity` khác đi cũng **không được cập nhật** |
 
-Mã nhóm sản phẩm (mã chữ in hoa) được **sinh tự động** từ tên tiếng Anh. Ví dụ: `Hot and cold water purifier (RO)` → `HOT_AND_COLD_WATER_PURIFIER_RO`. Không thể tự chỉ định.
+Mã nhóm sản phẩm (mã chữ in hoa) được **sinh tự động** từ tên tiếng Anh. Ví dụ: `Hot and cold water purifier (RO)` → `HOT_AND_COLD_WATER_PURIFIER_RO`. Không thể chỉ định trong tệp, nhưng sau khi tải lên có thể đổi bằng nút "Sửa" ở Danh mục sản phẩm › tab Nhóm sản phẩm.
 
 ---
 
@@ -140,9 +142,9 @@ Vì vậy:
 | Tình huống | Kết quả |
 |---|---|
 | Tải lên cùng một tệp hai lần | Lần thứ hai được tính toàn bộ là "trùng", dữ liệu không đổi (an toàn) |
-| Nhập sai giá, sửa lại rồi tải lên lần nữa | **Không có tác dụng.** Phải sửa trực tiếp trên màn hình Quản lý sản phẩm |
+| Nhập sai giá, sửa lại rồi tải lên lần nữa | **Không có tác dụng.** Phải sửa trực tiếp trên màn hình Danh mục sản phẩm |
 | Muốn thêm lõi lọc cho một model đã có | Tạo tệp nhỏ chỉ gồm mã model đó + dòng lõi lọc mới rồi tải lên — chỉ liên kết được thêm |
-| Muốn sửa lỗi chính tả tên lõi lọc | Tải lên lại không sửa được. Phải sửa ở màn hình dữ liệu lõi lọc |
+| Muốn sửa lỗi chính tả tên lõi lọc | Tải lên lại không sửa được. Hãy sửa ở Danh mục sản phẩm › tab Vật tư tiêu hao |
 | Khi nào giá và chu kỳ được ghi nhận | **Chỉ khi hạng mục đó được tạo mới bởi chính lần tải lên này** |
 
 > ⚠️ Dòng gặp lỗi trong quá trình xử lý sẽ **bị bỏ qua và hệ thống chạy tiếp**. Không có cơ chế hủy toàn bộ (rollback). Nghĩa là tệp có thể chỉ được ghi nhận một phần.
@@ -166,7 +168,7 @@ Vì vậy:
 
 ## 8. Các bước tải lên và cách đọc kết quả
 
-1. Vào Ứng dụng văn phòng › **Quản trị › Quản lý sản phẩm**. (Chỉ MANAGER trở lên mới thấy nút)
+1. Vào Ứng dụng văn phòng › **Quản trị › Danh mục sản phẩm**. (Chỉ ADMIN·MANAGER mới mở được màn hình này)
 2. Bấm **Tải lên CSV danh mục** → chọn tệp.
 3. Trong lúc xử lý, giữ nguyên màn hình. Khoảng 700 dòng mất vài chục giây.
 4. Xong sẽ hiện bảng tóm tắt kết quả.
@@ -181,7 +183,7 @@ Vì vậy:
 Các cảnh báo thường gặp:
 
 - `Row 45: FLT-XXX has no replace/clean cycle — it will never be scheduled`
-  → Vật tư này không có chu kỳ thay lẫn chu kỳ vệ sinh. Vẫn được đăng ký nhưng **sẽ không bao giờ xuất hiện trong đề xuất bảo trì định kỳ hay nhắc hạn.** Hãy bổ sung chu kỳ ở màn hình dữ liệu lõi lọc.
+  → Vật tư này không có chu kỳ thay lẫn chu kỳ vệ sinh. Vẫn được đăng ký nhưng **sẽ không bao giờ xuất hiện trong đề xuất bảo trì định kỳ hay nhắc hạn.** Hãy bổ sung chu kỳ ở tab Vật tư tiêu hao.
 - `Row 120: Unique constraint failed ...` → SKU hoặc mã model bị trùng với hạng mục khác.
 
 ---
@@ -192,13 +194,13 @@ Có những giá trị **không nằm trong tệp này**. Hãy bổ sung trên m
 
 | Giá trị cần bổ sung | Ở đâu | Vì sao cần |
 |---|---|---|
-| **Giá vật tư tiêu hao và phụ kiện** (giá bán lẻ / giá nhập / giá đại lý) | Quản trị › Quản lý sản phẩm › dữ liệu lõi lọc · phụ kiện | Phụ tùng tạo từ tệp này có **giá bán lẻ bằng 0**. Tiền thu khi thay có tính phí sẽ thành 0 đồng |
-| Nhóm sản phẩm, thương hiệu, quy cách, công dụng chính của vật tư | Dữ liệu lõi lọc | Phục vụ tìm kiếm và phân loại |
-| Tồn kho vật tư tiêu hao và phụ kiện | Quản lý kho | Cột `On Hand`/`Safety Stock` của tệp này **chỉ áp dụng cho tồn kho model** |
-| Chu kỳ bảo trì định kỳ của model | Quản lý sản phẩm › sửa model | Căn cứ tạo lịch bảo trì định kỳ tự động |
-| Số tháng bảo hành của model | Quản lý sản phẩm › sửa model | Căn cứ xác định miễn phí / tính phí cho khách mua đứt |
-| Phí thuê tháng / phí bảo trì tháng | Quản lý sản phẩm › sửa model | Số tiền của hợp đồng thuê và hợp đồng bảo trì |
-| Thứ tự hiển thị lõi lọc | Cấu hình lõi lọc theo model | Lõi lọc tải lên đều có thứ tự 0, không tự sắp theo thứ tự ghi trong tệp |
+| **Giá vật tư tiêu hao và phụ kiện** (giá bán lẻ / giá nhập / giá đại lý) | Danh mục sản phẩm › tab Vật tư tiêu hao / Phụ kiện | Phụ tùng tạo từ tệp này có **giá bán lẻ bằng 0**. Tiền thu khi thay có tính phí sẽ thành 0 đồng |
+| Nhóm sản phẩm của vật tư tiêu hao và phụ kiện; thương hiệu, quy cách, công dụng chính của vật tư tiêu hao | Danh mục sản phẩm › tab Vật tư tiêu hao / Phụ kiện | Phục vụ tìm kiếm và phân loại. Tải lên không điền những giá trị này |
+| Số lượng tồn kho vật tư tiêu hao | tab Vật tư tiêu hao › Sửa › "Điều chỉnh tồn kho" cạnh Tồn kho hiện tại | Cột `On Hand`/`Safety Stock` của tệp này **chỉ áp dụng cho tồn kho model** |
+| Loại sản phẩm của model | Danh mục sản phẩm › tab Model › Sửa | Tệp không có cột này |
+| Chu kỳ bảo trì định kỳ của model | Danh mục sản phẩm › tab Model › Sửa | Chu kỳ bảo trì mặc định trong cấu hình dịch vụ thiết bị |
+| Số tháng bảo hành của model | Danh mục sản phẩm › tab Model › Sửa | Căn cứ xác định miễn phí / tính phí cho khách mua đứt |
+| Phí thuê tháng / phí bảo trì tháng | Danh mục sản phẩm › tab Model › Sửa | Số tiền của hợp đồng thuê và hợp đồng bảo trì |
 
 ---
 
@@ -209,10 +211,10 @@ Có những giá trị **không nằm trong tệp này**. Hãy bổ sung trên m
 | Tệp bị từ chối ngay — "thiếu cột bắt buộc" | Sai hoặc thiếu tên cột trong `Brand`, `Category (EN/KO/VI)`, `Model Code` | Sao chép nguyên dòng tiêu đề từ tệp xuất ra |
 | Tệp bị từ chối — "cần tiêu đề + ít nhất 1 dòng" | Tệp rỗng hoặc không có dòng dữ liệu | |
 | Tiếng Hàn / tiếng Việt bị lỗi phông khi lưu vào hệ thống | Tệp CSV không được lưu ở UTF-8 | Lưu lại bằng `CSV UTF-8 (dấu phẩy phân tách)` rồi tải lên lại. **Các dòng đã vào hệ thống với ký tự lỗi phải sửa tay trên màn hình** |
-| Một nhóm sản phẩm bị tách thành hai | Một trong ba tên ngôn ngữ viết khác đi | Chuyển model sang nhóm đúng và vô hiệu hóa nhóm rỗng |
+| Một nhóm sản phẩm bị tách thành hai | Một trong ba tên ngôn ngữ viết khác đi | Sửa nhóm sản phẩm của model đó ở tab Model, và vô hiệu hóa nhóm rỗng ở tab Nhóm sản phẩm |
 | Model được tạo nhưng lõi lọc không gắn vào | `Part Type` không phải `Consumable`/`Accessory`, hoặc `Part SKU` để trống | Sửa riêng dòng đó rồi tải lên lại — liên kết sẽ được thêm |
-| Không nhận được nhắc hạn lõi lọc | Chu kỳ thay / vệ sinh đang trống | Nhập chu kỳ ở màn hình dữ liệu lõi lọc |
-| Tồn kho hiển thị 0 | Cột `On Hand` để trống, hoặc đang mong đợi tồn kho của phụ tùng | Tồn kho phụ tùng phải nhập kho ở màn hình Quản lý kho |
+| Không nhận được nhắc hạn lõi lọc | Chu kỳ thay / vệ sinh đang trống | Nhập chu kỳ ở tab Vật tư tiêu hao |
+| Tồn kho hiển thị 0 | Cột `On Hand` để trống, hoặc đang mong đợi tồn kho của phụ tùng | Tồn kho vật tư tiêu hao nhập bằng "Điều chỉnh tồn kho" → Nhập kho ở tab Vật tư tiêu hao |
 | Giá không được ghi nhận | Model đó **đã tồn tại từ trước** | Nhập trực tiếp ở màn hình sửa model |
 
 ---

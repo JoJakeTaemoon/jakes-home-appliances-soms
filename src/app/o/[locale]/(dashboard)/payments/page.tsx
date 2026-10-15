@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useApiPageQuery } from "@/lib/api/hooks";
@@ -50,17 +51,42 @@ function stateTone(state: string): "success" | "warning" | "danger" | "info" | "
   return "neutral";
 }
 
+/** URL value → filter value, dropping anything that isn't a known option. */
+function pick(value: string | null, allowed: readonly string[]): string | null {
+  return value && allowed.includes(value) ? value : null;
+}
+
 export default function PaymentsListPage() {
+  // useSearchParams() needs a Suspense boundary for static prerender.
+  return (
+    <Suspense fallback={null}>
+      <PaymentsList />
+    </Suspense>
+  );
+}
+
+function PaymentsList() {
   const t = useTranslations("payments");
   const tStates = useTranslations("payments.states");
   const tMethods = useTranslations("payments.methods");
   const locale = useLocale();
   const router = useRouter();
+  // Filters start from the URL so links like the dashboard 연체 banner
+  // (`?overdueOnly=true`) land on the filtered list.
+  const searchParams = useSearchParams();
 
-  const [stateFilter, setStateFilter] = useState<string | null>(null);
-  const [methodFilter, setMethodFilter] = useState<string | null>(null);
-  const [overdueOnly, setOverdueOnly] = useState(false);
-  const [pendingHandover, setPendingHandover] = useState(false);
+  const [stateFilter, setStateFilter] = useState<string | null>(() =>
+    pick(searchParams.get("state"), STATE_OPTIONS),
+  );
+  const [methodFilter, setMethodFilter] = useState<string | null>(() =>
+    pick(searchParams.get("method"), METHOD_OPTIONS),
+  );
+  const [overdueOnly, setOverdueOnly] = useState(
+    () => searchParams.get("overdueOnly") === "true",
+  );
+  const [pendingHandover, setPendingHandover] = useState(
+    () => searchParams.get("pendingHandover") === "true",
+  );
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({

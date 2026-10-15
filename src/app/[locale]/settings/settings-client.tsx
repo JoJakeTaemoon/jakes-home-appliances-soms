@@ -26,6 +26,7 @@ interface MeResponse {
 
 export function SettingsClient() {
   const t = useTranslations("portal.settings");
+  const tInv = useTranslations("portalExtra.invoices");
   const { accessToken, contact, refresh } = useCustomerAuth();
 
   const meQuery = useApiQuery<MeResponse>(
@@ -201,6 +202,14 @@ export function SettingsClient() {
             className="block rounded-md border border-[#e5e5e5] bg-white px-3 h-10 leading-10 text-sm text-[#262626] outline-none transition-colors hover:border-[var(--brand-blue-500)] hover:bg-[var(--brand-blue-50)]"
           >
             {t("manageContacts")}
+          </Link>
+        )}
+        {contact.customerType === "B2B" && (
+          <Link
+            href="/invoices"
+            className="block rounded-md border border-[#e5e5e5] bg-white px-3 h-10 leading-10 text-sm text-[#262626] outline-none transition-colors hover:border-[var(--brand-blue-500)] hover:bg-[var(--brand-blue-50)]"
+          >
+            {tInv("title")}
           </Link>
         )}
       </section>

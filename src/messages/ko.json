@@ -55,7 +55,9 @@
     "selectPlaceholder": "선택하세요...",
     "searchPlaceholder": "검색...",
     "type": "유형",
-    "reason": "사유"
+    "reason": "사유",
+    "addNamed": "「{name}」 추가",
+    "removeNamed": "{name} 제거"
   },
   "auth": {
     "login": {
@@ -75,7 +77,8 @@
       "errorRoleMismatchField": "현장 직원 계정입니다. 현장 직원 로그인 페이지에서 로그인해 주세요.",
       "goToFieldLogin": "현장 직원 로그인으로 이동"
     },
-    "logout": "로그아웃"
+    "logout": "로그아웃",
+    "mustChangeNotice": "임시 비밀번호로 로그인했습니다. 계속하려면 새 비밀번호를 설정하세요."
   },
   "nav": {
     "dashboard": "대시보드",
@@ -326,7 +329,12 @@
     "resetPortalPasswordSuccess": "{name} 님의 임시 비밀번호가 발급되었습니다. 전화로 직접 전달하세요.",
     "resetPortalPasswordOnce": "이 비밀번호는 지금 한 번만 표시됩니다. 창을 닫으면 다시 볼 수 없습니다.",
     "resetPortalPasswordNone": "포털 계정이 있는 연락처가 없습니다.",
-    "resetPortalPasswordDone": "전달 완료 — 닫기"
+    "resetPortalPasswordDone": "전달 완료 — 닫기",
+    "openPortal": "포털 열기",
+    "openPortalConfirm": "{name} 님({phone})의 고객 포털 계정을 엽니다. 로그인 ID는 이 전화번호이고, 임시 비밀번호가 발급되며 첫 로그인 때 새 비밀번호를 설정하게 됩니다. 문자로는 아무것도 발송되지 않습니다.",
+    "openPortalEmailNotice": "{email}(으)로 비밀번호가 들어 있지 않은 활성화 안내 메일이 발송됩니다.",
+    "openPortalNoEmail": "이메일이 없어 활성화 안내 메일은 발송되지 않습니다.",
+    "openPortalSuccess": "{name} 님의 포털 계정이 열렸습니다. 로그인 ID는 {phone}입니다. 아래 임시 비밀번호를 전화로 직접 알려주세요."
   },
   "salesReps": {
     "title": "판매원",
@@ -440,7 +448,14 @@
     "noUpcomingVisit": "예정된 방문이 없습니다.",
     "upcomingFetchError": "방문 정보를 불러오지 못했습니다.",
     "scheduledFor": "방문 예정일",
-    "openVisit": "방문 보기"
+    "openVisit": "방문 보기",
+    "actions": {
+      "deliver": "전달 완료",
+      "cancel": "주문 취소",
+      "deliverConfirm": "주문 {orderNumber}을(를) 전달 완료로 처리합니다. 소모품은 재고에서 차감되며 되돌릴 수 없습니다.",
+      "cancelConfirm": "주문 {orderNumber}을(를) 취소합니다. 되돌릴 수 없습니다.",
+      "failed": "주문 상태를 바꾸지 못했습니다."
+    }
   },
   "sites": {
     "title": "사업장",
@@ -1344,6 +1359,7 @@
       "detailVisit": "관련 방문",
       "detailVisitView": "방문 보기",
       "detailVisitNone": "예정된 방문이 없습니다.",
+      "rejectionReason": "반려 사유",
       "detailCancel": "요청 취소",
       "cancelTitle": "이 요청을 취소합니다",
       "cancelHint": "취소 후에는 되돌릴 수 없습니다.",
@@ -1704,6 +1720,9 @@
     "loginSubmit": "로그인",
     "loginSubmitting": "로그인 중...",
     "loginError": "로그인 실패",
+    "loginErrorInvalidCredentials": "전화번호 또는 비밀번호가 올바르지 않습니다.",
+    "loginErrorLocked": "로그인 실패가 반복되어 계정이 잠시 잠겼습니다. 15분 후 다시 시도하세요.",
+    "loginErrorInactive": "비활성화된 계정입니다. 관리자에게 문의하세요.",
     "loginRoleMismatchOffice": "본사 직원은 본사 직원 로그인 페이지에서 로그인해야 합니다.",
     "loginRoleMismatchGoOffice": "본사 직원 로그인으로 이동 →",
     "loginForgotHint": "비밀번호를 잊으셨나요? 관리자에게 연락하면 임시 비밀번호를 발급해 드립니다.",
@@ -1817,7 +1836,17 @@
       "submitting": "제출 중...",
       "back": "뒤로",
       "next": "다음",
-      "queuedForSync": "오프라인 저장됨 — 온라인으로 돌아오면 자동 동기화됩니다."
+      "queuedForSync": "오프라인 저장됨 — 온라인으로 돌아오면 자동 동기화됩니다.",
+      "signatureTake": "서명 사진 촬영",
+      "signatureRetake": "다시 촬영",
+      "signatureOk": "첨부됨",
+      "signatureMissing": "없음 (필수)",
+      "signatureRequired": "고객 서명 사진을 첨부하세요.",
+      "findingsRequired": "작업 내용을 입력하세요.",
+      "photosCount": "{count}장",
+      "chargedSummary": "청구 {amount} VND",
+      "diffSummary": "차액 {amount} VND",
+      "uploadFailed": "업로드에 실패했습니다. 다시 시도하세요."
     },
     "offline": {
       "offline": "오프라인",
@@ -1838,7 +1867,18 @@
     "fail": {
       "title": "방문 실패 처리",
       "reason": "사유",
-      "submit": "방문 실패 확정"
+      "submit": "방문 실패 확정",
+      "hint": "확정하면 이 방문은 '방문 실패'로 바뀌고 오늘 목록에서 빠집니다. 재방문 일정은 본사가 잡습니다.",
+      "reasons": {
+        "NO_SHOW": "고객 부재",
+        "UNREACHABLE": "고객 연락 안 됨",
+        "RESCHEDULE_REQUESTED": "고객이 일정 변경 요청",
+        "SITE_ISSUE": "현장·장비 문제로 작업 불가",
+        "OTHER": "기타"
+      },
+      "note": "상세 메모",
+      "notePlaceholder": "본사가 알아야 할 내용을 적어주세요 (기타 선택 시 필수)",
+      "noteRequired": "'기타'를 선택하면 상세 메모를 입력해야 합니다."
     },
     "profile": {
       "title": "내 정보",
@@ -1915,6 +1955,7 @@
     },
     "writeOffPrompt": "상각 사유",
     "partialPrompt": "부분 금액 (VND)",
+    "partialHint": "청구액 {amount}. 전액을 입력하면 완납 처리되고, 적게 입력하면 남은 금액이 새 청구로 이월됩니다.",
     "bankTransferPrompt": "은행 참조번호",
     "slaBreachWarning": "현금 보유 48시간 초과 — 인계 필요."
   },
@@ -2212,7 +2253,23 @@
     "navTitle": "관리자",
     "notificationTemplates": {
       "title": "알림 서식",
-      "adminRequired": "관리자 또는 매니저 권한이 필요합니다."
+      "adminRequired": "관리자 또는 매니저 권한이 필요합니다.",
+      "channelAll": "모든 채널",
+      "channelSms": "SMS",
+      "channelEmail": "이메일",
+      "pickPrompt": "편집할 서식과 언어를 고르세요.",
+      "channelInfo": "채널: {channel}",
+      "overrideSaved": "수정본 저장 {at}",
+      "subject": "제목",
+      "body": "본문",
+      "defaultValue": "기본값: {value}",
+      "placeholderHint": "변수는 {example} 형식으로 씁니다. 글자 수: {count}",
+      "viewDefault": "기본 문안 보기",
+      "save": "수정본 저장",
+      "revert": "기본 문안으로 되돌리기",
+      "enabled": "사용 중",
+      "disabled": "사용 안 함",
+      "off": "꺼짐"
     },
     "settings": "설정",
     "schedulerWeights": "스케줄러 가중치",

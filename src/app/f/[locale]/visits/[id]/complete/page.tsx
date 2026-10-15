@@ -61,11 +61,16 @@ interface PartCatalogItem {
   retailPrice: string;
 }
 
-function pickPartName(p: PartCatalogItem, locale: string): string {
+function pickPartName(
+  p: { nameKo: string; nameVi: string; nameEn: string },
+  locale: string,
+): string {
   if (locale === "ko") return p.nameKo;
   if (locale === "en") return p.nameEn;
   return p.nameVi;
 }
+
+const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "CARD", "OTHER"] as const;
 
 function suggestionKey(s: { consumableId: string; action: string }): string {
   return `${s.consumableId}:${s.action}`;
@@ -108,6 +113,7 @@ function CompleteWizard() {
   const t = useTranslations("mobile.complete");
   const tm = useTranslations("mobile");
   const tc = useTranslations("common");
+  const tpm = useTranslations("payments.methods");
   const locale = useLocale();
   const router = useRouter();
   const api = useApi();
@@ -149,6 +155,7 @@ function CompleteWizard() {
   const [queuedForSync, setQueuedForSync] = useState(false);
   const online = useOnlineStatus();
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const signatureInputRef = useRef<HTMLInputElement | null>(null);
   // Track whether step 2's auto-open already fired once. Re-firing on
   // every step change would feel hostile (e.g. user clicks Back from
   // step 3 to step 2 and the picker pops again).
@@ -247,7 +254,7 @@ function CompleteWizard() {
     });
     const json = await res.json();
     if (!res.ok || !json.success) {
-      throw new Error(json?.error?.message ?? "Upload failed");
+      throw new Error(json?.error?.message ?? t("uploadFailed"));
     }
     return json.data as UploadResp;
   };
@@ -335,11 +342,11 @@ function CompleteWizard() {
   const submit = async () => {
     setError(null);
     if (!signature) {
-      setError("Customer signature required");
+      setError(t("signatureRequired"));
       return;
     }
     if (!findings.trim()) {
-      setError("Findings required");
+      setError(t("findingsRequired"));
       return;
     }
     // chargeOverride guard MUST fire before the body is assembled — otherwise
@@ -473,7 +480,7 @@ function CompleteWizard() {
                         />
                         <div className="flex flex-col text-xs">
                           <span className="font-semibold">
-                            {s.nameVi}{" "}
+                            {pickPartName(s, locale)}{" "}
                             <span className="text-[var(--brand-blue-600)]">
                               [{label}]
                             </span>
@@ -538,7 +545,7 @@ function CompleteWizard() {
                     type="button"
                     onClick={() => setParts(parts.filter((x) => x !== p))}
                     className="hover:text-red-600"
-                    aria-label="Remove"
+                    aria-label={tc("remove")}
                   >
                     ×
                   </button>
@@ -683,16 +690,26 @@ function CompleteWizard() {
       {step === 3 && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-[#737373]">{t("signatureHint")}</p>
-          <label className="block">
-            <span className="sr-only">{t("signature")}</span>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleSignatureInput}
-              className="block w-full text-sm"
-            />
-          </label>
+          {/* Hidden native input — the Button below opens it (camera first on phones). */}
+          <input
+            ref={signatureInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleSignatureInput}
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            disabled={uploading}
+            onClick={() => signatureInputRef.current?.click()}
+          >
+            {signature ? t("signatureRetake") : t("signatureTake")}
+          </Button>
           {uploading && <p className="text-xs text-[#737373]">{t("uploading")}</p>}
           {signature && (
             <div className="relative aspect-[2/1] overflow-hidden rounded-md border border-[#e5e5e5] bg-[#fafafa]">
@@ -757,12 +774,7 @@ function CompleteWizard() {
               <Combobox
                 value={paymentMethod}
                 onChange={(v) => setPaymentMethod(v ?? "CASH")}
-                options={[
-                  { value: "CASH", label: "CASH" },
-                  { value: "BANK_TRANSFER", label: "BANK_TRANSFER" },
-                  { value: "CARD", label: "CARD" },
-                  { value: "OTHER", label: "OTHER" },
-                ]}
+                options={PAYMENT_METHODS.map((m) => ({ value: m, label: tpm(m) }))}
                 allowClear={false}
                 searchable={false}
               />
@@ -796,9 +808,9 @@ function CompleteWizard() {
             )}
           {chargedAmount > 0 && (
             <p className="text-xs text-[#737373]">
-              Charged: {chargedAmount.toLocaleString()} VND
+              {t("chargedSummary", { amount: chargedAmount.toLocaleString() })}
               {chargedAmount !== collectedAmount &&
-                ` · Diff: ${(chargedAmount - collectedAmount).toLocaleString()} VND`}
+                ` · ${t("diffSummary", { amount: (chargedAmount - collectedAmount).toLocaleString() })}`}
             </p>
           )}
         </div>
@@ -814,17 +826,17 @@ function CompleteWizard() {
           />
           <ReviewRow
             label={t("step2")}
-            value={photos.length > 0 ? `${photos.length} photo(s)` : "—"}
+            value={photos.length > 0 ? t("photosCount", { count: photos.length }) : "—"}
           />
           <ReviewRow
             label={t("signature")}
-            value={signature ? "OK" : "Missing"}
+            value={signature ? t("signatureOk") : t("signatureMissing")}
           />
           <ReviewRow
             label={t("collected")}
             value={
               collectedAmount > 0
-                ? `${collectedAmount.toLocaleString()} VND (${paymentMethod})`
+                ? `${collectedAmount.toLocaleString()} VND (${tpm(paymentMethod)})`
                 : "—"
             }
           />

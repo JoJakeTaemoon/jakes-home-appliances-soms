@@ -10,7 +10,7 @@ import { defineQuery } from "@/lib/api/mutation";
 import { ForbiddenError } from "@/lib/api/error";
 import { dayBounds } from "@/lib/scheduler/availability";
 import {
-  suggestVisitDocumentKind,
+  suggestVisitDocumentKindList,
   type CustomerTypeForSuggest,
   type VisitTypeForSuggest,
 } from "@/lib/visits/document-suggest";
@@ -90,13 +90,13 @@ export const GET = defineQuery({
     function enrich<V extends (typeof visits)[number]>(v: V) {
       const contractType =
         latestContractTypeByCustomer.get(v.customerId) ?? null;
-      const docKind = suggestVisitDocumentKind({
+      // Every type the visit carries; INSTALLATION also needs the contract.
+      const signatureDocs: string[] = suggestVisitDocumentKindList({
         visitType: v.type as VisitTypeForSuggest,
+        additionalTypes: (v.additionalTypes ?? []) as VisitTypeForSuggest[],
         customerType: v.customer.type as CustomerTypeForSuggest,
         contractType,
       });
-      // INSTALLATION visits also need the contract — tech carries both.
-      const signatureDocs: string[] = [docKind];
       if (v.type === "INSTALLATION" && contractType !== null) {
         signatureDocs.push("CONTRACT");
       }

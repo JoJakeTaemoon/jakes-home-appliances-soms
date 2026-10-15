@@ -55,7 +55,9 @@
     "daysRemaining": " ngày còn lại",
     "daysOverdue": " ngày quá hạn",
     "type": "Loại",
-    "reason": "Lý do"
+    "reason": "Lý do",
+    "addNamed": "Thêm “{name}”",
+    "removeNamed": "Xóa {name}"
   },
   "auth": {
     "login": {
@@ -75,7 +77,8 @@
       "errorRoleMismatchField": "Đây là tài khoản kỹ thuật viên. Vui lòng đăng nhập tại trang dành cho KTV.",
       "goToFieldLogin": "Đến trang KTV"
     },
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "mustChangeNotice": "Bạn đang đăng nhập bằng mật khẩu tạm thời. Hãy đặt mật khẩu mới để tiếp tục."
   },
   "nav": {
     "dashboard": "Bảng điều khiển",
@@ -326,7 +329,12 @@
     "resetPortalPasswordSuccess": "Đã cấp mật khẩu tạm cho {name}. Vui lòng đọc trực tiếp qua điện thoại.",
     "resetPortalPasswordOnce": "Mật khẩu này chỉ hiển thị một lần. Đóng cửa sổ là không xem lại được.",
     "resetPortalPasswordNone": "Không có liên hệ nào đã mở tài khoản cổng.",
-    "resetPortalPasswordDone": "Đã báo khách — Đóng"
+    "resetPortalPasswordDone": "Đã báo khách — Đóng",
+    "openPortal": "Mở cổng khách hàng",
+    "openPortalConfirm": "Mở tài khoản cổng khách hàng cho {name} ({phone}). ID đăng nhập là số điện thoại này; hệ thống cấp mật khẩu tạm thời và khách sẽ đặt mật khẩu mới ở lần đăng nhập đầu. Không có tin nhắn SMS nào được gửi.",
+    "openPortalEmailNotice": "Một email thông báo kích hoạt (không chứa mật khẩu) sẽ được gửi tới {email}.",
+    "openPortalNoEmail": "Không có email nên sẽ không gửi thông báo kích hoạt.",
+    "openPortalSuccess": "Đã mở tài khoản cổng cho {name}. ID đăng nhập: {phone}. Hãy gọi điện đọc mật khẩu tạm thời bên dưới cho khách."
   },
   "salesReps": {
     "title": "Nhân viên bán hàng",
@@ -440,7 +448,14 @@
     "noUpcomingVisit": "Chưa có lượt thăm nào sắp tới.",
     "upcomingFetchError": "Không tải được thông tin lượt thăm.",
     "scheduledFor": "Ngày thăm",
-    "openVisit": "Mở lượt thăm"
+    "openVisit": "Mở lượt thăm",
+    "actions": {
+      "deliver": "Đã giao",
+      "cancel": "Hủy đơn",
+      "deliverConfirm": "Đánh dấu đơn {orderNumber} là đã giao. Vật tư sẽ được trừ khỏi tồn kho và không thể hoàn tác.",
+      "cancelConfirm": "Hủy đơn {orderNumber}. Không thể hoàn tác.",
+      "failed": "Không thể đổi trạng thái đơn hàng."
+    }
   },
   "sites": {
     "title": "Cơ sở",
@@ -1344,6 +1359,7 @@
       "detailVisit": "Lịch hẹn",
       "detailVisitView": "Xem lịch",
       "detailVisitNone": "Chưa có lịch.",
+      "rejectionReason": "Lý do từ chối",
       "detailCancel": "Hủy yêu cầu",
       "cancelTitle": "Hủy yêu cầu này",
       "cancelHint": "Sau khi hủy không thể khôi phục.",
@@ -1704,6 +1720,9 @@
     "loginSubmit": "Đăng nhập",
     "loginSubmitting": "Đang đăng nhập...",
     "loginError": "Đăng nhập không hợp lệ",
+    "loginErrorInvalidCredentials": "Số điện thoại hoặc mật khẩu không đúng.",
+    "loginErrorLocked": "Đăng nhập sai nhiều lần nên tài khoản tạm bị khóa. Vui lòng thử lại sau 15 phút.",
+    "loginErrorInactive": "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
     "loginRoleMismatchOffice": "Nhân viên văn phòng vui lòng đăng nhập tại trang đăng nhập văn phòng.",
     "loginRoleMismatchGoOffice": "Đến đăng nhập văn phòng →",
     "loginForgotHint": "Quên mật khẩu? Vui lòng liên hệ quản trị viên để được cấp mật khẩu tạm thời.",
@@ -1817,7 +1836,17 @@
       "submitting": "Đang gửi...",
       "back": "Quay lại",
       "next": "Tiếp",
-      "queuedForSync": "Đã lưu offline — sẽ đồng bộ khi có mạng."
+      "queuedForSync": "Đã lưu offline — sẽ đồng bộ khi có mạng.",
+      "signatureTake": "Chụp ảnh chữ ký",
+      "signatureRetake": "Chụp lại",
+      "signatureOk": "Đã đính kèm",
+      "signatureMissing": "Chưa có (bắt buộc)",
+      "signatureRequired": "Vui lòng đính kèm ảnh chữ ký của khách hàng.",
+      "findingsRequired": "Vui lòng nhập nội dung công việc.",
+      "photosCount": "{count} ảnh",
+      "chargedSummary": "Thu {amount} VND",
+      "diffSummary": "Chênh lệch {amount} VND",
+      "uploadFailed": "Tải lên thất bại. Vui lòng thử lại."
     },
     "offline": {
       "offline": "Ngoại tuyến",
@@ -1838,7 +1867,18 @@
     "fail": {
       "title": "KH vắng",
       "reason": "Lý do",
-      "submit": "Xác nhận KH vắng"
+      "submit": "Xác nhận KH vắng",
+      "hint": "Sau khi xác nhận, lượt thăm chuyển sang 'KH vắng' và rời khỏi danh sách hôm nay. Văn phòng sẽ sắp xếp lịch lại.",
+      "reasons": {
+        "NO_SHOW": "Khách hàng vắng nhà",
+        "UNREACHABLE": "Không liên lạc được khách hàng",
+        "RESCHEDULE_REQUESTED": "Khách hàng yêu cầu đổi lịch",
+        "SITE_ISSUE": "Không thể làm do sự cố hiện trường/thiết bị",
+        "OTHER": "Khác"
+      },
+      "note": "Ghi chú chi tiết",
+      "notePlaceholder": "Ghi những điều văn phòng cần biết (bắt buộc khi chọn Khác)",
+      "noteRequired": "Khi chọn 'Khác', vui lòng nhập ghi chú chi tiết."
     },
     "profile": {
       "title": "Hồ sơ",
@@ -1915,6 +1955,7 @@
     },
     "writeOffPrompt": "Lý do xóa nợ",
     "partialPrompt": "Số tiền một phần (VND)",
+    "partialHint": "Số tiền phải thu {amount}. Nhập đủ để tất toán; nhập ít hơn thì phần còn lại được chuyển sang khoản thu mới.",
     "bankTransferPrompt": "Mã tham chiếu",
     "slaBreachWarning": "Giữ tiền > 48h — vui lòng bàn giao."
   },
@@ -2392,7 +2433,23 @@
     },
     "notificationTemplates": {
       "title": "Mẫu thông báo",
-      "adminRequired": "Yêu cầu vai trò Quản trị viên hoặc Quản lý."
+      "adminRequired": "Yêu cầu vai trò Quản trị viên hoặc Quản lý.",
+      "channelAll": "Tất cả kênh",
+      "channelSms": "SMS",
+      "channelEmail": "Email",
+      "pickPrompt": "Chọn mẫu và ngôn ngữ để chỉnh sửa.",
+      "channelInfo": "Kênh: {channel}",
+      "overrideSaved": "Đã lưu bản sửa {at}",
+      "subject": "Tiêu đề",
+      "body": "Nội dung",
+      "defaultValue": "Mặc định: {value}",
+      "placeholderHint": "Biến được viết dạng {example}. Số ký tự: {count}",
+      "viewDefault": "Xem nội dung mặc định",
+      "save": "Lưu bản sửa",
+      "revert": "Khôi phục mặc định",
+      "enabled": "Đang bật",
+      "disabled": "Đã tắt",
+      "off": "TẮT"
     },
     "settings": "Cài đặt",
     "schedulerWeights": "Trọng số scheduler",

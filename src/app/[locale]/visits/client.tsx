@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { pickModelName } from "@/lib/products/name";
+import { pickEquipmentLabel } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
 import {
   VisitStateBadge,
@@ -18,7 +18,8 @@ interface VisitRow {
   completedAt: string | null;
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+    customDescription: string | null;
   } | null;
   leadTechnician: { username: string } | null;
 }
@@ -48,7 +49,7 @@ export function PortalVisitsClient() {
                   <VisitStateBadge state={v.state} />
                 </div>
                 <div className="mt-1 text-xs text-[#737373]">
-                  {v.equipment ? pickModelName(v.equipment.model, locale) : "—"}
+                  {v.equipment ? pickEquipmentLabel(v.equipment, locale) : "—"}
                 </div>
               </div>
             </div>

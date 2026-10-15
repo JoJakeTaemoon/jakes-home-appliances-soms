@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { pickModelName } from "@/lib/products/name";
+import { pickEquipmentLabel } from "@/lib/products/name";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
@@ -26,7 +26,8 @@ interface SrDetail {
     id: string;
     serialNumber: string | null;
     installedAt: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+    customDescription: string | null;
     site: { id: string; name: string } | null;
   } | null;
   visit: {
@@ -133,7 +134,9 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
         {sr.equipment && (
           <Row
             label={t("detailEquipment")}
-            value={`${pickModelName(sr.equipment.model, locale)} · ${pickModelName(sr.equipment.model, locale)}`}
+            value={[pickEquipmentLabel(sr.equipment, locale), sr.equipment.serialNumber]
+              .filter(Boolean)
+              .join(" · ")}
           />
         )}
         {sr.approvedPrice && (
@@ -143,7 +146,7 @@ export function PortalRequestDetailClient({ id }: Readonly<{ id: string }>) {
           />
         )}
         {sr.rejectionReason && (
-          <Row label="—" value={sr.rejectionReason} />
+          <Row label={t("rejectionReason")} value={sr.rejectionReason} />
         )}
         <div>
           <span className="text-xs text-[#737373]">{t("detailDescription")}</span>

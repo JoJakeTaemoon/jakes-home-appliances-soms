@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { pickModelName } from "@/lib/products/name";
+import { pickEquipmentLabel } from "@/lib/products/name";
 import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
@@ -19,7 +19,8 @@ interface SrRow {
   equipment: {
     id: string;
     serialNumber: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+    customDescription: string | null;
   } | null;
   visit: {
     id: string;
@@ -113,7 +114,9 @@ export function PortalRequestsClient() {
                 </div>
                 {r.equipment && (
                   <div className="mt-2 text-xs text-[#525252]">
-                    {pickModelName(r.equipment.model, locale)} · {pickModelName(r.equipment.model, locale)}
+                    {[pickEquipmentLabel(r.equipment, locale), r.equipment.serialNumber]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </div>
                 )}
                 <p className="mt-2 line-clamp-2 text-sm text-[#262626]">

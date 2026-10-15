@@ -16,8 +16,18 @@ function useHydrated() {
   );
 }
 
-export function AuthGuard({ children }: Readonly<{ children: ReactNode }>) {
-  const { isAuthenticated, isLoading } = useAuth();
+/**
+ * Office gate. Redirects to /o/login without a session, and to
+ * /o/change-password while the user still holds an admin-issued temp
+ * password (`mustChangePassword`). The change-password page passes
+ * `requireChange` so it isn't bounced to itself.
+ */
+export function AuthGuard({
+  children,
+  requireChange = false,
+}: Readonly<{ children: ReactNode; requireChange?: boolean }>) {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const mustChange = !!user?.mustChangePassword && !requireChange;
   const router = useRouter();
   const hydrated = useHydrated();
 
@@ -30,10 +40,10 @@ export function AuthGuard({ children }: Readonly<{ children: ReactNode }>) {
   }, [isAuthenticated, isLoading]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/o/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
+    if (isLoading) return;
+    if (!isAuthenticated) router.replace("/o/login");
+    else if (mustChange) router.replace("/o/change-password");
+  }, [isAuthenticated, isLoading, mustChange, router]);
 
   if (!hydrated) return <>{children}</>;
 
@@ -44,6 +54,6 @@ export function AuthGuard({ children }: Readonly<{ children: ReactNode }>) {
     return wasAuthed ? <>{children}</> : null;
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || mustChange) return null;
   return <>{children}</>;
 }

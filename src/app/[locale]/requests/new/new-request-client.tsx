@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { pickModelName } from "@/lib/products/name";
-import { useTranslations , useLocale} from "next-intl";
+import { pickEquipmentLabel } from "@/lib/products/name";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 import { compressImage } from "@/lib/upload/compress";
@@ -12,7 +12,8 @@ import { formatDateTime, fromVstDateTimeInput } from "@/lib/format";
 interface EquipmentOption {
   id: string;
   serialNumber: string | null;
-  model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+  model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+  customDescription: string | null;
   site: { id: string; name: string } | null;
   status: string;
 }
@@ -309,11 +310,10 @@ export function NewRequestClient() {
                             ].join(" ")}
                           >
                             <div className="text-sm font-semibold text-[#002A4D]">
-                              {pickModelName(e.model, locale)}
+                              {pickEquipmentLabel(e, locale)}
                             </div>
                             <div className="text-xs text-[#737373]">
-                              {pickModelName(e.model, locale)}
-                              {e.serialNumber ? ` · ${e.serialNumber}` : ""}
+                              {[e.model?.modelCode, e.serialNumber].filter(Boolean).join(" · ")}
                             </div>
                           </button>
                         </li>
@@ -445,7 +445,9 @@ export function NewRequestClient() {
           <div className="space-y-2 rounded-2xl border border-[#e5e5e5] bg-white p-4 text-sm">
             <Row label={t("detailEquipment")} value={
               selectedEquipment
-                ? `${pickModelName(selectedEquipment.model, locale)} · ${pickModelName(selectedEquipment.model, locale)}`
+                ? [pickEquipmentLabel(selectedEquipment, locale), selectedEquipment.serialNumber]
+                    .filter(Boolean)
+                    .join(" · ")
                 : "—"
             } />
             <Row label={t("detailType")} value={type ? t(`types.${type}` as never) : "—"} />

@@ -17,11 +17,15 @@ function useHydrated() {
 /**
  * Mirror of the office-side AuthGuard, but gated to TECHNICIAN role. If a
  * non-technician user opens /mobile/*, they're bounced back to the dashboard.
+ * A technician still on a temp password (`mustChangePassword`) is sent to
+ * /f/change-password, which passes `requireChange` to opt out.
  */
 export function TechnicianAuthGuard({
   children,
-}: Readonly<{ children: ReactNode }>) {
+  requireChange = false,
+}: Readonly<{ children: ReactNode; requireChange?: boolean }>) {
   const { isAuthenticated, isLoading, user } = useFieldAuth();
+  const mustChange = !!user?.mustChangePassword && !requireChange;
   const router = useRouter();
   const hydrated = useHydrated();
 
@@ -41,8 +45,10 @@ export function TechnicianAuthGuard({
     }
     if (user && user.role !== "TECHNICIAN") {
       router.replace("/o/dashboard");
+      return;
     }
-  }, [isAuthenticated, isLoading, user, router]);
+    if (mustChange) router.replace("/f/change-password");
+  }, [isAuthenticated, isLoading, user, mustChange, router]);
 
   if (!hydrated) return <>{children}</>;
   if (isLoading) {
@@ -53,5 +59,6 @@ export function TechnicianAuthGuard({
   }
   if (!isAuthenticated) return null;
   if (user && user.role !== "TECHNICIAN") return null;
+  if (mustChange) return null;
   return <>{children}</>;
 }

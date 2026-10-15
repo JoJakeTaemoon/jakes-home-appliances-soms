@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { pickModelName } from "@/lib/products/name";
-import { useTranslations , useLocale} from "next-intl";
+import { pickEquipmentLabel } from "@/lib/products/name";
+import { useTranslations, useLocale } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { Link } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 
@@ -12,13 +13,15 @@ interface EquipmentRow {
   status: string;
   ownership: string;
   installedAt: string | null;
-  model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+  model: { id: string; modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } | null;
+  customDescription: string | null;
   site: { id: string; name: string } | null;
 }
 
 export function EquipmentListClient() {
   const locale = useLocale();
   const t = useTranslations("portal.equipment");
+  const tEq = useTranslations("equipment");
   const { accessToken } = useCustomerAuth();
   const [rows, setRows] = useState<EquipmentRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,27 +96,26 @@ export function EquipmentListClient() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-[#002A4D]">
-                        {pickModelName(r.model, locale)}
+                        {pickEquipmentLabel(r, locale)}
                       </div>
                       <div className="text-xs text-[#737373]">
-                        {pickModelName(r.model, locale)}
-                        {r.serialNumber ? ` · ${r.serialNumber}` : ""}
+                        {[r.model?.modelCode, r.serialNumber].filter(Boolean).join(" · ")}
                       </div>
                     </div>
                     <span
                       className={[
-                        "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase",
+                        "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium",
                         r.status === "ACTIVE"
                           ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d]"
                           : "border-[#e5e5e5] bg-[#f5f5f5] text-[#525252]",
                       ].join(" ")}
                     >
-                      {r.status}
+                      {tEq(`statusValues.${r.status}` as never)}
                     </span>
                   </div>
                   {r.installedAt && (
                     <div className="mt-2 text-xs text-[#525252]">
-                      {t("installed")}: {r.installedAt.slice(0, 10)}
+                      {t("installed")}: {formatDate(r.installedAt, locale)}
                     </div>
                   )}
                 </Link>

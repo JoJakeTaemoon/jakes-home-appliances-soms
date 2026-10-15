@@ -20,7 +20,8 @@ import { EquipmentMasterDetail } from "@/components/equipment/equipment-master-d
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Avatar } from "@/components/ui/avatar";
 import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-modal";
-import { OrderHistoryTab } from "@/components/customer/order-history-tab";
+import { OrderHistoryTab } from "@/components/orders/order-history-tab";
+import { OpenPortalButton } from "@/components/customer/open-portal-button";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
@@ -185,7 +186,9 @@ function CustomerDetailInner() {
   // Active tab lives in the URL (?tab=…) so it survives navigating out to a
   // detail page and back. Without this, `router.back()` from equipment detail
   // returns to /o/customers/[id] and the tab resets to "overview".
-  const activeTab = searchParams.get("tab") ?? "overview";
+  // `?tab=sites` is the old link to the sites panel — now the 설치 장소 tab.
+  const tabParam = searchParams.get("tab") ?? "overview";
+  const activeTab = tabParam === "sites" ? "install-sites" : tabParam;
   const setActiveTab = (v: string) => {
     router.replace((v === "overview" ? pathname : `${pathname}?tab=${v}`) as "/o");
   };
@@ -397,7 +400,9 @@ function CustomerDetailInner() {
           <Tab value="payments">{t("tabs.paymentStatus")}</Tab>
           <Tab value="purchase">{t("tabs.orderHistory")}</Tab>
           <Tab value="sales-orders">{t("tabs.salesOrder")}</Tab>
-          <Tab value="install-sites">{t("tabs.installSites")}</Tab>
+          {data.type === "B2B" && (
+            <Tab value="install-sites">{t("tabs.installSites")}</Tab>
+          )}
           <Tab value="notes-files">{t("tabs.notesAttachments")}</Tab>
           <Tab value="contacts">{t("tabs.contacts")}</Tab>
           <Tab value="service-requests">{t("tabs.serviceRequests")}</Tab>
@@ -463,7 +468,7 @@ function CustomerDetailInner() {
         </TabPanel>
 
         {data.type === "B2B" && (
-          <TabPanel value="sites">
+          <TabPanel value="install-sites">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-end">
                 {canManageSite(role) && (
@@ -519,9 +524,6 @@ function CustomerDetailInner() {
         </TabPanel>
         <TabPanel value="sales-orders">
           <OrderHistoryTab customerId={data.id} productKind="EQUIPMENT" />
-        </TabPanel>
-        <TabPanel value="install-sites">
-          <PlaceholderTab title={t("tabs.installSites")} />
         </TabPanel>
         <TabPanel value="notes-files">
           <PlaceholderTab title={t("tabs.notesAttachments")} />
@@ -1034,7 +1036,10 @@ function ContactsTab({
         <div className="rounded-xl border border-[#e5e5e5] bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <StatusBadge tone="info">{t("contractParty")}</StatusBadge>
+              <div className="flex items-center gap-2">
+                <StatusBadge tone="info">{t("contractParty")}</StatusBadge>
+                {cp.portalEnabled && <StatusBadge tone="success">{t("portalEnabled")}</StatusBadge>}
+              </div>
               <h3 className="mt-2 text-base font-semibold">{cp.name}</h3>
               <p className="text-xs text-[#737373]">{cp.title}</p>
             </div>
@@ -1067,6 +1072,7 @@ function ContactsTab({
                   {c.isPrimary && <StatusBadge tone="success">{t("primaryBadge")}</StatusBadge>}
                   {c.isAccountingContact && <StatusBadge tone="warning">{t("accountingBadge")}</StatusBadge>}
                   {c.scope === "SITE" && <StatusBadge tone="info">SITE</StatusBadge>}
+                  {c.portalEnabled && <StatusBadge tone="success">{t("portalEnabled")}</StatusBadge>}
                 </div>
                 <h4 className="mt-1 text-base font-semibold">{c.name}</h4>
                 <p className="text-xs text-[#737373]">{c.title}</p>
@@ -1122,13 +1128,22 @@ function ContactActions({
     }
   }
 
-  if (!canEdit) return null;
+  // Same gate as POST …/enable-portal (any office role, either contact role);
+  // phone1 is the portal login ID.
+  const canOpenPortal = canManageContact(role) && !contact.portalEnabled && !!contact.phone1;
+
+  if (!canEdit && !canOpenPortal) return null;
   return (
     <div className="flex items-center gap-2">
-      <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-        {tc("edit")}
-      </Button>
-      {contact.role !== "CONTRACT_PARTY" && (
+      {canOpenPortal && (
+        <OpenPortalButton customerId={customer.id} contact={contact} onOpened={() => void reload()} />
+      )}
+      {canEdit && (
+        <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+          {tc("edit")}
+        </Button>
+      )}
+      {canEdit && contact.role !== "CONTRACT_PARTY" && (
         <Button variant="ghost" size="sm" onClick={() => setConfirming(true)}>
           {t("deleteContact")}
         </Button>

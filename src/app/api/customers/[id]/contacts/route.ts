@@ -4,6 +4,9 @@
  * Enforces:
  *   - exactly one CONTRACT_PARTY per customer (rejects a 2nd one)
  *   - exactly one primary OPS_CONTACT per scope (CUSTOMER or per SITE)
+ *
+ * With `portalEnabled: true` the response carries `tempPassword` (shown once,
+ * read out by phone — never sent, never audited).
  */
 
 import { z } from "zod";
@@ -101,13 +104,17 @@ export const POST = defineMutation({
       });
     });
 
+    // The temporary password comes back once for the office to read out by
+    // phone — nothing is sent (2026-09-25). Dropping it here used to leave
+    // the new account with a password nobody knew.
+    let tempPassword: string | undefined;
     if (body.portalEnabled && created.phone1) {
       try {
-        await enablePortalAccount({
+        ({ plainPassword: tempPassword } = await enablePortalAccount({
           contactId: created.id,
           actorId: auth.userId,
           actorType: "USER",
-        });
+        }));
       } catch (portalErr) {
         console.error(
           `[contacts] Failed to enable portal for ${created.id}: ${portalErr}`,
@@ -115,11 +122,20 @@ export const POST = defineMutation({
       }
     }
 
-    return created;
+    return {
+      ...created,
+      portalEnabled: created.portalEnabled || tempPassword !== undefined,
+      tempPassword,
+    };
   },
   audit: {
     action: "CUSTOMER_CONTACT_CREATE",
     entityType: "CustomerContact",
-    after: (r) => r,
+    // Never persist the one-time password.
+    after: (r) => {
+      const { tempPassword, ...row } = r;
+      void tempPassword;
+      return row;
+    },
   },
 });

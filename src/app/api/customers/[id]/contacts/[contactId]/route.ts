@@ -24,6 +24,8 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
 
     const before = await prisma.customerContact.findFirst({
       where: { id: contactId, customerId },
+      // Audit rows are readable by MANAGER+; keep the portal hash out of them.
+      omit: { passwordHash: true },
     });
     if (!before) throw new NotFoundError("Contact not found");
 
@@ -83,6 +85,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       }
       return tx.customerContact.update({
         where: { id: contactId },
+        omit: { passwordHash: true },
         data: {
           name: data.name,
           title: data.title,
@@ -133,6 +136,8 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
 
     const before = await prisma.customerContact.findFirst({
       where: { id: contactId, customerId },
+      // Audit rows are readable by MANAGER+; keep the portal hash out of them.
+      omit: { passwordHash: true },
     });
     if (!before) throw new NotFoundError("Contact not found");
 
@@ -143,6 +148,7 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
     // Soft-disable: turn off portal + primary + accounting, keep row for history.
     const updated = await prisma.customerContact.update({
       where: { id: contactId },
+      omit: { passwordHash: true },
       data: {
         portalEnabled: false,
         isPrimary: false,

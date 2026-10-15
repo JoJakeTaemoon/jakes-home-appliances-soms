@@ -24,6 +24,8 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
 
     const before = await prisma.customerContact.findFirst({
       where: { id: contactId, customerId: caller.customerId },
+      // Goes into the audit row — keep the portal hash out of it.
+      omit: { passwordHash: true },
     });
     if (!before) throw new NotFoundError("Contact not found");
 

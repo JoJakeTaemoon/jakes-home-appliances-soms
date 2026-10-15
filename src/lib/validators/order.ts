@@ -123,6 +123,12 @@ export const updateOrderSchema = z.object({
   notes: optStr(2000),
 });
 
+/** PATCH /api/orders/[id] — PENDING → DELIVERED | CANCELLED (both terminal). */
+export const orderTransitionSchema = z.object({
+  state: z.enum(["DELIVERED", "CANCELLED"]),
+  deliveredAt: z.coerce.date().optional(),
+});
+
 export const orderListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   customerId: z.string().trim().min(1).optional(),

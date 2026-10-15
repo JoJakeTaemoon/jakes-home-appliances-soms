@@ -9,8 +9,8 @@
  *
  * Default for both is `mock`. eSMS is live as of 2026-09-12 (brandname
  * `SEOUL AQUA`, credentials in `ESMS_API_KEY` / `ESMS_SECRET_KEY` /
- * `ESMS_BRAND_NAME`); it sends in sandbox unless `ESMS_SANDBOX=0`. Resend is
- * still a stub that throws until the F.7 credentials land.
+ * `ESMS_BRAND_NAME`); it sends in sandbox unless `ESMS_SANDBOX=0`. Resend
+ * reads `RESEND_API_KEY` / `EMAIL_FROM` / `EMAIL_REPLY_TO`.
  *
  * Centralising the lookup also makes test injection easy: a single
  * `setNotificationProviderOverride()` helper lets tests swap in a fake without

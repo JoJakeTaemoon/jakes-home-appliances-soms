@@ -1,16 +1,19 @@
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
-import { pickModelName } from "@/lib/products/name";
+import { pickEquipmentLabel } from "@/lib/products/name";
 import { useApiQuery } from "@/lib/api/hooks";
 import {
   VisitStateBadge,
   VisitTypeBadge,
 } from "@/components/visits/visit-state-badge";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { photoSrc } from "@/lib/visits/photo-src";
 
 interface VisitPhoto {
-  url: string;
+  /** Seed/legacy rows carry `url`; field-app uploads only `storageKey`. */
+  url?: string;
+  storageKey?: string;
   takenAt?: string | null;
   caption?: string | null;
 }
@@ -26,14 +29,19 @@ interface VisitDetail {
   photos: VisitPhoto[] | null;
   equipment: {
     serialNumber: string | null;
-    model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null };
+    model: {
+      modelCode: string | null;
+      nameKo: string | null;
+      nameVi: string | null;
+      nameEn: string | null;
+    } | null;
+    customDescription: string | null;
   } | null;
   leadTechnician: { username: string } | null;
   documents: {
     id: string;
     kind: string;
     filename: string;
-    storageKey: string;
     generatedAt: string;
   }[];
 }
@@ -44,10 +52,13 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
   const query = useApiQuery<VisitDetail>(`/api/portal/visits/${id}`);
   const data = query.data;
 
-  if (query.isLoading) return <p className="text-sm text-[#737373]">{t("loading")}</p>;
+  if (query.isLoading)
+    return <p className="text-sm text-[#737373]">{t("loading")}</p>;
   if (!data) return <p className="text-sm text-[#737373]">{t("loadError")}</p>;
 
-  const wc = data.documents.find((d) => d.kind === "WORK_CONFIRMATION" || d.kind === "PERIODIC_INSPECTION");
+  const wc = data.documents.find(
+    (d) => d.kind === "WORK_CONFIRMATION" || d.kind === "PERIODIC_INSPECTION",
+  );
 
   return (
     <div className="space-y-3">
@@ -74,7 +85,7 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
           {data.equipment && (
             <>
               <dt className="text-[#737373]">{t("equipment")}</dt>
-              <dd>{pickModelName(data.equipment.model, locale)}</dd>
+              <dd>{pickEquipmentLabel(data.equipment, locale)}</dd>
             </>
           )}
         </dl>
@@ -83,7 +94,9 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
             <div className="mb-1 text-xs font-medium uppercase tracking-wider text-[#737373]">
               {t("findings")}
             </div>
-            <p className="whitespace-pre-wrap text-[#262626]">{data.findings}</p>
+            <p className="whitespace-pre-wrap text-[#262626]">
+              {data.findings}
+            </p>
           </div>
         )}
       </div>
@@ -94,37 +107,41 @@ export function PortalVisitDetailClient({ id }: Readonly<{ id: string }>) {
             {t("photos")}
           </h2>
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {data.photos.map((p, i) => (
-              <li key={`${p.url}-${i}`} className="relative">
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block aspect-square overflow-hidden rounded-lg border border-[#e5e5e5] bg-[#fafafa]"
-                  title={p.caption ?? p.takenAt ?? ""}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.url}
-                    alt={p.caption ?? `Photo ${i + 1}`}
-                    className="h-full w-full object-cover transition-transform hover:scale-105"
-                    loading="lazy"
-                  />
-                </a>
-                {p.takenAt && (
-                  <p className="mt-1 text-[10px] text-[#737373]">
-                    {formatDate(p.takenAt, locale)}
-                  </p>
-                )}
-              </li>
-            ))}
+            {data.photos.map((p, i) => {
+              const src = photoSrc(p);
+              if (!src) return null;
+              return (
+                <li key={`${src}-${i}`} className="relative">
+                  <a
+                    href={src}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block aspect-square overflow-hidden rounded-lg border border-[#e5e5e5] bg-[#fafafa]"
+                    title={p.caption ?? p.takenAt ?? ""}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt={p.caption ?? `Photo ${i + 1}`}
+                      className="h-full w-full object-cover transition-transform hover:scale-105"
+                      loading="lazy"
+                    />
+                  </a>
+                  {p.takenAt && (
+                    <p className="mt-1 text-[10px] text-[#737373]">
+                      {formatDate(p.takenAt, locale)}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
 
       {wc && (
         <a
-          href={`/${wc.storageKey}`}
+          href={`/api/portal/visits/${data.id}/documents/${wc.id}/download`}
           target="_blank"
           rel="noreferrer"
           className="block rounded-2xl border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-4 text-center text-sm font-medium text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-100)]"

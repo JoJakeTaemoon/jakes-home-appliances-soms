@@ -31,6 +31,7 @@ export default function MobileUpcomingPage() {
 
 function MobileUpcomingContent() {
   const t = useTranslations("mobile");
+  const tc = useTranslations("common");
   const locale = useLocale();
   const query = useApiQuery<{
     grouped: Record<string, VisitCard[]>;
@@ -39,7 +40,7 @@ function MobileUpcomingContent() {
   const grouped = query.data?.grouped ?? {};
   const total = query.data?.total ?? 0;
 
-  if (query.isLoading) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading) return <p className="text-sm text-[#737373]">{tc("loading")}</p>;
 
   return (
     <div className="flex flex-col gap-4">

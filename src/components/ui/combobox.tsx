@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
 
@@ -62,19 +63,21 @@ export function Combobox({
   value,
   onChange,
   options,
-  placeholder = "Select…",
+  placeholder,
   searchable,
-  searchPlaceholder = "Search…",
+  searchPlaceholder,
   disabled,
   className,
   allowClear = true,
-  emptyText = "No results",
+  emptyText,
   ariaLabel,
   allowCreate = false,
-  createLabel = (q) => `Add “${q}”`,
+  createLabel,
   onCreate,
   minDropdownWidth = 320,
 }: Readonly<Props>) {
+  // Unset texts fall back to the UI language, never hardcoded English.
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -184,14 +187,14 @@ export function Combobox({
         )}
       >
         <span className={cn(selected ? "text-[#111111]" : "text-[#a3a3a3]", "min-w-0 flex-1 truncate")}>
-          {selected ? selected.label : placeholder}
+          {selected ? selected.label : (placeholder ?? tc("selectPlaceholder"))}
         </span>
         <div className="flex shrink-0 items-center gap-1">
           {allowClear && selected && !disabled && (
             <span
               role="button"
               tabIndex={0}
-              aria-label="Clear selection"
+              aria-label={tc("clear")}
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
@@ -240,14 +243,14 @@ export function Combobox({
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={searchPlaceholder}
+                placeholder={searchPlaceholder ?? tc("searchPlaceholder")}
                 className="h-9 w-full rounded-md border border-[#e5e5e5] bg-white px-3 text-sm outline-none focus:border-[var(--brand-blue-500)]"
               />
             </div>
           )}
           <div role="listbox" className="max-h-72 overflow-y-auto py-1">
             {filtered.length === 0 && (
-              <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText}</div>
+              <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText ?? tc("noResults")}</div>
             )}
             {filtered.map((o) => (
               <button
@@ -294,7 +297,9 @@ export function Combobox({
                 className="flex w-full items-center gap-1 border-t border-[#f0f0f0] px-3 py-2 text-left text-sm text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)]"
               >
                 <span className="font-semibold">+</span>
-                <span className="truncate">{createLabel(query.trim())}</span>
+                <span className="truncate">
+                  {createLabel ? createLabel(query.trim()) : tc("addNamed", { name: query.trim() })}
+                </span>
               </button>
             )}
           </div>

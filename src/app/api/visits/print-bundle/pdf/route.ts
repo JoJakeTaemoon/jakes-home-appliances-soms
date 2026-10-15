@@ -6,9 +6,10 @@
  *
  *   1. INSTALLATION: contract PDF × 2 (customer + company copy) — the
  *      exact same file `/o/contracts/{id}` shows, fetched from disk.
- *   2. The visit's auto-suggested document PDF (delivery receipt /
- *      sale receipt / B2B delivery slip / periodic check / work
- *      confirmation) rendered in memory.
+ *   2. Every auto-suggested document PDF for the visit — primary type
+ *      plus `additionalTypes`, the same list the HTML preview shows
+ *      (delivery receipt / sale receipt / B2B delivery slip / periodic
+ *      check / work confirmation) — rendered in memory.
  *
  * All pages are merged with `pdf-lib` into one buffer so a browser
  * print preview honours the embedded A4 size rather than scaling the
@@ -28,7 +29,7 @@ import { ValidationError } from "@/lib/api/error";
 import { registerFonts } from "@/lib/pdf/fonts";
 import { langPairForLocale, type PdfLangPair } from "@/lib/pdf/types";
 import {
-  suggestVisitDocumentKind,
+  suggestVisitDocumentKindList,
   type CustomerTypeForSuggest,
   type VisitTypeForSuggest,
 } from "@/lib/visits/document-suggest";
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         type: true,
+        additionalTypes: true,
         scheduledFor: true,
         customerId: true,
         customer: { select: { type: true } },
@@ -145,22 +147,26 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Visit document — render fresh into memory.
-      const kind = suggestVisitDocumentKind({
+      // Visit documents — one per work stream (primary + additionalTypes),
+      // same list as the HTML preview, each rendered fresh into memory.
+      const kinds = suggestVisitDocumentKindList({
         visitType: v.type as VisitTypeForSuggest,
+        additionalTypes: v.additionalTypes as VisitTypeForSuggest[],
         customerType: v.customer.type as CustomerTypeForSuggest,
         contractType: contract?.type ?? null,
       });
-      try {
-        const element = await buildPreviewElement(v.id, kind, langPair);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const docPdf = await renderToBuffer(element as any);
-        await appendPdfPages(merged, Buffer.from(docPdf));
-      } catch (err) {
-        console.warn(
-          `[print-bundle/pdf] skipped visit ${v.id} kind=${kind}:`,
-          err instanceof Error ? err.message : err,
-        );
+      for (const kind of kinds) {
+        try {
+          const element = await buildPreviewElement(v.id, kind, langPair);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const docPdf = await renderToBuffer(element as any);
+          await appendPdfPages(merged, Buffer.from(docPdf));
+        } catch (err) {
+          console.warn(
+            `[print-bundle/pdf] skipped visit ${v.id} kind=${kind}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
       }
     }
 

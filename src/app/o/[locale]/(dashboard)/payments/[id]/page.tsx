@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useApi } from "@/lib/api/client";
 import { useApiQuery } from "@/lib/api/hooks";
 import { BreadcrumbLabel } from "@/lib/nav/breadcrumb-context";
@@ -14,7 +14,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { NumberInput } from "@/components/ui/number-input";
 import { formatDate, formatDateTime, formatVnd } from "@/lib/format";
+import { acceptsPartialPayment, type PaymentState } from "@/lib/payments/state";
 
 interface PaymentDetail {
   id: string;
@@ -66,8 +68,8 @@ export default function PaymentDetailPage() {
   const t = useTranslations("payments");
   const tStates = useTranslations("payments.states");
   const tMethods = useTranslations("payments.methods");
+  const tc = useTranslations("common");
   const locale = useLocale();
-  const router = useRouter();
   const api = useApi();
   const { user } = useAuth();
 
@@ -76,7 +78,7 @@ export default function PaymentDetailPage() {
   const [showWriteOff, setShowWriteOff] = useState(false);
   const [writeOffReason, setWriteOffReason] = useState("");
   const [showPartial, setShowPartial] = useState(false);
-  const [partialAmount, setPartialAmount] = useState("");
+  const [partialAmount, setPartialAmount] = useState(0);
   // Receipt notes editor (요청 #4). `draftNotes === null` means untouched — the
   // textarea then shows the server value; once edited it holds the draft. After
   // a save we reset to null so it re-derives from the freshly-loaded notes.
@@ -174,13 +176,11 @@ export default function PaymentDetailPage() {
     }
   };
   const handlePartial = async () => {
-    const amount = Number(partialAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return;
+    if (!(partialAmount > 0)) return;
     setActionLoading(true);
     try {
-      await api.post(`/api/payments/${id}/partial`, { partialAmount: amount });
+      await api.post(`/api/payments/${id}/partial`, { partialAmount });
       setShowPartial(false);
-      setPartialAmount("");
       await load();
     } finally {
       setActionLoading(false);
@@ -421,10 +421,16 @@ export default function PaymentDetailPage() {
                   {t("detail.reconcile")}
                 </Button>
               )}
-            {isOffice && data.state === "EXPECTED" && (
+            {/* EXPECTED + every overdue tier: a late customer can still pay
+                part or all of it; the remainder carries over as before. */}
+            {isOffice && acceptsPartialPayment(data.state as PaymentState) && (
               <Button
                 variant="secondary"
-                onClick={() => setShowPartial(true)}
+                onClick={() => {
+                  // Start at the full amount due — a full settlement is one click.
+                  setPartialAmount(Number(data.expectedAmount));
+                  setShowPartial(true);
+                }}
                 disabled={actionLoading}
               >
                 {t("detail.partial")}
@@ -479,15 +485,21 @@ export default function PaymentDetailPage() {
         title={t("detail.partial")}
       >
         <div className="space-y-3">
-          <label className="block text-sm">{t("partialPrompt")}</label>
-          <Input
-            type="number"
+          <label htmlFor="partial-amount" className="block text-sm">{t("partialPrompt")}</label>
+          <NumberInput
+            id="partial-amount"
+            variant="money"
             value={partialAmount}
-            onChange={(e) => setPartialAmount(e.target.value)}
+            onChange={setPartialAmount}
+            min={0}
+            max={Number(data.expectedAmount)}
           />
+          <p className="text-xs text-[#737373]">
+            {t("partialHint", { amount: formatVnd(data.expectedAmount) })}
+          </p>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setShowPartial(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button onClick={handlePartial} isLoading={actionLoading}>
               {t("detail.partial")}

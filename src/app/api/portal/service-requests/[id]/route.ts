@@ -27,6 +27,7 @@ export const GET = defineQuery({
             siteId: true,
             installedAt: true,
             model: { select: { modelCode: true, nameKo: true, nameVi: true, nameEn: true } },
+            customDescription: true,
             site: { select: { id: true, name: true } },
           },
         },

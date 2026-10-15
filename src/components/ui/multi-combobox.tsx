@@ -16,6 +16,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 import { foldDiacritics } from "@/lib/vn-text";
 import { PortalPanel, type ComboboxOption, type Coords } from "@/components/ui/combobox";
@@ -40,17 +41,19 @@ export function MultiCombobox({
   values,
   onChange,
   options,
-  placeholder = "Select…",
-  searchPlaceholder = "Search…",
-  emptyText = "No results",
+  placeholder,
+  searchPlaceholder,
+  emptyText,
   disabled,
   className,
   ariaLabel,
   allowCreate = false,
-  createLabel = (q) => `Add “${q}”`,
+  createLabel,
   onCreate,
   minDropdownWidth = 320,
 }: Readonly<Props>) {
+  // Unset texts fall back to the UI language, never hardcoded English.
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -178,7 +181,7 @@ export function MultiCombobox({
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
           {selected.length === 0 && (
-            <span className="px-1 text-[#a3a3a3]">{placeholder}</span>
+            <span className="px-1 text-[#a3a3a3]">{placeholder ?? tc("selectPlaceholder")}</span>
           )}
           {selected.map((o) => (
             <span
@@ -190,7 +193,7 @@ export function MultiCombobox({
                 <span
                   role="button"
                   tabIndex={0}
-                  aria-label={`Remove ${o.label}`}
+                  aria-label={tc("removeNamed", { name: o.label })}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggle(o.value);
@@ -233,13 +236,13 @@ export function MultiCombobox({
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? tc("searchPlaceholder")}
               className="h-9 w-full rounded-md border border-[#e5e5e5] bg-white px-3 text-sm outline-none focus:border-[var(--brand-blue-500)]"
             />
           </div>
           <div id={listboxId} role="listbox" aria-multiselectable="true" className="max-h-72 overflow-y-auto py-1">
             {filtered.length === 0 && !(allowCreate && query.trim()) && (
-              <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText}</div>
+              <div className="px-3 py-4 text-center text-xs text-[#a3a3a3]">{emptyText ?? tc("noResults")}</div>
             )}
             {filtered.map((o) => {
               const checked = selectedSet.has(o.value);
@@ -293,7 +296,9 @@ export function MultiCombobox({
                 className="flex w-full items-center gap-1 border-t border-[#f0f0f0] px-3 py-2 text-left text-sm text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)]"
               >
                 <span className="font-semibold">+</span>
-                <span className="truncate">{createLabel(query.trim())}</span>
+                <span className="truncate">
+                  {createLabel ? createLabel(query.trim()) : tc("addNamed", { name: query.trim() })}
+                </span>
               </button>
             )}
           </div>

@@ -195,3 +195,71 @@ describe("notification dispatch", () => {
     );
   });
 });
+
+/**
+ * Overdue rows used to be write-off-only on the detail page. A customer who
+ * finally pays (in part or in full) must be recordable on OVERDUE_D7/14/30
+ * with the same carry-over behaviour as an EXPECTED row — and a settled or
+ * written-off row must never be "partially paid" a second time.
+ */
+describe("applyPartialPayment — which states accept it", () => {
+  const row = (state: string) =>
+    ({
+      id: "pay-1",
+      customerId: "c1",
+      contractId: "co1",
+      method: "BANK_TRANSFER",
+      state,
+      expectedAmount: { toString: () => "500000" },
+      dueDate: new Date("2026-06-01"),
+      notes: null,
+    }) as never;
+
+  it.each(["OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"])(
+    "settles part of a %s row and carries the rest over",
+    async (state) => {
+      mockedPrisma.payment.findUnique.mockResolvedValueOnce(row(state));
+      mockedPrisma.payment.update.mockResolvedValueOnce({ id: "pay-1" } as never);
+      mockedPrisma.payment.create.mockResolvedValueOnce({ id: "pay-carry" } as never);
+
+      const r = await applyPartialPayment({
+        paymentId: "pay-1",
+        partialAmount: 200_000,
+        actorUserId: "u1",
+      });
+
+      expect(r.carryover?.id).toBe("pay-carry");
+      const upd = mockedPrisma.payment.update.mock.calls[0][0];
+      // Prior state pinned in WHERE so a concurrent write-off can't be overwritten.
+      expect(upd.where).toEqual({ id: "pay-1", state });
+      expect(upd.data.state).toBe("RECONCILED");
+      expect(mockedPrisma.payment.create.mock.calls[0][0].data.expectedAmount).toBe(300_000);
+    },
+  );
+
+  it("closes an overdue row outright when the full amount is paid", async () => {
+    mockedPrisma.payment.findUnique.mockResolvedValueOnce(row("OVERDUE_D30"));
+    mockedPrisma.payment.update.mockResolvedValueOnce({ id: "pay-1" } as never);
+
+    const r = await applyPartialPayment({
+      paymentId: "pay-1",
+      partialAmount: 500_000,
+      actorUserId: "u1",
+    });
+
+    expect(r.carryover).toBeNull();
+    expect(mockedPrisma.payment.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["RECONCILED", "WRITTEN_OFF", "COLLECTED", "HANDED_OVER"])(
+    "refuses a %s row and writes nothing",
+    async (state) => {
+      mockedPrisma.payment.findUnique.mockResolvedValueOnce(row(state));
+      await expect(
+        applyPartialPayment({ paymentId: "pay-1", partialAmount: 100_000, actorUserId: "u1" }),
+      ).rejects.toThrow();
+      expect(mockedPrisma.payment.update).not.toHaveBeenCalled();
+      expect(mockedPrisma.payment.create).not.toHaveBeenCalled();
+    },
+  );
+});

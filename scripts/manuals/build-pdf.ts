@@ -4,7 +4,7 @@
  * Usage:
  *   npx tsx scripts/manuals/build-pdf.ts [manual-path ...]
  *
- * With no args: builds all 6 manuals under docs/manuals/{ko,vi}/{office,field,customer}.md
+ * With no args: builds all 8 manuals under docs/manuals/{ko,vi}/{office,field,customer,catalog-upload}.md
  *
  * "Pageless" means: PDF height matches rendered content height (no
  * artificial page breaks). Width is A4 landscape (297mm) so wide
@@ -21,7 +21,7 @@
  * configured with useMaxWidth: true so any wide diagram auto-scales
  * down to the content column instead of overflowing the page.
  *
- * Output: docs/manuals/pdf/{office,field,customer}-{ko,vi}.pdf
+ * Output: docs/manuals/pdf/{office,field,customer,catalog-upload}-{ko,vi}.pdf
  */
 
 import { chromium } from "@playwright/test";
@@ -342,7 +342,7 @@ async function main() {
   if (explicit.length > 0) {
     targets = explicit.map((p) => path.relative(ROOT, path.resolve(p)));
   } else {
-    const groups = ["office", "field", "customer"];
+    const groups = ["office", "field", "customer", "catalog-upload"];
     const langs = ["ko", "vi"];
     targets = [];
     for (const lang of langs) {

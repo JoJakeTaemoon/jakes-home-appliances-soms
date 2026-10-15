@@ -10,6 +10,7 @@ import { useApiQuery } from "@/lib/api/hooks";
 import { useFieldAuth } from "@/providers/field-auth-provider";
 import { Button } from "@/components/ui/button";
 import { MobileWrapper } from "@/components/mobile/mobile-wrapper";
+import { VisitFailModal } from "@/components/mobile/visit-fail-modal";
 import {
   VisitStateBadge,
   VisitTypeBadge,
@@ -97,6 +98,8 @@ function MobileVisitDetailContent() {
   const id = params?.id ?? "";
   const t = useTranslations("mobile");
   const tv = useTranslations("visits");
+  const tc = useTranslations("common");
+  const tsr = useTranslations("serviceRequests.types");
   const locale = useLocale();
   const router = useRouter();
   const api = useApi();
@@ -112,10 +115,11 @@ function MobileVisitDetailContent() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
+  const [failOpen, setFailOpen] = useState(false);
 
-  if (query.isLoading && !data) return <p className="text-sm text-[#737373]">Loading…</p>;
+  if (query.isLoading && !data) return <p className="text-sm text-[#737373]">{tc("loading")}</p>;
   if (error || !data) {
-    return <p className="text-sm text-red-600">{error ?? "Not found"}</p>;
+    return <p className="text-sm text-red-600">{error ?? tc("noData")}</p>;
   }
 
   const isLead = !!user && data.leadTechnicianId === user.id;
@@ -236,7 +240,7 @@ function MobileVisitDetailContent() {
       {data.serviceRequest && (
         <section className="rounded-xl border border-[var(--brand-blue-200)] bg-[var(--brand-blue-50)] p-4 shadow-sm">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--brand-blue-700)]">
-            {data.serviceRequest.code} · {data.serviceRequest.type}
+            {data.serviceRequest.code} · {tsr(data.serviceRequest.type as never)}
           </h2>
           <p className="mt-2 whitespace-pre-wrap text-sm text-[#262626]">
             {data.serviceRequest.description}
@@ -246,7 +250,7 @@ function MobileVisitDetailContent() {
 
       {addressStr && (
         <section className="rounded-xl border border-[#e5e5e5] bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-[#737373]">Address</h2>
+          <h2 className="text-sm font-medium text-[#737373]">{tc("address")}</h2>
           <p className="mt-1 text-sm">{addressStr}</p>
         </section>
       )}
@@ -317,7 +321,7 @@ function MobileVisitDetailContent() {
             variant="outline"
             fullWidth
             size="lg"
-            onClick={() => router.push(`/f/visits/${id}/complete?action=fail`)}
+            onClick={() => setFailOpen(true)}
           >
             <span className="inline-flex items-center gap-2">
               <AlertTriangle className="size-5" />
@@ -326,6 +330,16 @@ function MobileVisitDetailContent() {
           </Button>
         )}
       </div>
+
+      {isLead && (
+        <VisitFailModal
+          visitId={id}
+          open={failOpen}
+          onClose={() => setFailOpen(false)}
+          // FAILED_NO_SHOW drops the visit off 오늘 — go back there.
+          onFailed={() => router.replace("/f/today")}
+        />
+      )}
     </div>
   );
 }
@@ -486,10 +500,11 @@ function SignatureDocsSection({ visit }: Readonly<{ visit: VisitDetail }>) {
           const label = t(
             `signatureDocLabels.${kind}` as "signatureDocLabels.WORK_CONFIRMATION",
           );
+          // Field realm only — /api/contracts/{id}/pdf is office-only (403).
           const previewUrl =
             kind === "CONTRACT"
               ? visit.contract
-                ? `/api/contracts/${visit.contract.id}/pdf`
+                ? `/api/mobile/visits/${visit.id}/preview/CONTRACT`
                 : null
               : `/api/mobile/visits/${visit.id}/preview/${kind}?langPair=vi-ko`;
           return (

@@ -11,19 +11,21 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useApi } from "@/lib/api/client";
 import { useAuth } from "@/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Combobox } from "@/components/ui/combobox";
+import { getTemplateDescription } from "@/lib/notifications/template-descriptions";
+import { formatDateTime } from "@/lib/format";
+import type { NotificationLocale } from "@/lib/notifications/types";
 
 interface TemplateRow {
   code: string;
   channel: "SMS" | "EMAIL";
   locale: "ko" | "vi" | "en";
-  description: string;
   defaultBody: string;
   defaultSubject: string | null;
   overrideBody: string | null;
@@ -34,6 +36,10 @@ interface TemplateRow {
 
 export default function NotificationTemplatesPage() {
   const t = useTranslations("admin");
+  const tc = useTranslations("common");
+  // Descriptions explain the template to the admin, so they follow the UI
+  // language — not the template locale tab being edited.
+  const uiLocale = useLocale() as NotificationLocale;
   const { user } = useAuth();
   const api = useApi();
   const [rows, setRows] = useState<TemplateRow[]>([]);
@@ -94,6 +100,16 @@ export default function NotificationTemplatesPage() {
     setEditSubject(selected.overrideSubject ?? selected.defaultSubject ?? "");
   }, [selected]);
 
+  const selectedDescription = selected
+    ? getTemplateDescription(selected.code, uiLocale)
+    : "";
+  const channelLabel = (channel: "SMS" | "EMAIL") =>
+    t(
+      channel === "SMS"
+        ? "notificationTemplates.channelSms"
+        : "notificationTemplates.channelEmail",
+    );
+
   if (user && user.role !== "ADMIN" && user.role !== "MANAGER") {
     return (
       <div className="rounded-md border-2 border-red-500 bg-red-50 p-4 text-sm text-red-700">
@@ -151,9 +167,9 @@ export default function NotificationTemplatesPage() {
               setFilter((v ?? "ALL") as "ALL" | "SMS" | "EMAIL")
             }
             options={[
-              { value: "ALL", label: "All channels" },
-              { value: "SMS", label: "SMS" },
-              { value: "EMAIL", label: "Email" },
+              { value: "ALL", label: t("notificationTemplates.channelAll") },
+              { value: "SMS", label: t("notificationTemplates.channelSms") },
+              { value: "EMAIL", label: t("notificationTemplates.channelEmail") },
             ]}
             allowClear={false}
             searchable={false}
@@ -161,27 +177,25 @@ export default function NotificationTemplatesPage() {
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#737373]">Loading…</p>}
+      {loading && <p className="text-sm text-[#737373]">{tc("loading")}</p>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr,1.4fr]">
         {/* List */}
         <section className="rounded-2xl border border-[#e5e5e5] bg-white">
           <ul className="divide-y divide-[#f0f0f0]">
             {[...grouped.entries()].map(([code, codeRows]) => {
-              // Description matches the active locale's tab; falls back to vi.
-              const localeRow =
-                codeRows.find((r) => r.locale === selectedLocale) ?? codeRows[0];
+              const description = getTemplateDescription(code, uiLocale);
               return (
                 <li key={code} className="p-3">
                   <div className="mb-1 flex items-center justify-between">
                     <span className="font-mono text-xs text-[#525252]">{code}</span>
                     <span className="text-[10px] uppercase tracking-wider text-[#a3a3a3]">
-                      {codeRows[0]?.channel}
+                      {codeRows[0] && channelLabel(codeRows[0].channel)}
                     </span>
                   </div>
-                  {localeRow?.description && (
+                  {description && (
                     <p className="mb-2 text-[11px] leading-snug text-[#737373]">
-                      {localeRow.description}
+                      {description}
                     </p>
                   )}
                   <div className="flex flex-wrap gap-1">
@@ -206,7 +220,7 @@ export default function NotificationTemplatesPage() {
                           <span>{r.locale.toUpperCase()}</span>
                           {!r.enabled && (
                             <span className="rounded-sm bg-red-100 px-1 text-[9px] font-semibold uppercase text-red-700">
-                              OFF
+                              {t("notificationTemplates.off")}
                             </span>
                           )}
                           {hasOverride && (
@@ -226,7 +240,7 @@ export default function NotificationTemplatesPage() {
         <section className="rounded-2xl border border-[#e5e5e5] bg-white p-4">
           {!selected ? (
             <p className="text-sm text-[#737373]">
-              Pick a template + locale to edit.
+              {t("notificationTemplates.pickPrompt")}
             </p>
           ) : (
             <div className="flex flex-col gap-3">
@@ -236,18 +250,27 @@ export default function NotificationTemplatesPage() {
                     {selected.code} · {selected.locale.toUpperCase()}
                   </h2>
                   <p className="mt-0.5 text-xs text-[#737373]">
-                    Channel: {selected.channel}
+                    {t("notificationTemplates.channelInfo", {
+                      channel: channelLabel(selected.channel),
+                    })}
                     {selected.overrideUpdatedAt &&
-                      ` · Override saved ${new Date(selected.overrideUpdatedAt).toLocaleString()}`}
+                      ` · ${t("notificationTemplates.overrideSaved", {
+                        at: formatDateTime(selected.overrideUpdatedAt, uiLocale),
+                      })}`}
                   </p>
-                  {selected.description && (
+                  {selectedDescription && (
                     <p className="mt-2 rounded-md bg-[#fafafa] px-2 py-1.5 text-[11px] leading-snug text-[#525252]">
-                      {selected.description}
+                      {selectedDescription}
                     </p>
                   )}
                 </div>
                 <EnabledToggle
                   enabled={selected.enabled}
+                  label={t(
+                    selected.enabled
+                      ? "notificationTemplates.enabled"
+                      : "notificationTemplates.disabled",
+                  )}
                   busy={saving}
                   onToggle={async () => {
                     setSaving(true);
@@ -267,29 +290,35 @@ export default function NotificationTemplatesPage() {
                 />
               </header>
               {selected.channel === "EMAIL" && (
-                <FormField label="Subject">
+                <FormField label={t("notificationTemplates.subject")}>
                   <Input
                     value={editSubject}
                     onChange={(e) => setEditSubject(e.target.value)}
                   />
                   <p className="mt-1 text-[11px] text-[#737373]">
-                    Default: {selected.defaultSubject ?? "—"}
+                    {t("notificationTemplates.defaultValue", {
+                      value: selected.defaultSubject ?? "—",
+                    })}
                   </p>
                 </FormField>
               )}
-              <FormField label="Body">
+              <FormField label={t("notificationTemplates.body")}>
                 <Textarea
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
                   rows={selected.channel === "SMS" ? 4 : 14}
                 />
                 <p className="mt-1 text-[11px] text-[#737373]">
-                  Placeholders use {"{var}"} syntax. SMS char count:{" "}
-                  {editBody.length}
+                  {t("notificationTemplates.placeholderHint", {
+                    example: "{var}",
+                    count: editBody.length,
+                  })}
                 </p>
               </FormField>
               <details className="text-xs text-[#525252]">
-                <summary className="cursor-pointer">View file default</summary>
+                <summary className="cursor-pointer">
+                  {t("notificationTemplates.viewDefault")}
+                </summary>
                 <pre className="mt-2 whitespace-pre-wrap rounded-md bg-[#fafafa] p-2 font-mono text-[11px] text-[#525252]">
                   {selected.defaultBody}
                 </pre>
@@ -301,7 +330,7 @@ export default function NotificationTemplatesPage() {
               )}
               <div className="flex gap-2">
                 <Button onClick={save} disabled={saving}>
-                  {saving ? "Saving…" : "Save override"}
+                  {saving ? tc("saving") : t("notificationTemplates.save")}
                 </Button>
                 {selected.overrideBody && (
                   <Button
@@ -309,7 +338,7 @@ export default function NotificationTemplatesPage() {
                     disabled={saving}
                     variant="secondary"
                   >
-                    Revert to default
+                    {t("notificationTemplates.revert")}
                   </Button>
                 )}
               </div>
@@ -323,9 +352,15 @@ export default function NotificationTemplatesPage() {
 
 function EnabledToggle({
   enabled,
+  label,
   busy,
   onToggle,
-}: Readonly<{ enabled: boolean; busy: boolean; onToggle: () => void }>) {
+}: Readonly<{
+  enabled: boolean;
+  label: string;
+  busy: boolean;
+  onToggle: () => void;
+}>) {
   return (
     <button
       type="button"
@@ -341,7 +376,7 @@ function EnabledToggle({
           enabled ? "translate-x-6" : "translate-x-1"
         }`}
       />
-      <span className="sr-only">{enabled ? "Enabled" : "Disabled"}</span>
+      <span className="sr-only">{label}</span>
     </button>
   );
 }

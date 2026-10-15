@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
               serialNumber: true,
               siteId: true,
               model: { select: { modelCode: true, nameKo: true, nameVi: true, nameEn: true } },
+              customDescription: true,
             },
           },
           visit: {

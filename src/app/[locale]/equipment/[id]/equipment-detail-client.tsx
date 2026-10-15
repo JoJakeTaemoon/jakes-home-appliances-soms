@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { pickModelName } from "@/lib/products/name";
-import { useTranslations , useLocale} from "next-intl";
+import { pickEquipmentLabel } from "@/lib/products/name";
+import { useTranslations, useLocale } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useCustomerAuth } from "@/providers/customer-auth-provider";
 import {
@@ -29,7 +29,8 @@ interface EquipmentDetail {
   status: string;
   ownership: string;
   installedAt: string | null;
-  model: ModelInfo;
+  model: ModelInfo | null;
+  customDescription: string | null;
   site: { id: string; name: string; address: string } | null;
   filterPolicyOverride: unknown;
 }
@@ -73,6 +74,7 @@ interface Props { id: string }
 export function EquipmentDetailClient({ id }: Readonly<Props>) {
   const locale = useLocale();
   const t = useTranslations("portal.equipmentDetail");
+  const tEq = useTranslations("equipment");
   const { accessToken } = useCustomerAuth();
   const router = useRouter();
   const [eq, setEq] = useState<EquipmentDetail | null>(null);
@@ -120,7 +122,7 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
 
   const nextFilters = computeNextFilterDates(
     eq.installedAt,
-    eq.model.filterPolicy?.filters,
+    eq.model?.filterPolicy?.filters,
   );
 
   return (
@@ -130,8 +132,8 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
       </Link>
 
       <section className="rounded-2xl border border-[#e5e5e5] bg-white p-5">
-        <h1 className="text-lg font-semibold text-[#002A4D]">{pickModelName(eq.model, locale)}</h1>
-        <p className="text-xs text-[#737373]">{pickModelName(eq.model, locale)}</p>
+        <h1 className="text-lg font-semibold text-[#002A4D]">{pickEquipmentLabel(eq, locale)}</h1>
+        {eq.model?.modelCode && <p className="text-xs text-[#737373]">{eq.model.modelCode}</p>}
         <dl className="mt-4 space-y-2 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("serial")}</dt>
@@ -139,15 +141,15 @@ export function EquipmentDetailClient({ id }: Readonly<Props>) {
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("status")}</dt>
-            <dd className="font-medium text-[#262626]">{eq.status}</dd>
+            <dd className="font-medium text-[#262626]">{tEq(`statusValues.${eq.status}` as never)}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("ownership")}</dt>
-            <dd className="font-medium text-[#262626]">{eq.ownership}</dd>
+            <dd className="font-medium text-[#262626]">{tEq(`ownershipValues.${eq.ownership}` as never)}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-[#737373]">{t("installedAt")}</dt>
-            <dd className="font-medium text-[#262626]">{eq.installedAt?.slice(0, 10) ?? "—"}</dd>
+            <dd className="font-medium text-[#262626]">{formatDate(eq.installedAt, locale) || "—"}</dd>
           </div>
           {eq.site && (
             <div className="flex justify-between gap-3">

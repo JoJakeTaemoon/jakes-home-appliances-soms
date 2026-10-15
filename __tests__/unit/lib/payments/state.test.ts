@@ -109,3 +109,18 @@ describe("helpers", () => {
     expect(computeOverdueTier(60)).toBe("OVERDUE_D30");
   });
 });
+
+describe("acceptsPartialPayment", () => {
+  it("is open for EXPECTED and every overdue tier", async () => {
+    const { acceptsPartialPayment } = await import("@/lib/payments/state");
+    for (const s of ["EXPECTED", "OVERDUE_D7", "OVERDUE_D14", "OVERDUE_D30"] as const) {
+      expect(acceptsPartialPayment(s), s).toBe(true);
+    }
+  });
+  it("is closed for collected, handed-over and terminal rows", async () => {
+    const { acceptsPartialPayment } = await import("@/lib/payments/state");
+    for (const s of ["COLLECTED", "HANDED_OVER", "RECONCILED", "WRITTEN_OFF"] as const) {
+      expect(acceptsPartialPayment(s), s).toBe(false);
+    }
+  });
+});

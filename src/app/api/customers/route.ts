@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
       try {
         created = await prisma.customer.create({
           data: buildCustomerData(code),
-          include: { contacts: true, sites: true },
+          include: { contacts: { omit: { passwordHash: true } }, sites: true },
         });
         break;
       } catch (err) {

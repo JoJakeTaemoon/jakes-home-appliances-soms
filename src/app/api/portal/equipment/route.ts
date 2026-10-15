@@ -80,6 +80,8 @@ export const GET = defineQuery({
         ownership: eq.ownership,
         installedAt: eq.installedAt,
         model: eq.model,
+        // Off-catalog units have no model — the portal labels them by this.
+        customDescription: eq.customDescription,
         site: eq.site,
         filterPolicyOverride: eq.filterPolicyOverride,
       })),

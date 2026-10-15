@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useState } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import ko from "@/messages/ko.json";
 import { MultiCombobox } from "@/components/ui/multi-combobox";
 
 const OPTIONS = [
@@ -12,7 +14,7 @@ const OPTIONS = [
 function Harness(props: { initial?: string[]; onCreate?: (q: string) => void }) {
   const [values, setValues] = useState<string[]>(props.initial ?? []);
   return (
-    <>
+    <NextIntlClientProvider locale="ko" messages={ko}>
       <MultiCombobox
         values={values}
         onChange={setValues}
@@ -24,10 +26,11 @@ function Harness(props: { initial?: string[]; onCreate?: (q: string) => void }) 
         createLabel={(q) => `「${q}」 추가`}
       />
       <output data-testid="values">{values.join(",")}</output>
-    </>
+    </NextIntlClientProvider>
   );
 }
 
+const SEARCH = ko.common.searchPlaceholder;
 const open = () => fireEvent.click(screen.getByRole("combobox", { name: "제품군" }));
 const values = () => screen.getByTestId("values").textContent;
 
@@ -46,7 +49,7 @@ describe("MultiCombobox", () => {
   it("searches labels and descriptions, accent-insensitively", () => {
     render(<Harness />);
     open();
-    fireEvent.change(screen.getByPlaceholderText("Search…"), { target: { value: "nong lanh" } });
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "nong lanh" } });
     expect(screen.queryByRole("option", { name: /^정수기/ })).toBeNull();
     expect(screen.getByRole("option", { name: /냉온정수기/ })).toBeTruthy();
   });
@@ -60,7 +63,7 @@ describe("MultiCombobox", () => {
 
     render(<Harness initial={["bd"]} />);
     // Removable from the chip…
-    fireEvent.click(screen.getByRole("button", { name: "Remove 비데" }));
+    fireEvent.click(screen.getByRole("button", { name: "비데 제거" }));
     expect(values()).toBe("");
   });
 
@@ -68,7 +71,7 @@ describe("MultiCombobox", () => {
     const onCreate = vi.fn();
     render(<Harness onCreate={onCreate} />);
     open();
-    fireEvent.change(screen.getByPlaceholderText("Search…"), { target: { value: "제습기" } });
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "제습기" } });
     fireEvent.click(screen.getByRole("option", { name: /「제습기」 추가/ }));
     expect(onCreate).toHaveBeenCalledWith("제습기");
   });
@@ -78,11 +81,11 @@ describe("MultiCombobox — reopening", () => {
   it("forgets the last search when the panel closes", () => {
     render(<Harness />);
     open();
-    fireEvent.change(screen.getByPlaceholderText("Search…"), { target: { value: "nong lanh" } });
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "nong lanh" } });
     expect(screen.queryByRole("option", { name: /^정수기/ })).toBeNull();
     fireEvent.keyDown(document, { key: "Escape" });
     open();
-    expect((screen.getByPlaceholderText("Search…") as HTMLInputElement).value).toBe("");
+    expect((screen.getByPlaceholderText(SEARCH) as HTMLInputElement).value).toBe("");
     expect(screen.getByRole("option", { name: /^정수기/ })).toBeTruthy();
   });
 });
@@ -97,10 +100,24 @@ describe("MultiCombobox — inside a dialog", () => {
     open();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(dialogEsc).not.toHaveBeenCalled();
-    expect(screen.queryByPlaceholderText("Search…")).toBeNull();
+    expect(screen.queryByPlaceholderText(SEARCH)).toBeNull();
     // With the panel closed, Esc reaches the dialog again.
     fireEvent.keyDown(document, { key: "Escape" });
     expect(dialogEsc).toHaveBeenCalledTimes(1);
     document.removeEventListener("keydown", onKey);
+  });
+});
+
+describe("MultiCombobox — translated defaults", () => {
+  it("shows the UI language's placeholder and empty text when the caller passes none", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <MultiCombobox values={[]} onChange={() => undefined} options={OPTIONS} ariaLabel="제품군" />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByRole("combobox", { name: "제품군" })).toHaveTextContent(ko.common.selectPlaceholder);
+    open();
+    fireEvent.change(screen.getByPlaceholderText(SEARCH), { target: { value: "zzz" } });
+    expect(screen.getByText(ko.common.noResults)).toBeInTheDocument();
   });
 });

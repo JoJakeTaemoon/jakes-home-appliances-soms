@@ -8,7 +8,8 @@
  *   3. Render the work-confirmation PDF (creates a Document row).
  *   4. Queue EMAIL_VISIT_COMPLETED to the primary OPS contact (fallback:
  *      contract party) via `sendNotification`.
- *   5. AuditLog.
+ *   5. CONSUMABLE_DELIVERY visits: linked PENDING orders → DELIVERED.
+ *   6. AuditLog.
  *
  * Kept here as a module-level helper so the mobile API route stays
  * readable and the test harness can exercise the path directly.
@@ -27,6 +28,7 @@ import {
   type VisitState,
 } from "@/lib/visits/state";
 import { completeSrFromVisit } from "@/lib/service-requests/operations";
+import { deliverPendingOrdersForVisit } from "@/lib/orders/delivery";
 import { updateWithStateGuard } from "@/lib/db/state-guard";
 import { ValidationError } from "@/lib/api/error";
 import type { Prisma } from "@/generated/prisma/client";
@@ -339,6 +341,20 @@ export async function completeVisit(args: CompleteVisitArgs): Promise<CompleteVi
       await completeSrFromVisit(current.serviceRequest.id);
     } catch (err) {
       console.error("[visits/complete] SR completion failed:", err);
+    }
+  }
+
+  // A consumable-delivery visit (primary or additional type) hands the goods
+  // over, so its linked PENDING orders become DELIVERED (stock leaves there).
+  // Best effort like the SR hop above — the visit is already COMPLETED.
+  if (
+    current.type === "CONSUMABLE_DELIVERY" ||
+    current.additionalTypes.includes("CONSUMABLE_DELIVERY")
+  ) {
+    try {
+      await deliverPendingOrdersForVisit(visitId, actorUserId);
+    } catch (err) {
+      console.error("[visits/complete] order delivery failed:", err);
     }
   }
 

@@ -55,7 +55,9 @@
     "daysRemaining": "d left",
     "daysOverdue": "d overdue",
     "type": "Type",
-    "reason": "Reason"
+    "reason": "Reason",
+    "addNamed": "Add “{name}”",
+    "removeNamed": "Remove {name}"
   },
   "auth": {
     "login": {
@@ -75,7 +77,8 @@
       "errorRoleMismatchField": "This is a field technician account. Please sign in from the technician login.",
       "goToFieldLogin": "Go to technician login"
     },
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "mustChangeNotice": "You signed in with a temporary password. Set a new one to continue."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -326,7 +329,12 @@
     "resetPortalPasswordSuccess": "Temporary password issued for {name}. Read it out to them directly.",
     "resetPortalPasswordOnce": "This password is shown once. Close the dialog and it is gone.",
     "resetPortalPasswordNone": "No contact on this customer has a portal account.",
-    "resetPortalPasswordDone": "Handed over — close"
+    "resetPortalPasswordDone": "Handed over — close",
+    "openPortal": "Open portal",
+    "openPortalConfirm": "Open a customer-portal account for {name} ({phone}). The login ID is this phone number; a temporary password is issued and must be changed at first login. No SMS is sent.",
+    "openPortalEmailNotice": "An activation notice (without the password) will be emailed to {email}.",
+    "openPortalNoEmail": "No email on file, so no activation notice will be sent.",
+    "openPortalSuccess": "The portal account for {name} is open. Login ID: {phone}. Read the temporary password below to them by phone."
   },
   "salesReps": {
     "title": "Sales reps",
@@ -440,7 +448,14 @@
     "noUpcomingVisit": "No upcoming visits scheduled.",
     "upcomingFetchError": "Failed to load upcoming visits.",
     "scheduledFor": "Visit date",
-    "openVisit": "Open visit"
+    "openVisit": "Open visit",
+    "actions": {
+      "deliver": "Mark delivered",
+      "cancel": "Cancel order",
+      "deliverConfirm": "Mark order {orderNumber} as delivered. Consumables leave stock and this cannot be undone.",
+      "cancelConfirm": "Cancel order {orderNumber}. This cannot be undone.",
+      "failed": "Could not change the order status."
+    }
   },
   "sites": {
     "title": "Sites",
@@ -1344,6 +1359,7 @@
       "detailVisit": "Linked visit",
       "detailVisitView": "View visit",
       "detailVisitNone": "No visit scheduled yet.",
+      "rejectionReason": "Rejection reason",
       "detailCancel": "Cancel request",
       "cancelTitle": "Cancel this request",
       "cancelHint": "Once cancelled, this can't be undone.",
@@ -1704,6 +1720,9 @@
     "loginSubmit": "Sign in",
     "loginSubmitting": "Signing in...",
     "loginError": "Invalid sign-in",
+    "loginErrorInvalidCredentials": "Phone or password is incorrect.",
+    "loginErrorLocked": "Too many failed sign-ins — the account is locked for a while. Try again in 15 minutes.",
+    "loginErrorInactive": "This account is inactive. Contact your administrator.",
     "loginRoleMismatchOffice": "Office staff must log in from the office login page.",
     "loginRoleMismatchGoOffice": "Go to office login →",
     "loginForgotHint": "Forgot your password? Ask an administrator to issue you a temporary one.",
@@ -1817,7 +1836,17 @@
       "submitting": "Submitting...",
       "back": "Back",
       "next": "Next",
-      "queuedForSync": "Saved offline — will sync when you're back online."
+      "queuedForSync": "Saved offline — will sync when you're back online.",
+      "signatureTake": "Take signature photo",
+      "signatureRetake": "Retake",
+      "signatureOk": "Attached",
+      "signatureMissing": "Missing (required)",
+      "signatureRequired": "Attach the customer's signature photo.",
+      "findingsRequired": "Describe the work you did.",
+      "photosCount": "{count} photo(s)",
+      "chargedSummary": "Charged {amount} VND",
+      "diffSummary": "Difference {amount} VND",
+      "uploadFailed": "Upload failed. Please try again."
     },
     "offline": {
       "offline": "Offline",
@@ -1838,7 +1867,18 @@
     "fail": {
       "title": "Mark as no-show",
       "reason": "Reason",
-      "submit": "Confirm no-show"
+      "submit": "Confirm no-show",
+      "hint": "Once confirmed the visit becomes 'No show' and leaves today's list. The office will reschedule it.",
+      "reasons": {
+        "NO_SHOW": "Customer not home",
+        "UNREACHABLE": "Could not reach the customer",
+        "RESCHEDULE_REQUESTED": "Customer asked to reschedule",
+        "SITE_ISSUE": "Site or equipment problem — work not possible",
+        "OTHER": "Other"
+      },
+      "note": "Details",
+      "notePlaceholder": "Anything the office should know (required for Other)",
+      "noteRequired": "Enter details when you choose 'Other'."
     },
     "profile": {
       "title": "Profile",
@@ -1915,6 +1955,7 @@
     },
     "writeOffPrompt": "Reason for write-off",
     "partialPrompt": "Partial amount (VND)",
+    "partialHint": "Amount due {amount}. Enter the full amount to settle it; enter less and the remainder carries over to a new charge.",
     "bankTransferPrompt": "Bank reference",
     "slaBreachWarning": "Cash held > 48h — please hand over now."
   },
@@ -2392,7 +2433,23 @@
     },
     "notificationTemplates": {
       "title": "Notification templates",
-      "adminRequired": "Admin or Manager role required."
+      "adminRequired": "Admin or Manager role required.",
+      "channelAll": "All channels",
+      "channelSms": "SMS",
+      "channelEmail": "Email",
+      "pickPrompt": "Pick a template and language to edit.",
+      "channelInfo": "Channel: {channel}",
+      "overrideSaved": "Override saved {at}",
+      "subject": "Subject",
+      "body": "Body",
+      "defaultValue": "Default: {value}",
+      "placeholderHint": "Placeholders use {example} syntax. Character count: {count}",
+      "viewDefault": "View file default",
+      "save": "Save override",
+      "revert": "Revert to default",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "off": "OFF"
     },
     "settings": "Settings",
     "schedulerWeights": "Scheduler weights",
