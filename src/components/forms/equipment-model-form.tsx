@@ -533,6 +533,7 @@ export function EquipmentModelForm({
                 <tr>
                   <th className="w-10 px-2 py-1.5 text-left">#</th>
                   <th className="px-2 py-1.5 text-left">{t("filterConfigCol.filter")}</th>
+                  <th className="w-24 px-2 py-1.5 text-left">{t("filterConfigCol.quantity")}</th>
                   <th className="w-36 px-2 py-1.5 text-left">{t("filterConfigCol.cycleDays")}</th>
                   {!isView && <th className="w-8 px-2 py-1.5" />}
                 </tr>
@@ -549,6 +550,7 @@ export function EquipmentModelForm({
                       <tr key={f.uid}>
                         <td className="px-2 py-1.5 text-xs text-[#737373]">{idx + 1}</td>
                         <td className="px-2 py-1.5 text-[#111]">{picked ? consumableLabel(picked) : "—"}</td>
+                        <td className="px-2 py-1.5 tabular-nums text-[#111]">{f.quantity || "1"}</td>
                         <td className="px-2 py-1.5 tabular-nums text-[#111]">
                           {f.cycleOverride || (defaultCycle != null ? String(defaultCycle) : "—")}
                         </td>
@@ -566,6 +568,15 @@ export function EquipmentModelForm({
                           placeholder={t("filterConfigCol.filter")}
                           searchable
                           ariaLabel={`${t("filterConfigCol.filter")} ${idx + 1}`}
+                        />
+                      </td>
+                      <td className="px-2 py-1.5">
+                        {/* How many of this filter the unit holds — ice makers carry 2–4 of the same cartridge. */}
+                        <NumberInput
+                          min={1}
+                          value={Number(f.quantity) || 1}
+                          onChange={(n) => updateFilter(idx, { quantity: String(n) })}
+                          ariaLabel={`${t("filterConfigCol.quantity")} ${idx + 1}`}
                         />
                       </td>
                       <td className="px-2 py-1.5">

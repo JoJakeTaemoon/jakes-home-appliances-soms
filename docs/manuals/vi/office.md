@@ -1144,7 +1144,7 @@ Nhóm sản phẩm (ví dụ: máy lọc nước nóng lạnh, máy lọc không
 | Bên trái | Tên hiển thị (tiếng Hàn·tiếng Việt·tiếng Anh, bắt buộc) · **Nhóm sản phẩm (nhiều, bắt buộc)** · **Loại sản phẩm (tùy chọn)** · Thương hiệu (bắt buộc) · Mô tả · Giá bán |
 | Bên phải | Tồn kho hiện tại (chỉ đọc + «Điều chỉnh tồn kho») · Giá bán lẻ · Giá nhập · Giá tại đại lý |
 | Bên dưới | Phí thuê/tháng · Phí bảo trì/tháng · Tồn kho tối thiểu · Chu kỳ kiểm tra (ngày) · Bảo hành (tháng) · Đang sử dụng |
-| ② Cấu hình Filter | Lõi lọc dùng cho model này và chu kỳ thay ở model này |
+| ② Cấu hình Filter | Lõi lọc dùng cho model này, số lượng mỗi lõi (mặc định 1) và chu kỳ thay ở model này |
 
 - **Nhóm sản phẩm** là ô vừa tìm kiếm vừa chọn nhiều mục. Nhóm đã chọn hiển thị dạng thẻ, nếu không có trong danh sách thì tạo mới ngay bằng «Thêm nhóm sản phẩm “tên”».
 - Danh sách **Loại sản phẩm** **chỉ hiện các loại bao gồm tất cả nhóm sản phẩm đã chọn**. Khi chọn loại, các nhóm sản phẩm ngoài loại đó bị làm mờ không chọn được. Nếu không có trong danh sách thì tạo ngay bằng «Thêm loại sản phẩm “tên”».
@@ -1152,7 +1152,7 @@ Nhóm sản phẩm (ví dụ: máy lọc nước nóng lạnh, máy lọc không
 - Mục bắt buộc có dấu `*` đỏ. Nếu lưu bị từ chối thì câu báo lỗi cho biết ô nào có vấn đề.
 - Khi danh sách thả xuống đang mở, nhấn Esc chỉ đóng danh sách thả xuống, cửa sổ đăng ký vẫn giữ nguyên.
 
-**Cấu hình Filter**: «+ Thêm lõi lọc» → tìm lõi lọc (theo tên·SKU, và cả theo **tên nhóm sản phẩm**) → chọn. Chu kỳ thay mặc định của lõi lọc hiện làm giá trị gợi ý; nếu muốn dùng chu kỳ khác chỉ cho model này thì nhập vào ô chu kỳ thay (ngày). Mỗi lõi lọc chỉ thêm được một lần. Khi sửa model hiện có, cấu hình hiện tại được điền sẵn, và trong lúc đang tải nút lưu tạm thời bị khóa.
+**Cấu hình Filter**: «+ Thêm lõi lọc» → tìm lõi lọc (theo tên·SKU, và cả theo **tên nhóm sản phẩm**) → chọn. Ô **Số lượng** là số lõi lọc đó lắp trong model này (mặc định 1 — với model dùng 2~4 lõi giống nhau như máy làm đá thì nhập đúng số đó). Chu kỳ thay mặc định của lõi lọc hiện làm giá trị gợi ý; nếu muốn dùng chu kỳ khác chỉ cho model này thì nhập vào ô chu kỳ thay (ngày). Mỗi lõi lọc chỉ thêm được một lần. Khi sửa model hiện có, cấu hình hiện tại được điền sẵn, và trong lúc đang tải nút lưu tạm thời bị khóa.
 
 Thứ tự ưu tiên chu kỳ: **chu kỳ tùy chỉnh theo thiết bị > chu kỳ theo model > chu kỳ mặc định của lõi lọc**
 
