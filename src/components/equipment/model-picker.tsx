@@ -140,7 +140,7 @@ export function ModelPicker({
           }}
           options={models.map((m) => {
             const name = pickModelName(m, locale);
-            // Add brand + category context so search hits "Seoul Aqua
+            // Add brand + category context so search hits "Jake's Home Appliances
             // AQ-500" even when the operator only remembers one token.
             const cat = m.categories.map((c) => pickCategoryName(c, locale)).join(" · ") || null;
             const suffix = [m.brand?.name, cat].filter(Boolean).join(" · ");

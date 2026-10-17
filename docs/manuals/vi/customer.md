@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn sử dụng Cổng khách hàng
+# Jake's Home Appliances SOMS — Hướng dẫn sử dụng Cổng khách hàng
 
 > Cập nhật lần cuối: 15/10/2026 (chụp lại toàn bộ màn hình · đổi địa chỉ cổng · hướng dẫn nhận mật khẩu qua điện thoại · bổ sung yêu cầu dịch vụ 5 bước)
 
@@ -6,19 +6,19 @@
 
 ## Giới thiệu hướng dẫn này
 
-Hướng dẫn này dành cho quý khách đang thuê, mua hoặc sử dụng dịch vụ bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh... của Seoul Aqua. Trên cổng khách hàng, quý khách có thể xem tình trạng thiết bị, lịch sử lượt thăm, yêu cầu dịch vụ và lịch sử thanh toán.
+Hướng dẫn này dành cho quý khách đang thuê, mua hoặc sử dụng dịch vụ bảo trì máy lọc nước, máy lọc không khí, bồn cầu thông minh... của Jake's Home Appliances. Trên cổng khách hàng, quý khách có thể xem tình trạng thiết bị, lịch sử lượt thăm, yêu cầu dịch vụ và lịch sử thanh toán.
 
 Địa chỉ cổng:
 
 ```
-https://soms.seoulaqua.com.vn/vi/login
+https://soms.jakeshomeappliances.com.vn/vi/login
 ```
 
 - `/vi` trong địa chỉ là giao diện tiếng Việt. `/ko` là tiếng Hàn, bỏ đi thì là tiếng Anh.
-- Địa chỉ cũ `portal.seoulaqua.com.vn` không còn được sử dụng.
+- Địa chỉ cũ `portal.jakeshomeappliances.com.vn` không còn được sử dụng.
 - Quý khách nên tạo lối tắt bằng "Thêm vào màn hình chính" trong menu trình duyệt trên điện thoại để tiện truy cập.
 
-Tài khoản cổng khách hàng do văn phòng Seoul Aqua mở cho người phụ trách hợp đồng (Bên ký hợp đồng) hoặc người phụ trách vận hành. Nếu cần tài khoản, vui lòng liên hệ văn phòng.
+Tài khoản cổng khách hàng do văn phòng Jake's Home Appliances mở cho người phụ trách hợp đồng (Bên ký hợp đồng) hoặc người phụ trách vận hành. Nếu cần tài khoản, vui lòng liên hệ văn phòng.
 
 ---
 
@@ -50,7 +50,7 @@ Tài khoản cổng khách hàng do văn phòng Seoul Aqua mở cho người ph�
 
 ### Quên mật khẩu?
 
-**Vui lòng gọi điện cho văn phòng Seoul Aqua.** Sau khi xác minh danh tính, nhân viên sẽ tạo mật khẩu tạm thời mới và **đọc cho quý khách qua điện thoại.** Màn hình đăng nhập không có chức năng tự cấp lại mật khẩu.
+**Vui lòng gọi điện cho văn phòng Jake's Home Appliances.** Sau khi xác minh danh tính, nhân viên sẽ tạo mật khẩu tạm thời mới và **đọc cho quý khách qua điện thoại.** Màn hình đăng nhập không có chức năng tự cấp lại mật khẩu.
 
 ### Khi đăng nhập bị khóa
 
@@ -202,7 +202,7 @@ Khách hàng doanh nghiệp (B2B) có thể tải về hóa đơn GTGT đã phá
 
 ![Liên hệ](../screenshots/vi/customer/13-contacts.png)
 
-**Cài đặt → Quản lý liên hệ** (chỉ hiện với tài khoản Bên ký hợp đồng). Đây là danh sách người phụ trách đã đăng ký tại Seoul Aqua, khách hàng doanh nghiệp thấy là "Liên hệ công ty", khách hàng cá nhân thấy là "Liên hệ của tôi". Mỗi người được hiển thị tên, chức danh, điện thoại, email, vai trò (Bên ký HĐ / Liên hệ vận hành · Chính), việc có dùng cổng hay không và cơ sở.
+**Cài đặt → Quản lý liên hệ** (chỉ hiện với tài khoản Bên ký hợp đồng). Đây là danh sách người phụ trách đã đăng ký tại Jake's Home Appliances, khách hàng doanh nghiệp thấy là "Liên hệ công ty", khách hàng cá nhân thấy là "Liên hệ của tôi". Mỗi người được hiển thị tên, chức danh, điện thoại, email, vai trò (Bên ký HĐ / Liên hệ vận hành · Chính), việc có dùng cổng hay không và cơ sở.
 
 | Vai trò | Nội dung nhận được |
 |---|---|
@@ -223,7 +223,7 @@ Nút thêm liên hệ hiện chưa bấm được — để thêm hoặc sửa, 
 
 Thay đổi Họ và tên · Email · Ngôn ngữ rồi nhấn **Lưu thay đổi**. Số điện thoại là ID đăng nhập nên không thể đổi trên cổng. Vui lòng liên hệ văn phòng.
 
-**Ngôn ngữ** là ngôn ngữ của tài liệu và thông báo Seoul Aqua gửi cho quý khách. Ngôn ngữ màn hình được đổi riêng ở menu ngôn ngữ phía trên bên phải.
+**Ngôn ngữ** là ngôn ngữ của tài liệu và thông báo Jake's Home Appliances gửi cho quý khách. Ngôn ngữ màn hình được đổi riêng ở menu ngôn ngữ phía trên bên phải.
 
 ### Thông báo
 

@@ -20,7 +20,7 @@ const WATERMARK_LOGO_PATH = path.join(
   process.cwd(),
   "public",
   "logo",
-  "seoul-aqua-logo.jpg",
+  "jakes-home-appliances-logo.jpg",
 );
 
 // Inline Hangul detector — picks Noto Sans KR for KO data values; default
@@ -411,10 +411,10 @@ function ReceiptCopy({
       {/* 브랜드 헤더 */}
       <View style={styles.brand}>
         <View style={{ flexDirection: "row", alignItems: "baseline", flex: 1 }}>
-          <Text style={styles.brandTitle}>SEOUL AQUA </Text>
-          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV ĐẠI Á (Seoul Aqua)</Text>
+          <Text style={styles.brandTitle}>JAKE'S HOME APPLIANCES </Text>
+          <Text style={styles.brandLegal}>· CÔNG TY TNHH MTV TM&DV JAKE'S HA (Jake's Home Appliances)</Text>
         </View>
-        <Text style={styles.brandLegal}>cs@seoulaqua.com.vn · {payload.hqPhone}</Text>
+        <Text style={styles.brandLegal}>cs@jakeshomeappliances.com.vn · {payload.hqPhone}</Text>
       </View>
 
       <Text style={[styles.docTitle, autoFont(P.title)]}>{P.title}</Text>
@@ -485,7 +485,7 @@ function ReceiptCopy({
 
           <View style={styles.partyLine}>
             <Text style={styles.partyLabel}>{P.company}</Text>
-            <Text style={styles.partyValue}>SEOUL AQUA</Text>
+            <Text style={styles.partyValue}>JAKE'S HOME APPLIANCES</Text>
           </View>
           <View style={styles.partyLine}>
             <Text style={styles.partyLabel}>{P.collector}</Text>
@@ -499,7 +499,7 @@ function ReceiptCopy({
           </View>
           <View style={styles.partyLine}>
             <Text style={styles.partyLabel}>{P.email}</Text>
-            <Text style={styles.partyValue}>cs@seoulaqua.com.vn</Text>
+            <Text style={styles.partyValue}>cs@jakeshomeappliances.com.vn</Text>
           </View>
         </View>
       </View>

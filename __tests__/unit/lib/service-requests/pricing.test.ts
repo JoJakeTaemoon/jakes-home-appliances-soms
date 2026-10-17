@@ -67,7 +67,7 @@ describe("determineIsPaid — REPAIR", () => {
     expect(r.reason).toBe("under-warranty");
   });
 
-  it("free when under active rental (Seoul Aqua still owns)", () => {
+  it("free when under active rental (Jake's Home Appliances still owns)", () => {
     const r = determineIsPaid({
       type: "REPAIR",
       equipment: { id: "e1", installedAt: daysAgo(400) },
