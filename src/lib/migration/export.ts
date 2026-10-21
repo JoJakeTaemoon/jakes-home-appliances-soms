@@ -66,6 +66,8 @@ export async function buildMigrationExport(
       type: true,
       shortcode: true,
       taxCode: true,
+      status: true,
+      notes: true,
       addressProvinceName: true,
       addressWardName: true,
       addressStreet: true,
@@ -73,7 +75,7 @@ export async function buildMigrationExport(
         where: { role: "CONTRACT_PARTY" },
         orderBy: { createdAt: "asc" },
         take: 1,
-        select: { name: true, phone1: true, email: true, language: true },
+        select: { name: true, phone1: true, phone2: true, email: true, language: true },
       },
     },
   });
@@ -91,7 +93,10 @@ export async function buildMigrationExport(
       legacyContractNumber: true,
       customerId: true,
       type: true,
+      state: true,
       startDate: true,
+      endDate: true,
+      billingDay: true,
       termMonths: true,
       monthlyMaintenanceFee: true,
       deposit: true,
@@ -115,6 +120,7 @@ export async function buildMigrationExport(
       installedAt: true,
       serviceType: true,
       managementType: true,
+      status: true,
       monthlyFee: true,
       customInspectionCycleDays: true,
       customDescription: true,
@@ -152,6 +158,9 @@ export async function buildMigrationExport(
     c.addressProvinceName ?? "",
     c.addressWardName ?? "",
     c.addressStreet ?? "",
+    c.status,
+    c.contacts[0]?.phone2 ?? "",
+    c.notes ?? "",
   ]);
 
   const contractRows = contracts.map((k) => [
@@ -164,6 +173,9 @@ export async function buildMigrationExport(
     money(k.deposit),
     money(k.totalContractValue),
     k.notes ?? "",
+    k.state,
+    day(k.endDate),
+    k.billingDay === null ? "" : String(k.billingDay),
   ]);
 
   const keyOf = (e: { assetCode: string | null; id: string; model: { modelCode: string | null } | null }) =>
@@ -182,6 +194,7 @@ export async function buildMigrationExport(
     money(e.monthlyFee),
     e.customInspectionCycleDays === null ? "" : String(e.customInspectionCycleDays),
     e.notes ?? "",
+    e.status,
   ]);
 
   const consumableRows = equipment.flatMap((e) =>

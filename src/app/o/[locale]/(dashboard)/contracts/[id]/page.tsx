@@ -17,8 +17,11 @@ import { NumberInput } from "@/components/ui/number-input";
 import { FormField } from "@/components/ui/form-field";
 import {
   canAmendContract,
+  canEditActiveContractNotes,
   canRegenerateContractPdf,
 } from "@/lib/contracts/access";
+import { monthlyBillingAmount } from "@/lib/payments/billing";
+import { BillingDayEditor } from "@/components/contracts/billing-day-editor";
 import {
   ContractStateBadge,
   ContractTypeBadge,
@@ -38,6 +41,8 @@ interface ContractDetail {
   endDate: string | null;
   termMonths: number | null;
   monthlyMaintenanceFee: string | null;
+  /** 출금일 (1–31) — the day each monthly bill falls due; null = the 10th. */
+  billingDay: number | null;
   totalContractValue: string | null;
   /** RENTAL only — deposit collected at installation, refundable on
    *  early termination or RENTAL→SALE conversion. */
@@ -143,6 +148,18 @@ export default function ContractDetailPage() {
     (data.state === "DRAFT" || data.state === "ACTIVE") &&
     canRegenerateContractPdf(role);
 
+  // Only rental / maintenance contracts bill monthly. The billing day is how
+  // the customer pays, not what they agreed to, so any office role may move it.
+  const billsMonthly = data.type === "RENTAL" || data.type === "MAINTENANCE";
+  const canEditBillingDay =
+    billsMonthly && (data.state === "DRAFT" || data.state === "ACTIVE") && canEditActiveContractNotes(role);
+  // Same rule the recurring-payment job uses: a live contract it would skip.
+  const neverBills =
+    billsMonthly &&
+    data.state === "ACTIVE" &&
+    (!data.endDate || new Date(data.endDate) >= new Date()) &&
+    monthlyBillingAmount(data) <= 0;
+
   return (
     <div className="flex w-full flex-col gap-6">
       <BreadcrumbLabel value={data.contractNumber} />
@@ -180,6 +197,12 @@ export default function ContractDetailPage() {
         />
       </header>
 
+      {neverBills && (
+        <p role="status" className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {t("noFeeWarning")}
+        </p>
+      )}
+
       <Tabs defaultValue="overview">
         <TabsList>
           <Tab value="overview">{t("tabs.overview")}</Tab>
@@ -200,6 +223,12 @@ export default function ContractDetailPage() {
               {data.termMonths !== null && <Row label={t("termMonths")} value={data.termMonths} />}
               {data.monthlyMaintenanceFee !== null && (
                 <Row label={t("monthlyFee")} value={formatVnd(data.monthlyMaintenanceFee)} />
+              )}
+              {billsMonthly && (
+                <Row
+                  label={t("billingDay")}
+                  value={data.billingDay ?? t("billingDayDefault")}
+                />
               )}
               {data.totalContractValue !== null && (
                 <Row label={t("totalValue")} value={formatVnd(data.totalContractValue)} />
@@ -261,6 +290,14 @@ export default function ContractDetailPage() {
                   <p className="text-sm text-[#525252]">{data.amendmentReason}</p>
                 )}
               </div>
+            )}
+            {canEditBillingDay && (
+              <BillingDayEditor
+                key={`${data.id}-${data.billingDay ?? ""}`}
+                contractId={data.id}
+                billingDay={data.billingDay}
+                onSaved={reload}
+              />
             )}
             {canEditNotes ? (
               <div className="sm:col-span-2">

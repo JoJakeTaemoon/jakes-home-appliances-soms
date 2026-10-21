@@ -20,7 +20,12 @@ export const SHEETS = {
   contracts: "Contracts",
   equipment: "Equipment",
   consumables: "Consumables",
+  /** Optional: collected-payment history. A workbook without it is fine. */
+  payments: "Payments",
 } as const;
+
+/** Sheets every workbook must have — the template and the exporter write them. */
+const REQUIRED_SHEETS = [SHEETS.customers, SHEETS.contracts, SHEETS.equipment, SHEETS.consumables];
 
 export const HEADERS = {
   customers: [
@@ -36,6 +41,11 @@ export const HEADERS = {
     "Province",
     "Ward",
     "Street",
+    // Appended rather than inserted so a workbook from before they existed
+    // still lines up column for column. Blank means ACTIVE.
+    "Status",
+    "Contact Phone 2",
+    "Notes",
   ],
   contracts: [
     "Contract No",
@@ -47,6 +57,9 @@ export const HEADERS = {
     "Deposit",
     "Total Value",
     "Notes",
+    "State",
+    "End Date",
+    "Billing Day",
   ],
   equipment: [
     "Equipment Key",
@@ -61,6 +74,7 @@ export const HEADERS = {
     "Monthly Fee",
     "Inspection Cycle Days",
     "Notes",
+    "Status",
   ],
   consumables: [
     "Equipment Key",
@@ -71,33 +85,57 @@ export const HEADERS = {
     "Last Replaced Date",
     "Notes",
   ],
+  payments: [
+    "Equipment Key",
+    "Billing Month",
+    "Paid Date",
+    "Amount",
+    "Currency",
+    "Method",
+    "Notes",
+  ],
 } as const;
 
 export type CustomerType = "B2C" | "B2B";
 export type ContractType = "SALE" | "RENTAL" | "MAINTENANCE";
 export type ServiceType = "RENTAL" | "MAINTENANCE" | "SALE";
 export type ManagementType = "FULL_SERVICE" | "SELF_MANAGED" | "OTHER";
+/** Customers migrated from a system that kept cancelled accounts on file. */
+export type CustomerStatus = "ACTIVE" | "INACTIVE";
+export type ContractState = "ACTIVE" | "COMPLETED" | "TERMINATED";
+export type EquipmentStatus = "ACTIVE" | "TERMINATED" | "DEACTIVATED";
+export type PaymentCurrency = "VND" | "USD";
+export type PaymentMethod = "CASH" | "BANK_TRANSFER" | "CARD" | "OTHER";
 
 export interface PlannedCustomer {
   legacyCode: string;
   name: string;
   type: CustomerType;
+  status: CustomerStatus;
   shortcode: string | null;
   taxCode: string | null;
   contactName: string;
+  /** Empty when the old record had no number at all — staff fill it in. */
   contactPhone: string;
+  contactPhone2: string | null;
   contactEmail: string | null;
   language: "ko" | "vi" | "en";
   provinceName: string | null;
   wardName: string | null;
   street: string | null;
+  notes: string | null;
 }
 
 export interface PlannedContract {
   legacyContractNumber: string;
   customerLegacyCode: string;
   type: ContractType;
+  state: ContractState;
   startDate: string;
+  /** Overrides the computed rental end; for a TERMINATED contract, when it ended. */
+  endDate: string | null;
+  /** 출금일, 1–31: the day each monthly bill falls due. */
+  billingDay: number | null;
   termMonths: number | null;
   monthlyFee: number | null;
   deposit: number | null;
@@ -116,10 +154,24 @@ export interface PlannedEquipment {
   installedDate: string;
   serviceType: ServiceType;
   managementType: ManagementType;
+  status: EquipmentStatus;
   monthlyFee: number | null;
   inspectionCycleDays: number | null;
   notes: string | null;
   consumables: PlannedConsumable[];
+  payments: PlannedPayment[];
+}
+
+/** A payment the old system already collected — history, not a new bill. */
+export interface PlannedPayment {
+  /** `YYYY-MM`: the month the payment was for. */
+  billingMonth: string;
+  paidDate: string | null;
+  amount: number;
+  /** Older members were billed in USD; SOMS keeps the currency per payment. */
+  currency: PaymentCurrency;
+  method: PaymentMethod;
+  notes: string | null;
 }
 
 export interface PlannedConsumable {
@@ -159,7 +211,10 @@ export interface ExistingSnapshot {
   modelCodes: Map<string, string>;
   /** Catalog consumable SKUs, lowercased → id. */
   consumableSkus: Map<string, string>;
-  /** Existing `(modelCode|serial)` pairs, lowercased, to catch re-imports. */
+  /** Existing `(modelCode|serial)` pairs, lowercased, to catch re-imports.
+   *  An off-catalog unit has no model to scope its serial, so its pair is
+   *  `~customerCode|serial` (legacy code, else KH code) — old serials like
+   *  "1" or "-" must not match another customer's unit. */
   equipmentSerials: Set<string>;
   /**
    * Existing equipment keys as the exporter writes them — `modelCode|assetCode`,
@@ -253,7 +308,7 @@ export function planImport(
   const errors: RowIssue[] = [];
   const skipped = { customers: 0, contracts: 0, equipment: 0 };
 
-  for (const name of Object.values(SHEETS)) {
+  for (const name of REQUIRED_SHEETS) {
     if (!sheets[name]) {
       errors.push({
         sheet: name,
@@ -296,8 +351,9 @@ export function planImport(
     if (!name) err(cctx, row, "Name", "required");
     const contactName = (r["Contact Name"] ?? "").trim();
     if (!contactName) err(cctx, row, "Contact Name", "required");
+    // Not required: records carried over from an older system often have no
+    // number, and refusing them would leave real customers behind.
     const contactPhone = (r["Contact Phone"] ?? "").trim();
-    if (!contactPhone) err(cctx, row, "Contact Phone", "required");
     const shortcode = blankToNull(r["Shortcode"] ?? "");
     if (type === "B2B" && !shortcode) {
       err(cctx, row, "Shortcode", "required for B2B — the contract code is built from it");
@@ -311,21 +367,33 @@ export function planImport(
       "VI",
     );
 
-    if (!type || !name || !contactName || !contactPhone || !language) return;
+    const status = requireOneOf(
+      cctx,
+      row,
+      "Status",
+      r["Status"] ?? "",
+      ["ACTIVE", "INACTIVE"] as const,
+      "ACTIVE",
+    );
+
+    if (!type || !name || !contactName || !language || !status) return;
 
     customers.push({
       legacyCode: code,
       name,
       type,
+      status,
       shortcode,
       taxCode: blankToNull(r["Tax Code"] ?? ""),
       contactName,
       contactPhone,
+      contactPhone2: blankToNull(r["Contact Phone 2"] ?? ""),
       contactEmail: blankToNull(r["Contact Email"] ?? ""),
       language: language.toLowerCase() as "ko" | "vi" | "en",
       provinceName: blankToNull(r["Province"] ?? ""),
       wardName: blankToNull(r["Ward"] ?? ""),
       street: blankToNull(r["Street"] ?? ""),
+      notes: blankToNull(r["Notes"] ?? ""),
     });
   });
 
@@ -380,13 +448,35 @@ export function planImport(
       err(ktx, row, "Term Months", "required for RENTAL");
     }
 
-    if (!customerCode || !type || !startDate) return;
+    const state = requireOneOf(
+      ktx,
+      row,
+      "State",
+      r["State"] ?? "",
+      ["ACTIVE", "COMPLETED", "TERMINATED"] as const,
+      "ACTIVE",
+    );
+    const endRaw = r["End Date"] ?? "";
+    const endDate = parseDate(endRaw);
+    if (endRaw.trim() !== "" && (!endDate || !isoIsValid(endDate))) {
+      err(ktx, row, "End Date", "format YYYY-MM-DD");
+    }
+
+    const billingDay = int(r["Billing Day"] ?? "");
+    if (billingDay !== null && (billingDay < 1 || billingDay > 31)) {
+      err(ktx, row, "Billing Day", "must be a day of the month, 1–31");
+    }
+
+    if (!customerCode || !type || !startDate || !state) return;
 
     contracts.push({
       legacyContractNumber: no,
       customerLegacyCode: customerCode,
       type,
+      state,
       startDate,
+      endDate: endDate && isoIsValid(endDate) ? endDate : null,
+      billingDay: billingDay !== null && billingDay >= 1 && billingDay <= 31 ? billingDay : null,
       termMonths,
       monthlyFee: num(r["Monthly Fee"] ?? ""),
       deposit: num(r["Deposit"] ?? ""),
@@ -454,8 +544,10 @@ export function planImport(
     }
 
     const serial = blankToNull(r["Serial"] ?? "");
-    if (serial && modelCode) {
-      const pair = `${modelCode.toLowerCase()}|${serial.toLowerCase()}`;
+    if (serial) {
+      const pair = modelCode
+        ? `${modelCode.toLowerCase()}|${serial.toLowerCase()}`
+        : `~${customerCode.toLowerCase()}|${serial.toLowerCase()}`;
       if (existing.equipmentSerials.has(pair)) {
         skipped.equipment += 1;
         skippedEquipmentKeys.add(key.toLowerCase());
@@ -481,12 +573,22 @@ export function planImport(
       "FULL_SERVICE",
     );
 
+    const status = requireOneOf(
+      etx,
+      row,
+      "Status",
+      r["Status"] ?? "",
+      ["ACTIVE", "TERMINATED", "DEACTIVATED"] as const,
+      "ACTIVE",
+    );
+
     if (
       !customerCode ||
       (!modelCode && !customDescription) ||
       !installedDate ||
       !serviceType ||
-      !managementType
+      !managementType ||
+      !status
     ) {
       return;
     }
@@ -501,10 +603,12 @@ export function planImport(
       installedDate,
       serviceType,
       managementType,
+      status,
       monthlyFee: num(r["Monthly Fee"] ?? ""),
       inspectionCycleDays: int(r["Inspection Cycle Days"] ?? ""),
       notes: blankToNull(r["Notes"] ?? ""),
       consumables: [],
+      payments: [],
     };
     equipmentKeys.set(key.toLowerCase(), planned);
     equipment.push(planned);
@@ -558,6 +662,57 @@ export function planImport(
       quantity,
       replaceEveryDays: int(r["Replace Every Days"] ?? ""),
       lastReplacedDate: lastReplaced,
+      notes: blankToNull(r["Notes"] ?? ""),
+    });
+  });
+
+  // ── Payments (optional) ──────────────────────────────────────────────
+  const ptx: Ctx = { errors, sheet: SHEETS.payments };
+
+  sheetToRecords(sheets[SHEETS.payments] ?? []).forEach((r, i) => {
+    const row = i + 2;
+    const key = (r["Equipment Key"] ?? "").trim();
+    const target = equipmentKeys.get(key.toLowerCase());
+    if (!target) {
+      // A unit that is already in brought its history with it last time.
+      if (!skippedEquipmentKeys.has(key.toLowerCase())) {
+        err(ptx, row, "Equipment Key", "no such key in the Equipment sheet");
+      }
+      return;
+    }
+    const billingMonth = (r["Billing Month"] ?? "").trim();
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(billingMonth)) {
+      err(ptx, row, "Billing Month", "required, format YYYY-MM");
+      return;
+    }
+    const paidRaw = r["Paid Date"] ?? "";
+    const paidDate = parseDate(paidRaw);
+    if (paidRaw.trim() !== "" && (!paidDate || !isoIsValid(paidDate))) {
+      err(ptx, row, "Paid Date", "format YYYY-MM-DD");
+      return;
+    }
+    const amount = num(r["Amount"] ?? "");
+    if (amount === null || amount <= 0) {
+      err(ptx, row, "Amount", "must be more than 0");
+      return;
+    }
+    const currency = requireOneOf(ptx, row, "Currency", r["Currency"] ?? "", ["VND", "USD"] as const, "VND");
+    const method = requireOneOf(
+      ptx,
+      row,
+      "Method",
+      r["Method"] ?? "",
+      ["CASH", "BANK_TRANSFER", "CARD", "OTHER"] as const,
+      "CASH",
+    );
+    if (!currency || !method) return;
+
+    target.payments.push({
+      billingMonth,
+      paidDate,
+      amount,
+      currency,
+      method,
       notes: blankToNull(r["Notes"] ?? ""),
     });
   });

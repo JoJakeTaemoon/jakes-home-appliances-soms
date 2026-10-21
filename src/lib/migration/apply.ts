@@ -28,6 +28,7 @@ import { allocateCustomerCode } from "@/lib/customers/code";
 import { allocateContractCode } from "@/lib/contracts/code";
 import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 import type { ImportPlan, PlannedEquipment } from "@/lib/migration/plan";
+import { dueDateForMonth } from "@/lib/payments/billing";
 
 export interface ApplyResult {
   customersCreated: number;
@@ -35,7 +36,14 @@ export interface ApplyResult {
   equipmentCreated: number;
   consumablesCreated: number;
   visitsCreated: number;
+  paymentsCreated: number;
 }
+
+const PAYMENT_KIND = {
+  RENTAL: "RENTAL_FEE",
+  MAINTENANCE: "MAINTENANCE_FEE",
+  SALE: "SALE_PAYMENT",
+} as const;
 
 /** `YYYY-MM-DD` as a UTC instant, matching how the rest of the app stores days. */
 function day(iso: string): Date {
@@ -59,6 +67,7 @@ export async function applyPlan(
     equipmentCreated: 0,
     consumablesCreated: 0,
     visitsCreated: 0,
+    paymentsCreated: 0,
   };
 
   await prisma.$transaction(
@@ -66,7 +75,7 @@ export async function applyPlan(
       // legacy code (lowercased) → row id, for both newly created rows and
       // ones a previous upload already created.
       const customerIds = new Map<string, { id: string; code: string; type: string; shortcode: string | null }>();
-      const contractIds = new Map<string, string>();
+      const contractIds = new Map<string, { id: string; billingDay: number | null }>();
 
       // ── Customers ────────────────────────────────────────────────────
       for (const c of plan.customers) {
@@ -77,25 +86,32 @@ export async function applyPlan(
             legacyCode: c.legacyCode,
             name: c.name,
             type: c.type,
-            status: "ACTIVE",
+            status: c.status,
             shortcode: c.shortcode,
             taxCode: c.taxCode,
             addressProvinceName: c.provinceName,
             addressWardName: c.wardName,
             addressStreet: c.street,
+            notes: c.notes,
             contacts: {
-              create: {
-                role: "CONTRACT_PARTY",
-                scope: "CUSTOMER",
+              // Left portal-disabled on purpose: enabling it here would queue
+              // a welcome SMS to every migrated customer at once.
+              create: (["CONTRACT_PARTY", "OPS_CONTACT"] as const).map((role) => ({
+                role,
+                scope: "CUSTOMER" as const,
                 isPrimary: true,
                 name: c.contactName,
                 phone1: c.contactPhone,
+                phone2: c.contactPhone2,
                 email: c.contactEmail,
                 language: c.language,
-                // Left disabled on purpose: enabling the portal here would
-                // queue a welcome SMS to every migrated customer at once.
                 portalEnabled: false,
-              },
+                // Visit, filter and payment reminders go to the primary
+                // operations contact, and an old record names only one
+                // person. Copy them in so reminders reach someone, flagged so
+                // the customer screen asks staff to confirm or replace them.
+                needsReview: role === "OPS_CONTACT",
+              })),
             },
           },
           select: { id: true, code: true, type: true, shortcode: true },
@@ -137,38 +153,41 @@ export async function applyPlan(
             legacyContractNumber: k.legacyContractNumber,
             customerId: customer.id,
             type: k.type,
-            // These customers are already being served, so the contract is
-            // live from the day it started rather than sitting in DRAFT.
-            state: "ACTIVE",
+            // Never DRAFT: these contracts were signed in the old system, so
+            // they are live, ran their course, or were cancelled there.
+            state: k.state,
             startDate: day(k.startDate),
-            endDate:
-              k.type === "RENTAL" && k.termMonths
+            endDate: k.endDate
+              ? day(k.endDate)
+              : k.type === "RENTAL" && k.termMonths
                 ? addMonths(k.startDate, k.termMonths)
                 : null,
+            terminatedAt: k.state === "TERMINATED" && k.endDate ? day(k.endDate) : null,
             termMonths: k.type === "RENTAL" ? k.termMonths : null,
             monthlyMaintenanceFee: k.monthlyFee ?? undefined,
             deposit: k.deposit ?? undefined,
             totalContractValue: k.totalValue ?? undefined,
             activatedAt: day(k.startDate),
+            billingDay: k.billingDay,
             notes: k.notes,
           },
-          select: { id: true },
+          select: { id: true, billingDay: true },
         });
-        contractIds.set(k.legacyContractNumber.toLowerCase(), contract.id);
+        contractIds.set(k.legacyContractNumber.toLowerCase(), contract);
         result.contractsCreated += 1;
       }
 
-      const contractFor = async (legacy: string): Promise<string> => {
+      const contractFor = async (legacy: string) => {
         const key = legacy.toLowerCase();
         const hit = contractIds.get(key);
         if (hit) return hit;
         const found = await tx.contract.findFirst({
           where: { legacyContractNumber: { equals: legacy, mode: "insensitive" } },
-          select: { id: true },
+          select: { id: true, billingDay: true },
         });
         if (!found) throw new Error(`Contract not found for ${legacy}`);
-        contractIds.set(key, found.id);
-        return found.id;
+        contractIds.set(key, found);
+        return found;
       };
 
       // ── Equipment ────────────────────────────────────────────────────
@@ -196,6 +215,14 @@ export async function applyPlan(
         models.map((m) => [(m.modelCode ?? "").toLowerCase(), m]),
       );
 
+      // A rental that already ran its course in the old system: its units
+      // belong to the customer now and are only serviced.
+      const finishedRentals = new Set(
+        plan.contracts
+          .filter((k) => k.type === "RENTAL" && k.state === "COMPLETED")
+          .map((k) => k.legacyContractNumber.toLowerCase()),
+      );
+
       for (const [codeKey, rows] of byModel) {
         const model = codeKey === "" ? null : modelByCode.get(codeKey);
         if (codeKey !== "" && !model) throw new Error(`Model not found: ${codeKey}`);
@@ -203,6 +230,8 @@ export async function applyPlan(
 
         for (const [i, e] of rows.entries()) {
           const customer = await customerFor(e.customerLegacyCode);
+          const rentalOver =
+            !!e.contractLegacyNumber && finishedRentals.has(e.contractLegacyNumber.toLowerCase());
           const equipment = await tx.equipment.create({
             data: {
               customerId: customer.id,
@@ -210,11 +239,13 @@ export async function applyPlan(
               customDescription: model ? null : e.customDescription,
               assetCode: assetCodes[i],
               serialNumber: e.serial,
-              status: "ACTIVE",
-              // A rental unit is mid-term; anything else is being serviced
-              // rather than awaiting its installation visit.
-              lifecycleStage: e.serviceType === "RENTAL" ? "IN_RENTAL" : "IN_MAINTENANCE",
-              ownership: e.serviceType === "SALE" ? "CUSTOMER" : "COMPANY",
+              status: e.status,
+              // A rental unit is mid-term unless its rental already finished;
+              // anything else is being serviced rather than awaiting its
+              // installation visit.
+              lifecycleStage:
+                e.serviceType === "RENTAL" && !rentalOver ? "IN_RENTAL" : "IN_MAINTENANCE",
+              ownership: e.serviceType === "SALE" || rentalOver ? "CUSTOMER" : "COMPANY",
               installedAt: day(e.installedDate),
               serviceType: e.serviceType,
               managementType: e.managementType,
@@ -226,10 +257,11 @@ export async function applyPlan(
           });
           result.equipmentCreated += 1;
 
-          if (e.contractLegacyNumber) {
+          const contract = e.contractLegacyNumber ? await contractFor(e.contractLegacyNumber) : null;
+          if (contract) {
             await tx.contractEquipment.create({
               data: {
-                contractId: await contractFor(e.contractLegacyNumber),
+                contractId: contract.id,
                 equipmentId: equipment.id,
                 quantity: 1,
                 unitPrice: e.monthlyFee ?? undefined,
@@ -260,6 +292,30 @@ export async function applyPlan(
               },
             });
             result.consumablesCreated += 1;
+          }
+
+          // Payments the old system already collected: closed history, due
+          // on the contract's billing day, so this month's bill is not
+          // raised again for a customer who has already paid it.
+          if (e.payments.length > 0) {
+            const { count } = await tx.payment.createMany({
+              data: e.payments.map((p) => ({
+                customerId: customer.id,
+                contractId: contract?.id ?? null,
+                equipmentId: equipment.id,
+                kind: PAYMENT_KIND[e.serviceType],
+                method: p.method,
+                state: "RECONCILED" as const,
+                expectedAmount: p.amount,
+                actualAmount: p.amount,
+                currency: p.currency,
+                dueDate: dueDateForMonth(day(`${p.billingMonth}-01`), contract?.billingDay),
+                collectedAt: p.paidDate ? day(p.paidDate) : null,
+                reconciledAt: p.paidDate ? day(p.paidDate) : null,
+                notes: ["Migrated from the previous system", p.notes].filter(Boolean).join(" · "),
+              })),
+            });
+            result.paymentsCreated += count;
           }
 
           // A completed installation visit dated to the real install day, so

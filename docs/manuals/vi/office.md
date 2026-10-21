@@ -140,7 +140,7 @@ Các tác vụ dưới đây do hệ thống tự chạy vào giờ cố định
 |---|---|---|
 | Hằng ngày 01:30 | Kiểm tra tiền mặt chưa bàn giao | Ghi cảnh báo vào nhật ký kiểm tra với các khoản KTV đã thu tiền mặt nhưng **quá 48 giờ** chưa bàn giao cho văn phòng. Thẻ «Chờ bàn giao tiền» trên bảng điều khiển hiện "N quá 48h". Hệ thống không gửi thông báo riêng |
 | Hằng ngày 02:30 | Sao lưu dữ liệu | Sao lưu toàn bộ cơ sở dữ liệu |
-| Ngày 1 hằng tháng 07:00 | Tạo phiếu thu định kỳ | Tạo khoản thu **Dự kiến** của tháng này cho mỗi hợp đồng thuê·bảo trì đang hiệu lực (hạn ngày 10) |
+| Ngày 1 hằng tháng 07:00 | Tạo phiếu thu định kỳ | Tạo khoản thu **Dự kiến** của tháng này cho mỗi hợp đồng thuê·bảo trì đang hiệu lực (hạn là ngày thu tiền của hợp đồng, để trống thì ngày 10 — §8.3) |
 | Hằng ngày 08:00 | Nâng cấp độ quá hạn | Chuyển các khoản thu quá hạn sang trạng thái trễ 7·14·30 ngày và gửi thông báo (§12.6) |
 | Hằng ngày 09:00 | Nhắc lịch thay lõi lọc | Gửi email cho liên hệ vận hành chính của khách có lõi lọc cần thay·vệ sinh trong vòng 14 ngày |
 | Hằng ngày 10:00 | Nhắc hết hạn thuê | Email trước khi hết hạn 60 ngày·30 ngày, SMS trước 7 ngày (gửi bên ký hợp đồng) |
@@ -358,6 +358,14 @@ Các ô còn lại giống B2C.
 | Yêu cầu DV | Các yêu cầu dịch vụ của khách này |
 | Hoạt động | Lịch sử thay đổi liên quan đến khách này |
 
+**Hộp «Mục cần kiểm tra»**: nếu đầu trang chi tiết khách hàng hiện hộp «Mục cần kiểm tra» thì có một trong ba việc dưới đây. Không có gì cần kiểm tra thì hộp không hiện. Mỗi mục có liên kết đi thẳng tới chỗ cần xử lý.
+
+| Mục | Ý nghĩa | Việc cần làm |
+|---|---|---|
+| Cần xác nhận liên hệ vận hành | Hệ thống tạm điền liên hệ vận hành theo thông tin bên ký hợp đồng (khách hàng được đưa vào bằng nhập dữ liệu). Liên hệ đó có nhãn «Cần xác nhận» | «Mở tab liên hệ» → §5.6 |
+| Hợp đồng chưa có phí tháng | Hợp đồng thuê·bảo trì đang hiệu lực nhưng chưa có phí tháng nên không tạo hóa đơn hằng tháng. Màn hình hợp đồng cũng hiện cảnh báo tương tự | Nhập phí bằng sửa đổi hợp đồng (từ MANAGER trở lên) — §8.7 |
+| Thiết bị chưa có lịch sử thay lõi lọc | Đã qua trọn một chu kỳ thay lõi kể từ khi lắp đặt mà không có ghi nhận thay, nên ngày thay tiếp theo chỉ được ước tính từ ngày lắp đặt. Thiết bị mới lắp chưa đủ một chu kỳ thì không hiện | Nhập ngày thực hiện gần nhất thực tế ở chi tiết thiết bị — §5.5 |
+
 ### 5.5 Tab Thiết bị
 
 ![Tab thiết bị của khách hàng](../screenshots/vi/office/08-customer-equipment-tab.png)
@@ -384,6 +392,8 @@ Bố cục **danh sách ở trên / chi tiết ở dưới**.
 
 Bạn có thể sửa trực tiếp trong bảng ngày dự kiến và ngày thực hiện gần nhất.
 
+Nếu phía trên bảng lõi lọc có **ghi chú màu vàng** («N lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt…»), ô «ngày thực hiện gần nhất» của các dòng đó được tô nổi. Hãy nhập ngày thay thực tế gần nhất vào ô đó, ngày dự kiến sẽ chính xác và ghi chú biến mất.
+
 ### 5.6 Liên hệ — bên ký hợp đồng và liên hệ vận hành
 
 ![Tab liên hệ](../screenshots/vi/office/09-customer-contacts-tab.png)
@@ -403,6 +413,8 @@ Thông báo nợ quá hạn gửi cho hai người: bên ký hợp đồng và l
 - Nhập vai trò (liên hệ vận hành / bên ký hợp đồng), phạm vi (toàn khách hàng / cơ sở cụ thể — B2B), tên, chức danh, điện thoại, email, ngôn ngữ, có phải liên hệ chính không, có phải kế toán không.
 - Liên hệ vận hành chính hoặc kế toán bắt buộc phải có email.
 - Lưu xong cũng không gửi gì cho khách và không tạo tài khoản cổng.
+
+**Nhãn «Cần xác nhận»**: với khách hàng được đưa vào bằng nhập dữ liệu, bên ký hợp đồng được sao chép thành liên hệ vận hành, và thẻ liên hệ này (cùng phần tổng quan khách hàng) có nhãn «Cần xác nhận». Ở tab liên hệ, hãy xác nhận đúng người rồi nhập email và lưu (liên hệ vận hành chính bắt buộc có email). Bạn cũng có thể chỉ định người khác làm liên hệ vận hành hoặc xóa liên hệ này. Sau khi sửa hoặc xóa, nhãn sẽ biến mất.
 
 Sửa bằng «Sửa» trên thẻ từng liên hệ, gỡ bằng «Vô hiệu hóa liên hệ». Sửa thông tin bên ký hợp đồng từ MANAGER trở lên.
 
@@ -674,6 +686,10 @@ Dùng khi đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một d
 
 Hợp đồng đang hiệu lực còn có nút «+ Lắp đặt thiết bị» để lắp thêm thiết bị cho hợp đồng này.
 
+**Ngày thu tiền (hằng tháng)**: ô nằm ở tab «Tổng quan» của hợp đồng thuê·bảo trì. Đó là ngày trong tháng (1~31) thu phí, và hạn thanh toán của hóa đơn hằng tháng chính là ngày này. Để trống thì là ngày 10; ngày không có trong tháng (ví dụ 31 của tháng 2) được tính là ngày cuối tháng. Mọi nhân viên văn phòng đều nhập số và bấm «Lưu» để đổi được ở hợp đồng nháp·hiệu lực. Thay đổi chỉ áp dụng cho hóa đơn **được tạo từ sau đó**, hóa đơn đã tạo giữ nguyên. Nhắc nợ quá hạn (D+7, ...) cũng tính từ hạn này (§12.6).
+
+Hợp đồng thuê·bảo trì chưa có phí tháng sẽ hiện cảnh báo. Không có phí tháng thì không tạo hóa đơn hằng tháng, hãy nhập phí bằng sửa đổi hợp đồng (§8.7).
+
 ### 8.4 Tải lên hợp đồng đã ký
 
 MANAGER trở lên có thể tải lên **bản scan đã ký·đóng dấu** thay cho PDF tự tạo. «Tải lên hợp đồng PDF» → chọn PDF → Tải lên. Tệp tải lên sẽ thay thế bản tự tạo.
@@ -933,7 +949,7 @@ Trạng thái yêu cầu đi theo lượt thăm liên kết: lượt thăm đư�
 | Trễ 7n / 14n / 30n | Quá hạn (tự đổi lúc 08:00 hằng ngày) |
 | Đã xóa | Đã xử lý là không thu nữa |
 
-Phiếu thu hằng tháng (Dự kiến) của hợp đồng thuê·bảo trì được tự tạo vào ngày 1 hằng tháng (hạn ngày 10).
+Phiếu thu hằng tháng (Dự kiến) của hợp đồng thuê·bảo trì được tự tạo vào ngày 1 hằng tháng (hạn là ngày thu tiền của hợp đồng, để trống thì ngày 10 — §8.3).
 
 ### 12.2 Danh sách thu tiền
 
@@ -1261,7 +1277,7 @@ Dùng **«Gửi mẫu tin»** ở góc trên bên phải để gửi SMS bằng 
 
 Chuyển khách hàng·hợp đồng·thiết bị·vật tư từ hệ thống cũ hoặc sổ sách sang bằng một tệp Excel trong một lần. Chỉ một tệp sai cũng có thể làm thay đổi cả sổ khách hàng nên chỉ ADMIN mới mở được.
 
-1. **Tải mẫu** — gồm 5 sheet. Sheet đầu (Guide) có hướng dẫn điền từng ô bằng tiếng Hàn và tiếng Việt, các sheet còn lại mỗi sheet có một dòng ví dụ. Các ví dụ đều bắt đầu bằng `SAMPLE-` nên hãy xóa đi rồi điền (nếu để lại sẽ bị báo lỗi).
+1. **Tải mẫu** — gồm 6 sheet (Guide + khách hàng·hợp đồng·thiết bị·vật tư + sheet tùy chọn Payments). Sheet đầu (Guide) có hướng dẫn điền từng ô bằng tiếng Hàn và tiếng Việt, các sheet còn lại mỗi sheet có một dòng ví dụ. Các ví dụ đều bắt đầu bằng `SAMPLE-` nên hãy xóa đi rồi điền (nếu để lại sẽ bị báo lỗi).
 2. **Kiểm tra file** — không lưu gì cả, chỉ cho biết số mục sẽ nhập mới·số mục đã có sẽ bỏ qua·các ô sai (sheet·số dòng).
 3. **Xác nhận nhập** — nút chỉ xuất hiện khi không có lỗi. Mọi thứ được lưu một lần, nếu thất bại giữa chừng thì không lưu gì.
 
@@ -1271,6 +1287,10 @@ Lưu ý khi điền:
 - Mã khách hàng và số hợp đồng ghi đúng giá trị đã dùng trước đây. Mã khách hàng·số hợp đồng của SOMS được tạo tự động. Dù tải cùng một tệp hai lần, khách hàng·hợp đồng đã có sẽ được bỏ qua.
 - Sheet thiết bị phân biệt thiết bị bằng tổ hợp **mã model + mã tài sản**. Vì số thứ tự mã tài sản chạy riêng cho từng model. Nếu để trống mã model và điền «Custom Description» thì đăng ký là thiết bị ngoài danh mục.
 - Hợp đồng được nhập vào ở trạng thái **hiệu lực**, và **lượt lắp đặt đã hoàn tất** theo ngày lắp đặt thực tế cũng được ghi cùng. Ngày bảo trì tiếp theo được tính từ ngày lắp đặt và chu kỳ.
+- **Cột tùy chọn**: sheet khách hàng có Status (ACTIVE/INACTIVE), Contact Phone 2, Notes (Contact Phone không còn bắt buộc); sheet hợp đồng có State (ACTIVE/COMPLETED/TERMINATED), End Date, Billing Day (1~31, ngày thu tiền); sheet thiết bị có Status (ACTIVE/TERMINATED/DEACTIVATED). Để trống trạng thái thì là ACTIVE, và thiết bị không ở trạng thái ACTIVE sẽ không nhận nhắc thay lõi lọc.
+- **Sheet Payments (tùy chọn)**: ghi lịch sử thu tiền đã thu ở hệ thống cũ. Các cột: Equipment Key · Billing Month (YYYY-MM) · Paid Date · Amount · Currency (VND/USD) · Method (CASH/BANK_TRANSFER/CARD/OTHER) · Notes. Chúng được nhập thành khoản thu đã tất toán và hóa đơn của tháng đó sẽ không bị tạo lại. Bảng kiểm tra·kết quả cũng hiện số lượng «Lịch sử thu tiền».
+- Mọi khách hàng được nhập đều được sao chép bên ký hợp đồng thành liên hệ vận hành chính kèm nhãn «Cần xác nhận». Hãy xử lý ở «Mục cần kiểm tra» trong chi tiết khách hàng (§5.4, §5.6).
+- Với đợt nhập lớn, hãy **chia thành nhiều tệp** (mỗi tệp dưới 10MB) rồi tải lên; tệp trên 10MB sẽ bị từ chối. Thứ tự không quan trọng, tải lại thì phần đã có sẽ được bỏ qua. Nên chuyển đổi (bắt đầu dùng thật sau khi nhập) vào **đầu tháng**.
 - **Trong lúc nhập dữ liệu, không gửi gì cho khách hàng và cũng không tạo tài khoản cổng.**
 
 **«Tải dữ liệu hiện có»** trên cùng màn hình tải dữ liệu hiện tại theo cùng mẫu với tệp tải lên. Dùng để sửa rồi tải lên lại hoặc làm bản sao lưu trước khi nhập.

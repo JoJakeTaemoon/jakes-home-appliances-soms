@@ -93,4 +93,33 @@ describe("runMonthlyRecurringPayments", () => {
     const call = mockedPrisma.payment.create.mock.calls[0][0];
     expect(call.data.expectedAmount).toBe(400_000);
   });
+
+  it("makes each bill due on its contract's billing day, not a fixed 10th", async () => {
+    mockedPrisma.contract.findMany.mockResolvedValueOnce([
+      {
+        id: "co1",
+        customerId: "c1",
+        type: "RENTAL",
+        billingDay: 25,
+        monthlyMaintenanceFee: { toString: () => "300000" },
+        equipment: [],
+      },
+      {
+        id: "co2",
+        customerId: "c2",
+        type: "MAINTENANCE",
+        billingDay: null,
+        monthlyMaintenanceFee: { toString: () => "150000" },
+        equipment: [],
+      },
+    ] as never);
+    mockedPrisma.payment.findFirst.mockResolvedValue(null);
+    mockedPrisma.payment.create.mockResolvedValue({ id: "p1" } as never);
+
+    await runMonthlyRecurringPayments({ now: new Date("2026-06-01") });
+    const dues = mockedPrisma.payment.create.mock.calls.map((c) =>
+      (c[0].data.dueDate as Date).toISOString(),
+    );
+    expect(dues).toEqual(["2026-06-25T23:59:59.000Z", "2026-06-10T23:59:59.000Z"]);
+  });
 });

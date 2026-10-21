@@ -74,6 +74,26 @@ describe("updateContractSchema — editable contract memo (요청 #4)", () => {
   });
 });
 
+describe("updateContractSchema — partial updates", () => {
+  it("leaves the money fields out of a notes-only update", () => {
+    // A field the caller did not send must stay undefined (= unchanged). If it
+    // became null, saving a memo would wipe a draft's fee and be refused on a
+    // live contract as an attempted price change.
+    expect(updateContractSchema.parse({ notes: "memo" })).toEqual({ notes: "memo" });
+  });
+
+  it("still lets a caller clear a fee on purpose", () => {
+    expect(updateContractSchema.parse({ monthlyMaintenanceFee: null }).monthlyMaintenanceFee).toBeNull();
+  });
+
+  it("takes a billing day from 1 to 31 and null to reset it", () => {
+    expect(updateContractSchema.parse({ billingDay: 25 }).billingDay).toBe(25);
+    expect(updateContractSchema.parse({ billingDay: null }).billingDay).toBeNull();
+    expect(updateContractSchema.safeParse({ billingDay: 0 }).success).toBe(false);
+    expect(updateContractSchema.safeParse({ billingDay: 32 }).success).toBe(false);
+  });
+});
+
 describe("contractAmendSchema", () => {
   it("accepts FEE_ADJUST with a numeric fee", () => {
     const res = contractAmendSchema.safeParse({

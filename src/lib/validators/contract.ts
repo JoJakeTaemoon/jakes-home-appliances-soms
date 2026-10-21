@@ -151,10 +151,16 @@ export const updateContractSchema = z.object({
   startDate: z.coerce.date().nullable().optional(),
   signedAt: z.coerce.date().nullable().optional(),
   termMonths: z.coerce.number().int().min(1).max(120).nullable().optional(),
-  monthlyMaintenanceFee: moneyOptional,
-  totalContractValue: moneyOptional,
-  deposit: moneyOptional,
+  // `.optional()` outside the transform: a field the caller did not send must
+  // stay undefined (unchanged). Without it a notes-only save turned every
+  // money field into null — wiping a draft's fee, and being refused on a live
+  // contract as a price change.
+  monthlyMaintenanceFee: moneyOptional.optional(),
+  totalContractValue: moneyOptional.optional(),
+  deposit: moneyOptional.optional(),
   endOfTermAction: endOfTermActionEnum.optional(),
+  // 출금일 — the day the monthly fee falls due. null = back to the 10th.
+  billingDay: z.coerce.number().int().min(1).max(31).nullable().optional(),
 });
 
 export const contractStateTransitionSchema = z.object({

@@ -49,6 +49,7 @@ async function loadSnapshot(): Promise<ExistingSnapshot> {
     prisma.equipment.findMany({
       select: {
         serialNumber: true,
+        customer: { select: { legacyCode: true, code: true } },
         assetCode: true,
         model: { select: { modelCode: true } },
       },
@@ -74,10 +75,14 @@ async function loadSnapshot(): Promise<ExistingSnapshot> {
     consumableSkus: new Map(consumables.map((c) => [c.sku.toLowerCase(), c.id])),
     equipmentSerials: new Set(
       equipment
-        .filter((e) => e.model?.modelCode && e.serialNumber)
+        .filter((e) => e.serialNumber)
+        // Off-catalog units are scoped by customer, catalog ones by model —
+        // see ExistingSnapshot.equipmentSerials.
         .map(
           (e) =>
-            `${(e.model?.modelCode ?? "").toLowerCase()}|${(e.serialNumber ?? "").toLowerCase()}`,
+            e.model?.modelCode
+              ? `${e.model.modelCode.toLowerCase()}|${(e.serialNumber ?? "").toLowerCase()}`
+              : `~${(e.customer.legacyCode || e.customer.code).toLowerCase()}|${(e.serialNumber ?? "").toLowerCase()}`,
         ),
     ),
     equipmentKeys: new Set(
@@ -123,6 +128,7 @@ export async function POST(request: NextRequest) {
       contracts: plan.contracts.length,
       equipment: plan.equipment.length,
       consumables: plan.equipment.reduce((n, e) => n + e.consumables.length, 0),
+      payments: plan.equipment.reduce((n, e) => n + e.payments.length, 0),
     };
 
     if (mode === "validate" || plan.errors.length > 0) {

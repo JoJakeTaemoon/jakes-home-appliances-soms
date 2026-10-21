@@ -1,9 +1,10 @@
 /**
  * The migration template handed to office staff.
  *
- * Five sheets: a Guide, then one per entity in the order they have to be
+ * Six sheets: a Guide, then one per entity in the order they have to be
  * filled — a customer before its contract, a contract before the equipment
- * on it, equipment before its consumables.
+ * on it, equipment before its consumables and its payment history. Payments
+ * is the only optional one.
  *
  * Every data sheet ships two filled example rows, one B2C and one B2B, so the
  * shape of a real row is visible rather than described. The examples are
@@ -64,6 +65,36 @@ const GUIDE_ROWS: ReadonlyArray<readonly string[]> = [
     "Shortcode",
     "B2B 고객만 필요합니다. 계약번호를 만들 때 쓰는 2~5자 약칭입니다. 예: SHV",
     "Chỉ cần cho khách B2B. Viết tắt 2-5 ký tự dùng để tạo số hợp đồng, ví dụ SHV.",
+  ],
+  [
+    "Status · State",
+    "비워 두면 ACTIVE(사용 중)입니다. 해지된 고객은 INACTIVE, 끝난 계약은 COMPLETED 또는 TERMINATED, 회수·해지된 장비는 TERMINATED, 분실 장비는 DEACTIVATED로 적습니다. ACTIVE가 아닌 장비에는 필터 교체 알림이 나가지 않습니다.",
+    "Để trống nghĩa là ACTIVE (đang dùng). Khách đã hủy ghi INACTIVE, hợp đồng đã kết thúc ghi COMPLETED hoặc TERMINATED, thiết bị đã thu hồi/hủy ghi TERMINATED, thiết bị bị mất ghi DEACTIVATED. Thiết bị không ACTIVE sẽ không nhận nhắc thay lõi lọc.",
+  ],
+  [
+    "Contact Phone",
+    "가능하면 채웁니다. 번호를 모르는 오래된 고객은 비워 둘 수 있고, 저장 후 고객 수정 화면에서 입력합니다.",
+    "Nên điền. Khách cũ không có số có thể để trống, rồi nhập sau ở màn hình sửa khách hàng.",
+  ],
+  [
+    "End Date",
+    "계약이 실제로 끝난 날(해지일 등). 비워 두면 임대는 시작일 + 기간으로 계산합니다.",
+    "Ngày hợp đồng thực sự kết thúc (ngày hủy…). Để trống thì hợp đồng thuê tự tính = ngày bắt đầu + số tháng.",
+  ],
+  [
+    "Billing Day",
+    "매달 요금을 받는 날(출금일, 1~31). 매월 청구의 납부기한이 이 날이 됩니다. 비워 두면 10일입니다.",
+    "Ngày thu tiền hằng tháng (1-31). Hạn thanh toán mỗi tháng là ngày này. Để trống thì là ngày 10.",
+  ],
+  [
+    "Payments",
+    "선택 시트입니다. 이전 시스템에서 이미 받은 요금 기록을 장비별로 적습니다. Billing Month는 YYYY-MM, Currency는 VND 또는 USD입니다. 같은 달 기록이 있으면 그 달 청구가 새로 만들어지지 않습니다.",
+    "Sheet tùy chọn. Ghi các khoản đã thu ở hệ thống cũ theo từng thiết bị. Billing Month dạng YYYY-MM, Currency là VND hoặc USD. Tháng đã có khoản thu thì hệ thống không tạo hóa đơn mới cho tháng đó.",
+  ],
+  [
+    "운영 담당자 / Liên hệ vận hành",
+    "고객마다 계약 주체가 운영 담당자로도 함께 등록되고 '확인 필요'로 표시됩니다. 고객 화면에서 확인하고 수정하거나 다른 담당자를 지정하세요.",
+    "Mỗi khách, bên ký hợp đồng cũng được ghi làm liên hệ vận hành và đánh dấu «cần xác nhận». Hãy kiểm tra ở màn hình khách hàng rồi sửa hoặc chỉ định người khác.",
   ],
   [
     "예시 행 / Dòng ví dụ",
@@ -149,6 +180,10 @@ const EQUIPMENT_EXAMPLES: ReadonlyArray<readonly string[]> = [
   ],
 ];
 
+const PAYMENT_EXAMPLES: ReadonlyArray<readonly string[]> = [
+  ["E1", "2024-04", "2024-04-05", "300000", "VND", "CASH", "방문수금"],
+];
+
 const CONSUMABLE_EXAMPLES: ReadonlyArray<readonly string[]> = [
   ["E1", "SAMPLE-SKU-1", "", "1", "180", "2024-03-05", ""],
   ["E1", "SAMPLE-SKU-2", "", "1", "365", "2024-03-05", ""],
@@ -163,6 +198,7 @@ export function buildMigrationTemplate(): string {
     { name: SHEETS.contracts, headers: HEADERS.contracts, rows: CONTRACT_EXAMPLES },
     { name: SHEETS.equipment, headers: HEADERS.equipment, rows: EQUIPMENT_EXAMPLES },
     { name: SHEETS.consumables, headers: HEADERS.consumables, rows: CONSUMABLE_EXAMPLES },
+    { name: SHEETS.payments, headers: HEADERS.payments, rows: PAYMENT_EXAMPLES },
   ];
   return buildSpreadsheetML(sheets);
 }

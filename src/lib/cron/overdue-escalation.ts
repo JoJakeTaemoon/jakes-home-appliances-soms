@@ -40,13 +40,19 @@ function daysBetween(due: Date, now: Date): number {
 }
 
 function selectRecipients(
-  contacts: { id: string; role: string; isPrimary: boolean }[],
+  contacts: { id: string; role: string; isPrimary: boolean; phone1?: string; email?: string | null }[],
   templateCode: string,
 ): string[] {
   const cp = contacts.find((c) => c.role === "CONTRACT_PARTY");
-  const primaryOps = contacts.find(
+  let primaryOps = contacts.find(
     (c) => c.role === "OPS_CONTACT" && c.isPrimary,
   );
+  // One person, one reminder: when the operations contact is the contract
+  // party themselves (a migrated customer's stand-in copy, or a household
+  // where one person is both), the CC would reach the same phone twice.
+  if (cp && primaryOps && primaryOps.phone1 === cp.phone1 && (primaryOps.email ?? null) === (cp.email ?? null)) {
+    primaryOps = undefined;
+  }
 
   if (templateCode === "SMS_PAYMENT_OVERDUE_FINAL") {
     // Final stage: SMS to CONTRACT_PARTY; CC primary OPS.
@@ -97,7 +103,7 @@ export async function runOverdueEscalation(
           id: true,
           name: true,
           contacts: {
-            select: { id: true, role: true, isPrimary: true },
+            select: { id: true, role: true, isPrimary: true, phone1: true, email: true },
           },
         },
       },

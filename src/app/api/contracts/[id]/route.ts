@@ -148,7 +148,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     const data = parsed.data;
 
     if (!isDraft) {
-      const allowedKeys = new Set(["notes"]);
+      // The billing day only moves when the customer pays, not what they
+      // agreed to, so office staff may change it on a live contract.
+      const allowedKeys = new Set(["notes", "billingDay"]);
       const bad = Object.keys(data).filter(
         (k) =>
           !allowedKeys.has(k) && data[k as keyof typeof data] !== undefined,
@@ -181,8 +183,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
             ? undefined
             : data.totalContractValue,
         // Editable memo printed on the contract PDF (요청 #4). Allowed on both
-        // DRAFT and ACTIVE (the ACTIVE allow-list above permits only `notes`).
+        // DRAFT and ACTIVE (the ACTIVE allow-list above permits notes + billing day).
         notes: notesUpdate,
+        billingDay: data.billingDay,
       },
     });
 

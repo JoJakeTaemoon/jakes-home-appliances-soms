@@ -58,6 +58,9 @@ export const GET = defineQuery({
         where: {
           state: "RECONCILED",
           reconciledAt: { gte: weekStart, lt: weekEnd },
+          // Migrated history keeps USD payments in USD; a VND total must not
+          // add 17 USD as 17 đồng.
+          currency: "VND",
         },
         _sum: { actualAmount: true },
         _count: { _all: true },

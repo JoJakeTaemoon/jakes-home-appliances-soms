@@ -22,6 +22,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-modal";
 import { OrderHistoryTab } from "@/components/orders/order-history-tab";
 import { OpenPortalButton } from "@/components/customer/open-portal-button";
+import { CustomerDataChecksBanner } from "@/components/customer/data-checks-banner";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
@@ -109,6 +110,8 @@ interface CustomerContact {
   portalEnabled: boolean;
   smsOptOut: boolean;
   emailOptOut: boolean;
+  /** Filled in by the system (data migration); staff should confirm it. */
+  needsReview: boolean;
 }
 
 interface SiteRow {
@@ -352,6 +355,8 @@ function CustomerDetailInner() {
           </div>
         </div>
       </header>
+
+      <CustomerDataChecksBanner customerId={id} onOpenContacts={() => setActiveTab("contacts")} />
 
       {/* KPI strip — 5 cards */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
@@ -842,11 +847,14 @@ function OpsContactsSummaryCard({
                     <span className="ml-1 text-xs text-[#737373]">· {c.title}</span>
                   ) : null}
                 </span>
-                {c.isPrimary && (
-                  <span className="rounded-full bg-[var(--brand-blue-50)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--brand-blue-700)]">
-                    PRIMARY
-                  </span>
-                )}
+                <span className="flex gap-1">
+                  {c.needsReview && <StatusBadge tone="warning">{t("needsReviewBadge")}</StatusBadge>}
+                  {c.isPrimary && (
+                    <span className="rounded-full bg-[var(--brand-blue-50)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--brand-blue-700)]">
+                      PRIMARY
+                    </span>
+                  )}
+                </span>
               </div>
               <a
                 href={`tel:${c.phone1}`}
@@ -1069,6 +1077,7 @@ function ContactsTab({
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
+                  {c.needsReview && <StatusBadge tone="warning">{t("needsReviewBadge")}</StatusBadge>}
                   {c.isPrimary && <StatusBadge tone="success">{t("primaryBadge")}</StatusBadge>}
                   {c.isAccountingContact && <StatusBadge tone="warning">{t("accountingBadge")}</StatusBadge>}
                   {c.scope === "SITE" && <StatusBadge tone="info">SITE</StatusBadge>}

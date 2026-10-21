@@ -334,7 +334,16 @@
     "openPortalConfirm": "Mở tài khoản cổng khách hàng cho {name} ({phone}). ID đăng nhập là số điện thoại này; hệ thống cấp mật khẩu tạm thời và khách sẽ đặt mật khẩu mới ở lần đăng nhập đầu. Không có tin nhắn SMS nào được gửi.",
     "openPortalEmailNotice": "Một email thông báo kích hoạt (không chứa mật khẩu) sẽ được gửi tới {email}.",
     "openPortalNoEmail": "Không có email nên sẽ không gửi thông báo kích hoạt.",
-    "openPortalSuccess": "Đã mở tài khoản cổng cho {name}. ID đăng nhập: {phone}. Hãy gọi điện đọc mật khẩu tạm thời bên dưới cho khách."
+    "openPortalSuccess": "Đã mở tài khoản cổng cho {name}. ID đăng nhập: {phone}. Hãy gọi điện đọc mật khẩu tạm thời bên dưới cho khách.",
+    "needsReviewBadge": "Cần xác nhận",
+    "dataChecks": {
+      "title": "Mục cần kiểm tra",
+      "opsToReview": "{count} liên hệ vận hành đang tạm lấy theo bên ký hợp đồng. Hãy xác nhận đúng người, nhập email rồi lưu, hoặc chỉ định người khác.",
+      "openContacts": "Mở tab liên hệ",
+      "contractsWithoutFee": "{count} hợp đồng chưa có phí tháng — hệ thống sẽ không tạo hóa đơn hằng tháng. Hãy nhập phí bằng nút «Sửa đổi» trên màn hình hợp đồng:",
+      "equipmentWithoutFilterDate": "{count} thiết bị chưa có lịch sử thay lõi lọc — ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế ở màn hình thiết bị:",
+      "more": "và {count} mục khác"
+    }
   },
   "salesReps": {
     "title": "Nhân viên bán hàng",
@@ -521,7 +530,8 @@
         "SCHEDULED": "Đã lên lịch",
         "REPLACE_DUE": "Sắp đến hạn",
         "OVERDUE": "Quá hạn"
-      }
+      },
+      "missingLastWarning": "{count} lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế vào bảng."
     },
     "widgets": {
       "purchaseHistory": "Lịch sử mua",
@@ -1220,7 +1230,12 @@
     "notesPlaceholder": "Nhập ghi chú sẽ in trên hợp đồng",
     "notesHint": "Khi lưu, hợp đồng PDF sẽ được tạo lại với ghi chú này. Xem bản xem trước bên dưới trước khi in. (Không sửa được nếu đã tải lên PDF đã ký)",
     "saveAndRegenerate": "Lưu & tạo lại",
-    "notesRegenerateFailed": "Đã lưu ghi chú nhưng tạo lại hợp đồng thất bại. Vui lòng thử lại — tài liệu hiện tại vẫn là nội dung cũ."
+    "notesRegenerateFailed": "Đã lưu ghi chú nhưng tạo lại hợp đồng thất bại. Vui lòng thử lại — tài liệu hiện tại vẫn là nội dung cũ.",
+    "billingDay": "Ngày thu tiền (hằng tháng)",
+    "billingDayHint": "Ngày thu tiền mỗi tháng. Hạn thanh toán hằng tháng là ngày này. Để trống thì là ngày 10. Ngày lớn hơn số ngày của tháng sẽ tính là ngày cuối tháng.",
+    "billingDayInvalid": "Nhập ngày từ 1 đến 31.",
+    "billingDayDefault": "10 (mặc định)",
+    "noFeeWarning": "Hợp đồng này chưa có phí tháng nên hệ thống không tạo hóa đơn hằng tháng. Hãy nhập phí bằng nút «Sửa đổi» (Sửa đổi hợp đồng)."
   },
   "portal": {
     "logout": "Đăng xuất",
@@ -2608,13 +2623,14 @@
       "confirmHint": "File hợp lệ. Bấm xác nhận để ghi vào dữ liệu thật.",
       "nothingToDo": "Không có dòng nào mới. File này đã được nhập trước đó.",
       "errorsTruncated": "Hiển thị {shown} trong tổng số {total} lỗi.",
-      "appliedSummary": "Đã tạo {customers} khách hàng, {contracts} hợp đồng, {equipment} thiết bị, {consumables} vật tư.",
+      "appliedSummary": "Đã tạo {customers} khách hàng, {contracts} hợp đồng, {equipment} thiết bị, {consumables} vật tư, {payments} khoản thu.",
       "downloadData": "Tải dữ liệu hiện có",
       "downloadDataHint": "Tải khách hàng, hợp đồng, thiết bị và vật tư đang có theo đúng mẫu này. Có thể sửa rồi tải lên lại, hoặc dùng làm bản sao lưu trước khi nhập. Dòng đã có sẽ được bỏ qua khi tải lên lại.",
       "catalogFirstTitle": "Kiểm tra danh mục sản phẩm trước",
       "catalogFirstBody": "Mã model và SKU vật tư trong file phải có sẵn trong danh mục sản phẩm. Mã chưa có sẽ báo lỗi và toàn bộ file không được ghi. Chức năng nhập dữ liệu không tạo mới danh mục. Với phụ kiện không có trong danh mục, hãy ghi tên vào cột Custom Name ở sheet Consumables — nó chỉ gắn cho thiết bị đó.",
       "openCatalog": "Mở danh mục sản phẩm",
-      "adminOnly": "Chỉ ADMIN mới dùng được chức năng nhập dữ liệu."
+      "adminOnly": "Chỉ ADMIN mới dùng được chức năng nhập dữ liệu.",
+      "entityPayments": "Lịch sử thu tiền"
     }
   },
   "merge": {

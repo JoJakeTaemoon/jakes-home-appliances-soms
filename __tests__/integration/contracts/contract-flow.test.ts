@@ -25,6 +25,7 @@ import { GET as contractsGet, POST as contractsPost } from "@/app/api/contracts/
 import { POST as stateRoute } from "@/app/api/contracts/[id]/state/route";
 import { POST as amendRoute } from "@/app/api/contracts/[id]/amend/route";
 import { POST as renewRoute } from "@/app/api/contracts/[id]/renew/route";
+import { PATCH as contractPatch } from "@/app/api/contracts/[id]/route";
 import { ContractWorkflow } from "@/lib/contracts/workflow";
 
 const ADMIN_USERNAME = "test_phase3_admin";
@@ -358,6 +359,56 @@ describe("runRentalCompletionCheck", () => {
       where: { customerId: customer.id, templateCode: "EMAIL_RENTAL_COMPLETED" },
     });
     expect(note?.status).toBe("MOCKED");
+  });
+});
+
+describe("PATCH /api/contracts/:id — billing day (출금일)", () => {
+  async function activeRental() {
+    const { customer, equipment } = await createCustomerWithEquipment({
+      type: "B2C",
+      name: "TEST_PHASE3_B2C_BillingDay",
+    });
+    return prisma.contract.create({
+      data: {
+        contractNumber: `HD-20240101/SA-${customer.code.replace(/[^A-Z0-9]/gi, "")}-BD`,
+        customerId: customer.id,
+        type: "RENTAL",
+        state: "ACTIVE",
+        startDate: new Date("2024-01-01"),
+        termMonths: 36,
+        monthlyMaintenanceFee: 300_000,
+        activatedAt: new Date("2024-01-01"),
+        equipment: { create: [{ equipmentId: equipment.id, unitPrice: 300_000, quantity: 1 }] },
+      },
+    });
+  }
+  const patch = async (id: string, body: unknown) =>
+    readJson(
+      await contractPatch(await buildReq(`/api/contracts/${id}`, "PATCH", staffToken, body), {
+        params: Promise.resolve({ id }),
+      }),
+    );
+
+  it("lets office staff move the billing day of a live contract", async () => {
+    const c = await activeRental();
+    const res = await patch(c.id, { billingDay: 25 });
+    expect(res.status).toBe(200);
+    const after = await prisma.contract.findUnique({ where: { id: c.id } });
+    expect(after?.billingDay).toBe(25);
+  });
+
+  it("refuses a day no month has", async () => {
+    const c = await activeRental();
+    const res = await patch(c.id, { billingDay: 32 });
+    expect(res.status).toBe(400);
+  });
+
+  it("still keeps the price of a live contract behind an amendment", async () => {
+    const c = await activeRental();
+    const res = await patch(c.id, { billingDay: 5, monthlyMaintenanceFee: 1 });
+    expect(res.status).toBe(400);
+    const after = await prisma.contract.findUnique({ where: { id: c.id } });
+    expect(after?.billingDay).toBeNull();
   });
 });
 

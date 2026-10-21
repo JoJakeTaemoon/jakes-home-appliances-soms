@@ -7,12 +7,13 @@
  *   doesn't already exist.
  *
  *   Idempotent: the dedupe key is `(contractId, month-of-dueDate)`.
- *   `dueDate` is set to the 10th of the month (a common SOM convention —
- *   payable within 10 days of issue).
+ *   `dueDate` is the contract's billing day (출금일), or the 10th when it has
+ *   none — see `@/lib/payments/billing`.
  */
 
 import prisma from "@/lib/prisma";
 import { createExpectedPayment } from "@/lib/payments/operations";
+import { dueDateForMonth, monthlyBillingAmount } from "@/lib/payments/billing";
 
 export interface RecurringRunSummary {
   contractsScanned: number;
@@ -30,11 +31,6 @@ function lastOfMonth(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59));
 }
 
-function dueDateForMonth(d: Date): Date {
-  // 10th of the month at 23:59 UTC
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 10, 23, 59, 59));
-}
-
 function monthKey(d: Date): string {
   return `${d.getUTCFullYear()}_${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
@@ -45,7 +41,6 @@ export async function runMonthlyRecurringPayments(
   const now = opts.now ?? new Date();
   const month = firstOfMonth(now);
   const monthEnd = lastOfMonth(now);
-  const due = dueDateForMonth(now);
 
   const summary: RecurringRunSummary = {
     contractsScanned: 0,
@@ -65,6 +60,7 @@ export async function runMonthlyRecurringPayments(
       id: true,
       customerId: true,
       type: true,
+      billingDay: true,
       monthlyMaintenanceFee: true,
       equipment: {
         select: {
@@ -78,16 +74,7 @@ export async function runMonthlyRecurringPayments(
 
   for (const c of contracts) {
     try {
-      let amount = 0;
-      if (c.monthlyMaintenanceFee) {
-        amount = Number(c.monthlyMaintenanceFee.toString());
-      } else if (c.type === "RENTAL") {
-        // Fall back to sum of equipment unit prices (rental monthly fee).
-        amount = c.equipment.reduce((acc, ce) => {
-          const unit = ce.unitPrice ? Number(ce.unitPrice.toString()) : 0;
-          return acc + unit * (ce.quantity ?? 1);
-        }, 0);
-      }
+      const amount = monthlyBillingAmount(c);
       if (amount <= 0) {
         summary.skippedNoFee += 1;
         continue;
@@ -109,7 +96,7 @@ export async function runMonthlyRecurringPayments(
         customerId: c.customerId,
         contractId: c.id,
         expectedAmount: amount,
-        dueDate: due,
+        dueDate: dueDateForMonth(now, c.billingDay),
         source: `MONTHLY_${c.type}_${monthKey(now)}`,
         notes: `Auto-generated recurring ${c.type} payment for ${monthKey(now)}`,
         actorUserId: null,

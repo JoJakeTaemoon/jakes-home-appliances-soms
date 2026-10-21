@@ -87,3 +87,11 @@ change_log.pdf
 
 # Word lock files created when a .docx in docs/ is open
 ~$*
+
+# Legacy-program client data and what scripts/legacy-dbf/convert.ts makes from
+# it — customer names, phones and addresses. Never commit.
+/reference/data/*.DBF
+/reference/data/*.dbf
+/reference/data/*.SMT
+/reference/data/*.smt
+/.migration/

@@ -97,6 +97,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           isAccountingContact: data.isAccountingContact,
           smsOptOut: data.smsOptOut,
           emailOptOut: data.emailOptOut,
+          // A person has now looked at this contact, so it is no longer the
+          // system's stand-in.
+          needsReview: false,
         },
       });
     });
@@ -153,6 +156,7 @@ export async function DELETE(request: NextRequest, ctx: Ctx) {
         portalEnabled: false,
         isPrimary: false,
         isAccountingContact: false,
+        needsReview: false,
       },
     });
 

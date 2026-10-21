@@ -334,7 +334,16 @@
     "openPortalConfirm": "Open a customer-portal account for {name} ({phone}). The login ID is this phone number; a temporary password is issued and must be changed at first login. No SMS is sent.",
     "openPortalEmailNotice": "An activation notice (without the password) will be emailed to {email}.",
     "openPortalNoEmail": "No email on file, so no activation notice will be sent.",
-    "openPortalSuccess": "The portal account for {name} is open. Login ID: {phone}. Read the temporary password below to them by phone."
+    "openPortalSuccess": "The portal account for {name} is open. Login ID: {phone}. Read the temporary password below to them by phone.",
+    "needsReviewBadge": "Needs review",
+    "dataChecks": {
+      "title": "Needs checking",
+      "opsToReview": "{count} operations contact(s) were filled in from the contract party. Confirm the right person, add an email and save, or assign someone else.",
+      "openContacts": "Open contacts tab",
+      "contractsWithoutFee": "{count} contract(s) have no monthly amount — no monthly bill is raised. Enter the amount through an amendment:",
+      "equipmentWithoutFilterDate": "{count} unit(s) have no filter change on record — the due date is counted from installation. Enter the real last change on the equipment screen:",
+      "more": "and {count} more"
+    }
   },
   "salesReps": {
     "title": "Sales reps",
@@ -521,7 +530,8 @@
         "SCHEDULED": "Scheduled",
         "REPLACE_DUE": "Replace due",
         "OVERDUE": "Overdue"
-      }
+      },
+      "missingLastWarning": "{count} filter(s) have no change on record, so their due date is counted from installation. Enter the real last change in the table."
     },
     "widgets": {
       "purchaseHistory": "Purchase history",
@@ -1220,7 +1230,12 @@
     "notesPlaceholder": "Notes to print on the contract",
     "notesHint": "Saving regenerates the contract PDF with these notes. Check the preview below before printing. (Not editable once a signed PDF is uploaded.)",
     "saveAndRegenerate": "Save & regenerate",
-    "notesRegenerateFailed": "Notes saved, but regenerating the contract failed. Please retry — the current document still shows the old content."
+    "notesRegenerateFailed": "Notes saved, but regenerating the contract failed. Please retry — the current document still shows the old content.",
+    "billingDay": "Billing day (monthly)",
+    "billingDayHint": "The day the fee is collected each month; each monthly bill falls due on it. Leave empty for the 10th. A day past the end of a month counts as its last day.",
+    "billingDayInvalid": "Enter a day from 1 to 31.",
+    "billingDayDefault": "10 (default)",
+    "noFeeWarning": "This contract has no monthly amount, so no monthly bill is raised. Enter the amount through an amendment."
   },
   "portal": {
     "logout": "Log out",
@@ -2608,13 +2623,14 @@
       "confirmHint": "The file passed. Confirming writes it to live data.",
       "nothingToDo": "Nothing new to import — every row is already in.",
       "errorsTruncated": "Showing {shown} of {total} problems.",
-      "appliedSummary": "Created {customers} customers, {contracts} contracts, {equipment} equipment, {consumables} consumables.",
+      "appliedSummary": "Created {customers} customers, {contracts} contracts, {equipment} equipment, {consumables} consumables, {payments} payments.",
       "downloadData": "Download current data",
       "downloadDataHint": "Exports live customers, contracts, equipment and consumables in this same shape. Edit and upload it back, or keep it as the backup before a migration. Rows already in are skipped on re-upload.",
       "catalogFirstTitle": "Check the product catalog first",
       "catalogFirstBody": "Model codes and consumable SKUs in the workbook must already exist in the product catalog. An unknown code is an error and nothing in the file is written. This screen never creates catalog entries. For a part the catalog does not carry, put its name in the Custom Name column of the Consumables sheet and it attaches to that unit only.",
       "openCatalog": "Open the product catalog",
-      "adminOnly": "Data migration is available to ADMIN only."
+      "adminOnly": "Data migration is available to ADMIN only.",
+      "entityPayments": "Payment history"
     }
   },
   "merge": {

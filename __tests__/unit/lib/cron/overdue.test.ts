@@ -28,7 +28,7 @@ function makePayment(opts: {
   id: string;
   dueDate: Date;
   state: string;
-  cps?: { id: string; role: string; isPrimary: boolean }[];
+  cps?: { id: string; role: string; isPrimary: boolean; phone1?: string; email?: string | null }[];
 }) {
   return {
     id: opts.id,
@@ -51,6 +51,31 @@ function makePayment(opts: {
 
 describe("runOverdueEscalation", () => {
   const now = new Date("2026-06-20T01:00:00Z");
+
+  it("sends one reminder when the operations contact is the contract party themselves", async () => {
+    // After a data migration the primary OPS is a copy of the contract party:
+    // same phone, same (missing) email. They must not get every reminder twice.
+    const due = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    mockedPrisma.payment.findMany.mockResolvedValueOnce([
+      makePayment({
+        id: "p1",
+        dueDate: due,
+        state: "EXPECTED",
+        cps: [
+          { id: "cp", role: "CONTRACT_PARTY", isPrimary: true, phone1: "0901234567", email: null },
+          { id: "op", role: "OPS_CONTACT", isPrimary: true, phone1: "0901234567", email: null },
+        ],
+      }),
+    ]);
+    mockedPrisma.payment.findUnique.mockResolvedValue({ id: "p1", state: "EXPECTED" } as never);
+    mockedPrisma.payment.update.mockResolvedValue({ id: "p1", state: "OVERDUE_D7" } as never);
+    mockedPrisma.notificationLog.findFirst.mockResolvedValue(null);
+    mockedPrisma.notificationLog.update.mockResolvedValue({} as never);
+
+    await runOverdueEscalation({ now });
+    expect(mockedSend).toHaveBeenCalledTimes(1);
+    expect(mockedSend).toHaveBeenCalledWith(expect.objectContaining({ customerContactId: "cp" }));
+  });
 
   it("advances D+7 → OVERDUE_D7 + sends EMAIL_PAYMENT_DUE_D7", async () => {
     const due = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

@@ -116,6 +116,12 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     }
   }
 
+  // A whole cycle has passed with no change recorded, so the due date is only
+  // a guess from the install date (typical after a data migration). A new
+  // install inside its first cycle is fine — its filter is new.
+  const missingLast = (r: Row) => r.kind === "FILTER" && r.lastAt === null && r.status === "OVERDUE";
+  const missingCount = rows.filter(missingLast).length;
+
   function pickName(name: Row["name"]): string {
     if (typeof name === "string") return name;
     return (locale === "ko" ? name.ko : locale === "en" ? name.en : name.vi) ?? "—";
@@ -123,6 +129,14 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
 
   return (
     <div>
+      {missingCount > 0 && (
+        <p
+          role="status"
+          className="mb-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+        >
+          {t("missingLastWarning", { count: missingCount })}
+        </p>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -158,7 +172,7 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
                 </td>
                 <td className="py-2">{r.quantity}</td>
                 <td className="py-2 text-gray-500">{formatDate(r.previousAt, locale)}</td>
-                <td className="py-2">
+                <td className={`py-2 ${missingLast(r) ? "rounded bg-amber-50" : ""}`}>
                   <DateCell
                     value={r.lastAt}
                     busy={busyKey === r.key}

@@ -32,6 +32,7 @@ interface Counts {
   contracts: number;
   equipment: number;
   consumables: number;
+  payments: number;
 }
 
 interface ImportResult {
@@ -45,6 +46,7 @@ interface ImportResult {
     equipmentCreated: number;
     consumablesCreated: number;
     visitsCreated: number;
+    paymentsCreated: number;
   };
   errors: RowIssue[];
   errorCount: number;
@@ -296,9 +298,14 @@ export default function MigrationPage() {
                   {result.skipped.equipment}
                 </td>
               </tr>
-              <tr>
+              <tr className="border-b border-[#f5f5f5]">
                 <td className="py-2">{t("entityConsumables")}</td>
                 <td className="py-2 text-right">{result.counts.consumables}</td>
+                <td className="py-2 text-right text-[#a3a3a3]">—</td>
+              </tr>
+              <tr>
+                <td className="py-2">{t("entityPayments")}</td>
+                <td className="py-2 text-right">{result.counts.payments ?? 0}</td>
                 <td className="py-2 text-right text-[#a3a3a3]">—</td>
               </tr>
             </tbody>
@@ -347,6 +354,7 @@ export default function MigrationPage() {
                 contracts: result.applied.contractsCreated,
                 equipment: result.applied.equipmentCreated,
                 consumables: result.applied.consumablesCreated,
+                payments: result.applied.paymentsCreated ?? 0,
               })}
             </p>
           )}

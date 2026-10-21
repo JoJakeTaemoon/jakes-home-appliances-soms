@@ -249,6 +249,171 @@ describe("planImport — field rules", () => {
   });
 });
 
+describe("planImport — lifecycle columns", () => {
+  // Cells are appended after the original twelve/nine columns, so a workbook
+  // from before these columns existed still lines up.
+  const INACTIVE_CUSTOMER = [...CUSTOMER, "INACTIVE", "0287654321", "legacy #8879"];
+  const ENDED_CONTRACT = [...CONTRACT, "TERMINATED", "2025-06-30"];
+  const RETIRED_EQUIPMENT = [...EQUIPMENT, "TERMINATED"];
+
+  it("treats a workbook without the columns as all active", () => {
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], CUSTOMER],
+        [SHEETS.contracts]: [[...HEADERS.contracts], CONTRACT],
+        [SHEETS.equipment]: [[...HEADERS.equipment], EQUIPMENT],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.customers[0]).toMatchObject({ status: "ACTIVE", contactPhone2: null, notes: null });
+    expect(plan.contracts[0]).toMatchObject({ state: "ACTIVE", endDate: null });
+    expect(plan.equipment[0].status).toBe("ACTIVE");
+  });
+
+  it("carries a terminated customer, contract and unit through as such", () => {
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], INACTIVE_CUSTOMER],
+        [SHEETS.contracts]: [[...HEADERS.contracts], ENDED_CONTRACT],
+        [SHEETS.equipment]: [[...HEADERS.equipment], RETIRED_EQUIPMENT],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.customers[0]).toMatchObject({
+      status: "INACTIVE",
+      contactPhone2: "0287654321",
+      notes: "legacy #8879",
+    });
+    expect(plan.contracts[0]).toMatchObject({ state: "TERMINATED", endDate: "2025-06-30" });
+    expect(plan.equipment[0].status).toBe("TERMINATED");
+  });
+
+  it("rejects a status the system does not have", () => {
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], [...CUSTOMER, "GONE"]],
+        [SHEETS.contracts]: [[...HEADERS.contracts], [...CONTRACT, "PAUSED"]],
+        [SHEETS.equipment]: [[...HEADERS.equipment], [...EQUIPMENT, "LOST"]],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ sheet: SHEETS.customers, column: "Status" }),
+        expect.objectContaining({ sheet: SHEETS.contracts, column: "State" }),
+        expect.objectContaining({ sheet: SHEETS.equipment, column: "Status" }),
+      ]),
+    );
+  });
+
+  it("refuses an end date it cannot read", () => {
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], CUSTOMER],
+        [SHEETS.contracts]: [[...HEADERS.contracts], [...CONTRACT, "TERMINATED", "30/06/2025"]],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors).toContainEqual(expect.objectContaining({ column: "End Date" }));
+  });
+
+  it("lets a customer in without a phone, since old records often have none", () => {
+    const noPhone = [...CUSTOMER];
+    noPhone[6] = "";
+    const plan = planImport(
+      sheets({ [SHEETS.customers]: [[...HEADERS.customers], noPhone] }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.customers[0].contactPhone).toBe("");
+  });
+});
+
+describe("planImport — billing day and payment history", () => {
+  const withBillingDay = (day: string) => [...CONTRACT, "", "", day];
+  const PAID = ["E1", "2024-04", "2024-04-05", "300000", "VND", "CASH", "방문수금"];
+  const base = {
+    [SHEETS.customers]: [[...HEADERS.customers], CUSTOMER],
+    [SHEETS.contracts]: [[...HEADERS.contracts], CONTRACT],
+    [SHEETS.equipment]: [[...HEADERS.equipment], EQUIPMENT],
+  };
+
+  it("reads the contract's billing day", () => {
+    const plan = planImport(
+      sheets({ ...base, [SHEETS.contracts]: [[...HEADERS.contracts], withBillingDay("25")] }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.contracts[0].billingDay).toBe(25);
+  });
+
+  it("refuses a billing day no month has", () => {
+    const plan = planImport(
+      sheets({ ...base, [SHEETS.contracts]: [[...HEADERS.contracts], withBillingDay("32")] }),
+      EMPTY,
+    );
+    expect(plan.errors).toContainEqual(expect.objectContaining({ column: "Billing Day" }));
+  });
+
+  it("does not require a Payments sheet", () => {
+    const plan = planImport(sheets(base), EMPTY);
+    expect(plan.errors).toEqual([]);
+    expect(plan.equipment[0].payments).toEqual([]);
+  });
+
+  it("nests collected payments under their unit", () => {
+    const plan = planImport(
+      sheets({
+        ...base,
+        [SHEETS.payments]: [
+          [...HEADERS.payments],
+          PAID,
+          ["E1", "2014-10", "2014-10-14", "17", "USD", "", ""],
+        ],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.equipment[0].payments).toEqual([
+      { billingMonth: "2024-04", paidDate: "2024-04-05", amount: 300000, currency: "VND", method: "CASH", notes: "방문수금" },
+      { billingMonth: "2014-10", paidDate: "2014-10-14", amount: 17, currency: "USD", method: "CASH", notes: null },
+    ]);
+  });
+
+  it("rejects a payment it cannot place or read", () => {
+    const plan = planImport(
+      sheets({
+        ...base,
+        [SHEETS.payments]: [
+          [...HEADERS.payments],
+          ["E404", "2024-04", "2024-04-05", "1", "VND", "", ""],
+          ["E1", "2024/04", "2024-04-05", "1", "VND", "", ""],
+          ["E1", "2024-04", "2024-04-05", "0", "VND", "", ""],
+          ["E1", "2024-04", "2024-04-05", "1", "KRW", "", ""],
+        ],
+      }),
+      EMPTY,
+    );
+    expect(plan.errors.map((e) => e.column)).toEqual([
+      "Equipment Key",
+      "Billing Month",
+      "Amount",
+      "Currency",
+    ]);
+  });
+
+  it("skips the payments of a unit that is already in", () => {
+    const plan = planImport(
+      sheets({ ...base, [SHEETS.payments]: [[...HEADERS.payments], PAID] }),
+      { ...EMPTY, customerLegacyCodes: new Set(["kh0001"]), equipmentSerials: new Set(["pts-2100|sn-1"]) },
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.equipment).toHaveLength(0);
+  });
+});
+
 describe("planImport — re-uploading a finished workbook", () => {
   it("says nothing to do rather than flagging the consumables of skipped equipment", () => {
     const plan = planImport(
@@ -271,6 +436,40 @@ describe("planImport — re-uploading a finished workbook", () => {
     expect(plan.errors).toEqual([]);
     expect(plan.skipped.equipment).toBe(1);
     expect(plan.equipment).toHaveLength(0);
+  });
+
+  it("recognises an off-catalog unit by its serial too, so it is not created twice", () => {
+    const offCatalog = ["E9", "KH0001", "", "", "타사 정수기", "SN-9", "2024-03-05", "SALE", "", "", "", ""];
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], CUSTOMER],
+        [SHEETS.equipment]: [[...HEADERS.equipment], offCatalog],
+      }),
+      {
+        ...EMPTY,
+        customerLegacyCodes: new Set(["kh0001"]),
+        // An off-catalog unit has no model to scope its serial, so the
+        // customer does: `~customer|serial`.
+        equipmentSerials: new Set(["~kh0001|sn-9"]),
+      },
+    );
+    expect(plan.errors).toEqual([]);
+    expect(plan.skipped.equipment).toBe(1);
+  });
+
+  it("does not mistake another customer's off-catalog unit with the same serial for this one", () => {
+    // Old serials are often "1" or "-"; matching on the serial alone would
+    // silently drop a different customer's unit.
+    const offCatalog = ["E9", "KH0001", "", "", "타사 정수기", "1", "2024-03-05", "SALE", "", "", "", ""];
+    const plan = planImport(
+      sheets({
+        [SHEETS.customers]: [[...HEADERS.customers], CUSTOMER],
+        [SHEETS.equipment]: [[...HEADERS.equipment], offCatalog],
+      }),
+      { ...EMPTY, equipmentSerials: new Set(["~kh0099|1"]) },
+    );
+    expect(plan.skipped.equipment).toBe(0);
+    expect(plan.equipment).toHaveLength(1);
   });
 });
 
