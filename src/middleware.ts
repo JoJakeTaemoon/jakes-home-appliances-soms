@@ -123,8 +123,11 @@ export default function middleware(request: NextRequest) {
     if (!request.cookies.has(COOKIE_BY_GROUP[parsed.group])) {
       const url = request.nextUrl.clone();
       url.pathname = buildLoginUrl(parsed.group, parsed.locale);
+      // The original query belongs to the page, not the login form — keep it
+      // inside `next` so a shared filtered link survives signing in.
+      url.search = "";
       if (parsed.rest !== "/" && parsed.rest !== "/login") {
-        url.searchParams.set("next", `${parsed.groupPrefix}${parsed.rest}`);
+        url.searchParams.set("next", `${parsed.groupPrefix}${parsed.rest}${request.nextUrl.search}`);
       }
       return NextResponse.redirect(url);
     }

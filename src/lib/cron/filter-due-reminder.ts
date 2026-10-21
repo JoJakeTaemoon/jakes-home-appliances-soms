@@ -99,6 +99,7 @@ interface EquipmentRow {
     replaceEveryDays: number | null;
     lastReplacedAtOverride: Date | null;
     nextReplaceAtOverride: Date | null;
+    excluded?: boolean;
   }[];
   model: {
     nameKo: string | null;
@@ -140,9 +141,11 @@ async function processOne(
   summary: FilterDueRunSummary,
 ): Promise<void> {
   if (!eq.installedAt) return;
+  // A filter staff removed from this unit is never due on it.
+  const excluded = new Set(eq.consumables.filter((o) => o.excluded).map((o) => o.consumableId));
   const activeConsumables = eq.model.consumables
     .map((c) => c.consumable)
-    .filter((c) => c.isActive);
+    .filter((c) => c.isActive && !excluded.has(c.id));
   if (activeConsumables.length === 0) return;
 
   const logs = await prisma.visitConsumableLog.findMany({
@@ -265,6 +268,7 @@ export async function runFilterDueReminder(
           replaceEveryDays: true,
           lastReplacedAtOverride: true,
           nextReplaceAtOverride: true,
+          excluded: true,
         },
       },
       model: {

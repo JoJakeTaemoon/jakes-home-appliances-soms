@@ -364,7 +364,7 @@ Các ô còn lại giống B2C.
 |---|---|---|
 | Cần xác nhận liên hệ vận hành | Hệ thống tạm điền liên hệ vận hành theo thông tin bên ký hợp đồng (khách hàng được đưa vào bằng nhập dữ liệu). Liên hệ đó có nhãn «Cần xác nhận» | «Mở tab liên hệ» → §5.6 |
 | Hợp đồng chưa có phí tháng | Hợp đồng thuê·bảo trì đang hiệu lực nhưng chưa có phí tháng nên không tạo hóa đơn hằng tháng. Màn hình hợp đồng cũng hiện cảnh báo tương tự | Nhập phí bằng sửa đổi hợp đồng (từ MANAGER trở lên) — §8.7 |
-| Thiết bị chưa có lịch sử thay lõi lọc | Đã qua trọn một chu kỳ thay lõi kể từ khi lắp đặt mà không có ghi nhận thay, nên ngày thay tiếp theo chỉ được ước tính từ ngày lắp đặt. Thiết bị mới lắp chưa đủ một chu kỳ thì không hiện | Nhập ngày thực hiện gần nhất thực tế ở chi tiết thiết bị — §5.5 |
+| Thiết bị chưa có lịch sử thay lõi lọc | Đã qua trọn một chu kỳ thay lõi kể từ khi lắp đặt mà không có ghi nhận thay, nên ngày thay tiếp theo chỉ được ước tính từ ngày lắp đặt. Thiết bị mới lắp chưa đủ một chu kỳ thì không hiện | Bấm «Nhập một lần» để chọn sẵn các thiết bị đó rồi nhập ngày — §5.5, hoặc sửa từng máy ở chi tiết thiết bị |
 
 ### 5.5 Tab Thiết bị
 
@@ -390,7 +390,16 @@ Bố cục **danh sách ở trên / chi tiết ở dưới**.
 | Dự kiến · Còn lại | Tự tính bằng lần gần nhất + chu kỳ |
 | Trạng thái | Bình thường / Đã lên lịch / Sắp đến hạn / Quá hạn |
 
-Bạn có thể sửa trực tiếp trong bảng ngày dự kiến và ngày thực hiện gần nhất.
+Cuối mỗi dòng có nút **«Sửa» · «Xóa»** (dòng kiểm tra định kỳ chỉ có «Sửa»). Bấm «Sửa», các ô **chu kỳ tùy chỉnh · số lượng · lần gần nhất · dự kiến** của dòng đó (lõi lọc thêm thủ công có thêm **tên hạng mục**) chuyển thành ô nhập và nút đổi thành **«Lưu» · «Hủy»**. Chỉ khi bấm «Lưu» thay đổi mới được ghi; «Hủy» bỏ thay đổi. Mỗi lần sửa một dòng. Chu kỳ mặc định lấy từ danh mục, còn lần trước · còn lại · trạng thái được tính tự động nên không sửa được.
+
+- Chu kỳ là số nguyên 1–3600 ngày, số lượng 1–50. Để trống thì quay về chu kỳ mặc định theo danh mục (lõi lọc thêm thủ công không được để trống).
+- **Xóa**: lõi lọc thêm thủ công cho thiết bị này sẽ bị xóa. Lõi lọc thuộc mẫu chỉ bị bỏ **khỏi thiết bị này**, các thiết bị khác cùng mẫu vẫn giữ. Lõi lọc đã bỏ cũng không còn trong gợi ý thay, email sắp đến hạn thay lõi và mục cần kiểm tra. Bấm «Xóa» sẽ hiện hộp xác nhận; chỉ xóa khi bạn xác nhận.
+
+**Nhập hàng loạt ngày thay lõi** — nút **«Nhập hàng loạt ngày thay lõi»** ở đầu trang chi tiết khách hàng (hoặc «Nhập một lần» trong hộp mục cần kiểm tra) cho phép nhập ngày thay lõi gần nhất cho nhiều thiết bị của khách hàng cùng lúc. 100 máy không còn phải sửa 100 lần.
+
+1. Chọn thiết bị ở bên trái. Tích ô cạnh tên mẫu để chọn toàn bộ thiết bị của mẫu đó. Mở từ hộp cảnh báo thì các thiết bị chưa có lịch sử thay đã được chọn sẵn.
+2. Bên phải chỉ hiện các lõi lọc mà thiết bị đã chọn có. Nhập ngày cho từng lõi, hoặc nhập vào «Cùng một ngày cho mọi lõi lọc» rồi bấm «Áp dụng».
+3. Bấm «Lưu». Chỉ lõi lọc có ngày mới được lưu; thiết bị không có lõi đó (hoặc đã bỏ lõi đó) sẽ được bỏ qua. Kết quả (mới·sửa·bỏ qua) hiện bên dưới. Không nhập được ngày sau hôm nay.
 
 Nếu phía trên bảng lõi lọc có **ghi chú màu vàng** («N lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt…»), ô «ngày thực hiện gần nhất» của các dòng đó được tô nổi. Hãy nhập ngày thay thực tế gần nhất vào ô đó, ngày dự kiến sẽ chính xác và ghi chú biến mất.
 
@@ -551,7 +560,8 @@ Hiển thị từng khoản công nợ đến hạn trong kỳ, theo từng khá
 
 ![Danh sách thiết bị](../screenshots/vi/office/17-equipment-list.png)
 
-- Tìm kiếm (sê-ri·mã KH·mẫu) và lọc theo trạng thái
+- Tìm kiếm (sê-ri·mã KH·mẫu), lọc theo trạng thái và **lọc theo khoảng ngày lắp đặt** (từ ~ đến, tính cả hai đầu — có thể chỉ nhập một đầu)
+- Bộ lọc đã chọn được gắn vào địa chỉ trang (`/o/vi/equipment?installedFrom=2024-01-01&installedTo=2024-01-31&status=ACTIVE`). Sao chép địa chỉ gửi cho người khác thì họ mở ra cùng bộ lọc. Nếu chưa đăng nhập, sau khi đăng nhập sẽ quay lại đúng trang đó.
 - Các cột: khách hàng · cơ sở · mẫu · sê-ri · ngày lắp đặt · trạng thái · sở hữu
 - Nút **«Đăng ký / Lắp đặt thiết bị»** ở góc trên bên phải → trình hướng dẫn đăng ký đơn (§7.6)
 - Bấm vào một dòng để mở chi tiết thiết bị.
@@ -607,16 +617,16 @@ Chi tiết thiết bị → **«Sửa»**. Mọi nhân viên văn phòng dùng �
 Đăng ký·lắp đặt nhiều thiết bị cùng mẫu trong một lần.
 
 1. **Chọn khách hàng** — tìm theo mã·tên·người phụ trách·liên hệ. Nếu chưa có thì đăng ký khách hàng mới ngay tại đó. Với B2B, chọn cả cơ sở.
-2. **Thông tin thiết bị** — chọn Thương hiệu · Nhóm sản phẩm · Mẫu. Chọn cái nào trước cũng được, các mục còn lại sẽ được thu hẹp (chọn mẫu trước thì thương hiệu·nhóm sản phẩm tự điền). Nhập số lượng · ngày lắp đặt · kỹ thuật viên · ghi chú lắp đặt. Mã tài sản được cấp tự động khi hoàn tất.
+2. **Thông tin thiết bị** — chọn Thương hiệu · Nhóm sản phẩm · Mẫu. Chọn cái nào trước cũng được, các mục còn lại sẽ được thu hẹp (chọn mẫu trước thì thương hiệu·nhóm sản phẩm tự điền). Nhập số lượng · ngày lắp đặt · kỹ thuật viên · ghi chú lắp đặt. Mã tài sản được cấp tự động khi hoàn tất. Nếu đưa vào hệ thống những thiết bị đã lắp sẵn tại khách hàng, hãy bật **«Thiết bị đã lắp đặt»**.
 3. **Phương thức dịch vụ** — Thuê / Bán / Bảo trì
    - Thuê: tiền đặt cọc · tiền thuê hàng tháng · thời hạn hợp đồng → 1 hợp đồng
    - Bán: giá bán · phí lắp đặt. Bật «Tạo HĐ cùng với các thiết bị này» thì có 1 hợp đồng bán. Nếu phương thức quản lý là **Toàn phần** thì tạo thêm 1 hợp đồng bảo trì. Nếu là **Khách tự quản** thì cấu hình kiểm tra·lõi lọc bị tắt.
    - Bảo trì: phí bảo trì hàng tháng · thời hạn hợp đồng → 1 hợp đồng
    - Số hợp đồng để trống thì tự cấp, nếu nhập tay thì dùng số đó (trùng sẽ bị từ chối). Cũng có thể đặt ngày hợp đồng.
-4. **Cấu hình dịch vụ** — chu kỳ bảo trì định kỳ và danh sách lõi lọc. Lõi lọc mặc định của mẫu được điền sẵn, khi sửa chu kỳ (ngày) thì ngày dự kiến tiếp theo được tính lại.
+4. **Cấu hình dịch vụ** — chu kỳ bảo trì định kỳ và danh sách lõi lọc. Lõi lọc mặc định của mẫu được điền sẵn, khi sửa chu kỳ (ngày) thì ngày dự kiến tiếp theo được tính lại. Có thể nhập **ngày thay gần nhất** cho từng lõi, hoặc nhập «Cùng một ngày cho mọi lõi lọc» → «Áp dụng». Ngày nhập ở đây áp dụng cho **mọi thiết bị được đăng ký**. Để trống thì tính từ ngày lắp đặt.
 5. **Xác nhận** — kiểm tra trên một màn hình: khách hàng·thiết bị·số lượng·phương thức·số tiền·**số hợp đồng sẽ tạo**·cấu hình dịch vụ, rồi bấm «Hoàn tất».
 
-Khi hoàn tất, thiết bị, hợp đồng và **lượt lắp đặt** được tạo cùng lúc và ghi vào lịch sử lắp đặt.
+Khi hoàn tất, thiết bị, hợp đồng và **lượt lắp đặt** được tạo cùng lúc và ghi vào lịch sử lắp đặt. Nếu bật «Thiết bị đã lắp đặt», lượt lắp đặt được tạo ở trạng thái **hoàn thành** vào ngày lắp đặt và không kèm số tiền cần thu; nếu tắt thì là lượt **dự kiến** giao cho kỹ thuật viên.
 
 > Các ô số tiền hiển thị dấu chấm sau mỗi ba chữ số, như `1.500.000` (cách viết của Việt Nam).
 

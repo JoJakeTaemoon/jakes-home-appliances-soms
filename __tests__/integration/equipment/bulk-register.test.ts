@@ -359,4 +359,83 @@ describe("POST /api/equipment/bulk-register — 4-step wizard", () => {
     const equipment = await prisma.equipment.findUnique({ where: { id: data.equipmentIds[0] } });
     expect(equipment?.customInspectionCycleDays).toBe(90);
   });
+
+  it("(f) alreadyInstalled=true → every INSTALLATION visit is COMPLETED at installedAt, none SCHEDULED", async () => {
+    const customer = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}AlreadyInstalled`, type: "B2B" });
+    const day1 = "2024-03-05";
+    const day2 = "2023-11-20";
+    const res = await bulkRegisterPost(
+      await buildReq("/api/equipment/bulk-register", "POST", adminToken, {
+        customerId: customer.id,
+        modelId,
+        serviceType: "RENTAL",
+        managementType: "FULL_SERVICE",
+        deposit: 300_000,
+        monthlyRent: 150_000,
+        defaultInstalledAt: day1,
+        alreadyInstalled: true,
+        rows: [{ installedAt: day1 }, { installedAt: day2 }],
+      }),
+    );
+    const { status, body } = await readJson(res);
+    expect(status).toBe(201);
+    const data = body.data as { equipmentIds: string[]; visitIds: string[] };
+    expect(data.visitIds).toHaveLength(2);
+
+    const visits = await prisma.visit.findMany({ where: { equipmentId: { in: data.equipmentIds } } });
+    expect(visits).toHaveLength(2);
+    for (const v of visits) {
+      expect(v.type).toBe("INSTALLATION");
+      expect(v.state).toBe("COMPLETED");
+      expect(v.expectedAmount).toBeNull();
+      expect(v.completedAt?.toISOString()).toBe(v.scheduledFor?.toISOString());
+      expect(v.officeNotes).not.toBeNull();
+    }
+    expect(visits.map((v) => v.completedAt?.toISOString().slice(0, 10)).sort()).toEqual([day2, day1]);
+    expect(
+      await prisma.visit.count({ where: { equipmentId: { in: data.equipmentIds }, state: "SCHEDULED" } }),
+    ).toBe(0);
+
+    const equipment = await prisma.equipment.findMany({ where: { id: { in: data.equipmentIds } } });
+    expect(equipment.every((e) => e.lifecycleStage === "IN_RENTAL")).toBe(true);
+  });
+
+  it("(g) filter lastReplacedAt → EquipmentConsumable.lastReplacedAtOverride; default path unchanged", async () => {
+    const customer = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}LastReplaced` });
+    const installedAt = "2024-01-10";
+    const res = await bulkRegisterPost(
+      await buildReq("/api/equipment/bulk-register", "POST", adminToken, {
+        customerId: customer.id,
+        modelId,
+        serviceType: "MAINTENANCE",
+        managementType: "FULL_SERVICE",
+        monthlyMaintenanceFee: 60_000,
+        defaultInstalledAt: installedAt,
+        rows: [{ installedAt }],
+        serviceConfig: {
+          filters: [
+            { consumableId, quantity: 1, useCycleDays: 180, lastReplacedAt: "2025-06-01" },
+            { customName: "No date filter", quantity: 1, useCycleDays: 90 },
+          ],
+        },
+      }),
+    );
+    const { status, body } = await readJson(res);
+    expect(status).toBe(201);
+    const data = body.data as { equipmentIds: string[] };
+
+    const rows = await prisma.equipmentConsumable.findMany({
+      where: { equipmentId: data.equipmentIds[0] },
+    });
+    const dated = rows.find((r) => r.consumableId === consumableId);
+    expect(dated?.lastReplacedAtOverride?.toISOString().slice(0, 10)).toBe("2025-06-01");
+    const undated = rows.find((r) => r.customName === "No date filter");
+    expect(undated?.lastReplacedAtOverride).toBeNull();
+
+    // Default (alreadyInstalled omitted) still books a SCHEDULED install visit.
+    const visits = await prisma.visit.findMany({ where: { equipmentId: data.equipmentIds[0] } });
+    expect(visits).toHaveLength(1);
+    expect(visits[0].state).toBe("SCHEDULED");
+    expect(visits[0].completedAt).toBeNull();
+  });
 });

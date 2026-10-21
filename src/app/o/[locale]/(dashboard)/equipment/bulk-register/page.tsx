@@ -115,6 +115,7 @@ function BulkRegisterInner() {
   const [defaultInstalledAt, setDefaultInstalledAt] = useState<string>(todayYmd());
   const [installedByTechnicianId, setInstalledByTechnicianId] = useState<string | null>(null);
   const [installNotes, setInstallNotes] = useState("");
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   const techsQuery = useApiQuery<TechnicianLite[]>("/api/users?role=TECHNICIAN&pageSize=100");
   const techs = techsQuery.data ?? [];
@@ -174,6 +175,7 @@ function BulkRegisterInner() {
         defaultInstalledAt,
         installedByTechnicianId,
         installNotes: installNotes || undefined,
+        alreadyInstalled,
         createContract,
         serviceType: method,
         managementType,
@@ -198,6 +200,7 @@ function BulkRegisterInner() {
               customName: f.customName,
               quantity: f.quantity,
               useCycleDays: f.useCycleDays,
+              lastReplacedAt: f.lastReplacedAt || undefined,
             })),
         },
       });
@@ -304,6 +307,8 @@ function BulkRegisterInner() {
           noSitesForCustomer={noSitesForCustomer}
           installNotes={installNotes}
           setInstallNotes={setInstallNotes}
+          alreadyInstalled={alreadyInstalled}
+          setAlreadyInstalled={setAlreadyInstalled}
         />
       )}
 
@@ -333,6 +338,7 @@ function BulkRegisterInner() {
           installedAt={defaultInstalledAt}
           technician={techs.find((u) => u.id === installedByTechnicianId) ?? null}
           installNotes={installNotes}
+          alreadyInstalled={alreadyInstalled}
           serviceMethod={serviceMethod}
           serviceConfig={serviceConfig}
         />
@@ -372,6 +378,8 @@ interface EquipmentStepProps {
   noSitesForCustomer: boolean;
   installNotes: string;
   setInstallNotes: (v: string) => void;
+  alreadyInstalled: boolean;
+  setAlreadyInstalled: (v: boolean) => void;
 }
 
 function EquipmentStep(props: Readonly<EquipmentStepProps>) {
@@ -404,6 +412,14 @@ function EquipmentStep(props: Readonly<EquipmentStepProps>) {
             onChange={props.setDefaultInstalledAt}
           />
         </FormField>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={props.alreadyInstalled}
+            onChange={(e) => props.setAlreadyInstalled(e.target.checked)}
+          />
+          {t("fields.alreadyInstalled")}
+        </label>
         <FormField label={t("fields.technician")}>
           <Combobox
             ariaLabel={t("fields.technician")}
@@ -486,6 +502,7 @@ interface ConfirmStepProps {
   installedAt: string;
   technician: TechnicianLite | null;
   installNotes: string;
+  alreadyInstalled: boolean;
   serviceMethod: ServiceMethodValue;
   serviceConfig: ServiceConfigValue;
 }
@@ -535,6 +552,14 @@ function ConfirmStep(props: Readonly<ConfirmStepProps>) {
           <Row label={t("fields.quantity")} value={String(qty)} />
           <Row label={t("fields.installedAt")} value={formatDate(props.installedAt, locale)} />
           <Row label={t("fields.technician")} value={props.technician?.username ?? none} />
+          <Row
+            label={t("confirm.installVisit")}
+            value={t(
+              props.alreadyInstalled
+                ? "confirm.installVisitCompleted"
+                : "confirm.installVisitScheduled",
+            )}
+          />
           {props.installNotes.trim() && (
             <Row label={t("fields.installNotes")} value={props.installNotes} />
           )}

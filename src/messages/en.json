@@ -342,7 +342,22 @@
       "openContacts": "Open contacts tab",
       "contractsWithoutFee": "{count} contract(s) have no monthly amount — no monthly bill is raised. Enter the amount through an amendment:",
       "equipmentWithoutFilterDate": "{count} unit(s) have no filter change on record — the due date is counted from installation. Enter the real last change on the equipment screen:",
-      "more": "and {count} more"
+      "more": "and {count} more",
+      "bulkEnter": "Enter all at once"
+    },
+    "bulkFilterDates": {
+      "open": "Enter filter dates in bulk",
+      "title": "Last filter change — bulk entry",
+      "units": "Units",
+      "selectAll": "Select all",
+      "noUnits": "No active equipment.",
+      "filters": "Last change per filter",
+      "pickUnits": "Choose units first.",
+      "applyAllLabel": "Same date for every filter",
+      "applyAll": "Apply",
+      "hint": "Only filters with a date are saved. Chosen units without that filter are skipped.",
+      "selectedCount": "{count} selected",
+      "saved": "Saved {units} units — {created} new, {updated} updated, {skipped} skipped"
     }
   },
   "salesReps": {
@@ -531,7 +546,14 @@
         "REPLACE_DUE": "Replace due",
         "OVERDUE": "Overdue"
       },
-      "missingLastWarning": "{count} filter(s) have no change on record, so their due date is counted from installation. Enter the real last change in the table."
+      "missingLastWarning": "{count} filter(s) have no change on record, so their due date is counted from installation. Enter the real last change in the table.",
+      "cycleInvalid": "Enter the cycle as a whole number of days from 1 to 3600.",
+      "cycleRequired": "A filter added by hand needs a cycle.",
+      "deleteHintManual": "Deletes the filter added by hand to this unit.",
+      "deleteHintCatalog": "Removes this filter from this unit only; other units of the model keep it.",
+      "quantityInvalid": "Enter the quantity as a whole number from 1 to 50.",
+      "nameRequired": "Enter a name.",
+      "deleteTitle": "Delete this item?"
     },
     "widgets": {
       "purchaseHistory": "Purchase history",
@@ -594,6 +616,9 @@
       "useCycle": "Use cycle",
       "quantity": "Quantity",
       "lastReplacedAt": "Last replaced",
+      "applyAllLabel": "Same date for every filter",
+      "applyAll": "Apply",
+      "lastReplacedHint": "Leave empty to count from the install date.",
       "nextDueAt": "Next due",
       "actions": "Actions",
       "removeFilter": "Remove",
@@ -653,7 +678,8 @@
         "serialMode": "Serial entry mode",
         "serialNumber": "Serial",
         "assetCode": "Asset code",
-        "installNotes": "Install notes"
+        "installNotes": "Install notes",
+        "alreadyInstalled": "Already installed (record the installation visit as completed)"
       },
       "serviceTypes": {
         "RENTAL": "Rental",
@@ -713,6 +739,9 @@
         "months": "{n} months",
         "days": "{n} days",
         "contractCount": "Contracts to create",
+        "installVisit": "Installation visit",
+        "installVisitScheduled": "Booked as scheduled",
+        "installVisitCompleted": "Recorded as completed (already installed)",
         "management": "Management type",
         "inspectionCycle": "Inspection cycle",
         "inspectionNone": "Not set",
@@ -963,7 +992,9 @@
       "edit": "Edit",
       "detail": "Full page",
       "close": "Close"
-    }
+    },
+    "filterInstalledFrom": "Installed from",
+    "filterInstalledTo": "Installed to"
   },
   "equipmentModels": {
     "title": "Equipment models",

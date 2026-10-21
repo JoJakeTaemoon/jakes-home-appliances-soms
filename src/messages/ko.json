@@ -342,7 +342,22 @@
       "openContacts": "담당자 탭 열기",
       "contractsWithoutFee": "월 금액이 없는 계약 {count}건 — 매월 청구가 만들어지지 않습니다. 계약 화면의 「수정」(계약 수정)으로 금액을 입력하세요:",
       "equipmentWithoutFilterDate": "필터 교환 기록이 없는 장비 {count}대 — 설치일 기준으로 교체일을 계산하고 있습니다. 장비 화면에서 실제 최근 교환일을 입력하세요:",
-      "more": "외 {count}"
+      "more": "외 {count}",
+      "bulkEnter": "한 번에 입력"
+    },
+    "bulkFilterDates": {
+      "open": "필터 교환일 일괄 입력",
+      "title": "필터 최근 교환일 일괄 입력",
+      "units": "장비 선택",
+      "selectAll": "전체 선택",
+      "noUnits": "활성 장비가 없습니다.",
+      "filters": "필터별 최근 교환일",
+      "pickUnits": "먼저 장비를 고르세요.",
+      "applyAllLabel": "모든 필터에 같은 날짜",
+      "applyAll": "적용",
+      "hint": "날짜를 넣은 필터만 저장합니다. 고른 장비 중 그 필터가 없는 장비는 건너뜁니다.",
+      "selectedCount": "{count}대 선택",
+      "saved": "{units}대 저장 — 새로 입력 {created}, 수정 {updated}, 건너뜀 {skipped}"
     }
   },
   "salesReps": {
@@ -531,7 +546,14 @@
         "REPLACE_DUE": "교체 예정",
         "OVERDUE": "지연"
       },
-      "missingLastWarning": "필터 {count}개는 교환 기록이 없어 설치일 기준으로 교체일을 계산하고 있습니다. 실제 최근 교환일을 표에 입력하세요."
+      "missingLastWarning": "필터 {count}개는 교환 기록이 없어 설치일 기준으로 교체일을 계산하고 있습니다. 실제 최근 교환일을 표에 입력하세요.",
+      "cycleInvalid": "주기는 1~3600일 사이의 정수로 입력하세요.",
+      "cycleRequired": "직접 추가한 필터는 주기를 비울 수 없습니다.",
+      "deleteHintManual": "이 장비에서 직접 추가한 필터를 삭제합니다.",
+      "deleteHintCatalog": "이 장비에서만 이 필터를 뺍니다. 모델의 다른 장비에는 그대로 남습니다.",
+      "quantityInvalid": "수량은 1~50 사이의 정수로 입력하세요.",
+      "nameRequired": "항목명을 입력하세요.",
+      "deleteTitle": "이 항목을 삭제할까요?"
     },
     "widgets": {
       "purchaseHistory": "구매 이력",
@@ -594,6 +616,9 @@
       "useCycle": "사용주기",
       "quantity": "수량",
       "lastReplacedAt": "최근교체일",
+      "applyAllLabel": "모든 필터에 같은 날짜",
+      "applyAll": "적용",
+      "lastReplacedHint": "비워 두면 설치일 기준으로 계산합니다.",
       "nextDueAt": "다음예정일",
       "actions": "관리",
       "removeFilter": "삭제",
@@ -653,7 +678,8 @@
         "serialMode": "시리얼 번호 입력 방식",
         "serialNumber": "시리얼 번호",
         "assetCode": "자산 코드",
-        "installNotes": "설치 메모"
+        "installNotes": "설치 메모",
+        "alreadyInstalled": "이미 설치된 장비 (설치 방문을 완료로 기록)"
       },
       "serviceTypes": {
         "RENTAL": "렌탈",
@@ -713,6 +739,9 @@
         "months": "{n}개월",
         "days": "{n}일",
         "contractCount": "생성될 계약 수",
+        "installVisit": "설치 방문",
+        "installVisitScheduled": "설치 예정으로 등록",
+        "installVisitCompleted": "완료로 기록 (이미 설치됨)",
         "management": "관리 유형",
         "inspectionCycle": "정기점검 주기",
         "inspectionNone": "설정 안 함",
@@ -963,7 +992,9 @@
       "edit": "수정",
       "detail": "상세 페이지",
       "close": "닫기"
-    }
+    },
+    "filterInstalledFrom": "설치일 (부터)",
+    "filterInstalledTo": "설치일 (까지)"
   },
   "equipmentModels": {
     "title": "장비 모델",

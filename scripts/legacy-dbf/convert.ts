@@ -11,8 +11,13 @@
  *               name matches one already there are listed for a person to
  *               look at before committing.
  *   --catalog   the 제품 카탈로그 → CSV 내보내기 file. A 제품군 that already
- *               exists under the same Korean name is reused verbatim, so the
- *               import does not create a near-duplicate.
+ *               exists under the same Korean name (spaces ignored) is reused
+ *               verbatim, so the import does not create a near-duplicate.
+ *   --mapping   a folder with model-map.csv / filter-map.csv (legacy,prod).
+ *               A legacy model mapped to a catalog model attaches its units
+ *               to that model (by its model code) and is not written to the
+ *               catalog again; a mapped filter is written as the catalog SKU.
+ *               An empty `prod` cell means "add the legacy one as new".
  *
  * Reads the previous program's dBase tables (CP949 text, Clipper/SIx files)
  * and writes three files:
@@ -208,6 +213,7 @@ const flag = (name: string) => {
 };
 const existingPath = flag("--existing");
 const catalogPath = flag("--catalog");
+const mappingDir = flag("--mapping");
 const [dir, outDir] = argv;
 if (!dir || !outDir) {
   console.error(
@@ -239,6 +245,21 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
+// Legacy → catalog mapping decided by a person (optional).
+const readMap = (file: string) =>
+  new Map(
+    readFileSync(join(mappingDir!, file), "utf8")
+      .replace(/^\uFEFF/, "")
+      .split(/\r?\n/)
+      .slice(1)
+      .filter(Boolean)
+      .map((line) => parseCsv(line)[0])
+      .filter((r) => r[1]?.trim())
+      .map((r) => [r[0], r[1].trim()] as const),
+  );
+const modelMap = mappingDir ? readMap("model-map.csv") : new Map<string, string>();
+const filterMap = mappingDir ? readMap("filter-map.csv") : new Map<string, string>();
+
 // What the target database already holds (both optional).
 const existingCustomers = existingPath
   ? sheetToRecords(readWorkbook(readFileSync(existingPath)).Customers ?? [])
@@ -252,7 +273,7 @@ if (catalogPath) {
     // A model in several 제품군 writes "A | B" in each cell, positionally aligned.
     const kos = (r[ko] ?? "").split("|").map((x) => x.trim());
     kos.forEach((k, i) => {
-      if (k) existingCategories.set(k, [r[en].split("|")[i].trim(), k, r[vi].split("|")[i].trim()]);
+      if (k) existingCategories.set(k.replace(/\s+/g, ""), [r[en].split("|")[i].trim(), k, r[vi].split("|")[i].trim()]);
     });
   }
 }
@@ -729,7 +750,7 @@ for (const group of groups.values()) {
         "Equipment Key": u.mgmt,
         "Customer Code": code,
         "Contract No": contractNo,
-        "Model Code": u.model,
+        "Model Code": modelMap.get(u.model) ?? u.model,
         "Custom Description": u.model ? "" : "모델 미상 (이전 시스템 공란)",
         // The old 관리번호 doubles as the serial: unique per unit, and it is
         // what makes a second upload of this file skip instead of duplicate.
@@ -745,7 +766,7 @@ for (const group of groups.values()) {
       for (const c of u.consumables) {
         consumableRows.push({
           "Equipment Key": u.mgmt,
-          "Consumable SKU": c.sku ?? "",
+          "Consumable SKU": c.sku ? (filterMap.get(c.sku) ?? c.sku) : "",
           "Custom Name": c.customName ?? "",
           Quantity: String(c.qty),
           "Replace Every Days": c.days ? String(c.days) : "",
@@ -784,7 +805,7 @@ for (const group of groups.values()) {
 
 // ── Catalog CSV ──────────────────────────────────────────────────────────
 
-const category = (en: string, ko: string, vi: string) => existingCategories.get(ko) ?? [en, ko, vi];
+const category = (en: string, ko: string, vi: string) => existingCategories.get(ko.replace(/\s+/g, "")) ?? [en, ko, vi];
 const CATEGORY = {
   water: category("Water purifier", "정수기", "Máy lọc nước"),
   air: category("Air purifier", "공기청정기", "Máy lọc không khí"),
@@ -815,6 +836,8 @@ const csvCell = (v: string) => (/[",\n\r]/.test(v) ? `"${v.replaceAll('"', '""')
 const catalogLines = [CATALOG_HEADERS.join(",")];
 const linkedSkus = new Set<string>();
 for (const model of [...modelNames].sort()) {
+  // A mapped model already exists with its own filter set — leave it alone.
+  if (modelMap.has(model)) continue;
   const cat = categoryOf(model) ?? ["", "", ""];
   const head = ["", ...cat, model, model, model, model];
   catalogLines.push([...head, "", "", "", "", "", "", ""].map(csvCell).join(","));
@@ -822,13 +845,14 @@ for (const model of [...modelNames].sort()) {
     const f = skuById.get(l.WWG03);
     if (!f) continue;
     linkedSkus.add(f.sku);
+    const mapped = filterMap.get(f.sku);
     const days = Number(l.WWG07) || f.cycleDays;
-    catalogLines.push([...head, "CONSUMABLE", f.sku, f.name, f.name, f.name, "1", days ? String(days) : ""].map(csvCell).join(","));
+    catalogLines.push([...head, "CONSUMABLE", mapped ?? f.sku, f.name, f.name, f.name, "1", days ? String(days) : ""].map(csvCell).join(","));
   }
 }
 // Parts no model lists still have to exist: unit filter slots point at them.
 for (const f of skuById.values()) {
-  if (linkedSkus.has(f.sku)) continue;
+  if (linkedSkus.has(f.sku) || filterMap.has(f.sku)) continue;
   catalogLines.push(["", "", "", "", "", "", "", "", "CONSUMABLE", f.sku, f.name, f.name, f.name, "", f.cycleDays ? String(f.cycleDays) : ""].map(csvCell).join(","));
 }
 
@@ -923,7 +947,7 @@ Source: \`${dir}\` · billing snapshot: M${billingFile} · generated ${TODAY.toI
 | Payment history rows | ${paymentRows.length} — ${count(paymentRows, (p) => p.Currency)} |
 | Contracts with a billing day | ${contractRows.filter((c) => c["Billing Day"]).length} |
 | Consumable rows (active units only) | ${consumableRows.length} — ${consumableRows.filter((c) => !c["Consumable SKU"]).length} off-catalog |
-| Catalog: models / filter SKUs | ${modelNames.size} / ${skuById.size} |
+| Catalog: models / filter SKUs | ${modelNames.size} / ${skuById.size} — mapped onto existing: ${modelMap.size} models, ${filterMap.size} filters${mappingDir ? ` (\`${mappingDir}\`)` : ""} |
 | Customers with no phone anywhere | ACTIVE ${stats.noPhone.ACTIVE} · INACTIVE ${stats.noPhone.INACTIVE} |
 
 ## Repairs
@@ -939,7 +963,7 @@ ${existingPath
 - Customer codes already there (the importer skips them): ${alreadyIn.length}
 - Same name as a customer already there, different code — **check before committing**: ${sameName.length} (listed in \`possible-duplicates.csv\`)`
   : "- Not checked — pass \`--existing <migration-export.xml>\` when importing into a database that already holds customers."}
-${catalogPath ? `- Catalog read: \`${catalogPath}\` — ${[CATEGORY.water, CATEGORY.air, CATEGORY.bidet].filter((c) => existingCategories.has(c[1])).length} of 3 제품군 already there and reused (${[...existingCategories.keys()].join(", ") || "none"})` : "- Catalog not checked — pass \`--catalog <catalog-export.csv>\` to reuse existing 제품군 names."}
+${catalogPath ? `- Catalog read: \`${catalogPath}\` — ${[CATEGORY.water, CATEGORY.air, CATEGORY.bidet].filter((c) => existingCategories.has(c[1].replace(/\s+/g, ""))).length} of 3 제품군 already there and reused (${[...existingCategories.keys()].join(", ") || "none"})` : "- Catalog not checked — pass \`--catalog <catalog-export.csv>\` to reuse existing 제품군 names."}
 
 ## Region tags with no province
 

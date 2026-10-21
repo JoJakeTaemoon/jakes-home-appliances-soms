@@ -12,7 +12,9 @@
  *   rows: [{ serialNumber?, installedAt, notes? }],  (assetCode is
  *     system-issued — see src/lib/equipment/asset-code.ts)
  *   serviceConfig: { inspectionCycleDays?, filters: [{ consumableId? |
- *     customName?, quantity, useCycleDays }] },
+ *     customName?, quantity, useCycleDays, lastReplacedAt? }] },
+ *   alreadyInstalled? (true → INSTALLATION visit recorded COMPLETED at
+ *     installedAt instead of SCHEDULED),
  *   contractNumber?, contractDate? (YYYY-MM-DD; defaults to the earliest
  *   row's installedAt when absent), salePrice?, installFee?, monthlyRent?,
  *   monthlyMaintenanceFee?, hasContract? (SALE only),
@@ -344,21 +346,40 @@ export async function POST(request: NextRequest) {
               customName: f.customName ?? null,
               quantity: f.quantity,
               replaceEveryDays: f.useCycleDays,
+              lastReplacedAtOverride: f.lastReplacedAt ?? null,
             },
           });
         }
 
-        // INSTALLATION Visit — state=SCHEDULED (mockup confirmation: 설치 예정).
+        // INSTALLATION Visit — SCHEDULED (설치 예정) by default. For units
+        // that were installed long ago (alreadyInstalled) it is recorded as
+        // already COMPLETED on the install day, so a re-registration does not
+        // leave a pending installation visit per unit.
         const visit = await tx.visit.create({
           data: {
             customerId: data.customerId,
             siteId: data.siteId ?? null,
             equipmentId: equipment.id,
             type: "INSTALLATION",
-            state: "SCHEDULED",
             scheduledFor: row.installedAt,
             leadTechnicianId: data.installedByTechnicianId ?? null,
-            expectedAmount: data.deposit ?? null,
+            ...(data.alreadyInstalled
+              ? {
+                  state: "COMPLETED" as const,
+                  completedAt: row.installedAt,
+                  officeNotes: [
+                    {
+                      at: new Date().toISOString(),
+                      authorId: auth.userId,
+                      authorName: null,
+                      text: "Registered as already installed (bulk register)",
+                    },
+                  ],
+                }
+              : {
+                  state: "SCHEDULED" as const,
+                  expectedAmount: data.deposit ?? null,
+                }),
           },
         });
         visitIds.push(visit.id);
@@ -426,6 +447,7 @@ export async function POST(request: NextRequest) {
         byInstallDate: result.byInstallDate,
         serviceType: data.serviceType,
         managementType: data.managementType,
+        alreadyInstalled: data.alreadyInstalled,
       },
       request,
     });

@@ -222,6 +222,25 @@ const serviceConfigFilterSchema = z
     customName: z.string().trim().min(1).max(200).optional(),
     quantity: z.coerce.number().int().min(1).max(99),
     useCycleDays: z.coerce.number().int().min(1).max(3600),
+    /**
+     * 최근 교체일 (YYYY-MM-DD) — saved as EquipmentConsumable.lastReplacedAtOverride
+     * so the due date counts from it instead of the install date. null / ""
+     * mean "not set" (a bare z.coerce.date() would turn null into 1970-01-01).
+     */
+    lastReplacedAt: z.preprocess(
+      (v) => (v === null || v === "" ? undefined : v),
+      z.coerce
+        .date()
+        // Compared as calendar days against today in VST (UTC+7), so "today"
+        // entered early in the Vietnamese morning is not rejected.
+        .refine(
+          (d) =>
+            d.toISOString().slice(0, 10) <=
+            new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10),
+          { message: "lastReplacedAt cannot be in the future" },
+        )
+        .optional(),
+    ),
   })
   .superRefine((v, ctx) => {
     // Exactly one of (catalog consumableId) / (customName) — never both,
@@ -277,6 +296,12 @@ export const bulkRegisterEquipmentSchema = z.object({
   monthlyMaintenanceFee: money(),
   hasContract: z.coerce.boolean().optional(),
   serviceConfig: serviceConfigSchema.optional(),
+  /**
+   * Re-registering units that were installed long ago: the INSTALLATION
+   * visit is recorded COMPLETED at each row's installedAt instead of being
+   * booked as a SCHEDULED visit.
+   */
+  alreadyInstalled: z.coerce.boolean().default(false),
   // Optional: also issue a Contract that bundles every equipment row.
   // The API mints a fresh contractNumber, sets type/state/period from
   // serviceType + termMonths, and creates one ContractEquipment row per
@@ -437,6 +462,18 @@ export const equipmentRetrievalSchema = z.object({
 
 export type EquipmentRetrievalInput = z.infer<typeof equipmentRetrievalSchema>;
 
+/** A real calendar day as YYYY-MM-DD (2025-13-40 is refused, not rolled over). */
+const ymd = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(
+    (v) => {
+      const d = new Date(`${v}T00:00:00Z`);
+      return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v);
+    },
+    { message: "Invalid date" },
+  );
+
 export const equipmentListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   customerId: z.string().trim().min(1).optional(),
@@ -449,6 +486,9 @@ export const equipmentListQuerySchema = z.object({
   serviceType: equipmentServiceTypeEnum.optional(),
   lifecycleStage: lifecycleStageEnum.optional(),
   region: z.string().trim().max(60).optional(),
+  /** Install-date range, YYYY-MM-DD calendar days, both ends inclusive. */
+  installedFrom: ymd.optional(),
+  installedTo: ymd.optional(),
   sortBy: z.string().trim().min(1).max(60).optional(),
   sortDir: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -460,3 +500,27 @@ export type UpdateEquipmentInput = z.infer<typeof updateEquipmentSchema>;
 export type MoveSiteInput = z.infer<typeof moveSiteSchema>;
 export type ReplaceEquipmentInput = z.infer<typeof replaceEquipmentSchema>;
 export type EquipmentListQuery = z.infer<typeof equipmentListQuerySchema>;
+
+/**
+ * POST /api/customers/:id/equipment-filters — one last-change date per filter,
+ * applied to every chosen unit of the customer that carries that filter.
+ */
+export const bulkFilterDatesSchema = z.object({
+  equipmentIds: z.array(z.string().min(1)).min(1).max(1000),
+  entries: z
+    .array(
+      z.object({
+        consumableId: z.string().min(1),
+        lastReplacedAt: z.coerce
+          .date()
+          .refine(
+            (d) =>
+              d.toISOString().slice(0, 10) <=
+              new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10),
+            { message: "lastReplacedAt cannot be in the future" },
+          ),
+      }),
+    )
+    .min(1)
+    .max(50),
+});

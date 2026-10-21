@@ -342,7 +342,22 @@
       "openContacts": "Mở tab liên hệ",
       "contractsWithoutFee": "{count} hợp đồng chưa có phí tháng — hệ thống sẽ không tạo hóa đơn hằng tháng. Hãy nhập phí bằng nút «Sửa đổi» trên màn hình hợp đồng:",
       "equipmentWithoutFilterDate": "{count} thiết bị chưa có lịch sử thay lõi lọc — ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế ở màn hình thiết bị:",
-      "more": "và {count} mục khác"
+      "more": "và {count} mục khác",
+      "bulkEnter": "Nhập một lần"
+    },
+    "bulkFilterDates": {
+      "open": "Nhập hàng loạt ngày thay lõi",
+      "title": "Nhập hàng loạt ngày thay lõi lọc gần nhất",
+      "units": "Chọn thiết bị",
+      "selectAll": "Chọn tất cả",
+      "noUnits": "Không có thiết bị đang hoạt động.",
+      "filters": "Ngày thay gần nhất theo lõi lọc",
+      "pickUnits": "Hãy chọn thiết bị trước.",
+      "applyAllLabel": "Cùng một ngày cho mọi lõi lọc",
+      "applyAll": "Áp dụng",
+      "hint": "Chỉ lưu lõi lọc đã nhập ngày. Thiết bị không có lõi lọc đó sẽ được bỏ qua.",
+      "selectedCount": "Đã chọn {count} thiết bị",
+      "saved": "Đã lưu {units} thiết bị — mới {created}, sửa {updated}, bỏ qua {skipped}"
     }
   },
   "salesReps": {
@@ -531,7 +546,14 @@
         "REPLACE_DUE": "Sắp đến hạn",
         "OVERDUE": "Quá hạn"
       },
-      "missingLastWarning": "{count} lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế vào bảng."
+      "missingLastWarning": "{count} lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế vào bảng.",
+      "cycleInvalid": "Chu kỳ phải là số nguyên từ 1 đến 3600 ngày.",
+      "cycleRequired": "Lõi lọc thêm thủ công không được để trống chu kỳ.",
+      "deleteHintManual": "Xóa lõi lọc đã thêm thủ công khỏi thiết bị này.",
+      "deleteHintCatalog": "Chỉ bỏ lõi lọc này khỏi thiết bị này; các thiết bị khác cùng model vẫn giữ.",
+      "quantityInvalid": "Số lượng phải là số nguyên từ 1 đến 50.",
+      "nameRequired": "Hãy nhập tên hạng mục.",
+      "deleteTitle": "Xóa hạng mục này?"
     },
     "widgets": {
       "purchaseHistory": "Lịch sử mua",
@@ -594,6 +616,9 @@
       "useCycle": "Chu kỳ sử dụng",
       "quantity": "Số lượng",
       "lastReplacedAt": "Ngày thay gần nhất",
+      "applyAllLabel": "Cùng một ngày cho mọi lõi lọc",
+      "applyAll": "Áp dụng",
+      "lastReplacedHint": "Để trống sẽ tính theo ngày lắp đặt.",
       "nextDueAt": "Ngày dự kiến tiếp theo",
       "actions": "Thao tác",
       "removeFilter": "Xóa",
@@ -653,7 +678,8 @@
         "serialMode": "Cách nhập sê-ri",
         "serialNumber": "Sê-ri",
         "assetCode": "Mã tài sản",
-        "installNotes": "Ghi chú lắp đặt"
+        "installNotes": "Ghi chú lắp đặt",
+        "alreadyInstalled": "Thiết bị đã lắp đặt (ghi nhận lượt lắp đặt là đã hoàn thành)"
       },
       "serviceTypes": {
         "RENTAL": "Thuê",
@@ -713,6 +739,9 @@
         "months": "{n} tháng",
         "days": "{n} ngày",
         "contractCount": "Số hợp đồng sẽ tạo",
+        "installVisit": "Lượt lắp đặt",
+        "installVisitScheduled": "Đăng ký là lượt lắp đặt dự kiến",
+        "installVisitCompleted": "Ghi nhận đã hoàn thành (đã lắp đặt)",
         "management": "Loại quản lý",
         "inspectionCycle": "Chu kỳ kiểm tra định kỳ",
         "inspectionNone": "Không đặt",
@@ -963,7 +992,9 @@
       "edit": "Sửa",
       "detail": "Trang chi tiết",
       "close": "Đóng"
-    }
+    },
+    "filterInstalledFrom": "Ngày lắp đặt (từ)",
+    "filterInstalledTo": "Ngày lắp đặt (đến)"
   },
   "equipmentModels": {
     "title": "Mẫu thiết bị",

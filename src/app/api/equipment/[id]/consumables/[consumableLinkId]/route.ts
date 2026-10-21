@@ -78,6 +78,7 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         nextReplaceAtOverride: d.nextReplaceAtOverride,
         unitPrice: d.unitPrice ?? undefined,
         notes: d.notes ?? undefined,
+        excluded: d.excluded,
       },
       include: { consumable: true },
     });

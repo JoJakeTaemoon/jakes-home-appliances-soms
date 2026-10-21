@@ -47,6 +47,7 @@ function equipmentRow(opts: {
     consumableId: string | null;
     replaceEveryDays: number | null;
     lastReplacedAtOverride: Date | null;
+    excluded?: boolean;
   }[];
   contactLanguage?: "ko" | "vi" | "en";
 }) {
@@ -89,6 +90,25 @@ function equipmentRow(opts: {
 }
 
 describe("runFilterDueReminder", () => {
+  it("skips a catalog filter staff removed from this unit", async () => {
+    // Same due-in-5-days filter as the next test, but excluded on this unit.
+    mockedPrisma.equipment.findMany.mockResolvedValueOnce([
+      equipmentRow({
+        installedAt: new Date("2025-06-25T00:00:00Z"),
+        consumables: [
+          { id: "post", sku: "FLT-POST-001", replaceEveryDays: 360, cleanEveryDays: null },
+        ],
+        overrides: [
+          { consumableId: "post", replaceEveryDays: null, lastReplacedAtOverride: null, excluded: true },
+        ],
+      }),
+    ] as never);
+
+    const r = await runFilterDueReminder({ now });
+    expect(r.notificationsQueued).toBe(0);
+    expect(mockedSend).not.toHaveBeenCalled();
+  });
+
   it("queues a REPLACE reminder when within 14 days", async () => {
     // installed 2025-06-25 + 360d (day-denominated cycle, ~12mo) = 2026-06-20 → 5 days from 2026-06-15.
     const installedAt = new Date("2025-06-25T00:00:00Z");

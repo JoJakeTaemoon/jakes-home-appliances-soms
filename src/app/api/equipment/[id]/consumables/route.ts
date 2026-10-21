@@ -55,6 +55,7 @@ export const POST = defineMutation({
         nextReplaceAtOverride: body.nextReplaceAtOverride ?? null,
         unitPrice: body.unitPrice ?? null,
         notes: body.notes ?? null,
+        excluded: body.excluded ?? false,
       },
       include: { consumable: true },
     });

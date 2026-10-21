@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { pickEquipmentLabel } from "@/lib/products/name";
 import { useApiPageQuery } from "@/lib/api/hooks";
 import { useAuth } from "@/providers/auth-provider";
@@ -11,6 +12,7 @@ import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   StatusBadge,
   equipmentOwnershipTone,
@@ -32,6 +34,11 @@ interface EquipmentRow {
 }
 
 const PAGE_SIZE = 25;
+const STATUSES = ["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"] as const;
+
+/** A shared link's value, or nothing if it is not one we would have written. */
+const fromUrl = (v: string | null, ok: (v: string) => boolean) => (v && ok(v) ? v : "");
+const isYmd = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 
 function useDebounced<T>(v: T, ms = 300): T {
   const [d, setD] = useState(v);
@@ -43,6 +50,15 @@ function useDebounced<T>(v: T, ms = 300): T {
 }
 
 export default function EquipmentPage() {
+  // useSearchParams() needs a Suspense boundary for static prerender.
+  return (
+    <Suspense fallback={null}>
+      <EquipmentList />
+    </Suspense>
+  );
+}
+
+function EquipmentList() {
   const t = useTranslations("equipment");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -50,9 +66,17 @@ export default function EquipmentPage() {
   const { user } = useAuth();
   const role = user?.role ?? "STAFF";
 
-  const [q, setQ] = useState("");
+  const pathname = usePathname();
+  // Filters live in the URL (?q=&status=&installedFrom=&installedTo=) so a
+  // filtered list can be shared as a link.
+  const searchParams = useSearchParams();
+  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
   const dq = useDebounced(q, 300);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(
+    () => fromUrl(searchParams.get("status"), (v) => (STATUSES as readonly string[]).includes(v)) || null,
+  );
+  const [installedFrom, setInstalledFrom] = useState(() => fromUrl(searchParams.get("installedFrom"), isYmd));
+  const [installedTo, setInstalledTo] = useState(() => fromUrl(searchParams.get("installedTo"), isYmd));
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
     column: "createdAt",
@@ -67,11 +91,31 @@ export default function EquipmentPage() {
     setStatus(v);
     setPage(1);
   };
+  const onInstalledFrom = (v: string) => {
+    setInstalledFrom(v);
+    setPage(1);
+  };
+  const onInstalledTo = (v: string) => {
+    setInstalledTo(v);
+    setPage(1);
+  };
 
-  const url = useMemo(() => {
+  const filterQs = useMemo(() => {
     const qs = new URLSearchParams();
     if (dq) qs.set("q", dq);
     if (status) qs.set("status", status);
+    if (installedFrom) qs.set("installedFrom", installedFrom);
+    if (installedTo) qs.set("installedTo", installedTo);
+    return qs.toString();
+  }, [dq, status, installedFrom, installedTo]);
+
+  useEffect(() => {
+    if (filterQs === searchParams.toString()) return;
+    router.replace((filterQs ? `${pathname}?${filterQs}` : pathname) as "/o", { scroll: false });
+  }, [filterQs, pathname, router, searchParams]);
+
+  const url = useMemo(() => {
+    const qs = new URLSearchParams(filterQs);
     if (sort) {
       qs.set("sortBy", sort.column);
       qs.set("sortDir", sort.direction);
@@ -79,7 +123,7 @@ export default function EquipmentPage() {
     qs.set("page", String(page));
     qs.set("pageSize", String(PAGE_SIZE));
     return `/api/equipment?${qs.toString()}`;
-  }, [dq, status, page, sort]);
+  }, [filterQs, page, sort]);
 
   const query = useApiPageQuery<EquipmentRow[]>(url);
   const rows = query.data?.data ?? [];
@@ -171,7 +215,7 @@ export default function EquipmentPage() {
         isLoading={loading}
         sort={sort}
         onSortChange={setSort}
-        emptyText={dq || status ? tc("noResults") : t("noEquipment")}
+        emptyText={filterQs ? tc("noResults") : t("noEquipment")}
         onRowClick={(r) => router.push(`/o/equipment/${r.id}`)}
         toolbar={
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -182,12 +226,31 @@ export default function EquipmentPage() {
               <Combobox
                 value={status}
                 onChange={onStatus}
-                options={(["ACTIVE", "REPLACED", "RELOCATED", "DEACTIVATED", "TERMINATED"] as const).map((s) => ({
+                options={STATUSES.map((s) => ({
                   value: s,
                   label: t(`statusValues.${s}`),
                 }))}
                 placeholder={t("filterStatus")}
                 searchable={false}
+              />
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <DatePicker
+                value={installedFrom}
+                onChange={onInstalledFrom}
+                max={installedTo || undefined}
+                placeholder={t("filterInstalledFrom")}
+                ariaLabel={t("filterInstalledFrom")}
+                className="w-full sm:w-40"
+              />
+              <span className="text-[#737373]">~</span>
+              <DatePicker
+                value={installedTo}
+                onChange={onInstalledTo}
+                min={installedFrom || undefined}
+                placeholder={t("filterInstalledTo")}
+                ariaLabel={t("filterInstalledTo")}
+                className="w-full sm:w-40"
               />
             </div>
           </div>

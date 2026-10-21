@@ -23,6 +23,8 @@ import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-moda
 import { OrderHistoryTab } from "@/components/orders/order-history-tab";
 import { OpenPortalButton } from "@/components/customer/open-portal-button";
 import { CustomerDataChecksBanner } from "@/components/customer/data-checks-banner";
+import { BulkFilterDatesModal } from "@/components/customer/bulk-filter-dates-modal";
+import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input, Textarea } from "@/components/ui/input";
@@ -204,6 +206,9 @@ function CustomerDetailInner() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showChangeSalesRep, setShowChangeSalesRep] = useState(false);
   const [showNewOrder, setShowNewOrder] = useState(false);
+  // Units preselected in the bulk filter-date form; null = closed.
+  const [bulkFilterIds, setBulkFilterIds] = useState<string[] | null>(null);
+  const qc = useQueryClient();
 
   const query = useApiQuery<CustomerDetail>(
     id ? `/api/customers/${id}` : null,
@@ -342,6 +347,11 @@ function CustomerDetailInner() {
             <Link href={`/o/equipment/register?customerId=${id}`}>
               <Button>{t("addEquipment")}</Button>
             </Link>
+            {canManageEquipment(role) && (
+              <Button variant="secondary" onClick={() => setBulkFilterIds([])}>
+                {t("bulkFilterDates.open")}
+              </Button>
+            )}
             {!isInactive && canDeactivateCustomer(role) && (
               <Button variant="danger" onClick={() => setShowDeactivate(true)}>
                 {t("deactivate")}
@@ -356,7 +366,28 @@ function CustomerDetailInner() {
         </div>
       </header>
 
-      <CustomerDataChecksBanner customerId={id} onOpenContacts={() => setActiveTab("contacts")} />
+      <CustomerDataChecksBanner
+        customerId={id}
+        onOpenContacts={() => setActiveTab("contacts")}
+        onBulkFilterDates={canManageEquipment(role) ? setBulkFilterIds : undefined}
+      />
+      {bulkFilterIds && (
+        <BulkFilterDatesModal
+          open
+          onClose={() => setBulkFilterIds(null)}
+          customerId={id}
+          preselectIds={bulkFilterIds}
+          onSaved={() =>
+            // Banner, service config and filter history all read these dates.
+            qc.invalidateQueries({
+              predicate: (q) => {
+                const k = q.queryKey[0];
+                return typeof k === "string" && (k.startsWith(`/api/customers/${id}`) || k.startsWith("/api/equipment"));
+              },
+            })
+          }
+        />
+      )}
 
       {/* KPI strip — 5 cards */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">

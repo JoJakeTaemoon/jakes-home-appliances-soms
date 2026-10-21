@@ -8,7 +8,7 @@
  * contract/pricing fields).
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
@@ -23,6 +23,8 @@ export type ServiceConfigFilter = {
   baseCycleDays: number | null;
   useCycleDays: number;
   quantity: number;
+  /** 최근 교체일 (YYYY-MM-DD). null/absent = counted from the install date. */
+  lastReplacedAt?: string | null;
 };
 
 export type ServiceConfigValue = {
@@ -51,6 +53,14 @@ interface Props {
 
 const DEFAULT_INSPECTION_CYCLE_DAYS = 30;
 const DEFAULT_USE_CYCLE_DAYS = 30;
+const DATE_INPUT_CLASS =
+  "w-32 rounded border border-gray-300 px-1.5 py-0.5 text-xs disabled:opacity-50";
+
+/** Local calendar day as YYYY-MM-DD — the upper bound for 최근 교체일. */
+function todayYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export function ServiceConfigEditor({
   modelId,
@@ -61,6 +71,8 @@ export function ServiceConfigEditor({
 }: Readonly<Props>) {
   const t = useTranslations("equipment.serviceConfigEditor");
   const locale = useLocale();
+  const [applyAllDate, setApplyAllDate] = useState("");
+  const today = todayYmd();
 
   const consumablesQuery = useApiQuery<ConsumableLite[]>(
     modelId ? `/api/equipment-models/${modelId}/consumables` : null,
@@ -131,6 +143,32 @@ export function ServiceConfigEditor({
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 text-xs text-[#525252]">
+        <span>{t("applyAllLabel")}</span>
+        <input
+          type="date"
+          aria-label={t("applyAllLabel")}
+          value={applyAllDate}
+          max={today}
+          onChange={(e) => setApplyAllDate(e.target.value)}
+          className={DATE_INPUT_CLASS}
+        />
+        <button
+          type="button"
+          disabled={value.filters.length === 0}
+          onClick={() =>
+            onChange({
+              ...value,
+              filters: value.filters.map((f) => ({ ...f, lastReplacedAt: applyAllDate || null })),
+            })
+          }
+          className="rounded-lg border-2 border-[var(--brand-blue-200)] px-3 py-1 font-medium text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)] disabled:opacity-50"
+        >
+          {t("applyAll")}
+        </button>
+        <span className="text-[#737373]">{t("lastReplacedHint")}</span>
+      </div>
+
       <div className="overflow-x-auto rounded-2xl border-4 border-[var(--brand-blue-100)]">
         <table className="w-full text-xs">
           <thead>
@@ -183,11 +221,20 @@ export function ServiceConfigEditor({
                     max={99}
                   />
                 </td>
-                <td className="px-3 py-2 tabular-nums text-[#737373]">
-                  {formatDate(installDate, locale)}
+                <td className="px-3 py-2">
+                  {/* Empty = counted from the install date, which is what the
+                      input shows until a real 최근 교체일 is entered. */}
+                  <input
+                    type="date"
+                    aria-label={t("lastReplacedAt")}
+                    value={f.lastReplacedAt || installDate}
+                    max={today}
+                    onChange={(e) => patchFilter(i, { lastReplacedAt: e.target.value || null })}
+                    className={DATE_INPUT_CLASS}
+                  />
                 </td>
                 <td className="px-3 py-2 tabular-nums text-[#111111]">
-                  {formatDate(addDays(installDate, f.useCycleDays), locale)}
+                  {formatDate(addDays(f.lastReplacedAt || installDate, f.useCycleDays), locale)}
                 </td>
                 <td className="px-3 py-2">
                   <button

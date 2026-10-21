@@ -192,6 +192,7 @@ export async function suggestConsumablesForVisit(
           replaceEveryDays: true,
           lastReplacedAtOverride: true,
           nextReplaceAtOverride: true,
+          excluded: true,
         },
       },
       model: {
@@ -230,7 +231,8 @@ export async function suggestConsumablesForVisit(
   );
 
   const consumables: ConsumableMeta[] = equipment.model.consumables
-    .filter((entry) => entry.consumable.isActive)
+    // A filter staff removed from this unit is never suggested for it.
+    .filter((entry) => entry.consumable.isActive && !overrideByConsumable.get(entry.consumable.id)?.excluded)
     .map((entry) => {
       const c = entry.consumable;
       const ov = overrideByConsumable.get(c.id);

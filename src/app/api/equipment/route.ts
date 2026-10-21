@@ -33,7 +33,7 @@ export const GET = defineQuery({
   query: equipmentListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, customerId, siteId, modelId, brandId, categoryId, status, region, sortBy, sortDir, page, pageSize } =
+    const { q, customerId, siteId, modelId, brandId, categoryId, status, region, installedFrom, installedTo, sortBy, sortDir, page, pageSize } =
       query;
     const orderBy = resolveOrderBy({ sortBy, sortDir }, EQUIPMENT_SORT_MAP, { createdAt: "desc" });
     const where: Prisma.EquipmentWhereInput = {};
@@ -47,6 +47,13 @@ export const GET = defineQuery({
       where.model = modelFilter;
     }
     if (status) where.status = status;
+    // Install dates are stored as calendar days at UTC midnight; `to` takes the whole day.
+    if (installedFrom || installedTo) {
+      where.installedAt = {
+        ...(installedFrom && { gte: new Date(`${installedFrom}T00:00:00Z`) }),
+        ...(installedTo && { lt: new Date(new Date(`${installedTo}T00:00:00Z`).getTime() + 86_400_000) }),
+      };
+    }
     if (region)
       where.OR = [{ site: { region } }, { customer: { preferredRegion: region } }];
     if (q) {

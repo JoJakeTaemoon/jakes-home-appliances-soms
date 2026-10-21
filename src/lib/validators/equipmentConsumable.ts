@@ -43,8 +43,17 @@ export const createEquipmentConsumableSchema = z
     nextReplaceAtOverride: z.coerce.date().nullable().optional(),
     unitPrice: moneyOptional,
     notes: optStr(2000),
+    /// Remove this catalog filter from this unit only (see EquipmentConsumable.excluded).
+    excluded: z.coerce.boolean().optional(),
   })
   .superRefine((v, ctx) => {
+    if (v.excluded && !v.consumableId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["excluded"],
+        message: "Only a catalog filter can be excluded — delete a free-text part instead",
+      });
+    }
     if (!v.consumableId && !v.customName) {
       ctx.addIssue({
         code: "custom",
@@ -59,7 +68,7 @@ export const createEquipmentConsumableSchema = z
         message: "consumableId and customName are mutually exclusive",
       });
     }
-    if (!v.consumableId && !v.replaceEveryDays) {
+    if (!v.consumableId && !v.replaceEveryDays && !v.excluded) {
       ctx.addIssue({
         code: "custom",
         path: ["replaceEveryDays"],
@@ -85,6 +94,8 @@ export const updateEquipmentConsumableSchema = z.object({
   nextReplaceAtOverride: z.coerce.date().nullable().optional(),
   unitPrice: moneyOptional,
   notes: optStr(2000),
+  /// true removes this catalog filter from this unit; false restores it.
+  excluded: z.boolean().optional(),
 });
 
 export type CreateEquipmentConsumableInput = z.infer<typeof createEquipmentConsumableSchema>;

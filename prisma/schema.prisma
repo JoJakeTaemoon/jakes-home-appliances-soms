@@ -1068,6 +1068,10 @@ model EquipmentConsumable {
   /// (anchor + cycle); when set it takes precedence and drives the D-day
   /// directly. Inline-editable in the service-config table.
   nextReplaceAtOverride  DateTime?
+  /// Staff removed this catalog filter from this one unit (the model keeps it
+  /// for every other unit). Service config, filter history, visit suggestions
+  /// and the filter-due reminder all skip an excluded row.
+  excluded               Boolean     @default(false)
   unitPrice              Decimal?    @db.Decimal(14, 2)
   notes                  String?
   createdAt              DateTime    @default(now())

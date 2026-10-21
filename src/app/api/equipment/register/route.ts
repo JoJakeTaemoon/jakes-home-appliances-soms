@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
                 customName: f.customName ?? null,
                 quantity: f.quantity,
                 replaceEveryDays: f.useCycleDays,
+                lastReplacedAtOverride: f.lastReplacedAt ?? null,
               },
             });
           }

@@ -175,6 +175,8 @@ export const GET = defineQuery({
     for (const ov of overrides) {
       const c = ov.consumable;
       if (c) seenConsumableIds.add(c.id);
+      // Removed from this unit: marked seen so the catalog pass skips it too.
+      if (ov.excluded) continue;
       const cycle =
         ov.replaceEveryDays ?? c?.replaceEveryDays ?? fallbackCycle ?? null;
       const cycleSource: FilterRow["cycleSource"] = ov.replaceEveryDays

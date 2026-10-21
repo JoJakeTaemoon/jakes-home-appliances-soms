@@ -495,6 +495,12 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     vi: "đã cập nhật lõi lọc của thiết bị",
     entityHint: "Equipment",
   },
+  EQUIPMENT_FILTER_DATES_BULK_SET: {
+    ko: " 고객 장비의 필터 최근 교체일을 일괄 입력했습니다",
+    en: "set the last filter change on the customer's equipment in bulk",
+    vi: "đã nhập hàng loạt ngày thay lõi lọc gần nhất cho thiết bị của khách hàng",
+    entityHint: "Customer",
+  },
   EQUIPMENT_CONSUMABLE_REMOVE: {
     ko: " 장비의 소모품 구성을 삭제했습니다",
     en: "removed the equipment's consumable",

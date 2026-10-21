@@ -53,6 +53,7 @@ const ENTITY_TYPE_OPTIONS = [
  * dropdown can offer the right subset when a type is selected. */
 const ACTIONS_BY_ENTITY: Record<string, string[]> = {
   Customer: [
+    "EQUIPMENT_FILTER_DATES_BULK_SET",
     "CUSTOMER_CREATE",
     "CUSTOMER_UPDATE",
     "CUSTOMER_DEACTIVATE",

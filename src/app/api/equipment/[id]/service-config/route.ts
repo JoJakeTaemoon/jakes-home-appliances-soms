@@ -83,6 +83,7 @@ export const GET = defineQuery({
             replaceEveryDays: true,
             lastReplacedAtOverride: true,
             nextReplaceAtOverride: true,
+            excluded: true,
             unitPrice: true,
             consumable: {
               select: {
@@ -184,8 +185,14 @@ export const GET = defineQuery({
       status: ReturnType<typeof statusFor>;
     };
 
-    const catalogRows = equipment.model?.consumables ?? [];
-    const overrideRows = equipment.consumables;
+    // A catalog filter staff removed from this unit is not part of it.
+    const excludedIds = new Set(
+      equipment.consumables.filter((o) => o.excluded && o.consumableId).map((o) => o.consumableId as string),
+    );
+    const catalogRows = (equipment.model?.consumables ?? []).filter(
+      (c) => !c.consumable || !excludedIds.has(c.consumable.id),
+    );
+    const overrideRows = equipment.consumables.filter((o) => !o.excluded);
 
     // Build a map keyed by consumableId — catalog entries become base rows;
     // overrides on the same consumableId replace cycle/unitPrice; manual

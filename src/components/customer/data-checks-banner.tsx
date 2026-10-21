@@ -22,7 +22,13 @@ const SHOWN = 5;
 export function CustomerDataChecksBanner({
   customerId,
   onOpenContacts,
-}: Readonly<{ customerId: string; onOpenContacts: () => void }>) {
+  onBulkFilterDates,
+}: Readonly<{
+  customerId: string;
+  onOpenContacts: () => void;
+  /** Opens the bulk filter-date form with these units already chosen. */
+  onBulkFilterDates?: (equipmentIds: string[]) => void;
+}>) {
   const t = useTranslations("customers.dataChecks");
   const q = useApiQuery<DataChecks>(`/api/customers/${customerId}/data-checks`);
   const d = q.data;
@@ -70,6 +76,18 @@ export function CustomerDataChecksBanner({
               </span>
             ))}
             {more(d.equipmentWithoutFilterDate.length)}
+            {onBulkFilterDates && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() => onBulkFilterDates(d.equipmentWithoutFilterDate.map((e) => e.id))}
+                  className="font-medium underline"
+                >
+                  {t("bulkEnter")}
+                </button>
+              </>
+            )}
           </li>
         )}
       </ul>

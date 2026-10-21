@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { useApiQuery } from "@/lib/api/hooks";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { formatDateOrDash as formatDate } from "@/lib/format";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface Row {
   kind: "INSPECTION" | "FILTER";
@@ -30,6 +32,27 @@ interface Props {
   equipmentId: string;
 }
 
+/** The open row's values. Strings so an empty box means "clear" and a
+ *  half-typed number never becomes NaN. */
+interface Draft {
+  name: string;
+  cycle: string;
+  qty: string;
+  last: string;
+  next: string;
+}
+
+/**
+ * 서비스 구성 — the unit's inspection cycle and its filters.
+ *
+ * Every row has its own 수정 / 삭제. 수정 opens that row's boxes and swaps in
+ * 저장 / 취소; nothing reaches the server before 저장. 삭제 (after a confirm)
+ * takes a filter off this unit, stored the way that filter is kept: a filter
+ * added to this unit alone is deleted; a catalog filter (one the model lists)
+ * is marked excluded for this unit, so the model and every other unit keep it.
+ * 기본 주기 is the catalog's, and 과거 수행일 / 잔여일 / 상태 are computed, so
+ * those columns stay read-only.
+ */
 export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
   const t = useTranslations("equipment.serviceConfig");
   const tc = useTranslations("common");
@@ -39,82 +62,11 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     `/api/equipment/${equipmentId}/service-config`,
   );
   const rows = q.data?.rows ?? [];
-  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ key: string; draft: Draft } | null>(null);
+  const [deleting, setDeleting] = useState<Row | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function updateUserCycle(row: Row, value: number | null) {
-    setBusyKey(row.key);
-    setError(null);
-    try {
-      if (row.kind === "INSPECTION") {
-        await api.patch(`/api/equipment/${equipmentId}`, {
-          customInspectionCycleDays: value,
-        });
-      } else if (row.overrideId) {
-        if (value === null && row.sourceKind === "MANUAL") {
-          // A manual filter IS the override row — clearing its cycle removes it
-          // (manual filters can't have a null cycle).
-          await api.del(`/api/equipment/${equipmentId}/consumables/${row.overrideId}`);
-        } else {
-          // Catalog override: null reverts the cycle to the catalog default but
-          // KEEPS the row (so its last/next date overrides survive) — deleting
-          // the row would silently wipe those dates.
-          await api.patch(
-            `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
-            { replaceEveryDays: value },
-          );
-        }
-      } else if (value !== null) {
-        // CATALOG row without an override yet — create one.
-        await api.post(`/api/equipment/${equipmentId}/consumables`, {
-          consumableId: row.consumableId,
-          replaceEveryDays: value,
-          quantity: row.quantity,
-        });
-      } else {
-        return; // catalog row, nothing to clear
-      }
-      await q.refetch();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : String(err));
-    } finally {
-      setBusyKey(null);
-    }
-  }
-
-  // Inline edit of 최근수행일(last) / 다음예정일(next) — same INSPECTION vs
-  // FILTER(override/catalog) branching as updateUserCycle. `value` is a
-  // YYYY-MM-DD string or null (clear the override). Refetch recomputes D-day.
-  async function updateDate(row: Row, field: "last" | "next", value: string | null) {
-    // Catalog filter with nothing to clear → no-op.
-    if (row.kind === "FILTER" && !row.overrideId && value === null) return;
-    setBusyKey(row.key);
-    setError(null);
-    const isLast = field === "last";
-    try {
-      if (row.kind === "INSPECTION") {
-        await api.patch(`/api/equipment/${equipmentId}`, {
-          [isLast ? "lastInspectionAtOverride" : "nextInspectionAtOverride"]: value,
-        });
-      } else if (row.overrideId) {
-        await api.patch(
-          `/api/equipment/${equipmentId}/consumables/${row.overrideId}`,
-          { [isLast ? "lastReplacedAtOverride" : "nextReplaceAtOverride"]: value },
-        );
-      } else {
-        await api.post(`/api/equipment/${equipmentId}/consumables`, {
-          consumableId: row.consumableId,
-          quantity: row.quantity,
-          [isLast ? "lastReplacedAtOverride" : "nextReplaceAtOverride"]: value,
-        });
-      }
-      await q.refetch();
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : String(err));
-    } finally {
-      setBusyKey(null);
-    }
-  }
+  const base = `/api/equipment/${equipmentId}`;
 
   // A whole cycle has passed with no change recorded, so the due date is only
   // a guess from the install date (typical after a data migration). A new
@@ -126,6 +78,98 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     if (typeof name === "string") return name;
     return (locale === "ko" ? name.ko : locale === "en" ? name.en : name.vi) ?? "—";
   }
+
+  const draftOf = (r: Row): Draft => ({
+    name: pickName(r.name),
+    cycle: String(r.userCycleMonths ?? r.defaultCycleMonths ?? ""),
+    qty: String(r.quantity),
+    last: toYmd(r.lastAt),
+    next: toYmd(r.nextDueAt),
+  });
+
+  function startEdit(r: Row) {
+    setError(null);
+    setEditing({ key: r.key, draft: draftOf(r) });
+  }
+
+  function patchDraft(patch: Partial<Draft>) {
+    setEditing((e) => (e ? { ...e, draft: { ...e.draft, ...patch } } : e));
+  }
+
+  /** The request that stores the open row; null when nothing changed. */
+  function requestFor(r: Row, d: Draft): (() => Promise<unknown>) | null {
+    const o = draftOf(r);
+    const cycle = d.cycle.trim() === "" ? null : Number(d.cycle);
+    if (cycle !== null && !(Number.isInteger(cycle) && cycle >= 1 && cycle <= 3600)) throw new Error(t("cycleInvalid"));
+    const last = d.last !== o.last ? { v: d.last || null } : null;
+    const next = d.next !== o.next ? { v: d.next || null } : null;
+    const cycleChanged = d.cycle !== o.cycle;
+
+    if (r.kind === "INSPECTION") {
+      const body = {
+        ...(cycleChanged ? { customInspectionCycleDays: cycle } : {}),
+        ...(last ? { lastInspectionAtOverride: last.v } : {}),
+        ...(next ? { nextInspectionAtOverride: next.v } : {}),
+      };
+      return Object.keys(body).length ? () => api.patch(base, body) : null;
+    }
+
+    const qty = Number(d.qty);
+    if (!(Number.isInteger(qty) && qty >= 1 && qty <= 50)) throw new Error(t("quantityInvalid"));
+    if (r.sourceKind === "MANUAL" && cycleChanged && cycle === null) throw new Error(t("cycleRequired"));
+    const name = d.name.trim();
+    if (r.sourceKind === "MANUAL" && !name) throw new Error(t("nameRequired"));
+    const fields = {
+      ...(r.sourceKind === "MANUAL" && name !== o.name ? { customName: name } : {}),
+      ...(qty !== r.quantity ? { quantity: qty } : {}),
+      ...(cycleChanged ? { replaceEveryDays: cycle } : {}),
+      ...(last ? { lastReplacedAtOverride: last.v } : {}),
+      ...(next ? { nextReplaceAtOverride: next.v } : {}),
+    };
+    if (!Object.keys(fields).length) return null;
+    if (r.overrideId) return () => api.patch(`${base}/consumables/${r.overrideId}`, fields);
+    // A catalog filter with nothing stored for this unit yet — create its row.
+    return () => api.post(`${base}/consumables`, { consumableId: r.consumableId, quantity: qty, ...fields });
+  }
+
+  async function run(send: () => Promise<unknown>, after: () => void) {
+    setBusy(true);
+    setError(null);
+    try {
+      await send();
+      after();
+    } catch (err) {
+      setError(err instanceof ApiClientError || err instanceof Error ? err.message : String(err));
+    } finally {
+      await q.refetch();
+      setBusy(false);
+    }
+  }
+
+  function save(r: Row) {
+    if (!editing) return;
+    let send: (() => Promise<unknown>) | null;
+    try {
+      send = requestFor(r, editing.draft);
+    } catch (err) {
+      setError((err as Error).message);
+      return;
+    }
+    if (!send) return setEditing(null);
+    void run(send, () => setEditing(null));
+  }
+
+  function remove(r: Row) {
+    const send =
+      r.sourceKind === "MANUAL" && r.overrideId
+        ? () => api.del(`${base}/consumables/${r.overrideId}`)
+        : r.overrideId
+          ? () => api.patch(`${base}/consumables/${r.overrideId}`, { excluded: true })
+          : () => api.post(`${base}/consumables`, { consumableId: r.consumableId, quantity: r.quantity, excluded: true });
+    void run(send, () => setDeleting(null));
+  }
+
+  const box = "rounded border border-gray-300 px-1.5 py-0.5 text-xs";
 
   return (
     <div>
@@ -151,59 +195,140 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
               <th className="py-2">{t("nextDueAt")}</th>
               <th className="py-2">{t("daysRemaining")}</th>
               <th className="py-2">{t("status.header")}</th>
+              <th className="py-2" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((r) => (
-              <tr key={r.key} className="hover:bg-blue-50">
-                <td className="py-2">
-                  <KindChip kind={r.kind} />
-                </td>
-                <td className="py-2 font-medium text-gray-900">{pickName(r.name)}</td>
-                <td className="py-2 text-gray-500">
-                  {r.defaultCycleMonths ?? "—"} {r.defaultCycleMonths ? t("monthsShort") : ""}
-                </td>
-                <td className="py-2">
-                  <UserCycleInput
-                    value={r.userCycleMonths ?? r.defaultCycleMonths ?? null}
-                    busy={busyKey === r.key}
-                    onChange={(v) => updateUserCycle(r, v)}
-                  />
-                </td>
-                <td className="py-2">{r.quantity}</td>
-                <td className="py-2 text-gray-500">{formatDate(r.previousAt, locale)}</td>
-                <td className={`py-2 ${missingLast(r) ? "rounded bg-amber-50" : ""}`}>
-                  <DateCell
-                    value={r.lastAt}
-                    busy={busyKey === r.key}
-                    label={`${pickName(r.name)} ${t("lastAt")}`}
-                    onChange={(v) => updateDate(r, "last", v)}
-                  />
-                </td>
-                <td className="py-2">
-                  <DateCell
-                    value={r.nextDueAt}
-                    busy={busyKey === r.key}
-                    label={`${pickName(r.name)} ${t("nextDueAt")}`}
-                    onChange={(v) => updateDate(r, "next", v)}
-                  />
-                </td>
-                <td className="py-2 text-gray-700">
-                  {r.daysRemaining !== null ? `${r.daysRemaining} ${tc("daysRemaining")}` : "—"}
-                </td>
-                <td className="py-2">
-                  <StatusChip status={r.status} t={t} />
-                </td>
-              </tr>
-            ))}
+            {rows.map((r) => {
+              const d = editing?.key === r.key ? editing.draft : null;
+              const name = pickName(r.name);
+              return (
+                <tr key={r.key} className={d ? "bg-blue-50" : "hover:bg-blue-50"}>
+                  <td className="py-2">
+                    <KindChip kind={r.kind} />
+                  </td>
+                  <td className="py-2 font-medium text-gray-900">
+                    {d && r.sourceKind === "MANUAL" ? (
+                      <input
+                        aria-label={`${name} ${t("name")}`}
+                        value={d.name}
+                        onChange={(e) => patchDraft({ name: e.target.value.slice(0, 200) })}
+                        className={`w-36 ${box}`}
+                      />
+                    ) : (
+                      name
+                    )}
+                  </td>
+                  <td className="py-2 text-gray-500">
+                    {r.defaultCycleMonths ?? "—"} {r.defaultCycleMonths ? t("monthsShort") : ""}
+                  </td>
+                  <td className="py-2">
+                    {d ? (
+                      <input
+                        inputMode="numeric"
+                        aria-label={`${name} ${t("userCycle")}`}
+                        value={d.cycle}
+                        onChange={(e) => patchDraft({ cycle: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                        className={`w-16 ${box}`}
+                      />
+                    ) : (
+                      (r.userCycleMonths ?? r.defaultCycleMonths ?? "—")
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {d && r.kind === "FILTER" ? (
+                      <input
+                        inputMode="numeric"
+                        aria-label={`${name} ${t("quantity")}`}
+                        value={d.qty}
+                        onChange={(e) => patchDraft({ qty: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+                        className={`w-12 ${box}`}
+                      />
+                    ) : (
+                      r.quantity
+                    )}
+                  </td>
+                  <td className="py-2 text-gray-500">{formatDate(r.previousAt, locale)}</td>
+                  <td className={`py-2 ${missingLast(r) ? "rounded bg-amber-50" : ""}`}>
+                    {d ? (
+                      <DateCell value={d.last} label={`${name} ${t("lastAt")}`} onChange={(v) => patchDraft({ last: v })} />
+                    ) : (
+                      formatDate(r.lastAt, locale)
+                    )}
+                  </td>
+                  <td className="py-2">
+                    {d ? (
+                      <DateCell value={d.next} label={`${name} ${t("nextDueAt")}`} onChange={(v) => patchDraft({ next: v })} />
+                    ) : (
+                      formatDate(r.nextDueAt, locale)
+                    )}
+                  </td>
+                  <td className="py-2 text-gray-700">
+                    {r.daysRemaining !== null ? `${r.daysRemaining} ${tc("daysRemaining")}` : "—"}
+                  </td>
+                  <td className="py-2">
+                    <StatusChip status={r.status} t={t} />
+                  </td>
+                  <td className="whitespace-nowrap py-2 text-right">
+                    <div className="flex justify-end gap-1">
+                      {d ? (
+                        <>
+                          <Button size="sm" onClick={() => save(r)} isLoading={busy}>
+                            {tc("save")}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditing(null)} disabled={busy}>
+                            {tc("cancel")}
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="sm" variant="secondary" onClick={() => startEdit(r)} disabled={busy || !!editing}>
+                            {tc("edit")}
+                          </Button>
+                          {r.kind === "FILTER" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600"
+                              title={t(r.sourceKind === "MANUAL" ? "deleteHintManual" : "deleteHintCatalog")}
+                              onClick={() => setDeleting(r)}
+                              disabled={busy || !!editing}
+                            >
+                              {tc("delete")}
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
       {error && (
-        <div className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+        <div className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700" role="alert">
           {error}
         </div>
       )}
+      <ConfirmDialog
+        open={deleting !== null}
+        title={t("deleteTitle")}
+        message={
+          deleting
+            ? `${pickName(deleting.name)} — ${t(deleting.sourceKind === "MANUAL" ? "deleteHintManual" : "deleteHintCatalog")}`
+            : ""
+        }
+        confirmLabel={tc("delete")}
+        cancelLabel={tc("cancel")}
+        variant="danger"
+        busy={busy}
+        onCancel={() => setDeleting(null)}
+        onConfirm={() => {
+          if (deleting) remove(deleting);
+        }}
+      />
     </div>
   );
 }
@@ -250,45 +375,6 @@ function StatusChip({
   );
 }
 
-function UserCycleInput({
-  value,
-  busy,
-  onChange,
-}: Readonly<{
-  value: number | null;
-  busy: boolean;
-  onChange: (v: number | null) => void;
-}>) {
-  const [local, setLocal] = useState(value === null ? "" : String(value));
-
-  function commit() {
-    const n = local.trim() === "" ? null : Number(local);
-    if (n !== null && (Number.isNaN(n) || n <= 0 || n > 3600)) {
-      setLocal(value === null ? "" : String(value));
-      return;
-    }
-    if (n !== value) onChange(n);
-  }
-
-  return (
-    <input
-      type="number"
-      min={1}
-      max={3600}
-      value={local}
-      disabled={busy}
-      onChange={(e) => setLocal(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      className="w-16 rounded border border-gray-300 px-1.5 py-0.5 text-xs"
-    />
-  );
-}
-
 /** ISO → YYYY-MM-DD by slicing the date part directly — no Date/timezone
  *  round-trip, so overrides stored as UTC midnight edit back to the same day
  *  regardless of the viewer's local offset. */
@@ -296,28 +382,23 @@ function toYmd(iso: string | null): string {
   return iso ? iso.slice(0, 10) : "";
 }
 
-/** Inline date editor for 최근수행일 / 다음예정일. Empty = clear the override.
- *  Fully controlled by `value` so a refetch reflects the recomputed dates. */
+/** Date box for 최근수행일 / 다음예정일 on the open row. Empty = clear the override. */
 function DateCell({
   value,
-  busy,
   label,
   onChange,
 }: Readonly<{
-  value: string | null;
-  busy: boolean;
+  value: string;
   label: string;
-  onChange: (v: string | null) => void;
+  onChange: (v: string) => void;
 }>) {
   return (
     <input
       type="date"
       aria-label={label}
-      value={toYmd(value)}
-      disabled={busy}
-      onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-      className="w-32 rounded border border-gray-300 px-1.5 py-0.5 text-xs disabled:opacity-50"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-32 rounded border border-gray-300 px-1.5 py-0.5 text-xs"
     />
   );
 }
-

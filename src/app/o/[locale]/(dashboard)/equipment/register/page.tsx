@@ -249,6 +249,7 @@ function RegisterEquipmentInner() {
                   customName: f.customName,
                   quantity: f.quantity,
                   useCycleDays: f.useCycleDays,
+                  lastReplacedAt: f.lastReplacedAt || undefined,
                 })),
             },
           };

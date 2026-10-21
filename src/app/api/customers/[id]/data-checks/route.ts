@@ -64,7 +64,12 @@ export const GET = defineQuery({
           model: { select: { modelCode: true } },
           consumables: {
             // A pinned last or next date means staff already settled it.
-            where: { consumableId: { not: null }, lastReplacedAtOverride: null, nextReplaceAtOverride: null },
+            where: {
+              consumableId: { not: null },
+              excluded: false,
+              lastReplacedAtOverride: null,
+              nextReplaceAtOverride: null,
+            },
             select: {
               consumableId: true,
               replaceEveryDays: true,

@@ -157,6 +157,34 @@ describe("serviceConfigSchema", () => {
     const res = serviceConfigSchema.safeParse({ inspectionCycleDays: 3601, filters: [] });
     expect(res.success).toBe(false);
   });
+
+  it("accepts a past lastReplacedAt (YYYY-MM-DD) and coerces it to a Date", () => {
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ consumableId: "c1", quantity: 1, useCycleDays: 90, lastReplacedAt: "2025-03-15" }],
+    });
+    expect(res.success).toBe(true);
+    expect(res.data?.filters[0].lastReplacedAt).toBeInstanceOf(Date);
+    expect(res.data?.filters[0].lastReplacedAt?.toISOString().slice(0, 10)).toBe("2025-03-15");
+  });
+
+  it("treats a null/empty lastReplacedAt as absent (not 1970-01-01)", () => {
+    for (const v of [null, ""]) {
+      const res = serviceConfigSchema.safeParse({
+        filters: [{ consumableId: "c1", quantity: 1, useCycleDays: 90, lastReplacedAt: v }],
+      });
+      expect(res.success).toBe(true);
+      expect(res.data?.filters[0].lastReplacedAt).toBeUndefined();
+    }
+  });
+
+  it("rejects a lastReplacedAt in the future", () => {
+    const future = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const res = serviceConfigSchema.safeParse({
+      filters: [{ consumableId: "c1", quantity: 1, useCycleDays: 90, lastReplacedAt: future }],
+    });
+    expect(res.success).toBe(false);
+    expect(res.success ? "" : res.error.issues[0].message).toMatch(/future/i);
+  });
 });
 
 describe("bulkRegisterEquipmentSchema — 4-step wizard fields", () => {
@@ -260,6 +288,19 @@ describe("bulkRegisterEquipmentSchema — 4-step wizard fields", () => {
     expect(res.success).toBe(true);
     expect(res.data?.contractDate).toBeInstanceOf(Date);
     expect(res.data?.contractDate?.toISOString().slice(0, 10)).toBe("2026-07-01");
+  });
+
+  it("defaults alreadyInstalled to false and accepts true", () => {
+    const off = bulkRegisterEquipmentSchema.safeParse({ ...base, serviceType: "SALE", salePrice: 0 });
+    expect(off.success).toBe(true);
+    expect(off.data?.alreadyInstalled).toBe(false);
+    const on = bulkRegisterEquipmentSchema.safeParse({
+      ...base,
+      serviceType: "SALE",
+      salePrice: 0,
+      alreadyInstalled: true,
+    });
+    expect(on.data?.alreadyInstalled).toBe(true);
   });
 
   it("omits contractDate when absent (falls back to earliestInstall server-side)", () => {
