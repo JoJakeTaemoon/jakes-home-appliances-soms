@@ -94,7 +94,7 @@
 |---|---|---|
 | Consumable SKU | `WWS2n` 필터 ID → `WWFILTER01` | 약칭이 겹치는 필터(프리, 헤파, 탈취, NANO 등)는 `-2`, `-3`을 붙임 |
 | Quantity | `WWS1n` | 기본 1 |
-| Replace Every Days | `WWM6n` → 필터 기본 주기 | 개월 단위(M)는 ×30 |
+| Replace Every Days | `WWM6n` → 필터 기본 주기 | 1개월 = 30일. 필터 마스터가 개월 단위(M)이거나 값이 30 미만이면 개월로 보고 ×30 (일 단위 필터에도 개월 수를 넣은 경우가 있음 — Option 4 / 120일, Deode 12 / 365일). 2026-10-21 첫 이관은 슬롯 값을 일로 읽어 166행이 6·12일 등으로 들어갔고 `.migration/2026-10-21/fix-cycle-months.sql`로 보정 |
 | Last Replaced Date | `WWS8n`, `WWHIS` 최근 교환 | 둘 중 더 최근 날짜 |
 
 ### Payments 시트 (수금 이력)

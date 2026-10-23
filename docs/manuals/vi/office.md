@@ -392,7 +392,8 @@ Bố cục **danh sách ở trên / chi tiết ở dưới**.
 
 Cuối mỗi dòng có nút **«Sửa» · «Xóa»** (dòng kiểm tra định kỳ chỉ có «Sửa»). Bấm «Sửa», các ô **chu kỳ tùy chỉnh · số lượng · lần gần nhất · dự kiến** của dòng đó (lõi lọc thêm thủ công có thêm **tên hạng mục**) chuyển thành ô nhập và nút đổi thành **«Lưu» · «Hủy»**. Chỉ khi bấm «Lưu» thay đổi mới được ghi; «Hủy» bỏ thay đổi. Mỗi lần sửa một dòng. Chu kỳ mặc định lấy từ danh mục, còn lần trước · còn lại · trạng thái được tính tự động nên không sửa được.
 
-- Chu kỳ là số nguyên 1–3600 ngày, số lượng 1–50. Để trống thì quay về chu kỳ mặc định theo danh mục (lõi lọc thêm thủ công không được để trống).
+- **Đơn vị chu kỳ tùy chỉnh**: ở dòng lõi lọc, chọn **ngày / tháng** trong ô thả xuống cạnh ô chu kỳ. Ban đầu ô được điền sẵn chu kỳ mặc định (ngày). Lưu theo «tháng» thì ngày dự kiến tính **theo lịch** (lần gần nhất 2026-08-22 + 6 tháng = 2027-02-22); «ngày» thì cộng đúng số ngày (+180 ngày = 2027-02-18). Khách hàng nào có chu kỳ khác thì chỉ đổi ở thiết bị đó.
+- Chu kỳ tối đa 3600 ngày (120 tháng), số lượng là số nguyên 1–50. Để trống thì quay về chu kỳ mặc định theo danh mục (lõi lọc thêm thủ công không được để trống).
 - **Xóa**: lõi lọc thêm thủ công cho thiết bị này sẽ bị xóa. Lõi lọc thuộc mẫu chỉ bị bỏ **khỏi thiết bị này**, các thiết bị khác cùng mẫu vẫn giữ. Lõi lọc đã bỏ cũng không còn trong gợi ý thay, email sắp đến hạn thay lõi và mục cần kiểm tra. Bấm «Xóa» sẽ hiện hộp xác nhận; chỉ xóa khi bạn xác nhận.
 
 **Nhập hàng loạt ngày thay lõi** — nút **«Nhập hàng loạt ngày thay lõi»** ở đầu trang chi tiết khách hàng (hoặc «Nhập một lần» trong hộp mục cần kiểm tra) cho phép nhập ngày thay lõi gần nhất cho nhiều thiết bị của khách hàng cùng lúc. 100 máy không còn phải sửa 100 lần.
@@ -1115,11 +1116,11 @@ Góc trên bên phải: «Tải lên CSV danh mục» · «Tải CSV danh mục 
 Nhóm sản phẩm (ví dụ: máy lọc nước nóng lạnh, máy lọc không khí)
   ├─ Loại sản phẩm (ví dụ: lọc trực tiếp, dạng đứng) — thuộc từ 1 nhóm sản phẩm trở lên
   ├─ Model            — từ 1 nhóm sản phẩm trở lên + 0–1 loại sản phẩm
-  └─ Vật tư·phụ kiện  — 0 nhóm sản phẩm trở lên (để tìm kiếm·phân loại)
+  └─ Vật tư·phụ kiện  — 0 nhóm sản phẩm trở lên + 0 loại sản phẩm trở lên (để tìm kiếm·phân loại)
 ```
 
 - Nếu model đã chọn loại sản phẩm thì các nhóm sản phẩm của model đó **đều phải nằm trong các nhóm sản phẩm của loại đó**.
-- Nhóm sản phẩm gắn cho vật tư·phụ kiện chỉ là **nhãn để dễ tìm**. Nó không tự áp dụng cho các model của nhóm sản phẩm đó. Model nào dùng lõi lọc nào được quyết định trong «Cấu hình Filter» của model.
+- Nhóm sản phẩm·loại sản phẩm gắn cho vật tư·phụ kiện chỉ là **nhãn để dễ tìm**. Nó không tự áp dụng cho các model của nhóm sản phẩm đó. Model nào dùng lõi lọc nào được quyết định trong «Cấu hình Filter» của model.
 
 **Thứ tự đăng ký model mới**
 
@@ -1188,13 +1189,13 @@ Thứ tự ưu tiên chu kỳ: **chu kỳ tùy chỉnh theo thiết bị > chu k
 
 | Vị trí | Mục |
 |---|---|
-| Bên trái | Tên (3 ngôn ngữ, bắt buộc) · SKU · Nhóm sản phẩm (nhiều, tùy chọn) · Thương hiệu · Quy cách · Công dụng chính |
+| Bên trái | Tên (3 ngôn ngữ, bắt buộc) · SKU · Nhóm sản phẩm (nhiều, tùy chọn) · Loại sản phẩm (nhiều, tùy chọn) · Thương hiệu · Quy cách · Công dụng chính |
 | Bên phải | Chu kỳ thay (ngày/tháng) · Tồn kho hiện tại (+ Điều chỉnh tồn kho) · Tồn kho tối thiểu · Giá bán lẻ (bắt buộc) · Giá tại đại lý · Giá nhập |
 | Bên dưới | Chu kỳ vệ sinh (ngày) · Vệ sinh mỗi lần thăm · Trạng thái · Ghi chú |
 | ② Thiết bị (Model) áp dụng | Danh sách model dùng lõi lọc này (tên·nhóm sản phẩm·thương hiệu·số lượng lắp sẵn) |
 
 - Nếu để trống **SKU** thì mã như `FLT-000001` được cấp tự động. Sau khi đăng ký không đổi được.
-- Khi đổi đơn vị chu kỳ thay giữa ngày ↔ tháng, con số được quy đổi để giữ nguyên khoảng thời gian (1 tháng = 30 ngày, lưu theo ngày).
+- Khi đổi đơn vị chu kỳ thay giữa ngày ↔ tháng, con số được quy đổi để giữ nguyên khoảng thời gian (1 tháng = 30 ngày, lưu theo ngày). Cột chu kỳ thay trong danh sách hiện theo đúng đơn vị đã nhập (ví dụ 6 tháng). «Cấu hình dịch vụ» ở màn hình thiết bị hiện theo ngày (6 tháng → 180 ngày).
 - **«Lọc theo nhóm sản phẩm»** phía trên danh sách để thu hẹp, và có cả «In báo cáo».
 - Liên kết model↔lõi lọc hiển thị giống hệt ở cấu hình Filter của model và ở thiết bị áp dụng của vật tư.
 
@@ -1202,7 +1203,7 @@ Thứ tự ưu tiên chu kỳ: **chu kỳ tùy chỉnh theo thiết bị > chu k
 
 ![Tab Phụ kiện](../screenshots/vi/office/43-products-accessories.png)
 
-- «Thêm phụ kiện» → tên (tiếng Hàn·tiếng Việt·tiếng Anh, mỗi ngôn ngữ một dòng, bắt buộc) · giá bán (bắt buộc) · SKU + chọn «Phụ kiện nhỏ» · nhóm sản phẩm (nhiều) · model tương thích
+- «Thêm phụ kiện» → tên (tiếng Hàn·tiếng Việt·tiếng Anh, mỗi ngôn ngữ một dòng, bắt buộc) · giá bán (bắt buộc) · SKU + chọn «Phụ kiện nhỏ» · nhóm sản phẩm (nhiều) · loại sản phẩm (nhiều) · model tương thích
 - Nếu để trống SKU thì mã như `ACC-000001` được cấp tự động và không sửa được ở cửa sổ sửa.
 - **Phụ kiện nhỏ** là các bộ phận nhỏ được đổi miễn phí cho khách có hợp đồng bảo trì (vòi·van·ống, …).
 - Phía trên danh sách có thể lọc theo thương hiệu·model·nhóm sản phẩm.

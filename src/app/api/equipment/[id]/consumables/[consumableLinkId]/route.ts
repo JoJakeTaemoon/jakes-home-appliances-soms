@@ -73,6 +73,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
           d.replaceEveryDays === undefined
             ? undefined
             : d.replaceEveryDays,
+        // A cycle sent without its unit is days (the 필터 교환 이력 editor only
+        // knows days) — never leave a stale MONTH under a day count.
+        replaceCycleUnit: d.replaceCycleUnit ?? (d.replaceEveryDays !== undefined ? "DAY" : undefined),
         // undefined → unchanged, null → clear, date → pin the next-due anchor.
         lastReplacedAtOverride: d.lastReplacedAtOverride,
         nextReplaceAtOverride: d.nextReplaceAtOverride,

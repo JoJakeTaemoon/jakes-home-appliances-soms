@@ -19,7 +19,7 @@ import prisma from "@/lib/prisma";
 import { sendNotification } from "@/lib/notifications/send";
 import { formatDate } from "@/lib/format";
 import type { JobSummary, ScheduledJob } from "@/lib/cron/job";
-import { addDays } from "@/lib/contracts/pause-period";
+import { addCycle, type CycleUnit } from "@/lib/equipment/cycle";
 import type { Locale } from "@/generated/prisma/client";
 
 type CycleAction = "REPLACE" | "CLEAN";
@@ -97,6 +97,8 @@ interface EquipmentRow {
   consumables: {
     consumableId: string | null;
     replaceEveryDays: number | null;
+    /** Unit of the unit's own cycle — MONTH steps calendar months. */
+    replaceCycleUnit?: CycleUnit;
     lastReplacedAtOverride: Date | null;
     nextReplaceAtOverride: Date | null;
     excluded?: boolean;
@@ -185,7 +187,9 @@ async function processOne(
       // Admin "다음 교체 예정일" override wins over anchor+cycle (REPLACE only),
       // so the customer reminder matches what staff pinned in the service table.
       const nextDueOverride = action === "REPLACE" ? (ov?.nextReplaceAtOverride ?? null) : null;
-      const nextDue = nextDueOverride ?? addDays(baseline, cycle);
+      // The unit's own month cycle steps calendar months; every other cycle adds days.
+      const unit = action === "REPLACE" && ov?.replaceEveryDays != null ? ov.replaceCycleUnit : "DAY";
+      const nextDue = nextDueOverride ?? addCycle(baseline, cycle, unit);
       const daysUntilDue = Math.floor(
         (nextDue.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
       );
@@ -266,6 +270,7 @@ export async function runFilterDueReminder(
         select: {
           consumableId: true,
           replaceEveryDays: true,
+          replaceCycleUnit: true,
           lastReplacedAtOverride: true,
           nextReplaceAtOverride: true,
           excluded: true,

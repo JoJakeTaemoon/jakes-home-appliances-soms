@@ -7,6 +7,8 @@ import { useApi, ApiClientError } from "@/lib/api/client";
 import { formatDateOrDash as formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Combobox } from "@/components/ui/combobox";
+import { cycleDaysOf, type CycleUnit } from "@/lib/equipment/cycle";
 
 interface Row {
   kind: "INSPECTION" | "FILTER";
@@ -18,6 +20,8 @@ interface Row {
   sku: string | null;
   defaultCycleMonths: number | null;
   userCycleMonths: number | null;
+  /** Unit of the unit's own cycle (MONTH = calendar months, stored as × 30). */
+  userCycleUnit?: CycleUnit | null;
   effectiveCycleMonths: number | null;
   quantity: number;
   previousAt: string | null;
@@ -37,6 +41,7 @@ interface Props {
 interface Draft {
   name: string;
   cycle: string;
+  unit: CycleUnit;
   qty: string;
   last: string;
   next: string;
@@ -79,9 +84,17 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     return (locale === "ko" ? name.ko : locale === "en" ? name.en : name.vi) ?? "—";
   }
 
+  /** The cycle a row runs on, in the unit to show it in (default: catalog days). */
+  const cycleOf = (r: Row): { value: number | null; unit: CycleUnit } => {
+    const unit = r.kind === "FILTER" && r.userCycleMonths != null ? (r.userCycleUnit ?? "DAY") : "DAY";
+    const days = r.userCycleMonths ?? r.defaultCycleMonths;
+    return { value: days == null ? null : unit === "MONTH" ? Math.round(days / 30) : days, unit };
+  };
+
   const draftOf = (r: Row): Draft => ({
     name: pickName(r.name),
-    cycle: String(r.userCycleMonths ?? r.defaultCycleMonths ?? ""),
+    cycle: String(cycleOf(r).value ?? ""),
+    unit: cycleOf(r).unit,
     qty: String(r.quantity),
     last: toYmd(r.lastAt),
     next: toYmd(r.nextDueAt),
@@ -99,11 +112,14 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
   /** The request that stores the open row; null when nothing changed. */
   function requestFor(r: Row, d: Draft): (() => Promise<unknown>) | null {
     const o = draftOf(r);
-    const cycle = d.cycle.trim() === "" ? null : Number(d.cycle);
-    if (cycle !== null && !(Number.isInteger(cycle) && cycle >= 1 && cycle <= 3600)) throw new Error(t("cycleInvalid"));
+    const typed = d.cycle.trim() === "" ? null : Number(d.cycle);
+    if (typed !== null && !(Number.isInteger(typed) && typed >= 1 && cycleDaysOf(typed, d.unit) <= 3600)) {
+      throw new Error(t("cycleInvalid"));
+    }
+    const cycle = typed === null ? null : cycleDaysOf(typed, d.unit);
     const last = d.last !== o.last ? { v: d.last || null } : null;
     const next = d.next !== o.next ? { v: d.next || null } : null;
-    const cycleChanged = d.cycle !== o.cycle;
+    const cycleChanged = d.cycle !== o.cycle || d.unit !== o.unit;
 
     if (r.kind === "INSPECTION") {
       const body = {
@@ -122,7 +138,7 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
     const fields = {
       ...(r.sourceKind === "MANUAL" && name !== o.name ? { customName: name } : {}),
       ...(qty !== r.quantity ? { quantity: qty } : {}),
-      ...(cycleChanged ? { replaceEveryDays: cycle } : {}),
+      ...(cycleChanged ? { replaceEveryDays: cycle, replaceCycleUnit: cycle === null ? "DAY" : d.unit } : {}),
       ...(last ? { lastReplacedAtOverride: last.v } : {}),
       ...(next ? { nextReplaceAtOverride: next.v } : {}),
     };
@@ -170,6 +186,8 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
   }
 
   const box = "rounded border border-gray-300 px-1.5 py-0.5 text-xs";
+  const cycleText = (c: { value: number | null; unit: CycleUnit }) =>
+    c.value == null ? "—" : `${c.value} ${t(c.unit === "MONTH" ? "unitMonth" : "unitDay")}`;
 
   return (
     <div>
@@ -224,15 +242,30 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
                   </td>
                   <td className="py-2">
                     {d ? (
-                      <input
-                        inputMode="numeric"
-                        aria-label={`${name} ${t("userCycle")}`}
-                        value={d.cycle}
-                        onChange={(e) => patchDraft({ cycle: e.target.value.replace(/\D/g, "").slice(0, 4) })}
-                        className={`w-16 ${box}`}
-                      />
+                      <div className="flex items-center gap-1">
+                        <input
+                          inputMode="numeric"
+                          aria-label={`${name} ${t("userCycle")}`}
+                          value={d.cycle}
+                          onChange={(e) => patchDraft({ cycle: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                          className={`w-14 ${box}`}
+                        />
+                        {r.kind === "FILTER" && (
+                          <Combobox
+                            value={d.unit}
+                            onChange={(v) => patchDraft({ unit: v === "MONTH" ? "MONTH" : "DAY" })}
+                            options={[
+                              { value: "DAY", label: t("unitDay") },
+                              { value: "MONTH", label: t("unitMonth") },
+                            ]}
+                            searchable={false}
+                            ariaLabel={`${name} ${t("cycleUnit")}`}
+                            className="w-20"
+                          />
+                        )}
+                      </div>
                     ) : (
-                      (r.userCycleMonths ?? r.defaultCycleMonths ?? "—")
+                      cycleText(cycleOf(r))
                     )}
                   </td>
                   <td className="py-2">

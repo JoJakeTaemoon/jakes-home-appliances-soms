@@ -138,6 +138,8 @@ const consumableCoreShape = {
   // own classification, independent of which models it attaches to.
   // 제품군 — zero or more, search only. Never applies the part to models.
   categoryIds: z.array(z.string().trim().min(1)).optional(),
+  // 제품 유형 — zero or more, search only, like 제품군.
+  productTypeIds: z.array(z.string().trim().min(1)).optional(),
   brandId: z.string().trim().min(1).nullable().optional(),
   spec: optStr(120),
   mainUse: optStr(500),
@@ -192,6 +194,8 @@ export const updateConsumableSchema = z.object({
   cleanOnEveryVisit: z.boolean().optional(),
   // 제품군 — zero or more, search only. Never applies the part to models.
   categoryIds: z.array(z.string().trim().min(1)).optional(),
+  // 제품 유형 — zero or more, search only, like 제품군.
+  productTypeIds: z.array(z.string().trim().min(1)).optional(),
   brandId: z.string().trim().min(1).nullable().optional(),
   spec: optStr(120),
   mainUse: optStr(500),
@@ -209,6 +213,7 @@ export const consumableListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   modelId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
+  productTypeId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),
@@ -241,6 +246,8 @@ export const createAccessorySchema = z.object({
   compatibleModels: z.array(compatibilityEntrySchema).default([]),
   // 제품군 — zero or more, search only.
   categoryIds: z.array(z.string().trim().min(1)).optional(),
+  // 제품 유형 — zero or more, search only, like 제품군.
+  productTypeIds: z.array(z.string().trim().min(1)).optional(),
 });
 // Hand-built so .partial() doesn't carry `.default()` values onto PATCH
 // (mass-assignment via Zod defaults — a PATCH `{}` body would otherwise reset
@@ -257,12 +264,15 @@ export const updateAccessorySchema = z.object({
   isActive: z.boolean().optional(),
   compatibleModels: z.array(compatibilityEntrySchema).optional(),
   categoryIds: z.array(z.string().trim().min(1)).optional(),
+  // 제품 유형 — zero or more, search only, like 제품군.
+  productTypeIds: z.array(z.string().trim().min(1)).optional(),
 });
 
 export const accessoryListQuerySchema = z.object({
   q: z.string().trim().max(255).optional(),
   modelId: z.string().trim().min(1).optional(),
   categoryId: z.string().trim().min(1).optional(),
+  productTypeId: z.string().trim().min(1).optional(),
   isActive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(500).default(50),

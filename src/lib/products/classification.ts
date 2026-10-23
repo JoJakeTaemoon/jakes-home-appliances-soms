@@ -47,6 +47,38 @@ export function flattenCategories(row: {
   return row.categories.map((l) => l.category);
 }
 
+/** Select shape for a part's 제품 유형 — flattened by `flattenProductTypes`. */
+export const PRODUCT_TYPE_LINKS_SELECT = {
+  productTypes: {
+    select: {
+      productType: {
+        select: { id: true, code: true, nameKo: true, nameVi: true, nameEn: true },
+      },
+    },
+  },
+} as const;
+
+/** `{ productTypes: [{ productType }] }` → `{ productTypes, productTypeIds }`. */
+export function flattenProductTypes(row: { productTypes: { productType: CategoryLite }[] }) {
+  const productTypes = row.productTypes.map((l) => l.productType);
+  return { productTypes, productTypeIds: productTypes.map((t) => t.id) };
+}
+
+/** 400 when any of a part's 제품 유형 ids does not exist. */
+export async function assertProductTypesExist(
+  db: Pick<Prisma.TransactionClient, "productType">,
+  ids: readonly string[] | undefined,
+): Promise<void> {
+  if (!ids?.length) return;
+  const unique = [...new Set(ids)];
+  const found = await db.productType.count({ where: { id: { in: unique } } });
+  if (found !== unique.length) {
+    throw new ValidationError("Invalid 제품 유형", [
+      { path: ["productTypeIds"], message: "One or more 제품 유형 do not exist" },
+    ]);
+  }
+}
+
 /**
  * Pure rule check. `typeCategoryIds` is null when the model carries no type.
  * Returns field-level issues in the same shape the API's ValidationError

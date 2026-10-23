@@ -156,6 +156,9 @@ interface ConsumableRow {
   /** 제품군 — zero or more, search only. */
   categoryIds?: string[];
   categories?: CategoryLite[];
+  /** 제품 유형 — zero or more, search only. */
+  productTypeIds?: string[];
+  productTypes?: CategoryLite[];
   brandId?: string | null;
   brand?: { id: string; name: string } | null;
   isActive: boolean;
@@ -174,6 +177,9 @@ interface AccessoryRow {
   /** 제품군 — zero or more, search only. */
   categoryIds?: string[];
   categories?: CategoryLite[];
+  /** 제품 유형 — zero or more, search only. */
+  productTypeIds?: string[];
+  productTypes?: CategoryLite[];
   compatibleModels: { modelId: string; quantity: number; model: { modelCode: string | null; nameKo: string | null; nameVi: string | null; nameEn: string | null } }[];
 }
 
@@ -1740,6 +1746,47 @@ function useCategoryOptions(api: ApiClient): [CategoryLite[], (row: CategoryLite
   return [categories, add];
 }
 
+function useProductTypeOptions(api: ApiClient): CategoryLite[] {
+  const [types, setTypes] = useState<CategoryLite[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const res = await api.get<CategoryLite[]>("/api/admin/products/product-types?pageSize=200&isActive=true");
+      setTypes(res.data);
+    })();
+  }, [api]);
+  return types;
+}
+
+/** 제품 유형 picker for a part — zero or more, search only, like 제품군. */
+function PartProductTypeField({
+  t,
+  types,
+  values,
+  onChange,
+}: Readonly<{ t: Translate; types: CategoryLite[]; values: string[]; onChange: (ids: string[]) => void }>) {
+  const locale = useLocale();
+  return (
+    <MultiCombobox
+      values={values}
+      onChange={onChange}
+      options={types.map((c) => ({
+        value: c.id,
+        label: pickCategoryName(c, locale),
+        description: categoryAltNames(c, locale),
+      }))}
+      placeholder={t("categoriesOptionalHint")}
+      ariaLabel={t("colProductType")}
+    />
+  );
+}
+
+/** A replace cycle in the unit it was entered in — storage stays days. */
+function cycleLabel(t: Translate, days: number | null, unit: "DAY" | "MONTH" | undefined): string {
+  if (days == null) return t("cycleNone");
+  const u = unit ?? "DAY";
+  return `${cycleToDisplay(days, u)} ${u === "MONTH" ? t("cycleUnitMonth") : t("cycleUnitDay")}`;
+}
+
 /**
  * 제품군 picker for a part (소모품 / 부속품): zero or more, searchable, with an
  * inline 「+ 추가」 that creates the 제품군 and selects it. Classification only
@@ -1855,7 +1902,7 @@ function ConsumablesTab({
       if (categoryFilter && !(r.categoryIds ?? []).includes(categoryFilter)) return false;
       if (!q) return true;
       return foldDiacritics(
-        `${r.sku} ${r.nameKo} ${r.nameVi} ${r.nameEn} ${r.spec ?? ""} ${categoryNames(r.categories, locale)}`,
+        `${r.sku} ${r.nameKo} ${r.nameVi} ${r.nameEn} ${r.spec ?? ""} ${categoryNames(r.categories, locale)} ${categoryNames(r.productTypes, locale)}`,
       ).includes(q);
     });
   }, [rows, search, categoryFilter, locale]);
@@ -1965,6 +2012,7 @@ function ConsumablesTab({
               <th className="px-2 py-1.5 text-left">#</th>
               <th className="px-2 py-1.5 text-left">{t("colName")}</th>
               <th className="px-2 py-1.5 text-left">{t("colCategory")}</th>
+              <th className="px-2 py-1.5 text-left">{t("colProductType")}</th>
               <th className="px-2 py-1.5 text-left">{t("colBrand")}</th>
               <th className="px-2 py-1.5 text-left">{t("spec")}</th>
               <th className="px-2 py-1.5 text-right">{t("colReplaceCycle")}</th>
@@ -1973,9 +2021,9 @@ function ConsumablesTab({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#f0f0f0]">
-            {loading && <tr><td colSpan={8} className="p-4 text-center text-[#737373]">…</td></tr>}
+            {loading && <tr><td colSpan={9} className="p-4 text-center text-[#737373]">…</td></tr>}
             {!loading && sorted.length === 0 && (
-              <tr><td colSpan={8} className="p-4 text-center text-[#737373]">{t("noConsumables")}</td></tr>
+              <tr><td colSpan={9} className="p-4 text-center text-[#737373]">{t("noConsumables")}</td></tr>
             )}
             {!loading &&
               sorted.map((r, i) => {
@@ -1998,9 +2046,10 @@ function ConsumablesTab({
                     <td className="px-2 py-1.5 text-[#737373]">{i + 1}</td>
                     <td className="px-2 py-1.5 font-medium text-[#111]">{pickLocaleName(r, locale)}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{catName}</td>
+                    <td className="px-2 py-1.5 text-[#586a7c]">{categoryNames(r.productTypes, locale)}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.spec ?? "—"}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{r.replaceEveryDays ?? t("cycleNone")}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">{cycleLabel(t, r.replaceEveryDays, r.replaceCycleUnit)}</td>
                     <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                       {(r.stockOnHand ?? 0).toLocaleString()}
                     </td>
@@ -2086,6 +2135,8 @@ function ConsumableForm({
   const [nameEn, setNameEn] = useState(row?.nameEn ?? "");
   // 제품군 — zero or more; classification only (never applied to models).
   const [categoryIds, setCategoryIds] = useState<string[]>(row?.categoryIds ?? []);
+  const [productTypeIds, setProductTypeIds] = useState<string[]>(row?.productTypeIds ?? []);
+  const productTypes = useProductTypeOptions(api);
   const [brandId, setBrandId] = useState<string | null>(row?.brandId ?? null);
   const [spec, setSpec] = useState(row?.spec ?? "");
   const [mainUse, setMainUse] = useState(row?.mainUse ?? "");
@@ -2139,6 +2190,10 @@ function ConsumableForm({
     .filter((x) => categoryIds.includes(x.id))
     .map((x) => pickLocaleName(x, locale))
     .join(" · ");
+  const productTypeName = productTypes
+    .filter((x) => productTypeIds.includes(x.id))
+    .map((x) => pickCategoryName(x, locale))
+    .join(" · ");
   const brandName = brands.find((b) => b.id === brandId)?.name ?? "";
   const replaceView = replaceEveryDays
     ? `${replaceEveryDays} ${replaceCycleUnit === "DAY" ? t("cycleUnitDay") : t("cycleUnitMonth")}`
@@ -2175,7 +2230,7 @@ function ConsumableForm({
         .map((a) => ({ modelId: a.modelId, quantity: a.quantity ? Number(a.quantity) : 1 }));
       const payload = {
         nameKo, nameVi, nameEn,
-        categoryIds, brandId,
+        categoryIds, productTypeIds, brandId,
         spec: spec || undefined,
         mainUse: mainUse || undefined,
         notes: notes || undefined,
@@ -2271,6 +2326,9 @@ function ConsumableForm({
                 onCreate={setNewCategoryName}
                 ariaLabel={t("colCategory")}
               />
+            </ModeField>
+            <ModeField label={t("colProductType")} mode={mode} value={productTypeName}>
+              <PartProductTypeField t={t} types={productTypes} values={productTypeIds} onChange={setProductTypeIds} />
             </ModeField>
             <ModeField label={t("colBrand")} mode={mode} value={brandName}>
               <Combobox
@@ -2477,6 +2535,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
   const models = useModelOptions(api);
   const [brands] = useBrandOptions(api);
   const [categories, addCategory] = useCategoryOptions(api);
+  const productTypes = useProductTypeOptions(api);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [rows, setRows] = useState<AccessoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2494,6 +2553,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
     retailPrice: 0,
     compatibleModelIds: [] as string[],
     categoryIds: [] as string[],
+    productTypeIds: [] as string[],
   });
   const [error, setError] = useState<string | null>(null);
   const { sort, onClick } = useSort<"sku" | "nameVi" | "isMinorPart" | "retailPrice" | "isActive">("sku");
@@ -2523,9 +2583,10 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         retailPrice: form.retailPrice,
         compatibleModels: form.compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
         categoryIds: form.categoryIds,
+        productTypeIds: form.productTypeIds,
       });
       setShowForm(false);
-      setForm({ sku: "", nameKo: "", nameVi: "", nameEn: "", isMinorPart: false, retailPrice: 0, compatibleModelIds: [], categoryIds: [] });
+      setForm({ sku: "", nameKo: "", nameVi: "", nameEn: "", isMinorPart: false, retailPrice: 0, compatibleModelIds: [], categoryIds: [], productTypeIds: [] });
       await load();
     } catch (err) {
       setError(apiErrorText(err, t("errorGeneric")));
@@ -2666,6 +2727,14 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
               onChange={(ids) => setForm((f) => ({ ...f, categoryIds: ids }))}
             />
           </FormField>
+          <FormField label={t("colProductType")}>
+            <PartProductTypeField
+              t={t}
+              types={productTypes}
+              values={form.productTypeIds}
+              onChange={(ids) => setForm((f) => ({ ...f, productTypeIds: ids }))}
+            />
+          </FormField>
           <FormField label={t("colCompatibility")}>
             <CompatibilityPicker models={models} selected={form.compatibleModelIds} onChange={(ids) => setForm({ ...form, compatibleModelIds: ids })} />
           </FormField>
@@ -2682,6 +2751,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
             <SortableTh column="sku" sort={sort} onClick={onClick}>{t("colSku")}</SortableTh>
             <SortableTh column="nameVi" sort={sort} onClick={onClick}>{t("colNameLocaleAware", { locale: locale.toUpperCase() })}</SortableTh>
             <th className="min-w-[7rem] whitespace-nowrap p-2 border-b border-border">{t("colCategory")}</th>
+            <th className="min-w-[7rem] whitespace-nowrap p-2 border-b border-border">{t("colProductType")}</th>
             <SortableTh column="isMinorPart" sort={sort} onClick={onClick} align="center">{t("colMinorPart")}</SortableTh>
             <SortableTh column="retailPrice" sort={sort} onClick={onClick} align="right">{t("colRetailPrice")}</SortableTh>
             <th className="p-2 border-b border-border">{t("colCompatibility")}</th>
@@ -2691,13 +2761,14 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
         </thead>
         <tbody>
           {loading ? (
-            <tr><td colSpan={8} className="p-4 text-center">...</td></tr>
+            <tr><td colSpan={9} className="p-4 text-center">...</td></tr>
           ) : (
             sorted.map((r) => (
               <tr key={r.id} className="border-b border-border">
                 <td className="p-2 font-mono text-sm">{r.sku}</td>
                 <td className="p-2">{pickLocaleName(r, locale)}</td>
                 <td className="min-w-[7rem] p-2 text-xs">{categoryNames(r.categories, locale)}</td>
+                <td className="min-w-[7rem] p-2 text-xs">{categoryNames(r.productTypes, locale)}</td>
                 <td className="p-2 text-center">{r.isMinorPart ? "✓" : ""}</td>
                 <td className="p-2 text-right">{Number(r.retailPrice).toLocaleString()}</td>
                 <td className="p-2 text-xs">{r.compatibleModels.map((m) => pickModelName(m.model, locale)).join(", ") || "—"}</td>
@@ -2717,6 +2788,7 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
           row={editing}
           models={models}
           categories={categories}
+          productTypes={productTypes}
           onCategoryCreated={addCategory}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); void load(); }}
@@ -2748,13 +2820,14 @@ function AccessoriesTab({ api, t }: Readonly<{ api: ApiClient; t: Translate }>) 
 }
 
 function AccessoryEditModal({
-  api, t, row, models, categories, onCategoryCreated, onClose, onSaved,
+  api, t, row, models, categories, productTypes, onCategoryCreated, onClose, onSaved,
 }: Readonly<{
   api: ApiClient;
   t: Translate;
   row: AccessoryRow;
   models: ModelRow[];
   categories: CategoryLite[];
+  productTypes: CategoryLite[];
   onCategoryCreated: (row: CategoryLite) => void;
   onClose: () => void;
   onSaved: () => void;
@@ -2767,6 +2840,7 @@ function AccessoryEditModal({
   const [isActive, setIsActive] = useState(row.isActive);
   const [compatibleModelIds, setCompatibleModelIds] = useState<string[]>(row.compatibleModels.map((m) => m.modelId));
   const [categoryIds, setCategoryIds] = useState<string[]>(row.categoryIds ?? []);
+  const [productTypeIds, setProductTypeIds] = useState<string[]>(row.productTypeIds ?? []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function save() {
@@ -2780,6 +2854,7 @@ function AccessoryEditModal({
         isActive,
         compatibleModels: compatibleModelIds.map((modelId) => ({ modelId, quantity: 1 })),
         categoryIds,
+        productTypeIds,
       });
       onSaved();
     } catch (e) {
@@ -2825,6 +2900,9 @@ function AccessoryEditModal({
             values={categoryIds}
             onChange={setCategoryIds}
           />
+        </FormField>
+        <FormField label={t("colProductType")}>
+          <PartProductTypeField t={t} types={productTypes} values={productTypeIds} onChange={setProductTypeIds} />
         </FormField>
         <FormField label={t("colCompatibility")}>
           <CompatibilityPicker models={models} selected={compatibleModelIds} onChange={setCompatibleModelIds} />

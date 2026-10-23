@@ -21,6 +21,7 @@
 
 import prisma from "@/lib/prisma";
 import { addDays } from "@/lib/contracts/pause-period";
+import { addCycle, type CycleUnit } from "@/lib/equipment/cycle";
 
 export type SuggestAction = "REPLACE" | "CLEAN";
 
@@ -59,6 +60,8 @@ export interface ConsumableMeta {
   nameVi: string;
   nameEn: string;
   replaceEveryDays: number | null;
+  /** Unit of the REPLACE cycle — MONTH steps calendar months. Default DAY. */
+  replaceCycleUnit?: CycleUnit;
   cleanEveryDays: number | null;
   /** PDF A.4 — pre-filters cleaned on every periodic-inspection visit. */
   cleanOnEveryVisit?: boolean;
@@ -135,7 +138,8 @@ export function computeRecommendations(args: ComputeArgs): ConsumableRecommendat
     if (!baseline) return;
     // The next-due override (REPLACE only) wins over baseline+cycle.
     const nextOverride = action === "REPLACE" ? (c.nextReplacedOverride ?? null) : null;
-    const nextDueAt = nextOverride ?? addDays(baseline, cycleDays);
+    const nextDueAt =
+      nextOverride ?? (action === "REPLACE" ? addCycle(baseline, cycleDays, c.replaceCycleUnit) : addDays(baseline, cycleDays));
     const daysUntilDue = daysBetween(visitDate, nextDueAt);
     if (daysUntilDue < -windowDays || daysUntilDue > windowDays) return;
     out.push({
@@ -190,6 +194,7 @@ export async function suggestConsumablesForVisit(
         select: {
           consumableId: true,
           replaceEveryDays: true,
+          replaceCycleUnit: true,
           lastReplacedAtOverride: true,
           nextReplaceAtOverride: true,
           excluded: true,
@@ -245,6 +250,8 @@ export async function suggestConsumablesForVisit(
         // Cycle precedence: per-equipment > per-model > filter default (REPLACE).
         replaceEveryDays:
           ov?.replaceEveryDays ?? entry.replaceEveryDaysOverride ?? c.replaceEveryDays,
+        // The unit only applies to the unit's own cycle.
+        replaceCycleUnit: ov?.replaceEveryDays != null ? ov.replaceCycleUnit : "DAY",
         cleanEveryDays: c.cleanEveryDays,
         cleanOnEveryVisit: c.cleanOnEveryVisit,
         lastReplacedOverride: ov?.lastReplacedAtOverride ?? null,

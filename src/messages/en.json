@@ -547,13 +547,16 @@
         "OVERDUE": "Overdue"
       },
       "missingLastWarning": "{count} filter(s) have no change on record, so their due date is counted from installation. Enter the real last change in the table.",
-      "cycleInvalid": "Enter the cycle as a whole number of days from 1 to 3600.",
+      "cycleInvalid": "Enter the cycle as a whole number up to 3600 days (120 months).",
       "cycleRequired": "A filter added by hand needs a cycle.",
       "deleteHintManual": "Deletes the filter added by hand to this unit.",
       "deleteHintCatalog": "Removes this filter from this unit only; other units of the model keep it.",
       "quantityInvalid": "Enter the quantity as a whole number from 1 to 50.",
       "nameRequired": "Enter a name.",
-      "deleteTitle": "Delete this item?"
+      "deleteTitle": "Delete this item?",
+      "unitDay": "days",
+      "unitMonth": "months",
+      "cycleUnit": "Cycle unit"
     },
     "widgets": {
       "purchaseHistory": "Purchase history",

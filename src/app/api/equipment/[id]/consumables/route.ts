@@ -51,6 +51,7 @@ export const POST = defineMutation({
         customName: body.consumableId ? null : body.customName ?? null,
         quantity: body.quantity,
         replaceEveryDays: body.replaceEveryDays ?? null,
+        replaceCycleUnit: body.replaceCycleUnit,
         lastReplacedAtOverride: body.lastReplacedAtOverride ?? null,
         nextReplaceAtOverride: body.nextReplaceAtOverride ?? null,
         unitPrice: body.unitPrice ?? null,

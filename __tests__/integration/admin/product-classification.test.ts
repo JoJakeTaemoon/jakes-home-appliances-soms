@@ -5,7 +5,7 @@
  *   - a model holds ≥ 1 제품군 and 0..1 제품 유형; under a type, every 제품군
  *     must be the type's
  *   - a type may not drop a 제품군 a model of that type still uses (409)
- *   - consumables / accessories hold 0..N 제품군, search only
+ *   - consumables / accessories hold 0..N 제품군 and 0..N 제품 유형, search only
  *   - the real workflow: register filters with no model, then attach them from
  *     the model form (PATCH compatibleConsumables)
  *
@@ -23,8 +23,10 @@ import { POST as typePost, GET as typeList } from "@/app/api/admin/products/prod
 import { PATCH as typePatch } from "@/app/api/admin/products/product-types/[id]/route";
 import { POST as modelPost, GET as modelList } from "@/app/api/equipment-models/route";
 import { PATCH as modelPatch, GET as modelGet } from "@/app/api/equipment-models/[id]/route";
-import { POST as consumablePost } from "@/app/api/admin/products/consumables/route";
+import { POST as consumablePost, GET as consumableList } from "@/app/api/admin/products/consumables/route";
+import { PATCH as consumablePatch, GET as consumableGet } from "@/app/api/admin/products/consumables/[id]/route";
 import { POST as accessoryPost, GET as accessoryList } from "@/app/api/admin/products/accessories/route";
+import { PATCH as accessoryPatch } from "@/app/api/admin/products/accessories/[id]/route";
 import { GET as modelConsumables } from "@/app/api/equipment-models/[id]/consumables/route";
 
 const PHONE = "9322270001";
@@ -223,5 +225,61 @@ describe("부속품", () => {
     expect(ids).toContain(tagged.body.data!.id);
     expect(ids).not.toContain(bare.body.data!.id);
     expect(rows.find((r) => r.id === tagged.body.data!.id)!.categoryIds.sort()).toEqual([catB, catC].sort());
+  });
+});
+
+describe("소모품 · 부속품의 제품 유형", () => {
+  let typeB = "";
+  beforeAll(async () => {
+    typeB = (await prisma.productType.create({
+      data: { code: `${P}TB`, nameKo: `${P}TB`, nameVi: `${P}TB`, nameEn: `${P}TB`, categories: { create: [{ categoryId: catB }] } },
+    })).id;
+  });
+
+  it("links a consumable to zero or more 제품 유형, filters by them and replaces them on PATCH", async () => {
+    const created = await read(
+      await consumablePost(req("/api/admin/products/consumables", "POST", {
+        nameKo: `${P}FT`, nameVi: `${P}FT`, nameEn: `${P}FT`, replaceEveryDays: 90, retailPrice: 0, productTypeIds: [typeAB, typeB],
+      })),
+    );
+    expect(created.status).toBe(201);
+    const id = created.body.data!.id as string;
+
+    const underB = await read(await consumableList(req(`/api/admin/products/consumables?productTypeId=${typeB}&pageSize=500`, "GET")));
+    const row = (underB.body.data as unknown as { id: string; productTypeIds: string[]; productTypes: { id: string }[] }[]).find((r) => r.id === id)!;
+    expect(row.productTypeIds.sort()).toEqual([typeAB, typeB].sort());
+    expect(row.productTypes.map((t) => t.id).sort()).toEqual([typeAB, typeB].sort());
+
+    expect((await consumablePatch(req(`/api/admin/products/consumables/${id}`, "PATCH", { productTypeIds: [typeB] }), params(id))).status).toBe(200);
+    const one = await read(await consumableGet(req(`/api/admin/products/consumables/${id}`, "GET"), params(id)));
+    expect(one.body.data!.productTypeIds).toEqual([typeB]);
+
+    // A PATCH that does not name the types leaves them alone.
+    await consumablePatch(req(`/api/admin/products/consumables/${id}`, "PATCH", { nameEn: `${P}FT2` }), params(id));
+    const again = await read(await consumableGet(req(`/api/admin/products/consumables/${id}`, "GET"), params(id)));
+    expect(again.body.data!.productTypeIds).toEqual([typeB]);
+  });
+
+  it("links an accessory to 제품 유형 and filters by them", async () => {
+    const created = await read(
+      await accessoryPost(req("/api/admin/products/accessories", "POST", {
+        nameKo: `${P}ACC3`, nameVi: `${P}ACC3`, nameEn: `${P}ACC3`, retailPrice: 0, productTypeIds: [typeB],
+      })),
+    );
+    expect(created.status).toBe(201);
+    const id = created.body.data!.id as string;
+    const underB = await read(await accessoryList(req(`/api/admin/products/accessories?productTypeId=${typeB}&pageSize=500`, "GET")));
+    expect((underB.body.data as unknown as { id: string }[]).map((r) => r.id)).toContain(id);
+
+    expect((await accessoryPatch(req(`/api/admin/products/accessories/${id}`, "PATCH", { productTypeIds: [] }), params(id))).status).toBe(200);
+    const after = await read(await accessoryList(req(`/api/admin/products/accessories?productTypeId=${typeB}&pageSize=500`, "GET")));
+    expect((after.body.data as unknown as { id: string }[]).map((r) => r.id)).not.toContain(id);
+  });
+
+  it("refuses a 제품 유형 that does not exist", async () => {
+    const res = await consumablePost(req("/api/admin/products/consumables", "POST", {
+      nameKo: `${P}FT3`, nameVi: `${P}FT3`, nameEn: `${P}FT3`, replaceEveryDays: 90, retailPrice: 0, productTypeIds: ["nope"],
+    }));
+    expect(res.status).toBe(400);
   });
 });

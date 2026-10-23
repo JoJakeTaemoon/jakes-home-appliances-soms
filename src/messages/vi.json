@@ -547,13 +547,16 @@
         "OVERDUE": "Quá hạn"
       },
       "missingLastWarning": "{count} lõi lọc chưa có lịch sử thay nên ngày thay đang tính từ ngày lắp đặt. Hãy nhập ngày thay gần nhất thực tế vào bảng.",
-      "cycleInvalid": "Chu kỳ phải là số nguyên từ 1 đến 3600 ngày.",
+      "cycleInvalid": "Chu kỳ phải là số nguyên trong khoảng 1–3600 ngày (120 tháng).",
       "cycleRequired": "Lõi lọc thêm thủ công không được để trống chu kỳ.",
       "deleteHintManual": "Xóa lõi lọc đã thêm thủ công khỏi thiết bị này.",
       "deleteHintCatalog": "Chỉ bỏ lõi lọc này khỏi thiết bị này; các thiết bị khác cùng model vẫn giữ.",
       "quantityInvalid": "Số lượng phải là số nguyên từ 1 đến 50.",
       "nameRequired": "Hãy nhập tên hạng mục.",
-      "deleteTitle": "Xóa hạng mục này?"
+      "deleteTitle": "Xóa hạng mục này?",
+      "unitDay": "ngày",
+      "unitMonth": "tháng",
+      "cycleUnit": "Đơn vị chu kỳ"
     },
     "widgets": {
       "purchaseHistory": "Lịch sử mua",

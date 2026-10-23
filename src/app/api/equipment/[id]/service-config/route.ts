@@ -20,6 +20,7 @@ import { defineQuery } from "@/lib/api/mutation";
 import { canManageEquipment } from "@/lib/customers/access";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { addDays } from "@/lib/contracts/pause-period";
+import { addCycle, type CycleUnit } from "@/lib/equipment/cycle";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -81,6 +82,7 @@ export const GET = defineQuery({
             customName: true,
             quantity: true,
             replaceEveryDays: true,
+            replaceCycleUnit: true,
             lastReplacedAtOverride: true,
             nextReplaceAtOverride: true,
             excluded: true,
@@ -173,6 +175,8 @@ export const GET = defineQuery({
       sku: string | null;
       defaultCycleMonths: number | null;
       userCycleMonths: number | null;
+      /** Unit of the unit's own cycle; null when it has none (catalog default, days). */
+      userCycleUnit: CycleUnit | null;
       effectiveCycleMonths: number | null;
       quantity: number;
       lastReplacedAtOverride: Date | null;
@@ -233,6 +237,7 @@ export const GET = defineQuery({
         sku: c.consumable.sku,
         defaultCycleMonths: defaultCycle,
         userCycleMonths: userCycle,
+        userCycleUnit: userCycle !== null ? (ov?.replaceCycleUnit ?? "DAY") : null,
         effectiveCycleMonths: effective,
         quantity: ov?.quantity ?? c.quantity,
         lastReplacedAtOverride: ov?.lastReplacedAtOverride ?? null,
@@ -262,6 +267,7 @@ export const GET = defineQuery({
         sku: m.consumable?.sku ?? null,
         defaultCycleMonths: defaultCycle,
         userCycleMonths: userCycle,
+        userCycleUnit: userCycle !== null ? m.replaceCycleUnit : null,
         effectiveCycleMonths: effective,
         quantity: m.quantity,
         lastReplacedAtOverride: m.lastReplacedAtOverride ?? null,
@@ -323,7 +329,7 @@ export const GET = defineQuery({
       // before an override existed, so keep that unless an override pins one.
       const anchor = row.lastAt ?? (row.consumableId ? equipment.installedAt : null);
       const computedNext =
-        anchor && row.effectiveCycleMonths ? addDays(anchor, row.effectiveCycleMonths) : null;
+        anchor && row.effectiveCycleMonths ? addCycle(anchor, row.effectiveCycleMonths, row.userCycleUnit) : null;
       // Admin override for "다음 교체 예정일" wins over anchor+cycle.
       row.nextDueAt = row.nextReplaceAtOverride ?? computedNext;
       if (row.nextDueAt) {

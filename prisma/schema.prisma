@@ -423,6 +423,8 @@ model ProductType {
 
   categories ProductTypeCategory[]
   models     EquipmentModel[]
+  consumableLinks ConsumableProductType[]
+  accessoryLinks  AccessoryProductType[]
 
   @@index([isActive, sortOrder])
 }
@@ -470,6 +472,29 @@ model AccessoryCategory {
 
   @@id([accessoryId, categoryId])
   @@index([categoryId])
+}
+
+/// A consumable's 제품 유형 — zero or more, for sorting and search only, like
+/// ConsumableCategory. No rule ties them to the part's 제품군.
+model ConsumableProductType {
+  consumableId  String
+  productTypeId String
+  consumable    Consumable  @relation(fields: [consumableId], references: [id], onDelete: Cascade)
+  productType   ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+
+  @@id([consumableId, productTypeId])
+  @@index([productTypeId])
+}
+
+/// An accessory's 제품 유형 — zero or more, same meaning as ConsumableProductType.
+model AccessoryProductType {
+  accessoryId   String
+  productTypeId String
+  accessory     Accessory   @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  productType   ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+
+  @@id([accessoryId, productTypeId])
+  @@index([productTypeId])
 }
 
 // Brand — distinct manufacturer/marketer of equipment models. Single name
@@ -574,6 +599,7 @@ model Consumable {
   // Classification — zero or more 제품군 through `ConsumableCategory`, for
   // sorting and search only. Which models a filter fits is `compatibleModels`.
   categories        ConsumableCategory[]
+  productTypes      ConsumableProductType[]
   brandId           String?
   brand             Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
   spec              String? // 규격 (Quy cách) — e.g. "9 inch", "14 W"
@@ -623,6 +649,7 @@ model Accessory {
   chargePolicies   ChargePolicy[]
   // Zero or more 제품군, for sorting and search (see ConsumableCategory).
   categories       AccessoryCategory[]
+  productTypes     AccessoryProductType[]
 
   @@index([isActive])
 }
@@ -1059,6 +1086,9 @@ model EquipmentConsumable {
   /// consumable's `replaceEveryDays`. For manual filters with
   /// customName, this is the authoritative cycle.
   replaceEveryDays       Int?
+  /// The unit staff entered the cycle in. MONTH steps calendar months
+  /// (replaceEveryDays holds months × 30), DAY adds days.
+  replaceCycleUnit       ConsumableCycleUnit @default(DAY)
   /// Admin override for this filter's "최근 교체일" (last replacement date).
   /// Normally derived from the latest REPLACE VisitConsumableLog; this lets
   /// MANAGER+ correct an error or seed pre-system history. When set it

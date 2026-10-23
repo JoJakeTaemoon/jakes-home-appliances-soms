@@ -31,6 +31,7 @@ import { defineQuery } from "@/lib/api/mutation";
 import { canManageEquipment } from "@/lib/customers/access";
 import { ForbiddenError, NotFoundError } from "@/lib/api/error";
 import { addDays } from "@/lib/contracts/pause-period";
+import { addCycle } from "@/lib/equipment/cycle";
 
 const paramsSchema = z.object({ id: z.string() });
 
@@ -198,7 +199,8 @@ export const GET = defineQuery({
         overrideDate ?? (derivedLast ? new Date(derivedLast) : equipment.installedAt);
       // Admin override for "다음 교체 예정일" wins over anchor+cycle.
       const nextDueAt =
-        (ov.nextReplaceAtOverride ?? null) ?? (cycle && baseline ? addDays(baseline, cycle) : null);
+        (ov.nextReplaceAtOverride ?? null) ??
+        (cycle && baseline ? addCycle(baseline, cycle, ov.replaceEveryDays ? ov.replaceCycleUnit : "DAY") : null);
       const daysRemaining = nextDueAt
         ? Math.floor((nextDueAt.getTime() - now.getTime()) / MS_PER_DAY)
         : null;

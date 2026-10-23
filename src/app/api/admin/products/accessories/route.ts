@@ -4,7 +4,13 @@
  */
 
 import prisma from "@/lib/prisma";
-import { CATEGORY_LINKS_SELECT, flattenCategories } from "@/lib/products/classification";
+import {
+  CATEGORY_LINKS_SELECT,
+  PRODUCT_TYPE_LINKS_SELECT,
+  assertProductTypesExist,
+  flattenCategories,
+  flattenProductTypes,
+} from "@/lib/products/classification";
 import { defineMutation, defineQuery } from "@/lib/api/mutation";
 import { canManageEquipmentModel } from "@/lib/customers/access";
 import {
@@ -20,11 +26,12 @@ export const GET = defineQuery({
   query: accessoryListQuerySchema,
   paginated: true,
   handler: async ({ query }) => {
-    const { q, modelId, categoryId, isActive, page, pageSize } = query;
+    const { q, modelId, categoryId, productTypeId, isActive, page, pageSize } = query;
     const where: Prisma.AccessoryWhereInput = {};
     if (typeof isActive === "boolean") where.isActive = isActive;
     if (modelId) where.compatibleModels = { some: { modelId } };
     if (categoryId) where.categories = { some: { categoryId } };
+    if (productTypeId) where.productTypes = { some: { productTypeId } };
     if (q) {
       where.OR = [
         { sku: { contains: q, mode: "insensitive" } },
@@ -42,6 +49,7 @@ export const GET = defineQuery({
         take: pageSize,
         include: {
           ...CATEGORY_LINKS_SELECT,
+          ...PRODUCT_TYPE_LINKS_SELECT,
           compatibleModels: {
             select: {
               modelId: true,
@@ -56,7 +64,7 @@ export const GET = defineQuery({
     return {
       rows: rows.map((r) => {
         const categories = flattenCategories(r);
-        return { ...r, categories, categoryIds: categories.map((c) => c.id) };
+        return { ...r, categories, categoryIds: categories.map((c) => c.id), ...flattenProductTypes(r) };
       }),
       pagination: { page, limit: pageSize, total },
     };
@@ -73,6 +81,7 @@ export const POST = defineMutation({
   body: createAccessorySchema,
   successStatus: 201,
   handler: async ({ body }) => {
+    await assertProductTypesExist(prisma, body.productTypeIds);
     if (body.sku) {
       const existing = await prisma.accessory.findUnique({
         where: { sku: body.sku },
@@ -91,6 +100,9 @@ export const POST = defineMutation({
           isMinorPart: body.isMinorPart,
           categories: body.categoryIds?.length
             ? { create: body.categoryIds.map((categoryId) => ({ categoryId })) }
+            : undefined,
+          productTypes: body.productTypeIds?.length
+            ? { create: [...new Set(body.productTypeIds)].map((productTypeId) => ({ productTypeId })) }
             : undefined,
           retailPrice: body.retailPrice,
           notes: body.notes ?? null,

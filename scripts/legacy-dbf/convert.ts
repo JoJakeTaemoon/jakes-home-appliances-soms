@@ -307,7 +307,15 @@ const billing = byKey(readDbf(join(dir, `M${billingFile}.DBF`)), "BCMS01");
 // Filter SKUs: the short name, made unique — the old list reuses 프리 / 헤파 /
 // 탈취 etc. for different parts, keyed apart only by their internal id.
 const INSPECTION_ID = filters.find((f) => f.WWFILTER01 === "점검")?.WWFILTER00 ?? "";
-const skuById = new Map<string, { sku: string; name: string; cycleDays: number | null }>();
+const skuById = new Map<string, { sku: string; name: string; cycleDays: number | null; months: boolean }>();
+
+/** A legacy filter cycle in days, 1 month = 30 days. The filter master's
+ *  WWFILTER09 says the unit (D or M), and the unit's slot (WWM6n) and the model
+ *  link (WWG07) were usually typed in the same unit — but staff also typed
+ *  months into day-unit filters (Option 4 under a 120-day master, Deode 12
+ *  under 365). No filter in the old data has a real cycle under 30 days, so a
+ *  value under 30 is months whatever the master says. */
+const toDays = (raw: number, months: boolean) => (raw > 0 ? (months || raw < 30 ? raw * 30 : raw) : null);
 {
   const used = new Map<string, number>();
   for (const f of filters) {
@@ -318,7 +326,8 @@ const skuById = new Map<string, { sku: string; name: string; cycleDays: number |
     skuById.set(f.WWFILTER00, {
       sku: n === 1 ? f.WWFILTER01 : `${f.WWFILTER01}-${n}`,
       name: f.WWFILTER06 || f.WWFILTER01,
-      cycleDays: raw > 0 ? (f.WWFILTER09 === "M" ? raw * 30 : raw) : null,
+      cycleDays: toDays(raw, f.WWFILTER09 === "M"),
+      months: f.WWFILTER09 === "M",
     });
   }
 }
@@ -476,12 +485,13 @@ for (const r of wwm) {
       const fid = slot[`WWS2${i}`];
       const label = slot[`WWM5${i}`];
       if (!fid && !label) continue;
-      const days = Number(slot[`WWM6${i}`]) || null;
+      const raw = Number(slot[`WWM6${i}`]) || 0;
       if (fid === INSPECTION_ID || label === "점검") {
-        inspectionDays = days;
+        inspectionDays = raw || null;
         continue;
       }
       const f = skuById.get(fid);
+      const days = toDays(raw, f?.months ?? false);
       const slotDate = legacyDate(slot[`WWS8${i}`], "필터 최근교환일");
       const historyDate = lastChange.get(`${mgmt}|${fid}`) ?? null;
       if (historyDate && historyDate > (slotDate ?? "")) noteFix("필터 최근교환일 → 교환 이력(WWHIS)의 더 최근 날짜", `${mgmt}:${slotDate ?? "없음"}→${historyDate}`);
@@ -846,7 +856,7 @@ for (const model of [...modelNames].sort()) {
     if (!f) continue;
     linkedSkus.add(f.sku);
     const mapped = filterMap.get(f.sku);
-    const days = Number(l.WWG07) || f.cycleDays;
+    const days = toDays(Number(l.WWG07) || 0, f.months) ?? f.cycleDays;
     catalogLines.push([...head, "CONSUMABLE", mapped ?? f.sku, f.name, f.name, f.name, "1", days ? String(days) : ""].map(csvCell).join(","));
   }
 }

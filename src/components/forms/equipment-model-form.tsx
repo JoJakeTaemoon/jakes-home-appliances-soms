@@ -495,7 +495,8 @@ export function EquipmentModelForm({
             <Input value={data.safetyStock} onChange={(e) => setField("safetyStock", e.target.value)} inputMode="numeric" placeholder="0" />
           </ModeField>
           <ModeField label={t("inspectionEveryMonths")} mode={mode} value={data.inspectionEveryDays}>
-            <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="1" />
+            {/* Days, not months — the old "1" placeholder got a model saved at a one-day inspection cycle. */}
+            <Input value={data.inspectionEveryDays} onChange={(e) => setField("inspectionEveryDays", e.target.value)} inputMode="numeric" placeholder="30" />
           </ModeField>
           <ModeField label={t("warrantyMonths")} mode={mode} value={data.warrantyMonths}>
             <Input value={data.warrantyMonths} onChange={(e) => setField("warrantyMonths", e.target.value)} inputMode="numeric" placeholder="12" />

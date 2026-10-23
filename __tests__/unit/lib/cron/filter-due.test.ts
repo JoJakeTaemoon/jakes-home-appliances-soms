@@ -46,6 +46,7 @@ function equipmentRow(opts: {
   overrides?: {
     consumableId: string | null;
     replaceEveryDays: number | null;
+    replaceCycleUnit?: "DAY" | "MONTH";
     lastReplacedAtOverride: Date | null;
     excluded?: boolean;
   }[];
@@ -107,6 +108,28 @@ describe("runFilterDueReminder", () => {
     const r = await runFilterDueReminder({ now });
     expect(r.notificationsQueued).toBe(0);
     expect(mockedSend).not.toHaveBeenCalled();
+  });
+
+  it("counts a unit's month cycle in calendar months", async () => {
+    // Last change 2025-12-16, own cycle 6 개월 → due 2026-06-16 (tomorrow) → reminded.
+    // Read as 180 days it would be 2026-06-14, already past, and skipped.
+    mockedPrisma.equipment.findMany.mockResolvedValueOnce([
+      equipmentRow({
+        installedAt: new Date("2024-01-01T00:00:00Z"),
+        consumables: [{ id: "jbs", sku: "FLT-JBS", replaceEveryDays: 180, cleanEveryDays: null }],
+        overrides: [
+          {
+            consumableId: "jbs",
+            replaceEveryDays: 180,
+            replaceCycleUnit: "MONTH",
+            lastReplacedAtOverride: new Date("2025-12-16T00:00:00Z"),
+          },
+        ],
+      }),
+    ] as never);
+
+    const r = await runFilterDueReminder({ now });
+    expect(r.notificationsQueued).toBe(1);
   });
 
   it("queues a REPLACE reminder when within 14 days", async () => {

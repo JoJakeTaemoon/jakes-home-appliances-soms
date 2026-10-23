@@ -172,3 +172,79 @@ describe("ServiceConfigTable — per-row 수정 / 저장 / 취소 / 삭제", () 
     expect(api.del).not.toHaveBeenCalled();
   });
 });
+
+describe("ServiceConfigTable — 사용자 주기 단위 (일 / 개월)", () => {
+  const refetch = vi.fn().mockResolvedValue(undefined);
+  const rows = [
+    filterRow({ key: "cat", sourceKind: "CATALOG", overrideId: null, consumableId: "c-cat", name: "SED", defaultCycleMonths: 90, status: "NORMAL", daysRemaining: 30 }),
+    filterRow({
+      key: "jbs", sourceKind: "OVERRIDE", overrideId: "o-jbs", consumableId: "c-jbs", name: "JBS",
+      defaultCycleMonths: 180, userCycleMonths: 180, userCycleUnit: "MONTH", status: "NORMAL", daysRemaining: 60,
+    }),
+  ];
+  const renderTable = () => {
+    mockUseApiQuery.mockReturnValue({ data: { rows }, refetch });
+    return render(<ServiceConfigTable equipmentId="e1" />);
+  };
+  const rowOf = (name: string) => screen.getByText(name).closest("tr") as HTMLElement;
+
+  beforeEach(() => {
+    api.patch.mockReset().mockResolvedValue({});
+    api.post.mockReset().mockResolvedValue({});
+  });
+
+  it("shows a month cycle in months", () => {
+    renderTable();
+    expect(within(rowOf("JBS")).getByText("6 unitMonth")).toBeInTheDocument();
+    expect(within(rowOf("SED")).getByText("90 unitDay")).toBeInTheDocument();
+  });
+
+  it("starts from the default cycle in days", async () => {
+    renderTable();
+    const row = rowOf("SED");
+    fireEvent.click(within(row).getByRole("button", { name: "edit" }));
+    expect((within(row).getByLabelText("SED userCycle") as HTMLInputElement).value).toBe("90");
+    expect(within(row).getByRole("button", { name: "SED cycleUnit" })).toHaveTextContent("unitDay");
+  });
+
+  it("saves a cycle typed in months as months × 30 with its unit", async () => {
+    renderTable();
+    const row = rowOf("SED");
+    fireEvent.click(within(row).getByRole("button", { name: "edit" }));
+    fireEvent.change(within(row).getByLabelText("SED userCycle"), { target: { value: "6" } });
+    fireEvent.click(within(row).getByRole("button", { name: "SED cycleUnit" }));
+    fireEvent.click(screen.getByRole("option", { name: "unitMonth" }));
+    fireEvent.click(within(row).getByRole("button", { name: "save" }));
+    await waitFor(() =>
+      expect(api.post).toHaveBeenCalledWith("/api/equipment/e1/consumables", {
+        consumableId: "c-cat",
+        quantity: 1,
+        replaceEveryDays: 180,
+        replaceCycleUnit: "MONTH",
+      }),
+    );
+  });
+
+  it("re-opens a month cycle in months and saves nothing when untouched", async () => {
+    renderTable();
+    const row = rowOf("JBS");
+    fireEvent.click(within(row).getByRole("button", { name: "edit" }));
+    expect((within(row).getByLabelText("JBS userCycle") as HTMLInputElement).value).toBe("6");
+    fireEvent.click(within(row).getByRole("button", { name: "save" }));
+    await waitFor(() => expect(within(row).getByRole("button", { name: "edit" })).toBeInTheDocument());
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  it("switches a month cycle back to days", async () => {
+    renderTable();
+    const row = rowOf("JBS");
+    fireEvent.click(within(row).getByRole("button", { name: "edit" }));
+    fireEvent.change(within(row).getByLabelText("JBS userCycle"), { target: { value: "200" } });
+    fireEvent.click(within(row).getByRole("button", { name: "JBS cycleUnit" }));
+    fireEvent.click(screen.getByRole("option", { name: "unitDay" }));
+    fireEvent.click(within(row).getByRole("button", { name: "save" }));
+    await waitFor(() =>
+      expect(api.patch).toHaveBeenCalledWith("/api/equipment/e1/consumables/o-jbs", { replaceEveryDays: 200, replaceCycleUnit: "DAY" }),
+    );
+  });
+});

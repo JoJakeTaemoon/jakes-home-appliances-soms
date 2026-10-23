@@ -547,13 +547,16 @@
         "OVERDUE": "지연"
       },
       "missingLastWarning": "필터 {count}개는 교환 기록이 없어 설치일 기준으로 교체일을 계산하고 있습니다. 실제 최근 교환일을 표에 입력하세요.",
-      "cycleInvalid": "주기는 1~3600일 사이의 정수로 입력하세요.",
+      "cycleInvalid": "주기는 1~3600일(120개월) 이내의 정수로 입력하세요.",
       "cycleRequired": "직접 추가한 필터는 주기를 비울 수 없습니다.",
       "deleteHintManual": "이 장비에서 직접 추가한 필터를 삭제합니다.",
       "deleteHintCatalog": "이 장비에서만 이 필터를 뺍니다. 모델의 다른 장비에는 그대로 남습니다.",
       "quantityInvalid": "수량은 1~50 사이의 정수로 입력하세요.",
       "nameRequired": "항목명을 입력하세요.",
-      "deleteTitle": "이 항목을 삭제할까요?"
+      "deleteTitle": "이 항목을 삭제할까요?",
+      "unitDay": "일",
+      "unitMonth": "개월",
+      "cycleUnit": "주기 단위"
     },
     "widgets": {
       "purchaseHistory": "구매 이력",
