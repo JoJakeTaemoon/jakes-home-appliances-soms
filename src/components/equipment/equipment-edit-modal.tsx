@@ -21,6 +21,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { NumberInput } from "@/components/ui/number-input";
 import { FormField } from "@/components/ui/form-field";
 import { ModelPicker } from "@/components/equipment/model-picker";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useApi, ApiClientError } from "@/lib/api/client";
 import { formatDate } from "@/lib/format";
 
@@ -186,6 +187,18 @@ export function EquipmentEditModal({
 
   const patch = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
 
+  // A new model takes its filters with it: the unit's filters it does not
+  // carry are dropped on save, so list them and ask first.
+  const [dropping, setDropping] = useState<{ body: Record<string, unknown>; names: string[] } | null>(null);
+  const filterName = (r: { sku: string; nameKo: string; nameVi: string; nameEn: string }) =>
+    (locale === "ko" ? r.nameKo : locale === "en" ? r.nameEn : r.nameVi) || r.sku;
+
+  async function save(body: Record<string, unknown>) {
+    await api.patch(`/api/equipment/${equipment.id}`, body);
+    await onSaved();
+    onClose();
+  }
+
   async function submit() {
     setBusy(true);
     setError(null);
@@ -195,10 +208,32 @@ export function EquipmentEditModal({
         onClose();
         return;
       }
-      await api.patch(`/api/equipment/${equipment.id}`, body);
-      await onSaved();
-      onClose();
+      if (typeof body.modelId === "string") {
+        const res = await api.get<{ removed: { sku: string; nameKo: string; nameVi: string; nameEn: string }[] }>(
+          `/api/equipment/${equipment.id}/model-change-preview?modelId=${encodeURIComponent(body.modelId)}`,
+        );
+        if (res.data.removed.length > 0) {
+          setDropping({ body, names: res.data.removed.map(filterName) });
+          return;
+        }
+      }
+      await save(body);
     } catch (e) {
+      setError(e instanceof ApiClientError ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmDrop() {
+    if (!dropping) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await save(dropping.body);
+      setDropping(null);
+    } catch (e) {
+      setDropping(null);
       setError(e instanceof ApiClientError ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -336,6 +371,23 @@ export function EquipmentEditModal({
 
         {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       </div>
+      <ConfirmDialog
+        open={dropping !== null}
+        title={t("filtersDropTitle")}
+        message={
+          <div className="flex flex-col gap-2">
+            <p>{t("filtersDropMessage", { count: dropping?.names.length ?? 0 })}</p>
+            <ul className="list-disc pl-5">
+              {dropping?.names.map((n) => <li key={n}>{n}</li>)}
+            </ul>
+          </div>
+        }
+        confirmLabel={t("filtersDropConfirm")}
+        cancelLabel={t("cancel")}
+        busy={busy}
+        onCancel={() => setDropping(null)}
+        onConfirm={confirmDrop}
+      />
     </Modal>
   );
 }

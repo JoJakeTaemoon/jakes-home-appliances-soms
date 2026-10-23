@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 
@@ -39,6 +39,7 @@ export function Modal({
   disableBackdropClose,
 }: Readonly<Props>) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
 
   // Escape closes.
   useEffect(() => {
@@ -97,6 +98,7 @@ export function Modal({
         ref={containerRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
         className={cn(
           "relative w-full rounded-2xl bg-white shadow-xl ring-1 ring-[#e5e5e5] outline-none",
@@ -105,7 +107,7 @@ export function Modal({
       >
         {title && (
           <div className="flex items-center justify-between border-b border-[#e5e5e5] px-5 py-4">
-            <h2 className="text-base font-semibold text-[#111111]">{title}</h2>
+            <h2 id={titleId} className="text-base font-semibold text-[#111111]">{title}</h2>
             <button
               type="button"
               onClick={onClose}

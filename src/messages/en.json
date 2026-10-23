@@ -978,7 +978,10 @@
       "lastInspectionHint": "Leave empty to auto-calc from visit history.",
       "customDescription": "Equipment description (off-catalog)",
       "notes": "Notes",
-      "statusNote": "Change equipment status (active/deactivated/terminated) via the dedicated buttons above."
+      "statusNote": "Change equipment status (active/deactivated/terminated) via the dedicated buttons above.",
+      "filtersDropTitle": "Filters not on the new model will be dropped",
+      "filtersDropMessage": "{count} of this unit's filters are not on the new model, so saving drops them along with their last-change dates.",
+      "filtersDropConfirm": "Drop and save"
     },
     "panel": {
       "tabBasic": "Basic info",

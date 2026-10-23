@@ -978,7 +978,10 @@
       "lastInspectionHint": "Để trống sẽ tự tính theo lịch sử lượt thăm.",
       "customDescription": "Mô tả thiết bị (ngoài danh mục)",
       "notes": "Ghi chú",
-      "statusNote": "Đổi trạng thái thiết bị (hoạt động/ngừng/chấm dứt) bằng các nút riêng ở phía trên."
+      "statusNote": "Đổi trạng thái thiết bị (hoạt động/ngừng/chấm dứt) bằng các nút riêng ở phía trên.",
+      "filtersDropTitle": "Một số lõi lọc không có trong model mới",
+      "filtersDropMessage": "{count} lõi lọc của thiết bị này không có trong cấu hình lõi lọc của model mới nên sẽ bị bỏ khi lưu, kèm theo ngày thay gần nhất của chúng.",
+      "filtersDropConfirm": "Bỏ và lưu"
     },
     "panel": {
       "tabBasic": "Thông tin cơ bản",

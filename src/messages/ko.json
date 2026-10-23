@@ -978,7 +978,10 @@
       "lastInspectionHint": "비우면 방문 기록 기준으로 자동 계산됩니다.",
       "customDescription": "장비 설명(비표준)",
       "notes": "메모",
-      "statusNote": "장비 상태(활성/비활성/해지) 변경은 상단의 전용 버튼을 사용하세요."
+      "statusNote": "장비 상태(활성/비활성/해지) 변경은 상단의 전용 버튼을 사용하세요.",
+      "filtersDropTitle": "새 모델에 없는 필터가 빠집니다",
+      "filtersDropMessage": "이 장비의 필터 {count}개는 새 모델의 필터 구성에 없어 저장하면 빠집니다. 최근 교체일 등 그 필터의 기록도 함께 지워집니다.",
+      "filtersDropConfirm": "빼고 저장"
     },
     "panel": {
       "tabBasic": "기본정보",

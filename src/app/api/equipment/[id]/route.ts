@@ -14,8 +14,13 @@ import { requireAuth } from "@/lib/auth/guards";
 import { canManageEquipment } from "@/lib/customers/access";
 import { updateEquipmentSchema } from "@/lib/validators/equipment";
 import { successResponse, toErrorResponse } from "@/lib/api/response";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/error";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
+import { filtersOutsideModel } from "@/lib/equipment/model-change";
 import { CATEGORY_LINKS_SELECT } from "@/lib/products/classification";
 
 const paramsSchema = z.object({ id: z.string() });
@@ -53,7 +58,8 @@ export const GET = defineQuery({
 export async function PATCH(request: NextRequest, ctx: Ctx) {
   try {
     const auth = await requireAuth(request);
-    if (!canManageEquipment(auth.role)) throw new ForbiddenError("Cannot manage equipment");
+    if (!canManageEquipment(auth.role))
+      throw new ForbiddenError("Cannot manage equipment");
     const { id } = await ctx.params;
 
     const before = await prisma.equipment.findUnique({ where: { id } });
@@ -80,7 +86,9 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         select: { id: true },
       });
       if (!site) {
-        throw new ValidationError("Target site does not belong to this customer");
+        throw new ValidationError(
+          "Target site does not belong to this customer",
+        );
       }
     }
     // Validate the model exists — same pre-check as create/register so a bad
@@ -96,37 +104,50 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
     // Prisma semantics do the branching for us: an `undefined` field is left
     // unchanged, `null` clears it, a value sets it — which is exactly how the
     // validator hands each field over (absent → undefined, explicit → null/value).
-    const updated = await prisma.equipment.update({
-      where: { id },
-      data: {
-        serialNumber: data.serialNumber,
-        // assetCode is immutable — issued once at registration.
-        ownership: data.ownership,
-        installedAt: data.installedAt,
-        installedByTechnicianId: data.installedByTechnicianId ?? undefined,
-        filterPolicyOverride:
-          data.filterPolicyOverride === null
-            ? undefined
-            : (data.filterPolicyOverride as object | undefined),
-        notes: data.notes,
-        // Previously validated-but-dropped (silent no-op bug) — now persisted.
-        customDescription: data.customDescription,
-        customMaintenanceCycleDays: data.customMaintenanceCycleDays,
-        // Newly editable: model, site, and SALE pricing.
-        modelId: data.modelId,
-        siteId: data.siteId,
-        salePrice: data.salePrice,
-        installFee: data.installFee,
-        deposit: data.deposit,
-        monthlyFee: data.monthlyFee,
-        serviceType: data.serviceType,
-        managementType: data.managementType,
-        lifecycleStage: data.lifecycleStage,
-        customInspectionCycleDays: data.customInspectionCycleDays,
-        lastInspectionAtOverride: data.lastInspectionAtOverride,
-        nextInspectionAtOverride: data.nextInspectionAtOverride,
-        imageUrl: data.imageUrl,
-      },
+    // A new model takes its filters with it: the unit's rows for filters the
+    // new model does not carry go (see filtersOutsideModel).
+    const modelChanged = !!data.modelId && data.modelId !== before.modelId;
+    const { updated, removed } = await prisma.$transaction(async (tx) => {
+      const removed = modelChanged
+        ? await filtersOutsideModel(tx, id, data.modelId!)
+        : [];
+      if (removed.length)
+        await tx.equipmentConsumable.deleteMany({
+          where: { id: { in: removed.map((r) => r.id) } },
+        });
+      const updated = await tx.equipment.update({
+        where: { id },
+        data: {
+          serialNumber: data.serialNumber,
+          // assetCode is immutable — issued once at registration.
+          ownership: data.ownership,
+          installedAt: data.installedAt,
+          installedByTechnicianId: data.installedByTechnicianId ?? undefined,
+          filterPolicyOverride:
+            data.filterPolicyOverride === null
+              ? undefined
+              : (data.filterPolicyOverride as object | undefined),
+          notes: data.notes,
+          // Previously validated-but-dropped (silent no-op bug) — now persisted.
+          customDescription: data.customDescription,
+          customMaintenanceCycleDays: data.customMaintenanceCycleDays,
+          // Newly editable: model, site, and SALE pricing.
+          modelId: data.modelId,
+          siteId: data.siteId,
+          salePrice: data.salePrice,
+          installFee: data.installFee,
+          deposit: data.deposit,
+          monthlyFee: data.monthlyFee,
+          serviceType: data.serviceType,
+          managementType: data.managementType,
+          lifecycleStage: data.lifecycleStage,
+          customInspectionCycleDays: data.customInspectionCycleDays,
+          lastInspectionAtOverride: data.lastInspectionAtOverride,
+          nextInspectionAtOverride: data.nextInspectionAtOverride,
+          imageUrl: data.imageUrl,
+        },
+      });
+      return { updated, removed };
     });
     await logAudit({
       actorType: "USER",
@@ -135,7 +156,12 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
       entityType: "Equipment",
       entityId: id,
       before,
-      after: updated,
+      after: removed.length
+        ? {
+            ...updated,
+            removedFilters: removed.map((r) => r.consumable?.sku).join(", "),
+          }
+        : updated,
       request,
     });
     return successResponse(updated);

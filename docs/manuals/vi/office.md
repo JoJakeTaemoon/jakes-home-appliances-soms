@@ -607,6 +607,8 @@ Chi tiết thiết bị → **«Sửa»**. Mọi nhân viên văn phòng dùng �
 - Đặt chu kỳ là **0** thì dùng giá trị mặc định của danh mục.
 - Các giá trị hiệu chỉnh này cũng được phản ánh vào gợi ý thay lõi trong ứng dụng KTV và email nhắc thay lõi lọc.
 
+- **Đổi model thì lõi lọc cũng theo cấu hình của model mới.** Lõi lọc nào của thiết bị không có trong model mới sẽ bị bỏ khi lưu, kèm ngày thay gần nhất của nó. Nếu có lõi lọc sẽ bị bỏ, trước khi lưu sẽ hiện hộp xác nhận kèm danh sách. Lõi lọc có trong cả model mới vẫn giữ chu kỳ·ngày thay gần nhất; lõi lọc tự nhập tên vẫn được giữ.
+
 > Vô hiệu hóa·kết thúc·thu hồi hãy dùng các nút riêng ở trang chi tiết, không làm ở màn hình sửa này.
 
 ### 7.5 Đăng ký / Lắp đặt hàng loạt (5 bước)
