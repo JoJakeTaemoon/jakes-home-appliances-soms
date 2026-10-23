@@ -18,6 +18,13 @@ vi.mock("@/lib/api/client", () => ({
   ApiClientError: class extends Error {},
 }));
 
+// The calendar popover is not what is under test here.
+vi.mock("@/components/ui/date-picker", () => ({
+  DatePicker: ({ value, onChange, ariaLabel }: { value: string; onChange: (v: string) => void; ariaLabel?: string }) => (
+    <input aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} />
+  ),
+}));
+
 function filterRow(over: Record<string, unknown>) {
   return {
     kind: "FILTER",
@@ -223,6 +230,14 @@ describe("ServiceConfigTable — 사용자 주기 단위 (일 / 개월)", () => 
         replaceCycleUnit: "MONTH",
       }),
     );
+  });
+
+  it("offers no clear button on the unit — a cycle always has a unit", () => {
+    renderTable();
+    const row = rowOf("JBS");
+    fireEvent.click(within(row).getByRole("button", { name: "edit" }));
+    const unit = within(row).getByRole("button", { name: "JBS cycleUnit" });
+    expect(within(unit).queryByRole("button")).toBeNull();
   });
 
   it("re-opens a month cycle in months and saves nothing when untouched", async () => {

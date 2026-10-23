@@ -2006,7 +2006,8 @@ function ConsumablesTab({
 
       {/* scroll region — table with a sticky header */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[620px] text-sm">
+        {/* Headers and the number columns stay on one line ("6 개월" never breaks); names may wrap. */}
+        <table className="w-full min-w-[620px] text-sm [&_th]:whitespace-nowrap">
           <thead className="sticky top-0 z-10 bg-[#fafafa] text-[11px] uppercase tracking-wider text-[#737373]">
             <tr>
               <th className="px-2 py-1.5 text-left">#</th>
@@ -2049,11 +2050,11 @@ function ConsumablesTab({
                     <td className="px-2 py-1.5 text-[#586a7c]">{categoryNames(r.productTypes, locale)}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.brand?.name ?? "—"}</td>
                     <td className="px-2 py-1.5 text-[#586a7c]">{r.spec ?? "—"}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{cycleLabel(t, r.replaceEveryDays, r.replaceCycleUnit)}</td>
-                    <td className={cn("px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
+                    <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums">{cycleLabel(t, r.replaceEveryDays, r.replaceCycleUnit)}</td>
+                    <td className={cn("whitespace-nowrap px-2 py-1.5 text-right tabular-nums", low && "font-semibold text-red-600")}>
                       {(r.stockOnHand ?? 0).toLocaleString()}
                     </td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 text-right tabular-nums">{fmtPrice(r.retailPrice)}</td>
                   </tr>
                 );
               })}

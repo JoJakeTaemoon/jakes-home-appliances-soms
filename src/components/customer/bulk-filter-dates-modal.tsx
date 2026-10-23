@@ -187,6 +187,7 @@ export function BulkFilterDatesModal({
                     onChange={(v) => setDates((d) => ({ ...d, [f.id]: v }))}
                     max={todayVst()}
                     ariaLabel={name(f)}
+                    className="w-40 shrink-0"
                   />
                 </label>
               ))}

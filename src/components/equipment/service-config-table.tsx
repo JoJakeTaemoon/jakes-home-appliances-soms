@@ -8,6 +8,7 @@ import { formatDateOrDash as formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Combobox } from "@/components/ui/combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cycleDaysOf, type CycleUnit } from "@/lib/equipment/cycle";
 
 interface Row {
@@ -259,6 +260,7 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
                               { value: "MONTH", label: t("unitMonth") },
                             ]}
                             searchable={false}
+                            allowClear={false}
                             ariaLabel={`${name} ${t("cycleUnit")}`}
                             className="w-20"
                           />
@@ -302,7 +304,8 @@ export function ServiceConfigTable({ equipmentId }: Readonly<Props>) {
                   <td className="py-2">
                     <StatusChip status={r.status} t={t} />
                   </td>
-                  <td className="whitespace-nowrap py-2 text-right">
+                  {/* pr-1: a button flush with the scroll box edge loses its right border. */}
+                  <td className="whitespace-nowrap py-2 pl-2 pr-1 text-right">
                     <div className="flex justify-end gap-1">
                       {d ? (
                         <>
@@ -425,13 +428,5 @@ function DateCell({
   label: string;
   onChange: (v: string) => void;
 }>) {
-  return (
-    <input
-      type="date"
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-32 rounded border border-gray-300 px-1.5 py-0.5 text-xs"
-    />
-  );
+  return <DatePicker value={value} onChange={onChange} ariaLabel={label} className="w-36" />;
 }
