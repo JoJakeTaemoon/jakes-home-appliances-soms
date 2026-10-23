@@ -14,7 +14,7 @@ const payload = (over: Partial<SendPayload> = {}): SendPayload => ({
   to: "ops@example.vn",
   templateCode: "EMAIL_RECEIPT",
   locale: "vi",
-  subject: "[Seoul Aqua] Biên lai thanh toán",
+  subject: "[Jake's Home Appliances] Biên lai thanh toán",
   body: "Kính chào Nguyễn Văn A,\n\nThanh toán đã được ghi nhận.",
   ...over,
 });
@@ -59,10 +59,10 @@ describe("ResendProvider", () => {
     expect(init.headers["Content-Type"]).toBe("application/json");
 
     const sent = JSON.parse(init.body as string);
-    expect(sent.from).toBe("Seoul Aqua <noreply@seoulaqua.com.vn>");
-    expect(sent.reply_to).toBe("cs@seoulaqua.com.vn");
+    expect(sent.from).toBe("Jake's Home Appliances <noreply@jakeshomeappliances.com.vn>");
+    expect(sent.reply_to).toBe("cs@jakeshomeappliances.com.vn");
     expect(sent.to).toEqual(["ops@example.vn"]);
-    expect(sent.subject).toBe("[Seoul Aqua] Biên lai thanh toán");
+    expect(sent.subject).toBe("[Jake's Home Appliances] Biên lai thanh toán");
     expect(sent.text).toBe(payload().body);
 
     expect(res.providerMessageId).toBe("49a3999c-0ce1-4ea6-ab68-afcd6dc2e794");
@@ -70,13 +70,13 @@ describe("ResendProvider", () => {
   });
 
   it("takes the sender and reply-to from EMAIL_FROM / EMAIL_REPLY_TO", async () => {
-    process.env.EMAIL_FROM = "SOMS <soms@seoulaqua.com.vn>";
-    process.env.EMAIL_REPLY_TO = "help@seoulaqua.com.vn";
+    process.env.EMAIL_FROM = "SOMS <soms@jakeshomeappliances.com.vn>";
+    process.env.EMAIL_REPLY_TO = "help@jakeshomeappliances.com.vn";
     const spy = mockFetch(200, { id: "x" });
     await new ResendProvider().send(payload());
     const sent = JSON.parse(spy.mock.calls[0][1].body as string);
-    expect(sent.from).toBe("SOMS <soms@seoulaqua.com.vn>");
-    expect(sent.reply_to).toBe("help@seoulaqua.com.vn");
+    expect(sent.from).toBe("SOMS <soms@jakeshomeappliances.com.vn>");
+    expect(sent.reply_to).toBe("help@jakeshomeappliances.com.vn");
   });
 
   it("throws a readable error carrying Resend's message on a 4xx", async () => {

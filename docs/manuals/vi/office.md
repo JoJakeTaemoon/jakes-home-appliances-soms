@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho nhân viên văn phòng
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho nhân viên văn phòng
 
 **Đối tượng**: Quản trị viên (ADMIN), Quản lý (MANAGER), Nhân viên văn phòng (STAFF)
 **Phiên bản**: 15/10/2026 (chụp lại toàn bộ màn hình · viết lại toàn diện theo đúng thao tác thực tế — đăng ký nhân viên bán hàng riêng, loại sản phẩm, quyền quản lý người dùng chỉ theo chiều xuống, lịch sử gửi tin)
@@ -37,7 +37,7 @@
 
 ### 1.1 SOMS là gì?
 
-**SOMS (Service Operation Management System)** là hệ thống nghiệp vụ tích hợp của Seoul Aqua. Từ đăng ký khách hàng, hợp đồng, lắp đặt thiết bị, lượt thăm, thu tiền, hóa đơn GTGT đến nhật ký kiểm tra — tất cả được xử lý tại một nơi.
+**SOMS (Service Operation Management System)** là hệ thống nghiệp vụ tích hợp của Jake's Home Appliances. Từ đăng ký khách hàng, hợp đồng, lắp đặt thiết bị, lượt thăm, thu tiền, hóa đơn GTGT đến nhật ký kiểm tra — tất cả được xử lý tại một nơi.
 
 - **Một khách hàng = một màn hình**: thiết bị, hợp đồng, người liên hệ và yêu cầu dịch vụ đều nằm trong các tab của trang chi tiết khách hàng.
 - **Ba ứng dụng, một dữ liệu**: văn phòng (máy tính), kỹ thuật viên hiện trường (điện thoại) và cổng khách hàng (điện thoại) cùng xem một dữ liệu.
@@ -45,15 +45,15 @@
 
 ### 1.2 Địa chỉ truy cập
 
-Cả ba ứng dụng dùng chung một địa chỉ (`soms.seoulaqua.com.vn`) và được phân biệt bằng đường dẫn.
+Cả ba ứng dụng dùng chung một địa chỉ (`soms.jakeshomeappliances.com.vn`) và được phân biệt bằng đường dẫn.
 
 | Ứng dụng | Địa chỉ |
 |---|---|
-| **Ứng dụng văn phòng** | `https://soms.seoulaqua.com.vn/o/vi/login` |
-| **Ứng dụng kỹ thuật viên** | `https://soms.seoulaqua.com.vn/f/vi/login` |
-| **Cổng khách hàng** | `https://soms.seoulaqua.com.vn/vi/login` |
+| **Ứng dụng văn phòng** | `https://soms.jakeshomeappliances.com.vn/o/vi/login` |
+| **Ứng dụng kỹ thuật viên** | `https://soms.jakeshomeappliances.com.vn/f/vi/login` |
+| **Cổng khách hàng** | `https://soms.jakeshomeappliances.com.vn/vi/login` |
 
-> `/vi` là tiếng Việt, `/ko` là tiếng Hàn; bỏ phần ngôn ngữ trong địa chỉ thì màn hình mở bằng tiếng Anh. Địa chỉ cổng khách hàng cũ `portal.seoulaqua.com.vn` không còn được dùng.
+> `/vi` là tiếng Việt, `/ko` là tiếng Hàn; bỏ phần ngôn ngữ trong địa chỉ thì màn hình mở bằng tiếng Anh. Địa chỉ cổng khách hàng cũ `portal.jakeshomeappliances.com.vn` không còn được dùng.
 
 ### 1.3 Yêu cầu
 
@@ -662,8 +662,8 @@ Dùng khi đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một d
 
 **Số hợp đồng**
 
-- B2C: `HD-20261015/SA-KH00001`
-- B2B: `HD-20261015/SA-SHV`, phụ lục là `-A1`, `-A2` …
+- B2C: `HD-20261015/JH-KH00001`
+- B2B: `HD-20261015/JH-SHV`, phụ lục là `-A1`, `-A2` …
 
 ### 8.2 Danh sách hợp đồng
 
@@ -1536,6 +1536,6 @@ Mọi tài liệu đều là mẫu hai ngôn ngữ, ghi **tiếng Việt ở tr�
 |---|---|
 | Thêm·sửa·đặt lại tài khoản ADMIN | Không làm được trên màn hình (quản lý người dùng chỉ theo chiều xuống) |
 | Sửa mặt hàng·số lượng của đơn hàng | Không sửa được sau khi tạo. Hãy «Hủy đơn» rồi tạo lại |
-| Gửi email cho khách | Cho đến khi máy chủ vận hành được cấu hình khóa gửi (Resend) và xác thực tên miền `seoulaqua.com.vn`, toàn bộ email là giả lập |
+| Gửi email cho khách | Cho đến khi máy chủ vận hành được cấu hình khóa gửi (Resend) và xác thực tên miền `jakeshomeappliances.com.vn`, toàn bộ email là giả lập |
 | 4 loại SMS (duyệt·từ chối·quá hạn cuối·hết hạn thuê) | Do nhà mạng chưa đăng ký nội dung nên thất bại (146). Hãy báo qua điện thoại |
 | Các tab của khách hàng «Lịch sử bảo trì·Lịch sử thay lõi lọc·Tình hình thanh toán·Ghi chú & Đính kèm» | Đang chuẩn bị. Xem ở vùng chi tiết của tab Thiết bị và trang chi tiết thiết bị |

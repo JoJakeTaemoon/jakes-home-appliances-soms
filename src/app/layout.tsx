@@ -3,16 +3,16 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Seoul Aqua SOMS",
-  description: "Seoul Aqua Service Operation Management System",
+  title: "Jake's Home Appliances SOMS",
+  description: "Jake's Home Appliances Service Operation Management System",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Seoul Aqua",
+    title: "Jake's Home Appliances",
     statusBarStyle: "default",
   },
   icons: {
-    apple: "/logo/seoul-aqua-logo.jpg",
+    apple: "/logo/jakes-home-appliances-logo.jpg",
   },
 };
 

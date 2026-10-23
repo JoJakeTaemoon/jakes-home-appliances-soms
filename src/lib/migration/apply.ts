@@ -15,7 +15,7 @@
  *     inspection falls due from the true install date.
  *
  * Codes keep their normal allocators — `KH#####` for customers,
- * `HD-…/SA-…` for contracts, `MAY-######` per model for equipment — so
+ * `HD-…/JH-…` for contracts, `MAY-######` per model for equipment — so
  * imported rows are indistinguishable from ones created in the UI. The
  * customer's own identifiers are preserved in `legacyCode` /
  * `legacyContractNumber`, which is what makes a re-upload skip instead of

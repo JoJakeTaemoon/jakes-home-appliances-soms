@@ -7,8 +7,8 @@ import {
 
 describe("createBrandSchema", () => {
   it("trims and accepts a normal name", () => {
-    const parsed = createBrandSchema.parse({ name: "  Seoul Aqua  " });
-    expect(parsed.name).toBe("Seoul Aqua");
+    const parsed = createBrandSchema.parse({ name: "  Jake's Home Appliances  " });
+    expect(parsed.name).toBe("Jake's Home Appliances");
     expect(parsed.isActive).toBe(true);
     expect(parsed.sortOrder).toBe(0);
   });

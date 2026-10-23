@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — User Manuals
+# Jake's Home Appliances SOMS — User Manuals
 
 End-user manuals organized by **user group** and language.
 
@@ -17,7 +17,7 @@ End-user manuals organized by **user group** and language.
 |---|---|
 | `office.md` | Real permission matrix (downward-only user management, MANAGER+ approvals), cron schedule in VST, actual sidebar, 판매원 as its own roster, 제품 유형 + multi-제품군 catalog, 포털 비밀번호 초기화, 알림 서식 / 알림 발송 내역 / 회사 정보 / 데이터 이관 (ADMIN), what SMS/email actually reach customers today, and Appendix E "what the screens can't do yet" |
 | `field.md` | 5-step completion wizard (work · photos · signature photo · payment · review), 보유 현금 badge and 48h handover, 방문 전달사항 instead of calling customers, offline queue, known issues |
-| `customer.md` | Single host `soms.seoulaqua.com.vn`, passwords read out by phone, 5-step service request, request messages and cancel, real home cards, contacts via 설정 → 연락처 관리 |
+| `customer.md` | Single host `soms.jakeshomeappliances.com.vn`, passwords read out by phone, 5-step service request, request messages and cancel, real home cards, contacts via 설정 → 연락처 관리 |
 | `catalog-upload.md` | Menu names, 제품 유형 not in the CSV, editable 제품군 codes, stock adjustment location |
 
 ## Generated PDFs
