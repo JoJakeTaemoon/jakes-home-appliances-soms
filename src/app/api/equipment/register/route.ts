@@ -13,6 +13,7 @@
  *     line is MAINTENANCE, else SALE.
  */
 
+import { nextSerials } from "@/lib/equipment/serial";
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/guards";
@@ -125,10 +126,10 @@ export async function POST(request: NextRequest) {
         const mm = String(lineInstall.getMonth() + 1).padStart(2, "0");
         const dd = String(lineInstall.getDate()).padStart(2, "0");
 
+        const serials = await nextSerials(tx, line.serialPrefix || `${modelCode}${yy}${mm}${dd}`, line.quantity);
+
         for (let i = 0; i < line.quantity; i++) {
-          const serial = line.serialPrefix
-            ? `${line.serialPrefix}${String(i + 1).padStart(4, "0")}`
-            : `${modelCode}${yy}${mm}${dd}${String(i + 1).padStart(4, "0")}`;
+          const serial = serials[i];
           const equipment = await tx.equipment.create({
             data: {
               customerId: data.customerId,

@@ -408,3 +408,37 @@ describe("POST /api/equipment/register — multi-line wizard", () => {
     expect(pairs.filter((p) => p.assetCode === "MAY-000001")).toHaveLength(2);
   });
 });
+
+describe("POST /api/equipment/register — serial numbers keep counting", () => {
+  const installedAt = "2026-03-15T00:00:00.000Z";
+  const register = async (name: string, quantity: number, serialPrefix?: string) => {
+    const customer = await createCustomer({ name: `${CUSTOMER_NAME_PREFIX}${name}` });
+    const res = await registerPost(
+      await buildReq("/api/equipment/register", "POST", adminToken, {
+        customerId: customer.id,
+        defaultInstalledAt: installedAt,
+        createContract: false,
+        lines: [{ modelId: modelIdB, serviceType: "SALE", managementType: "SELF_MANAGED", quantity, salePrice: 1_000_000, installedAt, ...(serialPrefix ? { serialPrefix } : {}) }],
+      }),
+    );
+    expect(res.status).toBe(201);
+    const ids = ((await res.json()) as { data: { equipmentIds: string[] } }).data.equipmentIds;
+    const rows = await prisma.equipment.findMany({ where: { id: { in: ids } }, select: { serialNumber: true } });
+    return rows.map((r) => r.serialNumber).sort();
+  };
+
+  it("continues the model + install-date sequence across registrations instead of restarting at 0001", async () => {
+    const first = await register("SerialA", 1);
+    const second = await register("SerialB", 2);
+    const prefix = `${MODEL_CODE_B}260315`;
+    expect(first).toEqual([`${prefix}0001`]);
+    expect(second).toEqual([`${prefix}0002`, `${prefix}0003`]);
+  });
+
+  it("continues a typed prefix the same way", async () => {
+    const first = await register("SerialC", 1, "TESTSERIALX-");
+    const second = await register("SerialD", 1, "TESTSERIALX-");
+    expect(first).toEqual(["TESTSERIALX-0001"]);
+    expect(second).toEqual(["TESTSERIALX-0002"]);
+  });
+});

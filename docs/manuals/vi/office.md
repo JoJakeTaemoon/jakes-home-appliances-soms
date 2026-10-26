@@ -638,7 +638,7 @@ Khi hoàn tất, thiết bị, hợp đồng và **lượt lắp đặt** đư�
 
 **Danh sách thiết bị → «Đăng ký / Lắp đặt thiết bị»** hoặc chi tiết khách hàng → «+ Đăng ký thiết bị mới»
 
-Dùng khi đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một dòng. Có 4 bước (Khách hàng → Thông tin thiết bị → Phương thức dịch vụ → Cấu hình dịch vụ), và **mỗi dòng** có mẫu·phương thức·cấu hình dịch vụ riêng. Ở mỗi dòng có thể chọn sê-ri là «Tự động tạo» hoặc «Nhập tay (tiền tố)». Số hợp đồng·ngày hợp đồng nhập một lần theo hợp đồng chứ không theo dòng.
+Dùng khi đăng ký nhiều thiết bị khác nhau, mỗi thiết bị một dòng. Có 4 bước (Khách hàng → Thông tin thiết bị → Phương thức dịch vụ → Cấu hình dịch vụ), và **mỗi dòng** có mẫu·phương thức·cấu hình dịch vụ riêng. Ở mỗi dòng có thể chọn sê-ri là «Tự động tạo» hoặc «Nhập tay (tiền tố)». Tự động tạo có dạng `mã mẫu + ngày lắp (YYMMDD) + số thứ tự 4 chữ số`; nếu đã có thiết bị cùng mẫu·cùng ngày lắp thì số tiếp tục từ số kế tiếp (ví dụ sau 0001 là 0002). Tiền tố nhập tay cũng tiếp tục như vậy. Số hợp đồng·ngày hợp đồng nhập một lần theo hợp đồng chứ không theo dòng.
 
 ### 7.7 Lịch sử lắp đặt
 
