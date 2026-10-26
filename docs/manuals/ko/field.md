@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — 현장 기사 매뉴얼
+# Jake's Home Appliances SOMS — 현장 기사 매뉴얼
 
 **대상 사용자**: 기사(TECHNICIAN) — 휴대폰 사용
 **버전**: 2026-10-15 (전 화면 재촬영 · 실제 동작 기준 전면 개정 — 방문 완료 5단계, 서명 사진, 보유 현금 배지, 방문 전달사항 반영)
@@ -45,7 +45,7 @@
 휴대폰 Chrome 또는 Safari에서 엽니다.
 
 ```
-https://soms.seoulaqua.com.vn/f/ko/login
+https://soms.jakeshomeappliances.com.vn/f/ko/login
 ```
 
 - 주소의 `/ko`가 한국어 화면입니다. 빼면 영어, `/vi`는 베트남어입니다.
@@ -96,7 +96,7 @@ https://soms.seoulaqua.com.vn/f/ko/login
 
 ## 4장. 화면 구성
 
-- **위쪽**: 「Seoul Aqua 현장」, 언어 메뉴(한국어 · Tiếng Việt · English), 로그아웃 아이콘
+- **위쪽**: 「Jake's Home Appliances 현장」, 언어 메뉴(한국어 · Tiếng Việt · English), 로그아웃 아이콘
 - **아래쪽 탭 3개**: **오늘 · 예정 · 내 정보**
 - 인터넷이 끊기면 위쪽에 「오프라인」 배너가 뜹니다(§13.3).
 

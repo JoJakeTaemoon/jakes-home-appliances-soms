@@ -134,7 +134,7 @@ const PLACEHOLDER_HTML = (caption: string, viewport: { width: number; height: nu
     <div class="icon">📸</div>
     <p class="caption">${caption}</p>
     <p class="note">실제 스크린샷은 dev 서버 + DB seed 후<br/><code>npm run manuals:screenshots</code> 실행 시 자동으로 이 자리에 덮어쓰여집니다.</p>
-    <div class="brand">Seoul Aqua SOMS</div>
+    <div class="brand">Jake's Home Appliances SOMS</div>
   </div>
 </body>
 </html>`;

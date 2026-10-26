@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — 사무실 직원 매뉴얼
+# Jake's Home Appliances SOMS — 사무실 직원 매뉴얼
 
 **대상 사용자**: 관리자(ADMIN), 매니저(MANAGER), 사무실 직원(STAFF)
 **버전**: 2026-10-15 (전 화면 재촬영 · 실제 동작 기준 전면 개정 — 판매원 별도 등록, 제품 유형, 사용자 관리 하향 권한, 알림 발송 현황 반영)
@@ -37,7 +37,7 @@
 
 ### 1.1 SOMS란?
 
-**SOMS(Service Operation Management System)** 는 Seoul Aqua의 통합 업무 시스템입니다. 고객 등록부터 계약, 장비 설치, 방문, 수금, 세금계산서, 감사 기록까지 한 곳에서 처리합니다.
+**SOMS(Service Operation Management System)** 는 Jake's Home Appliances의 통합 업무 시스템입니다. 고객 등록부터 계약, 장비 설치, 방문, 수금, 세금계산서, 감사 기록까지 한 곳에서 처리합니다.
 
 - **고객 한 명 = 화면 하나**: 보유 장비·계약·담당자·서비스 요청이 고객 상세의 탭에 모입니다.
 - **세 개의 앱, 하나의 데이터**: 사무실(PC), 현장 기사(휴대폰), 고객 포털(휴대폰)이 같은 데이터를 봅니다.
@@ -45,15 +45,15 @@
 
 ### 1.2 접속 주소
 
-세 앱 모두 같은 주소(`soms.seoulaqua.com.vn`)를 씁니다. 경로로 구분합니다.
+세 앱 모두 같은 주소(`soms.jakeshomeappliances.com.vn`)를 씁니다. 경로로 구분합니다.
 
 | 앱 | 주소 |
 |---|---|
-| **사무실 앱** | `https://soms.seoulaqua.com.vn/o/ko/login` |
-| **현장 기사 앱** | `https://soms.seoulaqua.com.vn/f/ko/login` |
-| **고객 포털** | `https://soms.seoulaqua.com.vn/ko/login` |
+| **사무실 앱** | `https://soms.jakeshomeappliances.com.vn/o/ko/login` |
+| **현장 기사 앱** | `https://soms.jakeshomeappliances.com.vn/f/ko/login` |
+| **고객 포털** | `https://soms.jakeshomeappliances.com.vn/ko/login` |
 
-> 주소에서 `/ko`를 빼면 영어 화면이 열립니다. 베트남어는 `/vi`입니다. 예전 고객 포털 주소 `portal.seoulaqua.com.vn`은 더 이상 쓰지 않습니다.
+> 주소에서 `/ko`를 빼면 영어 화면이 열립니다. 베트남어는 `/vi`입니다. 예전 고객 포털 주소 `portal.jakeshomeappliances.com.vn`은 더 이상 쓰지 않습니다.
 
 ### 1.3 필요 환경
 
@@ -692,8 +692,8 @@ MANAGER 이상. 중복 등록 등으로 고객을 **완전히 지울 때** 씁�
 
 **계약번호**
 
-- B2C: `HD-20261015/SA-KH00001`
-- B2B: `HD-20261015/SA-SHV`, 부록은 `-A1`, `-A2` …
+- B2C: `HD-20261015/JH-KH00001`
+- B2B: `HD-20261015/JH-SHV`, 부록은 `-A1`, `-A2` …
 
 ### 8.2 계약 목록
 
@@ -1566,6 +1566,6 @@ SMS와 이메일이 실제로 나갔는지 확인하는 화면입니다.
 |---|---|
 | ADMIN 계정 추가·수정·초기화 | 화면에서 불가 (사용자 관리는 아래로만) |
 | 주문 품목·수량 수정 | 등록 후에는 고칠 수 없습니다. 「주문 취소」 후 새로 등록하세요 |
-| 고객 이메일 발송 | 운영 서버에 발송 키(Resend)와 `seoulaqua.com.vn` 도메인 인증을 설정하기 전까지 모든 이메일이 모의발송입니다 |
+| 고객 이메일 발송 | 운영 서버에 발송 키(Resend)와 `jakeshomeappliances.com.vn` 도메인 인증을 설정하기 전까지 모든 이메일이 모의발송입니다 |
 | SMS 4종(승인·반려·연체 최종·임대 만료) | 통신사 문안 등록 전이라 실패(146)합니다. 전화로 안내하세요 |
 | 고객 「유지보수 이력·필터 교환 이력·결제 현황·메모 및 첨부파일」 탭 | 준비 중. 장비 탭의 상세 영역과 장비 상세 페이지에서 확인하세요 |

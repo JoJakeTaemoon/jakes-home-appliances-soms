@@ -10,7 +10,7 @@
 #                                               migration-NN.xml: validate ALL
 #                                               first, commit only if all are clean
 #
-# Env: SOMS_HOST (default https://soms.seoulaqua.com.vn), SOMS_LOGIN (ADMIN
+# Env: SOMS_HOST (default https://soms.jakeshomeappliances.com.vn), SOMS_LOGIN (ADMIN
 # username or phone), optional SOMS_PASSWORD_FILE (a chmod-600 file holding
 # the password). Without the file the password is asked for. It is never
 # passed on the command line. ADMIN only — the migration API refuses anyone else.
@@ -20,7 +20,7 @@ set -euo pipefail
 
 MODE=${1:-}
 DIR=${2:-}
-HOST=${SOMS_HOST:-https://soms.seoulaqua.com.vn}
+HOST=${SOMS_HOST:-https://soms.jakeshomeappliances.com.vn}
 if [[ -z "$MODE" || -z "$DIR" || -z "${SOMS_LOGIN:-}" ]]; then
   echo "usage: SOMS_LOGIN=<admin> $0 export|apply <dir>   (SOMS_HOST defaults to $HOST)" >&2
   exit 1

@@ -4,8 +4,8 @@
  * Plain `fetch` against `POST https://api.resend.com/emails` — no SDK, the
  * call is one request. Env:
  *   - `RESEND_API_KEY`  (required when `EMAIL_PROVIDER=resend`)
- *   - `EMAIL_FROM`      default `Seoul Aqua <noreply@seoulaqua.com.vn>`
- *   - `EMAIL_REPLY_TO`  default `cs@seoulaqua.com.vn`
+ *   - `EMAIL_FROM`      default `Jake's Home Appliances <noreply@jakeshomeappliances.com.vn>`
+ *   - `EMAIL_REPLY_TO`  default `cs@jakeshomeappliances.com.vn`
  *
  * The sender domain needs DKIM/SPF/DMARC verified in Resend before a real
  * send succeeds; until then Resend answers 403 and the row logs FAILED.
@@ -27,8 +27,8 @@ import type {
 
 const ENDPOINT = "https://api.resend.com/emails";
 const TIMEOUT_MS = 15_000;
-const DEFAULT_FROM = "Seoul Aqua <noreply@seoulaqua.com.vn>";
-const DEFAULT_REPLY_TO = "cs@seoulaqua.com.vn";
+const DEFAULT_FROM = "Jake's Home Appliances <noreply@jakeshomeappliances.com.vn>";
+const DEFAULT_REPLY_TO = "cs@jakeshomeappliances.com.vn";
 
 interface ResendError {
   name?: string;

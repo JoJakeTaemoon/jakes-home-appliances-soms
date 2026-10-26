@@ -38,12 +38,12 @@ describe("CustomerDataChecksBanner", () => {
     mockUseApiQuery.mockReturnValue({
       data: {
         ...EMPTY,
-        contractsWithoutFee: [{ id: "k9", contractNumber: "HD-20140101/SA-KH00001" }],
+        contractsWithoutFee: [{ id: "k9", contractNumber: "HD-20140101/JH-KH00001" }],
         equipmentWithoutFilterDate: [{ id: "e7", assetCode: "MAY-000007", modelCode: "PTS-2100" }],
       },
     });
     render(<CustomerDataChecksBanner customerId="c1" onOpenContacts={() => {}} />);
-    expect(screen.getByRole("link", { name: "HD-20140101/SA-KH00001" })).toHaveAttribute("href", "/o/contracts/k9");
+    expect(screen.getByRole("link", { name: "HD-20140101/JH-KH00001" })).toHaveAttribute("href", "/o/contracts/k9");
     expect(screen.getByRole("link", { name: /MAY-000007/ })).toHaveAttribute("href", "/o/equipment/e7");
   });
 });

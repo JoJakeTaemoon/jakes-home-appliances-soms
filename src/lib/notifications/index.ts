@@ -8,7 +8,7 @@
  *   EMAIL_PROVIDER=mock | resend
  *
  * Default for both is `mock`. eSMS is live as of 2026-09-12 (brandname
- * `SEOUL AQUA`, credentials in `ESMS_API_KEY` / `ESMS_SECRET_KEY` /
+ * `JAKE'S HOME APPLIANCES`, credentials in `ESMS_API_KEY` / `ESMS_SECRET_KEY` /
  * `ESMS_BRAND_NAME`); it sends in sandbox unless `ESMS_SANDBOX=0`. Resend
  * reads `RESEND_API_KEY` / `EMAIL_FROM` / `EMAIL_REPLY_TO`.
  *

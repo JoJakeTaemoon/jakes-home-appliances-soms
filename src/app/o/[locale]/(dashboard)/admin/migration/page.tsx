@@ -195,7 +195,7 @@ export default function MigrationPage() {
             onClick={() =>
               void download(
                 "/api/admin/migration/template",
-                "seoul-aqua-migration-template.xls",
+                "jakes-home-appliances-migration-template.xls",
               )
             }
             disabled={busy}
@@ -205,7 +205,7 @@ export default function MigrationPage() {
           <Button
             variant="secondary"
             onClick={() =>
-              void download("/api/admin/migration/export", "seoul-aqua-data.xls")
+              void download("/api/admin/migration/export", "jakes-home-appliances-data.xls")
             }
             disabled={busy}
           >

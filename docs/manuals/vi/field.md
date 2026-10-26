@@ -1,4 +1,4 @@
-# Seoul Aqua SOMS — Hướng dẫn dành cho Kỹ thuật viên hiện trường
+# Jake's Home Appliances SOMS — Hướng dẫn dành cho Kỹ thuật viên hiện trường
 
 **Đối tượng**: Kỹ thuật viên (TECHNICIAN) — dùng điện thoại
 **Phiên bản**: 15/10/2026 (chụp lại toàn bộ màn hình · sửa đổi toàn diện theo hoạt động thực tế — hoàn tất lượt thăm 5 bước, ảnh chữ ký, huy hiệu tiền mặt đang giữ, lời nhắn về văn phòng)
@@ -45,7 +45,7 @@
 Mở bằng Chrome hoặc Safari trên điện thoại.
 
 ```
-https://soms.seoulaqua.com.vn/f/vi/login
+https://soms.jakeshomeappliances.com.vn/f/vi/login
 ```
 
 - `/vi` trong địa chỉ là giao diện tiếng Việt. Bỏ đi thì là tiếng Anh, `/ko` là tiếng Hàn.
@@ -96,7 +96,7 @@ Sáng → Đăng nhập → Kiểm tra màn hình "Hôm nay"
 
 ## Chương 4. Bố cục màn hình
 
-- **Phía trên**: "Seoul Aqua Hiện trường", menu ngôn ngữ (한국어 · Tiếng Việt · English), biểu tượng đăng xuất
+- **Phía trên**: "Jake's Home Appliances Hiện trường", menu ngôn ngữ (한국어 · Tiếng Việt · English), biểu tượng đăng xuất
 - **3 tab phía dưới**: **Hôm nay · Sắp tới · Hồ sơ**
 - Khi mất mạng, phía trên hiện biểu ngữ "Ngoại tuyến" (xem [§13.3](#133-khi-mất-mạng)).
 

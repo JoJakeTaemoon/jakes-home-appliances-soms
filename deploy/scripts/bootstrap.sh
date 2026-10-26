@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Seoul Aqua SOMS — one-time server bootstrap.
+# Jake's Home Appliances SOMS — one-time server bootstrap.
 #
 # Run as root on a fresh Ubuntu 22.04 box (103.27.60.70 staging or any
 # future vhost.vn prod box). Idempotent — re-running is safe.
@@ -17,7 +17,7 @@ if [[ ${EUID} -ne 0 ]]; then
 fi
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
-APP_HOME=/opt/seoul-aqua-soms
+APP_HOME=/opt/jakes-home-appliances-soms
 
 echo "[bootstrap] OS update"
 apt-get update -y
@@ -54,18 +54,18 @@ if ! id -u "${DEPLOY_USER}" >/dev/null 2>&1; then
 fi
 usermod -aG docker "${DEPLOY_USER}"
 
-echo "[bootstrap] sudoers — docker + restart of seoul-aqua-* units only"
-cat >/etc/sudoers.d/seoul-aqua-deploy <<EOF
+echo "[bootstrap] sudoers — docker + restart of jakes-home-appliances-* units only"
+cat >/etc/sudoers.d/jakes-home-appliances-deploy <<EOF
 ${DEPLOY_USER} ALL=(root) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, \
   /bin/systemctl daemon-reload, \
-  /bin/systemctl restart seoul-aqua-*, \
-  /bin/systemctl start seoul-aqua-*, \
-  /bin/systemctl stop seoul-aqua-*, \
-  /bin/systemctl enable seoul-aqua-*, \
-  /bin/systemctl status seoul-aqua-*
+  /bin/systemctl restart jakes-home-appliances-*, \
+  /bin/systemctl start jakes-home-appliances-*, \
+  /bin/systemctl stop jakes-home-appliances-*, \
+  /bin/systemctl enable jakes-home-appliances-*, \
+  /bin/systemctl status jakes-home-appliances-*
 EOF
-chmod 0440 /etc/sudoers.d/seoul-aqua-deploy
-visudo -cf /etc/sudoers.d/seoul-aqua-deploy
+chmod 0440 /etc/sudoers.d/jakes-home-appliances-deploy
+visudo -cf /etc/sudoers.d/jakes-home-appliances-deploy
 
 echo "[bootstrap] App directory layout"
 mkdir -p "${APP_HOME}/postgres-data" \
@@ -100,5 +100,5 @@ dpkg-reconfigure --priority=low --frontend=noninteractive unattended-upgrades
 
 echo "[bootstrap] Done. Next:"
 echo "  1. sudo -u ${DEPLOY_USER} ssh-copy-id from your laptop (or paste keys)"
-echo "  2. Fill /opt/seoul-aqua-soms/.env (use .env.staging.example as template)"
+echo "  2. Fill /opt/jakes-home-appliances-soms/.env (use .env.staging.example as template)"
 echo "  3. Trigger the GitHub Actions 'deploy-staging' workflow (workflow_dispatch)"

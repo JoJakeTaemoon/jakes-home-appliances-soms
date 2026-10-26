@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     return new Response(body, {
       headers: {
         "Content-Type": "application/vnd.ms-excel; charset=utf-8",
-        "Content-Disposition": `attachment; filename="seoul-aqua-data-${stamp}.xls"`,
+        "Content-Disposition": `attachment; filename="jakes-home-appliances-data-${stamp}.xls"`,
         "Cache-Control": "no-store",
       },
     });

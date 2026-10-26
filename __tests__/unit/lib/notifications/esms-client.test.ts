@@ -21,7 +21,7 @@ const payload = (over: Partial<SendPayload> = {}): SendPayload => ({
   to: "+84 90 188 8484",
   templateCode: "SMS_VISIT_REMINDER",
   locale: "vi",
-  body: "TB BAO TRI DINH KY: KTV cua SEOUL AQUA du kien se den bao tri May loc nuoc cua QK vao 13/09/2026 09:00.",
+  body: "TB BAO TRI DINH KY: KTV cua JAKE'S HOME APPLIANCES du kien se den bao tri May loc nuoc cua QK vao 13/09/2026 09:00.",
   ...over,
 });
 
@@ -53,7 +53,7 @@ describe("ESmsProvider", () => {
   beforeEach(() => {
     process.env.ESMS_API_KEY = "test-api-key";
     process.env.ESMS_SECRET_KEY = "test-secret-key";
-    process.env.ESMS_BRAND_NAME = "SEOUL AQUA";
+    process.env.ESMS_BRAND_NAME = "JAKE'S HOME APPLIANCES";
     process.env.ESMS_SANDBOX = "0";
   });
 
@@ -69,7 +69,7 @@ describe("ESmsProvider", () => {
     const body = sentBody(spy);
     expect(body.ApiKey).toBe("test-api-key");
     expect(body.SecretKey).toBe("test-secret-key");
-    expect(body.Brandname).toBe("SEOUL AQUA");
+    expect(body.Brandname).toBe("JAKE'S HOME APPLIANCES");
     expect(body.SmsType).toBe("2");
     expect(body.Phone).toBe("0901888484");
     expect(body.IsUnicode).toBe("0");

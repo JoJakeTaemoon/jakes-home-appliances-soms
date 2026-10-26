@@ -60,7 +60,7 @@
 
 ### Contracts 시트 (고객 + 시작일당 1건)
 
-계약번호는 `HD-{날짜}/SA-{고객}` 형식이라, 같은 고객이 같은 날 계약을 두 개 가지면 번호가 겹칩니다. 그래서 같은 날 들어온 장비는 한 계약으로 묶습니다.
+계약번호는 `HD-{날짜}/JH-{고객}` 형식이라, 같은 고객이 같은 날 계약을 두 개 가지면 번호가 겹칩니다. 그래서 같은 날 들어온 장비는 한 계약으로 묶습니다.
 
 | SOMS 열 | 원본 | 규칙 |
 |---|---|---|
@@ -200,13 +200,13 @@
 
 **전날까지**
 1. PR(`feature/legacy-dbf-migration`)을 main에 병합합니다. 그러면 자동 배포되고, 배포 중에 `prisma migrate deploy`가 `billingDay` / `needsReview` 열을 추가합니다.
-2. 배포가 끝나면 https://soms.seoulaqua.com.vn/api/health 가 `"status":"ok","db":"ok"`인지 확인합니다. 아무 계약 화면에서나 「출금일 (매월)」 칸이 보이면 새 코드입니다.
+2. 배포가 끝나면 https://soms.jakeshomeappliances.com.vn/api/health 가 `"status":"ok","db":"ok"`인지 확인합니다. 아무 계약 화면에서나 「출금일 (매월)」 칸이 보이면 새 코드입니다.
 
 **당일**
 3. 옛 프로그램 폴더에서 최신 DBF·SMT 전부를 `reference/data/`에 덮어씁니다(git에는 올라가지 않음).
 4. 운영 DB를 백업합니다.
    ```bash
-   ssh -i ~/.ssh/seoulaqua_staging_deploy deploy@103.27.60.70 'sudo systemctl start seoul-aqua-backup.service && ls -lt /opt/seoul-aqua-soms/backups | head -3'
+   ssh -i ~/.ssh/jakeshomeapp_staging_deploy deploy@103.27.60.70 'sudo systemctl start jakes-home-appliances-backup.service && ls -lt /opt/jakes-home-appliances-soms/backups | head -3'
    ```
 5. 운영이 지금 갖고 있는 고객·카탈로그를 받습니다(ADMIN 계정).
    ```bash
@@ -237,7 +237,7 @@
 - 전부 되돌리려면 4번 백업을 복원합니다. 백업은 `pg_dump --clean`이라 그대로 덮어씁니다. 복원 전에 앱을 멈추고, 끝나면 다시 올립니다.
   ```bash
   ssh deploy@103.27.60.70
-  cd /opt/seoul-aqua-soms
+  cd /opt/jakes-home-appliances-soms
   docker compose stop app
   gunzip < backups/<4번 파일>.sql.gz | docker compose exec -T postgres psql -U soms -d soms
   docker compose start app
