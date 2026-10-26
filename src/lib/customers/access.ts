@@ -34,6 +34,11 @@ export function canDeactivateCustomer(role: StaffRole | string): boolean {
   return role === "ADMIN" || role === "MANAGER";
 }
 
+/** 고객 삭제 (hard delete, with moving or deleting what is attached) — MANAGER+. */
+export function canDeleteCustomer(role: StaffRole | string): boolean {
+  return role === "ADMIN" || role === "MANAGER";
+}
+
 export function canReactivateCustomer(role: StaffRole | string): boolean {
   return role === "ADMIN";
 }

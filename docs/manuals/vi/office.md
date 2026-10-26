@@ -99,6 +99,7 @@ Không có phân chia phòng ban. STAFF cũng thấy toàn bộ menu kinh doanh 
 | Sửa thông tin bên ký hợp đồng | ● | ● | — |
 | Vô hiệu hóa khách hàng | ● | ● | — |
 | Kích hoạt lại khách hàng | ● | — | — |
+| Xóa khách hàng (chuyển·xóa dữ liệu liên quan) | ● | ● | — |
 | Mở tài khoản cổng khách hàng | ● | ● | ● |
 | Đặt lại mật khẩu cổng khách hàng | ● | ● | — |
 | Đăng ký nhân viên bán hàng | ● | ● | ● |
@@ -349,6 +350,7 @@ Các ô còn lại giống B2C.
 | + Đơn mới | Tạo đơn hàng (§10) |
 | + Đăng ký thiết bị mới | Bắt đầu trình hướng dẫn đăng ký thiết bị cho khách này (§7.6) |
 | Vô hiệu hóa / Kích hoạt lại | §5.10 |
+| Xóa khách hàng | §5.11 |
 
 **5 thẻ tóm tắt**: Tổng thiết bị · Tổng hợp đồng · Doanh thu bảo trì/tháng · Doanh thu thuê/tháng · Tổng công nợ
 
@@ -492,6 +494,24 @@ Từ MANAGER trở lên:
 2. **Mọi hợp đồng nháp·chờ ký·hiệu lực·đã sửa đổi của khách này đều bị chấm dứt**, và thiết bị đang dùng chuyển sang **vô hiệu**.
 
 «Kích hoạt lại» để hoàn tác chỉ **ADMIN** làm được. Khách hàng không bị xóa.
+
+### 5.11 Xóa khách hàng
+
+Từ MANAGER trở lên. Dùng khi cần **xóa hẳn** một khách hàng (ví dụ đăng ký trùng). Không thể hoàn tác, nên dữ liệu cần giữ hãy chuyển sang khách hàng khác.
+
+1. Chi tiết khách hàng → «Xóa khách hàng»
+2. Dữ liệu liên quan hiện theo bốn nhóm kèm số lượng. Mỗi nhóm chọn **«Chuyển sang khách hàng khác»** hoặc **«Xóa cùng»** (mặc định là «Xóa cùng»).
+   | Nhóm | Gồm |
+   |---|---|
+   | Thiết bị·hợp đồng·lượt thăm·thu tiền | Liên kết với nhau nên luôn được chuyển hoặc xóa cùng nhau |
+   | Liên hệ·cơ sở | Khi chuyển, liên hệ thành **liên hệ vận hành** của khách hàng nhận (bên ký hợp đồng·liên hệ chính của khách nhận giữ nguyên) |
+   | Yêu cầu dịch vụ·đơn hàng | |
+   | Lịch sử thông báo·tài liệu | |
+3. Nếu có nhóm cần chuyển, tìm và chọn **khách hàng nhận** theo mã·tên.
+4. Nhập **mã khách hàng** để xác nhận rồi bấm «Xóa hẳn».
+
+- Nếu chuyển thiết bị nhưng xóa cơ sở thì thông tin cơ sở của thiết bị·lượt thăm được chuyển sẽ bị bỏ trống (màn hình có thông báo).
+- Việc chuyển gì sang đâu và xóa gì được ghi trong nhật ký kiểm tra với hành động «Xóa».
 
 ---
 

@@ -359,6 +359,40 @@
       "hint": "Only filters with a date are saved. Chosen units without that filter are skipped.",
       "selectedCount": "{count} selected",
       "saved": "Saved {units} units — {created} new, {updated} updated, {skipped} skipped"
+    },
+    "delete": {
+      "button": "Delete customer",
+      "title": "Delete customer — {name} ({code})",
+      "warning": "This cannot be undone. Everything set to «Delete with it» is deleted too. Choose «Move to another customer» for anything to keep.",
+      "groups": {
+        "operations": "Equipment·contracts·visits·payments",
+        "contacts": "Contacts·sites",
+        "requests": "Service requests·orders",
+        "records": "Notification logs·documents"
+      },
+      "count": {
+        "equipment": "Equipment {count}",
+        "contracts": "Contracts {count}",
+        "visits": "Visits {count}",
+        "payments": "Payments {count}",
+        "contacts": "Contacts {count}",
+        "sites": "Sites {count}",
+        "serviceRequests": "Service requests {count}",
+        "orders": "Orders {count}",
+        "notificationLogs": "Notifications {count}",
+        "documents": "Documents {count}"
+      },
+      "none": "None",
+      "move": "Move to another customer",
+      "delete": "Delete with it",
+      "target": "Target customer",
+      "targetSearch": "Search by code or name",
+      "targetChange": "Change",
+      "hintSiteDropped": "Moving the equipment while deleting the sites leaves the moved equipment and visits without a site.",
+      "hintContacts": "Moved contacts join the target as operations contacts (its contract party and primary contact stay).",
+      "confirmLabel": "Type the customer code {code} to confirm",
+      "submit": "Delete permanently",
+      "cancel": "Cancel"
     }
   },
   "salesReps": {

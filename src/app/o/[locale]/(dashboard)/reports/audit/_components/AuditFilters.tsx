@@ -59,6 +59,7 @@ const ACTIONS_BY_ENTITY: Record<string, string[]> = {
     "CUSTOMER_DEACTIVATE",
     "CUSTOMER_REACTIVATE",
     "CUSTOMER_MERGE",
+    "CUSTOMER_DELETE",
     "CUSTOMER_SALES_REP_CHANGED",
     // 데이터 이관은 고객을 기준으로 계약·장비·소모품을 함께 만들므로
     // entityType이 Customer로 기록된다.

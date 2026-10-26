@@ -103,6 +103,12 @@ const ACTION_LABELS: Record<string, CatalogEntry> = {
     vi: "đã hợp nhất",
     entityHint: "Customer",
   },
+  CUSTOMER_DELETE: {
+    ko: "을(를) 삭제했습니다",
+    en: "deleted",
+    vi: "đã xóa",
+    entityHint: "Customer",
+  },
   CUSTOMER_CONTACT_DISABLE: {
     ko: "연락처를 비활성화했습니다",
     en: "disabled a contact",

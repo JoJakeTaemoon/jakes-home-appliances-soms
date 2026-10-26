@@ -359,6 +359,40 @@
       "hint": "날짜를 넣은 필터만 저장합니다. 고른 장비 중 그 필터가 없는 장비는 건너뜁니다.",
       "selectedCount": "{count}대 선택",
       "saved": "{units}대 저장 — 새로 입력 {created}, 수정 {updated}, 건너뜀 {skipped}"
+    },
+    "delete": {
+      "button": "고객 삭제",
+      "title": "고객 삭제 — {name} ({code})",
+      "warning": "삭제하면 되돌릴 수 없습니다. 「함께 삭제」를 고른 데이터도 모두 지워집니다. 남길 데이터는 「다른 고객으로 옮기기」를 고르세요.",
+      "groups": {
+        "operations": "장비·계약·방문·수금",
+        "contacts": "담당자·사업장",
+        "requests": "서비스 요청·주문",
+        "records": "알림 발송 기록·문서"
+      },
+      "count": {
+        "equipment": "장비 {count}",
+        "contracts": "계약 {count}",
+        "visits": "방문 {count}",
+        "payments": "수금 {count}",
+        "contacts": "담당자 {count}",
+        "sites": "사업장 {count}",
+        "serviceRequests": "서비스 요청 {count}",
+        "orders": "주문 {count}",
+        "notificationLogs": "알림 기록 {count}",
+        "documents": "문서 {count}"
+      },
+      "none": "없음",
+      "move": "다른 고객으로 옮기기",
+      "delete": "함께 삭제",
+      "target": "옮길 대상 고객",
+      "targetSearch": "코드·이름으로 검색",
+      "targetChange": "바꾸기",
+      "hintSiteDropped": "장비를 옮기고 사업장은 지우면, 옮긴 장비·방문의 사업장 정보는 비워집니다.",
+      "hintContacts": "옮기는 담당자는 대상 고객의 운영 담당자로 들어갑니다(계약 주체·주 담당자는 대상 고객 것을 유지).",
+      "confirmLabel": "확인을 위해 고객 코드 {code}를 입력하세요",
+      "submit": "완전히 삭제",
+      "cancel": "취소"
     }
   },
   "salesReps": {

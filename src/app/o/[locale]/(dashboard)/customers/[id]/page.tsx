@@ -23,6 +23,7 @@ import { ChangeSalesRepModal } from "@/components/customer/change-sales-rep-moda
 import { OrderHistoryTab } from "@/components/orders/order-history-tab";
 import { OpenPortalButton } from "@/components/customer/open-portal-button";
 import { CustomerDataChecksBanner } from "@/components/customer/data-checks-banner";
+import { CustomerDeleteModal } from "@/components/customer/customer-delete-modal";
 import { BulkFilterDatesModal } from "@/components/customer/bulk-filter-dates-modal";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/ui/modal";
@@ -36,6 +37,7 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import {
   canDeactivateCustomer,
+  canDeleteCustomer,
   canReactivateCustomer,
   canEditContractParty,
   canManageContact,
@@ -201,6 +203,7 @@ function CustomerDetailInner() {
   const [busy, setBusy] = useState(false);
   const [showDeactivate, setShowDeactivate] = useState(false);
   const [showReactivate, setShowReactivate] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [deactivateReason, setDeactivateReason] = useState("");
   const [showAddSite, setShowAddSite] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
@@ -362,9 +365,22 @@ function CustomerDetailInner() {
                 {t("reactivate")}
               </Button>
             )}
+            {canDeleteCustomer(role) && (
+              <Button variant="danger" onClick={() => setShowDelete(true)}>
+                {t("delete.button")}
+              </Button>
+            )}
           </div>
         </div>
       </header>
+      {showDelete && (
+        <CustomerDeleteModal
+          open
+          onClose={() => setShowDelete(false)}
+          customerId={id}
+          onDeleted={() => router.push("/o/customers")}
+        />
+      )}
 
       <CustomerDataChecksBanner
         customerId={id}

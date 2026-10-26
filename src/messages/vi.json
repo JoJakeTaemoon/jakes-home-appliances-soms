@@ -359,6 +359,40 @@
       "hint": "Chỉ lưu lõi lọc đã nhập ngày. Thiết bị không có lõi lọc đó sẽ được bỏ qua.",
       "selectedCount": "Đã chọn {count} thiết bị",
       "saved": "Đã lưu {units} thiết bị — mới {created}, sửa {updated}, bỏ qua {skipped}"
+    },
+    "delete": {
+      "button": "Xóa khách hàng",
+      "title": "Xóa khách hàng — {name} ({code})",
+      "warning": "Không thể hoàn tác sau khi xóa. Dữ liệu chọn «Xóa cùng» cũng bị xóa hết. Dữ liệu cần giữ hãy chọn «Chuyển sang khách hàng khác».",
+      "groups": {
+        "operations": "Thiết bị·hợp đồng·lượt thăm·thu tiền",
+        "contacts": "Liên hệ·cơ sở",
+        "requests": "Yêu cầu dịch vụ·đơn hàng",
+        "records": "Lịch sử thông báo·tài liệu"
+      },
+      "count": {
+        "equipment": "Thiết bị {count}",
+        "contracts": "Hợp đồng {count}",
+        "visits": "Lượt thăm {count}",
+        "payments": "Thu tiền {count}",
+        "contacts": "Liên hệ {count}",
+        "sites": "Cơ sở {count}",
+        "serviceRequests": "Yêu cầu {count}",
+        "orders": "Đơn hàng {count}",
+        "notificationLogs": "Thông báo {count}",
+        "documents": "Tài liệu {count}"
+      },
+      "none": "Không có",
+      "move": "Chuyển sang khách hàng khác",
+      "delete": "Xóa cùng",
+      "target": "Khách hàng nhận",
+      "targetSearch": "Tìm theo mã·tên",
+      "targetChange": "Đổi",
+      "hintSiteDropped": "Nếu chuyển thiết bị nhưng xóa cơ sở thì thông tin cơ sở của thiết bị·lượt thăm được chuyển sẽ bị bỏ trống.",
+      "hintContacts": "Liên hệ được chuyển sẽ thành liên hệ vận hành của khách hàng nhận (giữ nguyên bên ký hợp đồng·liên hệ chính của khách hàng nhận).",
+      "confirmLabel": "Để xác nhận, hãy nhập mã khách hàng {code}",
+      "submit": "Xóa hẳn",
+      "cancel": "Hủy"
     }
   },
   "salesReps": {

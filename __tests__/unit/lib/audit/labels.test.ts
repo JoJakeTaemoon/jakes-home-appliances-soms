@@ -140,6 +140,7 @@ describe("getActionLabel — every emitted action code is registered", () => {
     "CONTRACT_PDF_UPLOADED",
     "CONTRACT_RETRIEVAL_VISIT_AUTO",
     "CONTRACT_TERMINATE",
+    "CUSTOMER_DELETE",
     "CUSTOMER_CONTACT_CREATE",
     "CUSTOMER_SALES_REP_CHANGED",
     "EQUIPMENT_BULK_CREATE",
