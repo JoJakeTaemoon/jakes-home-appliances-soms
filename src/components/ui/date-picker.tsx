@@ -19,13 +19,18 @@
  *
  * Value is a plain `YYYY-MM-DD` ISO date string. Empty string means
  * "no value". Dates are calendar-only — no time, no TZ.
+ *
+ * The box also takes the keyboard (2026-10-26): digits are masked into the
+ * locale's shape as they are typed — ko/en `YYYY-MM-DD`, vi `DD/MM/YYYY`,
+ * so `20261026` reads 2026-10-26 — and a complete date that exists and sits
+ * within min/max is committed at once. Anything else is flagged, and leaving
+ * the box puts the last good value back (an emptied box clears it).
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
-import { formatDate } from "@/lib/format";
 
 interface Props {
   value: string;
@@ -42,6 +47,41 @@ interface Props {
   clearable?: boolean;
   /** 0 = Sunday, 1 = Monday. Default 1 (ISO week). */
   weekStart?: 0 | 1;
+}
+
+/** vi writes the day first (DD/MM/YYYY); ko and en use ISO. */
+const isDayFirst = (locale: string) => locale === "vi";
+
+/** A stored value as the box shows it. */
+function displayOf(ymd: string, dayFirst: boolean): string {
+  const p = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
+  if (!p) return "";
+  return dayFirst ? `${p[3]}/${p[2]}/${p[1]}` : ymd;
+}
+
+/** Typed text → its digits laid out in the locale's shape (partial is fine). */
+export function maskDateInput(raw: string, dayFirst: boolean): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  const cuts = dayFirst ? [2, 4] : [4, 6];
+  const sep = dayFirst ? "/" : "-";
+  let out = "";
+  for (let i = 0; i < digits.length; i++)
+    out += (cuts.includes(i) ? sep : "") + digits[i];
+  return out;
+}
+
+/** A complete typed date → `YYYY-MM-DD`, or null when it is not a real date. */
+export function typedToYmd(text: string, dayFirst: boolean): string | null {
+  const d = text.replace(/\D/g, "");
+  if (d.length !== 8) return null;
+  const [y, m, day] = dayFirst
+    ? [d.slice(4), d.slice(2, 4), d.slice(0, 2)]
+    : [d.slice(0, 4), d.slice(4, 6), d.slice(6)];
+  const mi = Number(m) - 1;
+  const di = Number(day);
+  if (mi < 0 || mi > 11 || di < 1 || di > daysInMonth(Number(y), mi))
+    return null;
+  return `${y}-${m}-${day}`;
 }
 
 function pad2(n: number): string {
@@ -128,7 +168,13 @@ function useCalendarGrid(
     const prevD = prevLast.getDate();
     for (let i = firstDow - 1; i >= 0; i--) {
       const d = prevD - i;
-      cells.push({ y: prevY, m: prevM, d, ymd: toYmd(prevY, prevM, d), inMonth: false });
+      cells.push({
+        y: prevY,
+        m: prevM,
+        d,
+        ymd: toYmd(prevY, prevM, d),
+        inMonth: false,
+      });
     }
     // Current month
     const dim = daysInMonth(y, m);
@@ -168,7 +214,7 @@ export function DatePicker({
   disabled,
   min,
   max,
-  placeholder = "—",
+  placeholder,
   className,
   ariaLabel,
   clearable = true,
@@ -180,7 +226,12 @@ export function DatePicker({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [coords, setCoords] = useState<Coords | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
+  const calendarId = useId();
+  const dayFirst = isDayFirst(locale);
+  // What the box holds — may be a half-typed date that is not committed yet.
+  const [text, setText] = useState(() => displayOf(value, dayFirst));
+  const [invalid, setInvalid] = useState(false);
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
   const parsed = parseYmd(value);
@@ -195,14 +246,38 @@ export function DatePicker({
     setMounted(true);
   }, []);
 
-  // When the value changes externally, re-anchor the calendar view.
+  // When the value changes externally, re-anchor the calendar view and the box.
   useEffect(() => {
     const p = parseYmd(value);
     if (p) {
       setViewY(p.y);
       setViewM(p.m);
     }
-  }, [value]);
+    setText(displayOf(value, dayFirst));
+    setInvalid(false);
+  }, [value, dayFirst]);
+
+  const onType = (raw: string) => {
+    const masked = maskDateInput(raw, dayFirst);
+    setText(masked);
+    if (masked.replace(/\D/g, "").length < 8) {
+      setInvalid(false);
+      return;
+    }
+    const ymd = typedToYmd(masked, dayFirst);
+    if (!ymd || !isWithin(ymd, min, max)) {
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    if (ymd !== value) onChange(ymd);
+  };
+  // Leaving the box: an emptied box clears, anything unfinished goes back.
+  const onLeave = () => {
+    if (text === "" && value && clearable) onChange("");
+    else setText(displayOf(value, dayFirst));
+    setInvalid(false);
+  };
 
   useEffect(() => {
     if (!open) {
@@ -248,7 +323,6 @@ export function DatePicker({
   const monthLabel = useMonthLabel(viewY, viewM, locale);
   const grid = useCalendarGrid(viewY, viewM, weekStart);
 
-  const label = value ? formatDate(value, locale) : placeholder;
   const today = todayYmd();
 
   const goPrev = () => {
@@ -284,28 +358,53 @@ export function DatePicker({
   };
   const clear = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setText("");
     onChange("");
   };
 
   return (
     <div className={cn("relative inline-flex w-full", className)}>
-      <button
+      <div
         ref={triggerRef}
-        type="button"
-        disabled={disabled}
-        aria-label={ariaLabel}
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => !disabled && setOpen((o) => !o)}
         className={cn(
-          "flex h-9 w-full items-center justify-between rounded-lg border border-[#e5e5e5] bg-white px-3 text-left text-sm text-[#111111]",
-          "hover:border-[var(--brand-blue-300)]",
-          "focus:border-[var(--brand-blue-500)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-blue-200)]",
+          "flex h-9 w-full items-center justify-between gap-1 rounded-lg border bg-white pr-2 text-sm text-[#111111]",
+          // Red wins over the focus ring — a bad date matters most while typing it.
+          invalid
+            ? "border-red-500 ring-2 ring-red-100"
+            : "border-[#e5e5e5] hover:border-[var(--brand-blue-300)] focus-within:border-[var(--brand-blue-500)] focus-within:ring-2 focus-within:ring-[var(--brand-blue-200)]",
           disabled && "cursor-not-allowed bg-[#fafafa] text-[#737373]",
-          !value && "text-[#a3a3a3]",
         )}
       >
-        <span className="truncate">{label}</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={10}
+          disabled={disabled}
+          aria-label={ariaLabel}
+          aria-invalid={invalid || undefined}
+          role="combobox"
+          aria-controls={calendarId}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          value={text}
+          placeholder={placeholder ?? (dayFirst ? "DD/MM/YYYY" : "YYYY-MM-DD")}
+          onChange={(e) => onType(e.target.value)}
+          onClick={() => !disabled && setOpen(true)}
+          onBlur={onLeave}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && open) {
+              // Close only the calendar, never a modal around it.
+              e.stopPropagation();
+              setOpen(false);
+            } else if (e.key === "Enter") {
+              setOpen(false);
+            } else if (e.key === "ArrowDown") {
+              setOpen(true);
+            }
+          }}
+          className="h-full min-w-0 flex-1 rounded-lg bg-transparent px-3 text-left placeholder:text-[#a3a3a3] focus:outline-none disabled:cursor-not-allowed"
+        />
         <div className="flex items-center gap-1">
           {clearable && value && !disabled && (
             <span
@@ -322,124 +421,167 @@ export function DatePicker({
               }}
               className="rounded p-0.5 text-[#a3a3a3] hover:bg-[#f5f5f5] hover:text-[#525252]"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </span>
           )}
-          <svg
-            className="text-[#737373]"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={disabled}
+            aria-label={t("openCalendar")}
+            onClick={() => setOpen((o) => !o)}
+            className="rounded p-0.5 text-[#737373] hover:bg-[#f5f5f5] disabled:cursor-not-allowed"
           >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+          </button>
         </div>
-      </button>
+      </div>
 
-      {mounted && open && coords && createPortal(
-        <PopoverPanel
-          ref={popoverRef}
-          coords={coords}
-          minWidth={POPOVER_MIN_WIDTH}
-        >
-          <div className="px-3 py-2">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={goPrev}
-                className="rounded p-1 text-[#525252] hover:bg-[#f5f5f5]"
-                aria-label={t("prev")}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <div className="text-sm font-medium text-[#111111]">
-                {monthLabel}
-              </div>
-              <button
-                type="button"
-                onClick={goNext}
-                className="rounded p-1 text-[#525252] hover:bg-[#f5f5f5]"
-                aria-label={t("next")}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] uppercase text-[#a3a3a3]">
-              {weekdayNames.map((w, i) => (
-                <div key={`${w}-${i}`}>{w}</div>
-              ))}
-            </div>
-
-            <div className="mt-1 grid grid-cols-7 gap-0.5">
-              {grid.map((c) => {
-                const selected = c.ymd === value;
-                const isToday = c.ymd === today;
-                const blocked = !isWithin(c.ymd, min, max);
-                return (
+      {mounted &&
+        open &&
+        coords &&
+        createPortal(
+          <PopoverPanel
+            ref={popoverRef}
+            coords={coords}
+            minWidth={POPOVER_MIN_WIDTH}
+          >
+            <div id={calendarId} role="dialog" aria-label={ariaLabel}>
+              <div className="px-3 py-2">
+                <div className="flex items-center justify-between">
                   <button
-                    key={c.ymd}
                     type="button"
-                    onClick={() => pick(c.ymd)}
-                    disabled={blocked}
-                    className={cn(
-                      "h-8 rounded text-xs",
-                      selected
-                        ? "bg-[var(--brand-blue-500)] font-semibold text-white"
-                        : c.inMonth
-                          ? "text-[#111111] hover:bg-[var(--brand-blue-50)]"
-                          : "text-[#d4d4d4] hover:bg-[#f5f5f5]",
-                      isToday && !selected && "ring-1 ring-inset ring-[var(--brand-blue-300)]",
-                      blocked && "cursor-not-allowed opacity-40 hover:bg-transparent",
-                    )}
+                    onClick={goPrev}
+                    className="rounded p-1 text-[#525252] hover:bg-[#f5f5f5]"
+                    aria-label={t("prev")}
                   >
-                    {c.d}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
                   </button>
-                );
-              })}
-            </div>
+                  <div className="text-sm font-medium text-[#111111]">
+                    {monthLabel}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    className="rounded p-1 text-[#525252] hover:bg-[#f5f5f5]"
+                    aria-label={t("next")}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </button>
+                </div>
 
-            <div className="mt-2 flex items-center justify-between border-t border-[#f5f5f5] pt-2 text-xs">
-              <button
-                type="button"
-                onClick={pickToday}
-                className="rounded px-2 py-1 text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)]"
-              >
-                {t("today")}
-              </button>
-              {clearable && value && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange("");
-                    setOpen(false);
-                  }}
-                  className="rounded px-2 py-1 text-[#737373] hover:bg-[#f5f5f5]"
-                >
-                  {t("clear")}
-                </button>
-              )}
+                <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] uppercase text-[#a3a3a3]">
+                  {weekdayNames.map((w, i) => (
+                    <div key={`${w}-${i}`}>{w}</div>
+                  ))}
+                </div>
+
+                <div className="mt-1 grid grid-cols-7 gap-0.5">
+                  {grid.map((c) => {
+                    const selected = c.ymd === value;
+                    const isToday = c.ymd === today;
+                    const blocked = !isWithin(c.ymd, min, max);
+                    return (
+                      <button
+                        key={c.ymd}
+                        type="button"
+                        onClick={() => pick(c.ymd)}
+                        disabled={blocked}
+                        className={cn(
+                          "h-8 rounded text-xs",
+                          selected
+                            ? "bg-[var(--brand-blue-500)] font-semibold text-white"
+                            : c.inMonth
+                              ? "text-[#111111] hover:bg-[var(--brand-blue-50)]"
+                              : "text-[#d4d4d4] hover:bg-[#f5f5f5]",
+                          isToday &&
+                            !selected &&
+                            "ring-1 ring-inset ring-[var(--brand-blue-300)]",
+                          blocked &&
+                            "cursor-not-allowed opacity-40 hover:bg-transparent",
+                        )}
+                      >
+                        {c.d}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-2 flex items-center justify-between border-t border-[#f5f5f5] pt-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={pickToday}
+                    className="rounded px-2 py-1 text-[var(--brand-blue-700)] hover:bg-[var(--brand-blue-50)]"
+                  >
+                    {t("today")}
+                  </button>
+                  {clearable && value && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onChange("");
+                        setOpen(false);
+                      }}
+                      className="rounded px-2 py-1 text-[#737373] hover:bg-[#f5f5f5]"
+                    >
+                      {t("clear")}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </PopoverPanel>,
-        document.body,
-      )}
+          </PopoverPanel>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -463,10 +605,7 @@ const PopoverPanel = (() => {
       Math.max(coords.width, minWidth),
       Math.max(minWidth, viewportW - 16),
     );
-    const left = Math.max(
-      8,
-      Math.min(coords.left, viewportW - width - 8),
-    );
+    const left = Math.max(8, Math.min(coords.left, viewportW - width - 8));
     return (
       <div
         ref={ref}
@@ -486,9 +625,8 @@ const PopoverPanel = (() => {
   }
   Panel.displayName = "DatePickerPopover";
   return Object.assign(
-    (
-      props: PopoverPanelProps & { ref?: React.Ref<HTMLDivElement> },
-    ) => Panel(props, props.ref ?? null),
+    (props: PopoverPanelProps & { ref?: React.Ref<HTMLDivElement> }) =>
+      Panel(props, props.ref ?? null),
     { displayName: "DatePickerPopover" },
   );
 })();

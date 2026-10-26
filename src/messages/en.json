@@ -57,7 +57,8 @@
     "type": "Type",
     "reason": "Reason",
     "addNamed": "Add “{name}”",
-    "removeNamed": "Remove {name}"
+    "removeNamed": "Remove {name}",
+    "openCalendar": "Open calendar"
   },
   "auth": {
     "login": {

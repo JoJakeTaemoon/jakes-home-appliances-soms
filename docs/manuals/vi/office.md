@@ -255,6 +255,15 @@ Nút «Quay lại» cạnh đường dẫn ở đầu màn hình đưa bạn v�
 - Chỉ khi mở từ tab mới hoặc nhập thẳng địa chỉ nên không có màn hình trước đó thì mới về danh sách của menu tương ứng.
 - «Quản trị» trong đường dẫn chỉ là tên nhóm menu, bấm vào không chuyển trang.
 
+### 4.7 Nhập ngày
+
+Ô ngày có thể **chọn trên lịch hoặc gõ trực tiếp bằng bàn phím**.
+
+- Bấm vào ô thì lịch mở ra, và có thể gõ số luôn. Chỉ cần gõ số như `26102026` là tự chuyển thành `26/10/2026` (màn hình tiếng Hàn·tiếng Anh: `20261026` → `2026-10-26`). Dán `26.10.2026` cũng được.
+- Đủ 8 chữ số và là ngày có thật thì được áp dụng ngay, lịch cũng chuyển sang tháng đó.
+- Ngày không có thật (ví dụ 40/13/2026) hoặc ngày không được chọn (ví dụ ô chặn ngày tương lai) thì viền chuyển **đỏ** và không được áp dụng. Rời khỏi ô thì giá trị cũ được đặt lại.
+- Xóa trống ô rồi rời đi thì ngày bị xóa. Cũng có thể xóa bằng ✕ bên phải.
+
 ---
 
 ## Chương 5. Quản lý khách hàng
