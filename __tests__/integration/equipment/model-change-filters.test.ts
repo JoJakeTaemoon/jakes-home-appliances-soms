@@ -109,4 +109,27 @@ describe("changing a unit's model", () => {
     await PATCH(req(`/api/equipment/${unitId}`, "PATCH", { modelId: newModel, notes: "same model" }), ctx(unitId));
     expect((await rowsOf()).length).toBe(before.length);
   });
+
+  it("takes the new model's next code when its own is already taken there", async () => {
+    // unitId moved onto newModel above, so its code is taken there now.
+    const code = (await prisma.equipment.findUnique({ where: { id: unitId } }))!.assetCode!;
+    const clash = await prisma.equipment.create({
+      data: { customerId, modelId: oldModel, assetCode: code, status: "ACTIVE", installedAt: new Date("2025-01-01") },
+    });
+    const res = await PATCH(req(`/api/equipment/${clash.id}`, "PATCH", { modelId: newModel }), ctx(clash.id));
+    expect(res.status).toBe(200);
+    const moved = await prisma.equipment.findUnique({ where: { id: clash.id } });
+    expect(moved?.modelId).toBe(newModel);
+    expect(moved?.assetCode).not.toBe(code);
+    expect(moved?.assetCode).toMatch(/^MAY-\d{6}$/);
+  });
+
+  it("keeps a free code as it is", async () => {
+    const free = await prisma.equipment.create({
+      data: { customerId, modelId: oldModel, assetCode: `MAY-9${rand().slice(0, 5)}`, status: "ACTIVE", installedAt: new Date("2025-01-01") },
+    });
+    const res = await PATCH(req(`/api/equipment/${free.id}`, "PATCH", { modelId: newModel }), ctx(free.id));
+    expect(res.status).toBe(200);
+    expect((await prisma.equipment.findUnique({ where: { id: free.id } }))?.assetCode).toBe(free.assetCode);
+  });
 });

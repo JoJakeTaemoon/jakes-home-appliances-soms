@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/error";
 import { logAudit } from "@/lib/audit";
 import { filtersOutsideModel } from "@/lib/equipment/model-change";
+import { allocateAssetCodes } from "@/lib/equipment/asset-code";
 import { CATEGORY_LINKS_SELECT } from "@/lib/products/classification";
 
 const paramsSchema = z.object({ id: z.string() });
@@ -115,11 +116,23 @@ export async function PATCH(request: NextRequest, ctx: Ctx) {
         await tx.equipmentConsumable.deleteMany({
           where: { id: { in: removed.map((r) => r.id) } },
         });
+      // 장비코드 runs per model, so the unit's code may already belong to
+      // another unit of the new model: keep it when it is free there, else
+      // take that model's next one (a clash used to fail the save with a 500).
+      let assetCode: string | undefined;
+      if (modelChanged && before.assetCode) {
+        const taken = await tx.equipment.findFirst({
+          where: { modelId: data.modelId!, assetCode: before.assetCode, id: { not: id } },
+          select: { id: true },
+        });
+        if (taken) [assetCode] = await allocateAssetCodes(tx, data.modelId!, 1);
+      }
       const updated = await tx.equipment.update({
         where: { id },
         data: {
           serialNumber: data.serialNumber,
-          // assetCode is immutable — issued once at registration.
+          // assetCode is never edited by hand — it only moves with the model (above).
+          assetCode,
           ownership: data.ownership,
           installedAt: data.installedAt,
           installedByTechnicianId: data.installedByTechnicianId ?? undefined,
