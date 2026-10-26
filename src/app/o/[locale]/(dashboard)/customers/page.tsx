@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useApiPageQuery, useApiQuery } from "@/lib/api/hooks";
 import { DataTable, Pagination, type Column } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
@@ -59,6 +60,15 @@ interface CustomerStats {
 }
 
 const PAGE_SIZE = 25;
+const DEFAULT_SORT = { column: "code", direction: "asc" } as const;
+const TYPES = ["B2C", "B2B"] as const;
+const STATUSES = ["ACTIVE", "INACTIVE", "PROSPECT"] as const;
+const CONTRACT_STATES = ["ACTIVE", "EXPIRING", "TERMINATED", "NONE"] as const;
+
+/** A value from the address, or null if it is not one we would have written. */
+function oneOf<T extends string>(v: string | null, allowed: readonly T[]): T | null {
+  return v && (allowed as readonly string[]).includes(v) ? (v as T) : null;
+}
 
 function useDebounced<T>(value: T, ms = 300): T {
   const [v, setV] = useState(value);
@@ -77,25 +87,64 @@ function daysFromNow(iso: string | null): number | null {
 }
 
 export default function CustomersPage() {
+  // useSearchParams() needs a Suspense boundary for static prerender.
+  return (
+    <Suspense fallback={null}>
+      <CustomerList />
+    </Suspense>
+  );
+}
+
+function CustomerList() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const router = useRouter();
+  const pathname = usePathname();
   const locale = useLocale();
+  // Filters, page and sort live in the address (?status=&type=&page=…), so
+  // opening a customer and pressing 뒤로 returns to the same filtered list.
+  const searchParams = useSearchParams();
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => searchParams.get("q") ?? "");
   const debouncedQ = useDebounced(q, 300);
-  const [type, setType] = useState<"B2C" | "B2B" | null>(null);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "PROSPECT" | null>(null);
-  const [region, setRegion] = useState<string | null>(null);
-  const [salesRepId, setSalesRepId] = useState<string | null>(null);
+  const [type, setType] = useState<"B2C" | "B2B" | null>(() => oneOf(searchParams.get("type"), TYPES));
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE" | "PROSPECT" | null>(() =>
+    oneOf(searchParams.get("status"), STATUSES),
+  );
+  const [region, setRegion] = useState<string | null>(() => searchParams.get("region") || null);
+  const [salesRepId, setSalesRepId] = useState<string | null>(() => searchParams.get("salesRepId") || null);
   const [contractState, setContractState] = useState<
     "ACTIVE" | "EXPIRING" | "TERMINATED" | "NONE" | null
-  >(null);
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>({
-    column: "code",
-    direction: "asc",
+  >(() => oneOf(searchParams.get("contractState"), CONTRACT_STATES));
+  const [page, setPage] = useState(() => Math.max(1, Math.floor(Number(searchParams.get("page"))) || 1));
+  const [sort, setSort] = useState<{ column: string; direction: "asc" | "desc" } | null>(() => {
+    const column = searchParams.get("sortBy");
+    const direction = oneOf(searchParams.get("sortDir"), ["asc", "desc"] as const);
+    return column && direction ? { column, direction } : DEFAULT_SORT;
   });
+
+  const addressQs = useMemo(() => {
+    const qs = new URLSearchParams();
+    if (debouncedQ) qs.set("q", debouncedQ);
+    if (type) qs.set("type", type);
+    if (status) qs.set("status", status);
+    if (region) qs.set("region", region);
+    if (salesRepId) qs.set("salesRepId", salesRepId);
+    if (contractState) qs.set("contractState", contractState);
+    if (sort && (sort.column !== DEFAULT_SORT.column || sort.direction !== DEFAULT_SORT.direction)) {
+      qs.set("sortBy", sort.column);
+      qs.set("sortDir", sort.direction);
+    }
+    if (page > 1) qs.set("page", String(page));
+    return qs.toString();
+  }, [debouncedQ, type, status, region, salesRepId, contractState, sort, page]);
+
+  useEffect(() => {
+    // Order-insensitive: a shared link may list the same params differently.
+    const norm = (qs: string) => [...new URLSearchParams(qs)].map((kv) => kv.join("=")).sort().join("&");
+    if (norm(addressQs) === norm(searchParams.toString())) return;
+    router.replace((addressQs ? `${pathname}?${addressQs}` : pathname) as "/o", { scroll: false });
+  }, [addressQs, pathname, router, searchParams]);
 
   const onQ = (v: string) => {
     setQ(v);

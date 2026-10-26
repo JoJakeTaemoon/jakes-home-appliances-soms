@@ -269,6 +269,7 @@ Nút «Quay lại» cạnh đường dẫn ở đầu màn hình đưa bạn v�
 - **Bộ lọc**: tìm kiếm (mã·tên·mã viết tắt·điện thoại·địa chỉ·CCCD·MST) · trạng thái · trạng thái HĐ · loại (B2C/B2B) · khu vực ưu tiên · nhân viên bán hàng · đặt lại bộ lọc
 - Nút **«Khách hàng mới»** ở góc trên bên phải dùng để đăng ký.
 - Bấm vào một dòng để mở chi tiết khách hàng.
+- Bộ lọc·từ khóa·sắp xếp·trang đã chọn được giữ trong địa chỉ trang. Từ chi tiết khách hàng bấm «Quay lại» sẽ về đúng danh sách đó; sao chép địa chỉ gửi người khác thì họ cũng thấy cùng danh sách.
 
 ### 5.2 Đăng ký khách hàng mới — B2C (hộ gia đình)
 
